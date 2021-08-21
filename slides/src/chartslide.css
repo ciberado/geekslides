@@ -1,0 +1,45 @@
+.slidedeck section.chart {
+  background-color : white;
+}
+
+.slidedeck section.chart > table,
+.slidedeck section.chart > p > .chartjs-size-monitor {
+  display: none;
+}
+
+.slidedeck section.chart > p > img {
+  display : none;
+}
+
+.slidedeck-book section.chart > p > .chartjs-size-monitor {
+  display: none;
+}
+
+.slidedeck section.chart > p > img.datacard {
+	display: block;
+  padding: 18px;
+  max-width: 300px;
+	background-color: white;
+	border: 1px solid silver;
+	border-radius: 10%;
+  box-shadow: gray 5px 5px 50px;
+  opacity: 0;
+  transition: opacity 0.750s ease-in-out,
+              top 0.5s ease-in-out; 
+}
+
+.slidedeck section.chart > p > img.datacard.shown {
+  opacity: 1;
+ 
+}
+
+.slidedeck section.chart > p > img.datacard.shown.past {
+  
+  opacity: 0;
+}
+
+.slidedeck section.chart > p > canvas.chartjs-render-monitor {
+  position : absolute;
+  top : 24px;
+}
+

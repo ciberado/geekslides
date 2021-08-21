@@ -1,0 +1,6 @@
+.cache/
+dist/
+out/
+node_modules/
+.parcel-cache/
+.local/

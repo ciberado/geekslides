@@ -1,0 +1,57 @@
+{
+  "name": "idni",
+  "version": "0.1.0",
+  "description": "html based slideshow, without any I don't Need It features.",
+  "main": "index.html",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html --no-source-maps",
+    "test": "jest --watch"
+  },
+  "author": "Javi <email@javier-moreno.com>",
+  "license": "GNU General Public License v3.0",
+  "dependencies": {
+    "@babel/runtime": "^7.9.2",
+    "chart.js": "^2.9.4",
+    "d3": "^6.1.1",
+    "markdown-it": "^10.0.0",
+    "markdown-it-footnote": "^3.0.2",
+    "notie": "^4.3.1",
+    "paho-mqtt": "^1.1.0",
+    "regenerator-runtime": "^0.13.5",
+    "scripts": "^0.1.0",
+    "swipe-listener": "^1.2.0",
+    "uuid": "^8.3.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.9.6",
+    "@babel/plugin-proposal-class-properties": "^7.10.4",
+    "@babel/plugin-proposal-private-methods": "^7.10.4",
+    "@babel/plugin-transform-runtime": "^7.9.0",
+    "@babel/preset-env": "^7.9.6",
+    "babel-jest": "^25.5.1",
+    "emmet": "^2.0.0",
+    "jest": "^25.5.3",
+    "marked": "^1.0.0",
+    "parcel": "^1.12.4",
+    "parcel-plugin-custom-dist-structure": "^1.1.18",
+    "parcel-plugin-imagemin": "^4.0.1",
+    "parcel-plugin-static-files-copy": "^2.3.1"
+  },
+  "staticFiles": {
+    "staticPath": [],
+    "watcherGlob": "**"
+  },
+  "customDistStructure": {
+    "config": {
+      "slide-assets": [
+        ".js",
+        ".css",
+        ".jpg"
+      ]
+    },
+    "options": {
+      "development": true
+    }
+  }
+}

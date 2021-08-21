@@ -1,0 +1,106 @@
+* {
+  box-sizing: border-box;
+}
+
+.fullviewport, .fullviewport body {
+  background-color: #404040;
+  margin : 0;
+  height: 100%;
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.slidedeck {
+  height: 100%;
+}
+
+.slidedeck iframe, .slidedeck img, .slidedeck video {
+  max-width: 100%;
+}
+
+.slidedeck section {
+  position: absolute;
+  margin: 0;
+	transition: left 0.5s ease-in-out, 
+              opacity 0.5s ease-out;
+  background-color: #c0c0c0;
+  opacity : 0;  
+  top : 50%;
+  left: 150%;
+}
+
+.slidedeck section.active {
+  left : 50%;
+  opacity : 1;
+}
+
+.slidedeck section.prev {
+  left: -150%;
+  opacity : 0.25;    
+}
+
+.slidedeck section.next {
+  left: 150%;
+  opacity : 0.25;  
+}
+
+.slidedeck section.partial ul li, 
+.slidedeck section.partial ol li {
+  opacity : 0;
+	transition: opacity 0.5s ease-out;
+}
+
+.slidedeck section.partial ul li.partial-shown, 
+.slidedeck section.partial ol li.partial-shown {
+  opacity : 1;
+}
+
+.slidedeck blockquote {
+  display: none;
+}
+
+.slidedeck.speaker section {
+  transition: none;
+  transform-origin: left top;
+}
+
+.slidedeck.speaker section.active {
+  top : 0%;
+  left: 0%;
+}
+
+.slidedeck.speaker section.active + section{
+  top : 0%;
+  left : 50%;
+  opacity : 0.3;
+}
+
+.slidedeck.speaker section.partial ul li, 
+.slidedeck.speaker section.partial ol li {
+  opacity : 0.7;
+}
+
+.slidedeck.speaker section.partial ul li.partial-shown, 
+.slidedeck.speaker section.partial ol li.partial-shown {
+  opacity : 1;
+}
+
+
+.slidedeck.speaker section.active blockquote {
+  display: block;
+  position: absolute;
+  background-color: white;
+  color: black;
+  width: 200%;
+  height: 100%;
+  top: 100%;
+  margin: 0;
+  padding: 4px;
+  font-size: 40pt;
+  overflow: scroll;
+}
+
+.slidedeck.speaker section.active + section blockquote {
+  display: none;
+}
+

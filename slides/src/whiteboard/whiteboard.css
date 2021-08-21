@@ -1,0 +1,33 @@
+.whiteboard-container {
+  z-index: -1;
+  position: absolute;
+  width: 100%;
+  height : 100%;
+  overflow: hidden;
+  left : 0;
+  opacity: 0;
+  background: url(free-chalkboard-backgrounds.jpg) no-repeat center;
+  background-size : cover;
+  background-color : black;
+	transition: opacity 0.5s ease-out;
+}
+
+.whiteboard-container.active {
+   z-index: 10;
+   opacity: 1;
+}
+
+canvas.whiteboard  {
+  position: absolute;
+  top: 0;
+  width: 1600px;
+  height: 900px;
+
+}
+
+#globalwbc {
+  width: 1600px;
+  height: 900px;
+  transform-origin: 0 0;
+  
+}
