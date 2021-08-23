@@ -2,11 +2,18 @@ import {Client as PahoMQTTClient, Message as PahoMQTTMessage} from  'paho-mqtt/p
 
 class SimpleMqttClient {
   host;
+  port;
+  username;
+  password;
+
   client;
   messageListeners = {};
 
-  constructor(host, port) {
+  constructor(host, port, username, password) {
     this.host = host;
+    this.port = port;
+    this.username = username;
+    this.password = password;
     this.client = new PahoMQTTClient(host, port, 'SimpleClient' + Date.now() + parseInt(Math.random()*1000));
 
     this.client.onConnectionLost = (error) => {
@@ -28,8 +35,8 @@ class SimpleMqttClient {
     return new Promise((resolve, reject) => {
       console.debug('Connecting to mqtt server.');
       this.client.connect({
-        userName : 'host',
-        password : '11111111',
+        userName : this.username,
+        password : this.password,
         useSSL: false, // true, 
         reconnect: true,
         onSuccess : () => {
@@ -38,6 +45,10 @@ class SimpleMqttClient {
         }
       });
     });
+  }
+
+  async disconnect() {
+    this.client.disconnect();
   }
 
   subscribeListener(subtopic, listener) {
@@ -66,9 +77,6 @@ class SimpleMqttClient {
     this.client.send(message);
   }    
 }
-
-const hub = new SimpleMqttClient('localhost', 8883);
-hub.connect();
 
 export default SimpleMqttClient;
 export { hub };
