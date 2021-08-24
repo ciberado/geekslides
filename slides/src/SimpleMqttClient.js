@@ -3,15 +3,17 @@ import {Client as PahoMQTTClient, Message as PahoMQTTMessage} from  'paho-mqtt/p
 class SimpleMqttClient {
   host;
   port;
+  roomName;
   username;
   password;
 
   client;
   messageListeners = {};
 
-  constructor(host, port, username, password) {
+  constructor(host, port, roomName, username, password) {
     this.host = host;
     this.port = port;
+    this.roomName = roomName;
     this.username = username;
     this.password = password;
     this.client = new PahoMQTTClient(host, port, 'SimpleClient' + Date.now() + parseInt(Math.random()*1000));
@@ -32,11 +34,12 @@ class SimpleMqttClient {
   }
 
   async connect() {
+    console.debug(`Connecting to the mqtt broker.`);
     return new Promise((resolve, reject) => {
       console.debug('Connecting to mqtt server.');
       this.client.connect({
         userName : this.username,
-        password : this.password,
+        password : this.password || '',
         useSSL: false, // true, 
         reconnect: true,
         onSuccess : () => {
@@ -48,11 +51,12 @@ class SimpleMqttClient {
   }
 
   async disconnect() {
+    console.debug(`Disconnecting mqtt client from broker.`);
     this.client.disconnect();
   }
 
   subscribeListener(subtopic, listener) {
-    const topic = `rooms/demo/state/${subtopic}`;
+    const topic = `rooms/${this.roomName}/state/${subtopic}`;
     if (this.client.isConnected() === true) {
       this.client.subscribe(topic);
     }
@@ -65,13 +69,12 @@ class SimpleMqttClient {
   #clientConnected() {
     console.log(`Mqtt client connected to ${this.host}.`);
     const topics = Object.keys(this.messageListeners);
-    topics.forEach(t => this.client.subscribe(t))
-    console.log(`Subscribed to ${JSON.stringify(topics)}.`);
+    topics.forEach(t => this.client.subscribe(t));
   }
 
   emitMessage(topicName, body, qos, retained) {
     const message = new PahoMQTTMessage(typeof body === 'string' ? body : JSON.stringify(body));
-    message.destinationName = `rooms/demo/state/${topicName}`;
+    message.destinationName = `rooms/${this.roomName}/state/${topicName}`;
     if (qos) message.qos = qos;
     if (retained) message.retained = retained;
     this.client.send(message);
@@ -79,4 +82,3 @@ class SimpleMqttClient {
 }
 
 export default SimpleMqttClient;
-export { hub };

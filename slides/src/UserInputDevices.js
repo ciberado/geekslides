@@ -44,7 +44,7 @@ class UserInputDevices {
 
     this.addKeyboardEvent(79, 'openSlides'); // o
     this.addKeyboardEvent(87, 'toggleGlobalWhiteboard'); // w
-
+    this.addKeyboardEvent(74, 'joinRoom'); // j
 
     // Slide swipe handling
     SwipeListener(this.slideshow.slideshowElem, {mouse : false});

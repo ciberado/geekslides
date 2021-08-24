@@ -2,13 +2,18 @@ import 'notie/dist/notie.css';
 import notie from 'notie/dist/notie.js';
 import { v4 as uuidv4 } from 'uuid';
 
-import { hub } from './SimpleMqttClient';
+import SimpleMqttClient from './SimpleMqttClient';
 
 class SyncController {
+
+  static DEFAULT_HOST = process.env.DEFAULT_HUB_HOST ||'geekslides.aprender.cloud';
+  static DEFAULT_PORT = process.env.DEFAULT_HUB_PORT || 1888;
 
   uuid;
 
   slideshowController;
+
+  hub;
   emitting;
 
   /**
@@ -27,6 +32,8 @@ class SyncController {
     this.slideshowController = slideshowController;
     this.emitting = false;
 
+    document.addEventListener('joinRoom',
+      (evt) => this.inputUserForNewSession());
     document.addEventListener('toggleEmission', 
       (evt) => this.toggleEmission());
     document.addEventListener('slideShown', 
@@ -49,10 +56,84 @@ class SyncController {
       evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true));
     document.addEventListener('whiteboardHidden', 
       evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true));
+  }
 
-    hub.subscribeListener('slides', (p) => this.#processSlideMessage(JSON.parse(p)));
-    hub.subscribeListener('slideShowLoaded', (p) => this.#processSlideMessage(JSON.parse(p)));
-    hub.subscribeListener('slides/whiteboard', (p) => this.#processWhiteboard(JSON.parse(p)));
+  async inputUserForNewSession() {
+    let roomDefinition = await this.#input('introduce the room uri, please:', '');
+    if (roomDefinition === null) return;
+
+    let host = SyncController.DEFAULT_HOST;
+    let port = SyncController.DEFAULT_PORT;
+    let roomName = null;
+    let roomPassword = null;
+
+    if (roomDefinition.startsWith('//') === false) {
+      const parts = roomDefinition.split(' ');
+      roomName = parts[0];
+      if (parts.length === 2) {
+        roomPassword = parts[1];
+      }
+    } else {
+      /*
+      This regex will catch this kind of patterns:
+
+      //mqtt.aprender.cloud:443/xyz abc
+      //mqtt.aprender.cloud:443/xyz abc
+      //mqtt.aprender.cloud:443/xyz
+      //mqtt.aprender.cloud/xyz abc
+      //mqtt.aprender.cloud/xyz abc
+      //mqtt.aprender.cloud/xyz
+
+      Port and password are optional. See https://regex101.com/r/CWrZhZ/1 
+      to play with it interactively.
+      */
+      const regex = /^\/\/(.*?):?(\d{1,5})?\/((.*) (.*)|(.*))$/gm;
+      const result = regex.exec(roomDefinition);
+      host = result[1];
+      if (result[2]) {
+        port = parseInt(result[2]);
+      }
+      if (result[6]) {
+        roomName = result[6];
+      } else {
+        roomName = result[4];
+        roomPassword = result[5];
+      }
+    }
+    console.info(`Joining room ${roomName} with password ${roomPassword} on ${host}:${port}.`);
+    const username = roomPassword ? 'producer' : 'consumer';
+    this.connectToHub(host, port, roomName, username, roomPassword);
+  }
+
+  #input(text, value) {        
+    return new Promise((resolve, reject) => {
+      const options = { 
+        text,
+        value,
+        submitText : 'Accept',
+        position : 'bottom',
+        submitCallback : v => resolve(v),
+        cancelCallback : v => resolve(null)
+      };
+  
+      notie.input(options);
+    });
+  }
+
+
+  async connectToHub(host, port, roomName, username, password) {
+    if (this.hub) {
+      await this.disconnectFromHub();
+    }
+    this.hub = new SimpleMqttClient(host, port, roomName, username, password);
+    await this.hub.connect();
+    this.hub.subscribeListener('slides', (p) => this.#processSlideMessage(JSON.parse(p)));
+    this.hub.subscribeListener('slideShowLoaded', (p) => this.#processSlideMessage(JSON.parse(p)));
+    this.hub.subscribeListener('slides/whiteboard', (p) => this.#processWhiteboard(JSON.parse(p)));
+  }
+
+  async disconnectFromHub() {
+    return this.hub.disconnect();
   }
 
   toggleEmission(optionalNewValue) {
@@ -74,7 +155,7 @@ class SyncController {
       action: 'control', 
       syncControllerUuid : this.uuid
     };
-    hub.emitMessage('slides', payload);
+    this.hub.emitMessage('slides', payload);
   }
 
   #dispatchCurrentSlide(currentSlideIndex, lastPartialShownIndex) {
@@ -91,7 +172,7 @@ class SyncController {
         lastPartialShownIndex,
         syncControllerUuid : this.uuid
       };
-      hub.emitMessage('slides', payload);
+      this.hub.emitMessage('slides', payload);
     }
   }
 
@@ -104,7 +185,7 @@ class SyncController {
       currentSlideIndex,
       syncControllerUuid : this.uuid
     };
-    hub.emitMessage('slides', payload, 0, true);
+    this.hub.emitMessage('slides', payload, 0, true);
   }
 
   #processSlideMessage(message) {
@@ -153,7 +234,7 @@ class SyncController {
       id, 
       detail
     };
-    hub.emitMessage('slides/whiteboard', payload, 0, retain);
+    this.hub.emitMessage('slides/whiteboard', payload, 0, retain);
   }
 
   #processWhiteboard(message) {
