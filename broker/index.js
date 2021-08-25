@@ -147,9 +147,8 @@ aedes.authenticate = (client, username, password, callback) => {
 
 aedes.authorizeSubscribe = (client, subscription, callback) => {
     // Subscription to config is always denied
-    if (subscription.topic.indexOf('/config') !== -1) {
-        // TODO: Authorize subscription if the client has set the proper password
-        logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscript to configuration topics.')
+    if (subscription.topic.includes('/config') || subscription.topic.includes('#') || subscription.topic.includes('+')) {
+        logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscript to configuration topics.');
         return callback(new Error('You are not authorized to subscribe on this message topic.'));
     }
     return callback(null, subscription);
