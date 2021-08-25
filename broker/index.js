@@ -163,10 +163,14 @@ aedes.authorizePublish = (client, message, callback) => {
     }
     
     const user = usersById[client.id];
-    const room = roomsByName[roomName];
+    let room = roomsByName[roomName];
     
-    // new room, and expecting a password to be set
-    if (room === undefined && message.topic.includes('config/password')) {
+    // new room, let's create it and authorize the post
+    if (room === undefined) {
+        room = new Room(roomName, user.password);
+        roomsByName[roomName] = room;    
+
+        logger.log('info', `[ROOM_CHANGE] New room created with the name ${roomName} by ${user.username}.`);
         return callback(null);
     }
     // existing room, and client has authorization
@@ -208,16 +212,10 @@ aedes.on('publish', async function (message, client) {
     let room = roomsByName[roomName];
 
     // if the room didn't exist and the the client is trying to set its password, lets create one
-    if (message.topic === `rooms/${roomName}/config/password`) {
+    if (room !== undefined && message.topic === `rooms/${roomName}/config/password`) {
         const password = message.payload.toString();
-        if (room !== undefined) {
-            room.password = password;
-            logger.log('info', `[ROOM_CHANGE] Password changed for room ${roomName} by ${user.username}.`);
-        } else {
-            logger.log('info', `[ROOM_CHANGE] New room created with the name ${roomName} by ${user.username}.`);
-            room = new Room(roomName, password);
-            roomsByName[roomName] = room;    
-        }
+        room.password = password;
+        logger.log('info', `[ROOM_CHANGE] Password changed for room ${roomName} by ${user.username}.`);
     }
 })
 
