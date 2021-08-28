@@ -4,14 +4,15 @@
   "description": "Hub used by slides to synchronize different instances. Based on Aedes.",
   "main": "index.js",
   "scripts": {
-    "start" : "node index.js",
-    "dev" : "node_modules/nodemon/bin/nodemon.js --inspect index.js",
+    "start": "node index.js",
+    "dev": "node_modules/nodemon/bin/nodemon.js --inspect index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Javi <email@javier-moreno.com>",
   "license": "GNU General Public License v3.0",
   "dependencies": {
     "aedes": "^0.46.1",
+    "generate-password": "^1.6.1",
     "net": "^1.0.2",
     "websocket-stream": "^5.5.2",
     "winston": "^3.3.3"

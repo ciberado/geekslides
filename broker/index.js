@@ -18,7 +18,12 @@
    logger.add(new winston.transports.Console({
      format: winston.format.simple(),
    }));
- }
+}
+
+// Administrator username and password for this server
+const ADMIN_USERNAME = 'administrator';
+const password = process.env.ADMIN_PASS || require('generate-password').generate({length: 10, numbers: true});
+logger.info(`Use ${password} as password to administrate the broker.`);
 
 const aedes = require('aedes')();
 
@@ -72,6 +77,10 @@ class User {
         this.id = id;
         this.username = username;
         this.password = password;
+    }
+
+    isAdministrator() {
+        return this.username === ADMIN_USERNAME && this.password === password;
     }
 }
 
@@ -146,10 +155,16 @@ aedes.authenticate = (client, username, password, callback) => {
 }
 
 aedes.authorizeSubscribe = (client, subscription, callback) => {
-    // Subscription to config is always denied
-    if (subscription.topic.includes('/config') || subscription.topic.includes('#') || subscription.topic.includes('+')) {
-        logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscript to configuration topics.');
-        return callback(new Error('You are not authorized to subscribe on this message topic.'));
+    const user = client ? usersById[client.id] : null;
+    if (!user?.isAdministrator()) {
+        if (subscription.topic.includes('#') || subscription.topic.includes('+')) {
+            logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscription to wildcard topics.');
+            return callback(new Error('You are not authorized to subscribe on this message topic.'));
+        }
+        if (subscription.topic.startsWith('/rooms') == false) {
+            logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscription to root topics.');
+            return callback(new Error('You are not authorized to subscribe on this message topic.'));
+        }
     }
     return callback(null, subscription);
 };
