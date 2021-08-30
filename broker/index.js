@@ -4,9 +4,15 @@
  * 
  */
 
- const winston = require('winston');
+// Seconds between updating the $SYS/greekslides topic with stats. 30 seconds for production, 5 for other
+const STATS_INTERVAL_SECONDS = Process.env.NODE_ENV === 'production' ? 30 : 5;
 
- const logger = winston.createLogger({
+// Administrator username and password for this server
+const ADMIN_USERNAME = 'administrator';
+
+const winston = require('winston');
+
+const logger = winston.createLogger({
    level: 'info',
    format: winston.format.json(),
    defaultMeta: { service: 'geekslides-broker' },
@@ -20,8 +26,6 @@
    }));
 }
 
-// Administrator username and password for this server
-const ADMIN_USERNAME = 'administrator';
 const password = process.env.ADMIN_PASS || require('generate-password').generate({length: 10, numbers: true});
 logger.info(`Use ${password} as password to administrate the broker.`);
 
@@ -168,7 +172,7 @@ aedes.authorizeSubscribe = (client, subscription, callback) => {
     }
     return callback(null, subscription);
 };
-
+1
 // authorizing client to publish on a message topic, or to try to set the configuration of a new room
 aedes.authorizePublish = (client, message, callback) => {
     const roomName = getRoomNameFromTopic(message.topic);
@@ -234,3 +238,19 @@ aedes.on('publish', async function (message, client) {
     }
 })
 
+// Publish basic stats
+setInterval(()=>{
+    const topic = '$SYS/greekslides';
+    const payload = JSON.stringify({
+        numberOfRooms : Object.keys(roomsByName).length,
+        numberOfUsers : Object.keys(usersById).length
+    });2
+    logger.info(`[STATS] ${payload}.`);
+    aedes.publish({
+        cmd: 'publish',
+        qos: 0,
+        topic: topic,
+        payload: Buffer.from(payload),
+        retain: false
+      });
+}, 1000 * STATS_INTERVAL_SECONDS);
