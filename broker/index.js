@@ -4,8 +4,8 @@
  * 
  */
 
-// Seconds between updating the $SYS/greekslides topic with stats. 30 seconds for production, 5 for other
-const STATS_INTERVAL_SECONDS = Process.env.NODE_ENV === 'production' ? 30 : 5;
+// Seconds between updating the $SYS/greekslides topic with stats. 30 seconds for production, 5 for otherc
+const STATS_INTERVAL_SECONDS = process.env.NODE_ENV === 'dev' ? 10 : 30;
 
 // Administrator username and password for this server
 const ADMIN_USERNAME = 'administrator';
