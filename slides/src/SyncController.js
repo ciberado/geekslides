@@ -2,7 +2,7 @@ import 'notie/dist/notie.css';
 import notie from 'notie/dist/notie.js';
 import { v4 as uuidv4 } from 'uuid';
 
-import SimpleMqttClient from './SimpleMqttClient';
+import MqttHub from './MqttHub';
 
 class SyncController {
 
@@ -125,7 +125,7 @@ class SyncController {
     if (this.hub) {
       await this.disconnectFromHub();
     }
-    this.hub = new SimpleMqttClient(host, port, roomName, username, password);
+    this.hub = new MqttHub(host, port, roomName, username, password);
     await this.hub.connect();
     this.hub.subscribeListener('slides', (p) => this.#processSlideMessage(JSON.parse(p)));
     this.hub.subscribeListener('slideShowLoaded', (p) => this.#processSlideMessage(JSON.parse(p)));
