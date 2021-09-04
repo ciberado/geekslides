@@ -165,7 +165,7 @@ aedes.authorizeSubscribe = (client, subscription, callback) => {
             logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscription to wildcard topics.');
             return callback(new Error('You are not authorized to subscribe on this message topic.'));
         }
-        if (subscription.topic.startsWith('/rooms') == false) {
+        if (subscription.topic.startsWith('rooms') === false) {
             logger.log('warn', '[SUBS_AUTH_ERROR] Unauthorized subscription to root topics.');
             return callback(new Error('You are not authorized to subscribe on this message topic.'));
         }
