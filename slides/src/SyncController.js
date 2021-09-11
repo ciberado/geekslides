@@ -2,6 +2,7 @@ import 'notie/dist/notie.css';
 import notie from 'notie/dist/notie.js';
 import { v4 as uuidv4 } from 'uuid';
 
+import LocalHub from './LocalHub';
 import MqttHub from './MqttHub';
 
 class SyncController {
@@ -31,6 +32,10 @@ class SyncController {
   
     this.slideshowController = slideshowController;
     this.emitting = false;
+
+    // By default, localhub is used to coordinate the different windows being run in the same laptop.
+    this.hub = new LocalHub();
+    this.hub.connect();
 
     document.addEventListener('joinRoom',
       (evt) => this.inputUserForNewSession());
@@ -102,7 +107,7 @@ class SyncController {
     }
     console.info(`Joining room ${roomName} with password ${roomPassword} on ${host}:${port}.`);
     const username = roomPassword ? 'producer' : 'consumer';
-    this.connectToHub(host, port, roomName, username, roomPassword);
+    this.connectToMqttHub(host, port, roomName, username, roomPassword);
   }
 
   #input(text, value) {        
@@ -121,7 +126,7 @@ class SyncController {
   }
 
 
-  async connectToHub(host, port, roomName, username, password) {
+  async connectToMqttHub(host, port, roomName, username, password) {
     if (this.hub) {
       await this.disconnectFromHub();
     }
