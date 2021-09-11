@@ -33,10 +33,6 @@ class SyncController {
     this.slideshowController = slideshowController;
     this.emitting = false;
 
-    // By default, localhub is used to coordinate the different windows being run in the same laptop.
-    this.hub = new LocalHub();
-    this.hub.connect();
-
     document.addEventListener('joinRoom',
       (evt) => this.inputUserForNewSession());
     document.addEventListener('toggleEmission', 
@@ -61,6 +57,15 @@ class SyncController {
       evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true));
     document.addEventListener('whiteboardHidden', 
       evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true));
+
+    // By default, localhub is used to coordinate the different windows being run in the same laptop.
+    this.#subscribeToLocalHub();
+  }
+
+  async #subscribeToLocalHub() {
+    this.hub = new LocalHub();
+    await this.hub.connect();
+    this.#subscribeToTopics();
   }
 
   async inputUserForNewSession() {
@@ -132,7 +137,13 @@ class SyncController {
     }
     this.hub = new MqttHub(host, port, roomName, username, password);
     await this.hub.connect();
-    this.hub.subscribeListener('slides', (p) => this.#processSlideMessage(JSON.parse(p)));
+    this.#subscribeToTopics();
+  }
+
+  #subscribeToTopics() {
+    this.hub.subscribeListener('slides', (p) => {
+      this.#processSlideMessage(JSON.parse(p))
+    });
     this.hub.subscribeListener('slideShowLoaded', (p) => this.#processSlideMessage(JSON.parse(p)));
     this.hub.subscribeListener('slides/whiteboard', (p) => this.#processWhiteboard(JSON.parse(p)));
   }
