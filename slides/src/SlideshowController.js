@@ -241,6 +241,7 @@ class SlideshowController {
    * Asks for the url of the slide show to be presented and in case it is
    * correctly provided updates the slidesshow.
    * 
+   * @fires userOpenedSlides if it has been possible to open the new slideck
    */
   async #inputSlideshowUrl() {
     const value = window.localStorage.getItem('lastInputSlideshowUrl');
@@ -255,7 +256,14 @@ class SlideshowController {
         baseUrl = baseUrl + '/'
       }  
     }
-    this.changeSlideshowContent(baseUrl);
+    const slidesLoaded = await this.changeSlideshowContent(baseUrl);
+    if (slidesLoaded === true) {
+      this.#dispatchEvent('userOpenedSlides', {
+        baseUrl : this.baseUrl
+      });
+    } else {
+      notie.alert({ type: 'error', text: 'Error opening slideshow.', position : 'bottom'});
+    }
   }
 
   /**

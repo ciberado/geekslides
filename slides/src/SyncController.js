@@ -36,7 +36,9 @@ class SyncController {
     document.addEventListener('joinRoom',
       (evt) => this.inputUserForNewSession());
     document.addEventListener('toggleEmission', 
-      (evt) => this.toggleEmission());
+      (evt) => this.toggleEmission());      
+    document.addEventListener('userOpenedSlides', 
+      (evt) => this.toggleEmission(true));
     document.addEventListener('slideShown', 
       (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex));
     document.addEventListener('partialShown', 
