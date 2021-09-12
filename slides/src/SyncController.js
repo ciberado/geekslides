@@ -38,10 +38,7 @@ class SyncController {
     document.addEventListener('toggleEmission', 
       (evt) => this.toggleEmission());      
     document.addEventListener('userOpenedSlides', 
-      (evt) => { 
-        this.toggleEmission(true);
-        this.#dispatchCurrentSlide();
-      });
+      (evt) => this.toggleEmission(true));
     document.addEventListener('slideShown', 
       (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex));
     document.addEventListener('partialShown', 
@@ -162,7 +159,9 @@ class SyncController {
     if (this.emitting === true) {
       const message = 'Emitting current slidedeck position';
       notie.alert({type : 'info', text : message, position : 'bottom'});
-      this.#dispatchTakeControl();  
+      this.#dispatchTakeControl(); 
+      this.#dispatchCurrentSlide(this.slideshowController.slideshow.getCurrentSlideIndex(),
+                                 this.slideshowController.slideshow.getCurrentPartialIndex()); 
     } else {
       const message = 'Deactivating current slidedeck position emission.';
       notie.alert({type : 'warning', text : message, position : 'bottom'});
