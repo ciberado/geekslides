@@ -38,7 +38,10 @@ class SyncController {
     document.addEventListener('toggleEmission', 
       (evt) => this.toggleEmission());      
     document.addEventListener('userOpenedSlides', 
-      (evt) => this.toggleEmission(true));
+      (evt) => { 
+        this.toggleEmission(true);
+        this.#dispatchCurrentSlide();
+      });
     document.addEventListener('slideShown', 
       (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex));
     document.addEventListener('partialShown', 
