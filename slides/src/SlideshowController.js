@@ -1,6 +1,6 @@
 import 'notie/dist/notie.css';
 import notie from 'notie/dist/notie.js';
-import { MarkdownToHTML } from './MarkdownToHTML.js'; 
+import { MarkdownToHTML } from './MarkdownToHTML.js';
 import WhiteboardLayer from './whiteboard/WhiteboardLayer.js';
 import VideoSlideController from './VideoSlideController.js';
 import ChartSlideController from './ChartSlideController.js';
@@ -13,7 +13,7 @@ import ChartSlideController from './ChartSlideController.js';
 function bgUrlProcessor(slideElem) {
   const bgUrl = slideElem.dataset.bgurl;
   if (bgUrl) {
-    slideElem.style.background=`url(${bgUrl}) no-repeat center`;
+    slideElem.style.background = `url(${bgUrl}) no-repeat center`;
     slideElem.style.backgroundSize = 'cover';
   }
 }
@@ -55,17 +55,17 @@ function footnotesProcessor(slideElem) {
   const footNoteRefElems = [...slideElem.querySelectorAll('.footnote-ref a')];
   if (footNoteRefElems.length === 0) return;
 
-  let  slideNotesElem = slideElem.querySelector('blockquote');
+  let slideNotesElem = slideElem.querySelector('blockquote');
   if (slideNotesElem === null) {
     slideNotesElem = document.createElement('blockquote');
   }
   const slideNotesHeaderElem = document.createElement('h2');
-  slideNotesHeaderElem.innerText='Foot notes';
+  slideNotesHeaderElem.innerText = 'Foot notes';
   slideNotesElem.appendChild(slideNotesHeaderElem);
-  slideElem.appendChild(slideNotesElem);    
+  slideElem.appendChild(slideNotesElem);
 
   const footNoteListElem = document.createElement('ol');
-  footNoteListElem.start = footNoteRefElems[0].href.substring(footNoteRefElems[0].href.indexOf('#fn')+"#fn".length);
+  footNoteListElem.start = footNoteRefElems[0].href.substring(footNoteRefElems[0].href.indexOf('#fn') + "#fn".length);
   footNoteListElem.classList.add('local-foot-notes');
   footNoteRefElems.forEach(fnre => {
     const footNoteElemId = fnre.href.substring(fnre.href.indexOf('#'));
@@ -96,7 +96,7 @@ function iframeProcessor(slideElem) {
   const iframeSrc = slideElem.dataset.iframe;
   if (iframeSrc) {
     const iframeElem = document.createElement('iframe');
-    iframeElem.src=iframeSrc;
+    iframeElem.src = iframeSrc;
     slideElem.appendChild(iframeElem);
   }
 }
@@ -111,9 +111,9 @@ function iframeProcessor(slideElem) {
 class SlideshowController {
 
   static DEFAULT_CONFIG = {
-    content : 'content.md',
-    styles : '',
-    processors : [      
+    content: 'content.md',
+    styles: '',
+    processors: [
       hiddenSlidesProcessor,
       bgUrlProcessor,
       bgColorProcessor,
@@ -121,7 +121,7 @@ class SlideshowController {
       chartProcessor,
       iframeProcessor
     ],
-    script : ''
+    script: ''
   };
 
 
@@ -158,7 +158,7 @@ class SlideshowController {
     document.addEventListener('partialShown', (event) => {
       window.location.hash = event.detail.currentSlideIndex + '.' + event.detail.lastPartialShownIndex;
     });
-    
+
     window.addEventListener('hashchange', () => {
       this.matchHashIndex();
     });
@@ -168,10 +168,10 @@ class SlideshowController {
       const baseUrl = this.baseUrl;
       const newWindow = window.open(window.location);
       newWindow.addEventListener('load', () => {
-        const message = { 
-          command : 'slideUrlChange',
-          baseUrl : baseUrl,
-          slideIndex : slideshow.getCurrentSlideIndex()
+        const message = {
+          command: 'slideUrlChange',
+          baseUrl: baseUrl,
+          slideIndex: slideshow.getCurrentSlideIndex()
         };
       }, true);
     });
@@ -184,24 +184,24 @@ class SlideshowController {
     document.addEventListener('openSlides', () => {
       this.#inputSlideshowUrl();
     });
-  
+
     this.matchHashIndex();
 
   }
 
   #initWhiteboards() {
     [...this.slideshow.slideshowElem.querySelectorAll('section')]
-      .forEach(e => {
-        new WhiteboardLayer(e);
-      });  
+    .forEach(e => {
+      new WhiteboardLayer(e);
+    });
   }
 
   #initVideoslides() {
     [...this.slideshow.slideshowElem.querySelectorAll('section')]
-      .filter( e=> e.querySelector('video') !== null)
+    .filter(e => e.querySelector('video') !== null)
       .forEach(e => {
         new VideoSlideController(e);
-      });  
+      });
   }
 
   /**
@@ -217,22 +217,22 @@ class SlideshowController {
     if (hashParts == null) {
       return;
     }
-    this.slideshow.gotoSlideIndex(parseInt(hashParts[1]), 
-                                  hashParts[2] ? parseInt(hashParts[2]) : undefined);
+    this.slideshow.gotoSlideIndex(parseInt(hashParts[1]),
+      hashParts[2] ? parseInt(hashParts[2]) : undefined);
   }
 
 
-  #input(text, value) {        
+  #input(text, value) {
     return new Promise((resolve, reject) => {
-      const options = { 
+      const options = {
         text,
         value,
-        submitText : 'Accept',
-        position : 'bottom',
-        submitCallback : v => resolve(v),
-        cancelCallback : v => resolve(null)
+        submitText: 'Accept',
+        position: 'bottom',
+        submitCallback: v => resolve(v),
+        cancelCallback: v => resolve(null)
       };
-  
+
       notie.input(options);
     });
   }
@@ -247,23 +247,45 @@ class SlideshowController {
     const value = window.localStorage.getItem('lastInputSlideshowUrl');
     let baseUrl = await this.#input('introduce the slides url, please:', value ? value : '');
     if (baseUrl === null) return;
-  
+
     if (baseUrl !== '') {
       if (baseUrl.startsWith('http') === false) {
         baseUrl = 'http://' + baseUrl;
       }
       if (baseUrl.endsWith('/') === false) {
         baseUrl = baseUrl + '/'
-      }  
+      }
     }
     const slidesLoaded = await this.changeSlideshowContent(baseUrl);
     if (slidesLoaded === true) {
       this.#dispatchEvent('userOpenedSlides', {
-        baseUrl : this.baseUrl
+        baseUrl: this.baseUrl
       });
     } else {
-      notie.alert({ type: 'error', text: 'Error opening slideshow.', position : 'bottom'});
+      notie.alert({ type: 'error', text: 'Error opening slideshow.', position: 'bottom' });
     }
+  }
+
+  /**
+   * Loads into the DOM a new CSS file.
+   * 
+   * @param {string} url with the path to the CSS file.
+   * @returns the promise that will be resolved once the CSS is loaded.
+   */
+  async loadLocalCSS(url) {
+    const cssLoadedPromise = new Promise((resolve, reject) => {
+      console.log(`Loading styles from ${url}.`);
+      const cssElem = document.createElement('link');
+      cssElem.rel = 'stylesheet';
+      cssElem.type = 'text/css';
+      cssElem.href = url;
+      cssElem.onload = (evt) => {
+        resolve();
+      }
+      document.querySelector('head').appendChild(cssElem);
+    });
+
+    return cssLoadedPromise;
   }
 
   /**
@@ -301,16 +323,11 @@ class SlideshowController {
 
     this.baseUrl = newBaseUrl;
     let markdown = await fetchedContent.text();
-  
+
     // Add (if exists) local css
     if (this.config.styles) {
-      const url =  newBaseUrl + this.config.styles;
-      console.log(`Loading styles from ${url}.`);
-      const cssElem = document.createElement('link');
-      cssElem.rel='stylesheet';
-      cssElem.type='text/css';
-      cssElem.href= url;
-      document.querySelector('head').appendChild(cssElem);  
+      const url = newBaseUrl + this.config.styles;
+      await this.loadLocalCSS(url);
     }
 
     // Parse the markdown content and transform it into HTML
@@ -320,23 +337,22 @@ class SlideshowController {
 
     // Process each slide
     [...this.slideshow.slideshowElem.querySelectorAll('section')]
-      .forEach((e, i) => { 
-        // Set the ids of the slides without a proper one
-        if (!e.id) e.id = `slide${i}`;
-        this.config.processors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp).forEach(sp => sp(e));
-      });
+    .forEach((e, i) => {
+      // Set the ids of the slides without a proper one
+      if (!e.id) e.id = `slide${i}`;
+      this.config.processors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp).forEach(sp => sp(e));
+    });
 
     this.slideshow.refreshSlideshowContent();
     if (newSlideIndex) this.slideshow.gotoSlideIndex(newSlideIndex);
-    
+
     this.#initWhiteboards();
     this.#initVideoslides();
 
     window.localStorage.setItem('lastInputSlideshowUrl', this.baseUrl);
 
-    this.#dispatchEvent('slideshowLoaded', 
-      { newBaseUrl, currentSlideIndex: newSlideIndex });
-    
+    this.#dispatchEvent('slideshowLoaded', { newBaseUrl, currentSlideIndex: newSlideIndex });
+
     return true;
   }
 
@@ -344,7 +360,7 @@ class SlideshowController {
     let event = new CustomEvent(eventName, { detail });
     document.dispatchEvent(event);
   }
-  
+
 }
 
 export { SlideshowController as SlideshowController };
