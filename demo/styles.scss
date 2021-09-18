@@ -1,11 +1,36 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap");
+$base-text-color: #fff;
 .slidedeck {
     font-family: Open Sans, sans-serif;
     font-weight: 400;
-    color: #fff;
-    font-size: 32pt
-}
-
-.slidedeck .title {
-    color: red;
+    color: $base-text-color;
+    font-size: 32pt;
+    /*
+        Slide designs.
+    */
+    a:active,
+    a:hover,
+    a:visited {
+        color: $base-text-color;
+    }
+    .title {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        text-align: center;
+        h1 {
+            font-size: 300%;
+        }
+        h1,
+        h2 {
+            margin: 0;
+        }
+        p {
+            color: darken($base-text-color, 20%);
+            position: absolute;
+            width: 90%;
+            left: 5%;
+            bottom: 8px;
+        }
+    }
 }

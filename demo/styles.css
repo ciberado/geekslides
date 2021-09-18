@@ -3,7 +3,27 @@
   font-family: Open Sans, sans-serif;
   font-weight: 400;
   color: #fff;
-  font-size: 32pt; }
-
-.slidedeck .title {
-  color: red; }
+  font-size: 32pt;
+  /*
+        Slide designs.
+    */ }
+  .slidedeck a:active,
+  .slidedeck a:hover,
+  .slidedeck a:visited {
+    color: #fff; }
+  .slidedeck .title {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center; }
+    .slidedeck .title h1 {
+      font-size: 300%; }
+    .slidedeck .title h1,
+    .slidedeck .title h2 {
+      margin: 0; }
+    .slidedeck .title p {
+      color: #cccccc;
+      position: absolute;
+      width: 90%;
+      left: 5%;
+      bottom: 8px; }

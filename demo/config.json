@@ -1,12 +1,13 @@
 {
-    "content" : "content.md",
-    "styles" : "styles.css",
-    "processors" : [      
-      "hiddenSlidesProcessor",
-      "bgColorProcessor",
-      "footnotesProcessor",
-      "chartProcessor",
-      "iframeProcessor"
+    "content": "content.md",
+    "styles": "styles.css",
+    "processors": [
+        "bgUrlProcessor",
+        "hiddenSlidesProcessor",
+        "bgColorProcessor",
+        "footnotesProcessor",
+        "chartProcessor",
+        "iframeProcessor"
     ],
-    "script" : ""
+    "script": ""
 }
