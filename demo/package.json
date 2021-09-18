@@ -1,0 +1,15 @@
+{
+    "name": "geekslides-demo",
+    "version": "0.0.1",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "build": "node-sass styles.scss styles.css",
+        "watch": "node-sass -w -i styles.scss styles.css"
+    },
+    "author": "ciberado <email@javier-moreno.com>",
+    "license": "ISC",
+    "devDependencies": {
+        "node-sass": "^6.0.1"
+    }
+}
