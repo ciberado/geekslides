@@ -333,15 +333,18 @@ class Slideshow {
    * Cycles between the different views of the slides:
    * 
    * * Normal (presentation) mode: the `html` tag will have a `fullviewport` class
-   *   and the `slideShowElem` will have the `slidedeck` one. This is the mode you
-   *   use to show the slides.
+   *   and the `slideShowElem` will have the `slidedeck` one and the `presentation`. 
+   *   This is the mode you use to show the slides.
+   * 
    * * Speaker (with notes and next slide) mode: the `html` tag will have a `fullviewport` class
    *   and the `slideShowElem` will have both `slidedeck` and `speaker`classes. 
    *   This is the mode you use to help you while presenting life.
+   * 
    * * Book (totally paginated, as in a book) mode: the `html` will NOT have any
    *   special class and the `slideShwElem` will only contain the `slidedeck-book` one.
    *   This mode will allow to pretty-print the slides like a book but it is also a good
    *   way to help the presenter while delivering online sessions.
+   * 
    */
   toggleSpeakerView() {
     if (this.slideshowElem.classList.contains('speaker') == true) {
@@ -356,11 +359,13 @@ class Slideshow {
       this.slideshowElem.classList.remove('speaker');
       this.slideshowElem.classList.remove('slidedeck-book');
       this.slideshowElem.classList.add('slidedeck');
+      this.slideshowElem.classList.add('presentation');
       document.body.parentElement.classList.add('fullviewport');
       window.scrollTo(0,0);
     } else {
       // normal slides -> speaker mode
-      this.slideshowElem.classList.toggle('speaker');
+      this.slideshowElem.classList.remove('presentation');
+      this.slideshowElem.classList.add('speaker');
     }
   }
 
