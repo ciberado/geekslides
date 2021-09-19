@@ -1,5 +1,24 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap");
 $base-text-color: #fff;
+
+/* */
+
+/* Once `:has()` selector is included in major browsers we will be able to move this
+   into the main block. See https://www.smashingmagazine.com/2021/06/has-native-css-parent-selector.
+*/
+.slidedeck.presentation .fadeincontent {
+    * {
+        opacity: 0;
+    }
+    &.active * {
+        transition: opacity 3s;
+        transition-delay: 1s;
+        opacity: 1;
+    }
+}
+
+/* */
+
 .slidedeck {
     font-family: Open Sans, sans-serif;
     font-weight: 400;

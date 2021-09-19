@@ -2,8 +2,8 @@
     "content": "content.md",
     "styles": "styles.css",
     "processors": [
-        "bgUrlProcessor",
         "hiddenSlidesProcessor",
+        "bgUrlProcessor",
         "bgColorProcessor",
         "footnotesProcessor",
         "chartProcessor",

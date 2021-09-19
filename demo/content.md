@@ -1,4 +1,10 @@
-[](.title,bgurl(images/pexels-alex-andrews-821718.jpg))
+[](bgcolor(black))
+
+> During the presentation this section will remain wait, allowing
+> the speaker to move to the first slide when it is time to
+> start the presentation.
+
+[](.title.fadeincontent,bgurl(images/pexels-alex-andrews-821718.jpg))
 
 # Geekslides!
 ## slides made for teaching
