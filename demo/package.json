@@ -5,11 +5,15 @@
     "main": "index.js",
     "scripts": {
         "build": "node-sass styles.scss styles.css",
-        "watch": "node-sass -w -i styles.scss styles.css"
+        "watch-sass": "node-sass -w -i styles.scss styles.css",
+        "server": "http-server --cors",
+        "dev": "concurrently --kill-others \"npm run watch-sass\" \"npm run server\""
     },
     "author": "ciberado <email@javier-moreno.com>",
     "license": "ISC",
     "devDependencies": {
+        "concurrently": "^6.2.1",
+        "http-server": "^13.0.2",
         "node-sass": "^6.0.1"
     }
 }
