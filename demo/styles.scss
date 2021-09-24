@@ -32,6 +32,10 @@ $base-text-color: #fff;
     a:visited {
         color: $base-text-color;
     }
+    strong {
+        color : orange;
+    }
+
     .title {
         display: flex;
         flex-direction: column;
@@ -43,6 +47,21 @@ $base-text-color: #fff;
         h1,
         h2 {
             margin: 0;
+        }
+        div.block-image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -10;
+            opacity: 1;
+        }
+        div.block-image img {
+            object-fit: cover;
+            height: 100%;
+            width: 100%;
+            opacity: 1;
         }
         p {
             color: darken($base-text-color, 20%);

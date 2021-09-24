@@ -4,13 +4,15 @@
 > the speaker to move to the first slide when it is time to
 > start the presentation.
 
-[](.title.fadeincontent,bgurl(images/pexels-alex-andrews-821718.jpg))
+[](.title.fadeincontent)
+
+![moon](images/pexels-alex-andrews-821718.jpg)
 
 # Geekslides!
 ## slides made for teaching
 
 Increase your audience engagement, **rock with your presentations** and
-easily **express complex concepts**. Made with ❤ by [Javi](https://twitter.com/ciberado).
+easily **explain complex concepts**. Made with ❤ by [Javi](https://twitter.com/ciberado).
 
 > [Photo by Alex Andrews from Pexels](https://www.pexels.com/photo/full-moon-821718/)
 
