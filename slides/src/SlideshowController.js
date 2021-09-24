@@ -297,7 +297,7 @@ class SlideshowController {
    * @fires slideshowLoaded
    */
   async changeSlideshowContent(newBaseUrl, newSlideIndex) {
-    if (this.baseUrl === newBaseUrl) return;
+    if (this.baseUrl === newBaseUrl) return true;
 
     if (newBaseUrl.endsWith('/') === false) {
       newBaseUrl += '/';
