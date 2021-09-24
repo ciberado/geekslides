@@ -1,5 +1,5 @@
 {
-  "name": "geekslides",
+  "name": "geekslides-engine",
   "version": "0.1.0",
   "description": "html based slideshow, without any I don't Need It features.",
   "main": "index.html",
