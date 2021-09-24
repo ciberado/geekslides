@@ -7,23 +7,25 @@ import Toolbar from './toolbar/Toolbar.js';
 
 async function loadSlideshow(slideshowController) {
   let url;
+  let index = 0;
 
   const queryString = window.location.search;
   const urlParams = new URLSearchParams(queryString);
-
   if (urlParams.get('url') !== null) {
     url = urlParams.get('url');
-    if (urlParams.get('index')) {
-      url += '#' + urlParams.get('index');
-    }   
-    console.log(`Attempting to get content from url param (${url}).`);
+    index = parseInt(urlParams.get('index')) || 0;
+    console.log(`Attempting to get content from url param (${url}#${index}).`);
+  } else if (location.hash && window.sessionStorage.getItem('lastInputSlideshowUrl')) {
+    // if there is a hash set (like #32) probably we are reloading the content
+    url = window.sessionStorage.getItem('lastInputSlideshowUrl');
+    index = parseInt(location.hash.substring(1)) || 0;
   } else {
     url = location.href;
     if (url.endsWith('index.html')) url = url.substring(0, url.lastIndexOf('index.html'));
     console.log(`Attempting to get content from the current address (${url}).`);
   }
   
-  await slideshowController.changeSlideshowContent(url);
+  await slideshowController.changeSlideshowContent(url, index);
 }
 
 (async function() {

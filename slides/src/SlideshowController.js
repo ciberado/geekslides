@@ -244,7 +244,7 @@ class SlideshowController {
    * @fires userOpenedSlides if it has been possible to open the new slideck
    */
   async #inputSlideshowUrl() {
-    const value = window.localStorage.getItem('lastInputSlideshowUrl');
+    const value = window.sessionStorage.getItem('lastInputSlideshowUrl');
     let baseUrl = await this.#input('introduce the slides url, please:', value ? value : '');
     if (baseUrl === null) return;
 
@@ -349,7 +349,7 @@ class SlideshowController {
     this.#initWhiteboards();
     this.#initVideoslides();
 
-    window.localStorage.setItem('lastInputSlideshowUrl', this.baseUrl);
+    window.sessionStorage.setItem('lastInputSlideshowUrl', this.baseUrl);
 
     this.#dispatchEvent('slideshowLoaded', { newBaseUrl, currentSlideIndex: newSlideIndex });
 
