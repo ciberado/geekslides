@@ -1,10 +1,15 @@
-[](bgcolor(black))
+[](#hall)
 
-> During the presentation this section will remain wait, allowing
-> the speaker to move to the first slide when it is time to
-> start the presentation.
+![Press right key](images/keyboard-key-pointing-to-right.svg)
 
-[](.title.fadeincontent)
+> This is the first slide of the presentation, and we advice to use a
+> hall-like approximation: no real content, or even a blank page. This
+> way the speaker will be able to mark the starting time by moving to
+> the next one.
+> 
+> Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-pointing-to-right_30997).
+
+[](#main-title,.title.fadeincontent)
 
 ![moon](images/pexels-alex-andrews-821718.jpg)
 
@@ -12,7 +17,7 @@
 ## slides made for teaching
 
 Increase your audience engagement, **rock with your presentations** and
-easily **explain complex concepts**. Made with ❤ by [Javi](https://twitter.com/ciberado).
+easily **explain complex concepts**. **Made** with ❤ by [Javi](https://twitter.com/ciberado).
 
 > [Photo by Alex Andrews from Pexels](https://www.pexels.com/photo/full-moon-821718/)
 

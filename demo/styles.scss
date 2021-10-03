@@ -20,20 +20,24 @@ $base-text-color: #fff;
 /* */
 
 .slidedeck {
-    font-family: Open Sans, sans-serif;
-    font-weight: 400;
-    color: $base-text-color;
-    font-size: 32pt;
-    /*
-        Slide designs.
-    */
-    a:active,
-    a:hover,
-    a:visited {
+    section {
+        background-color: black;
+        font-family: Open Sans, sans-serif;
+        font-weight: 400;
         color: $base-text-color;
-    }
-    strong {
-        color : orange;
+        font-size: 32pt;
+        /*
+            Slide designs.
+        */
+        a:active,
+        a:hover,
+        a:visited {
+            color: $base-text-color;
+        }
+        strong {
+            color : orange;
+        }
+    
     }
 
     .title {
@@ -70,5 +74,28 @@ $base-text-color: #fff;
             left: 5%;
             bottom: 8px;
         }
+    }
+}
+
+/* --------------------------------------------------------------------------- */
+
+@keyframes fadeIn { 
+    from { opacity: 0.20; } 
+}
+
+#hall {
+    .block-image {
+        width: 64px;
+        left: calc(100% - 120px);
+        position: relative;
+        top: calc(100% - 100px);
+        animation: fadeIn 2s infinite alternate;
+    }    
+}
+
+#main-title.active {
+    .block-image > img {
+        margin-top: -150px;
+        transition: margin-top 4s 1.5s;
     }
 }

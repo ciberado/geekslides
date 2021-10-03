@@ -12,46 +12,64 @@
   opacity: 1; }
 
 /* */
-.slidedeck {
+.slidedeck section {
+  background-color: black;
   font-family: Open Sans, sans-serif;
   font-weight: 400;
   color: #fff;
   font-size: 32pt;
   /*
-        Slide designs.
-    */ }
-  .slidedeck a:active,
-  .slidedeck a:hover,
-  .slidedeck a:visited {
+            Slide designs.
+        */ }
+  .slidedeck section a:active,
+  .slidedeck section a:hover,
+  .slidedeck section a:visited {
     color: #fff; }
-  .slidedeck strong {
+  .slidedeck section strong {
     color: orange; }
-  .slidedeck .title {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    text-align: center; }
-    .slidedeck .title h1 {
-      font-size: 300%; }
-    .slidedeck .title h1,
-    .slidedeck .title h2 {
-      margin: 0; }
-    .slidedeck .title div.block-image {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -10;
-      opacity: 1; }
-    .slidedeck .title div.block-image img {
-      object-fit: cover;
-      height: 100%;
-      width: 100%;
-      opacity: 1; }
-    .slidedeck .title p {
-      color: #cccccc;
-      position: absolute;
-      width: 90%;
-      left: 5%;
-      bottom: 8px; }
+
+.slidedeck .title {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center; }
+  .slidedeck .title h1 {
+    font-size: 300%; }
+  .slidedeck .title h1,
+  .slidedeck .title h2 {
+    margin: 0; }
+  .slidedeck .title div.block-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -10;
+    opacity: 1; }
+  .slidedeck .title div.block-image img {
+    object-fit: cover;
+    height: 100%;
+    width: 100%;
+    opacity: 1; }
+  .slidedeck .title p {
+    color: #cccccc;
+    position: absolute;
+    width: 90%;
+    left: 5%;
+    bottom: 8px; }
+
+/* --------------------------------------------------------------------------- */
+@keyframes fadeIn {
+  from {
+    opacity: 0.20; } }
+
+#hall .block-image {
+  width: 64px;
+  left: calc(100% - 120px);
+  position: relative;
+  top: calc(100% - 100px);
+  animation: fadeIn 2s infinite alternate; }
+
+#main-title.active .block-image > img {
+  margin-top: -150px;
+  transition: margin-top 4s 1.5s; }
