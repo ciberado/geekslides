@@ -17,7 +17,7 @@
   font-family: Open Sans, sans-serif;
   font-weight: 400;
   color: #fff;
-  font-size: 32pt;
+  font-size: 28pt;
   /*
             Slide designs.
         */ }
@@ -58,18 +58,47 @@
     left: 5%;
     bottom: 8px; }
 
+.slidedeck .imagelist h1, .slidedeck .imagelist h2, .slidedeck .imagelist h3 {
+  margin: 20px 30px 40px 30px; }
+
+.slidedeck .imagelist p {
+  margin: 0 100px 0 100px; }
+
+.slidedeck .imagelist ul {
+  list-style-type: none;
+  margin: 30px 60px;
+  padding: 0;
+  display: grid;
+  grid-auto-flow: column; }
+  .slidedeck .imagelist ul li {
+    display: block;
+    margin: 20px;
+    font-size: 25px;
+    text-align: center; }
+    .slidedeck .imagelist ul li img {
+      display: block;
+      max-height: 60%;
+      margin: 0 auto 20px auto; }
+
 /* --------------------------------------------------------------------------- */
 @keyframes fadeIn {
   from {
     opacity: 0.20; } }
 
-#hall .block-image {
+#hall p {
+  position: absolute;
+  width: 100%;
+  top: calc(100% - 200px);
+  font-size: 14pt;
+  font-color: silver; }
+
+#hall p img {
   width: 64px;
   left: calc(100% - 120px);
   position: relative;
-  top: calc(100% - 100px);
   animation: fadeIn 2s infinite alternate; }
 
 #main-title.active .block-image > img {
   margin-top: -150px;
-  transition: margin-top 4s 1.5s; }
+  transition: margin-top 2s 1.5s;
+  transition-timing-function: ease-out; }
