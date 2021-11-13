@@ -1,0 +1,27 @@
+{
+  "name": "geekslides",
+  "description": "Geekslides is oriented towards creating effective remote presentations, specially for empowering learning experiences.",
+  "scripts": {
+    "install" : "npm i --prefix broker && npm i --prefix demo && npm i --prefix slides",
+
+    "start": "demo/node_modules/concurrently/bin/concurrently.js --kill-others  \"npm --prefix demo run watch-sass\" \"npm --prefix demo run server\" \"npm --prefix broker run start\" \"npm --prefix slides run start\" "
+  },
+  "//" : [
+    "\"",
+    "  demo/node_modules/concurrently/bin/concurrently.js --kill-others                ",
+    "    \"npm --prefix demo run watch-sass\" \"npm --prefix demo run server\"      ",
+    "    \"npm --prefix broker run start\"                                          ",
+    "    \"npm --prefix slides run start\"                                      ",
+    "\""
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ciberado/geekslides.git"
+  },
+  "author": "",
+  "license": "Apache v2.0",
+  "bugs": {
+    "url": "https://github.com/ciberado/geekslides/issues"
+  },
+  "homepage": "https://github.com/ciberado/geekslides#readme"
+}
