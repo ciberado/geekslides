@@ -23,13 +23,18 @@ $base-text-size: 24pt;
 /* */
 
 .slidedeck {
+    font-family: Open Sans, sans-serif;
+    font-weight: 400;
+    font-size: $base-text-size;
+
+    &.aspect-ratio-4-3 {
+        font-size: $base-text-size * 0.7;
+    }
+
     section {
         background-color: black;
-        font-family: Open Sans, sans-serif;
-        font-weight: 400;
         color: $base-text-color;
-        font-size: $base-text-size;
-        /*
+            /*
             Slide designs.
         */
         a:active,
@@ -37,6 +42,7 @@ $base-text-size: 24pt;
         a:visited {
             color: $base-text-color;
         }
+
         strong {
             color : orange;
         }
@@ -117,6 +123,7 @@ $base-text-size: 24pt;
             width: 45%;
             text-align: center;
             height: 100%;
+            margin : 0 32px;
         }
 
         p { 
