@@ -56,6 +56,11 @@ both the student and the teacher experience.
 Also, several persons can control the flow of the show **at the same time**:
 no more *next slide please*!
 
+> This slide in particular uses a little-known markdown syntax to control the
+> number of paragraphs generated in the html view: by adding two additional spaces
+> at the end of the line (`  `) a `<br>` element is generated there, providing
+> better control to the styling of the whole element.
+
 [](.figure-right)
 
 ## Remote control
