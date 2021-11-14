@@ -128,6 +128,13 @@ class Slideshow {
   setAspectRatio(aspectRatio = '16:9') {
     this.aspectRatio = aspectRatio;
 
+    /* Using explicit sets for clarity, instead of toggle. */
+    if (aspectRatio === '16:9') {
+      this.slideshowElem.classList.remove('aspect-ratio-4-3');
+    } else /* 4:3 */ {
+      this.slideshowElem.classList.add('aspect-ratio-4-3');
+    }
+
     // gets the stylesheet named minislides.css where the slides are formated
     const css = [...document.styleSheets].filter(s=>s.href && s.href.indexOf('minislides') !== -1)[0];
     // finds the rule corresponding to all slide
