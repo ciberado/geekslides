@@ -17,7 +17,7 @@
   font-family: Open Sans, sans-serif;
   font-weight: 400;
   color: #fff;
-  font-size: 28pt;
+  font-size: 24pt;
   /*
             Slide designs.
         */ }
@@ -27,6 +27,8 @@
     color: #fff; }
   .slidedeck section strong {
     color: orange; }
+  .slidedeck section h1, .slidedeck section h2, .slidedeck section h3 {
+    margin: 20px 30px 40px 30px; }
 
 .slidedeck .title {
   display: flex;
@@ -58,27 +60,54 @@
     left: 5%;
     bottom: 8px; }
 
-.slidedeck .imagelist h1, .slidedeck .imagelist h2, .slidedeck .imagelist h3 {
-  margin: 20px 30px 40px 30px; }
-
 .slidedeck .imagelist p {
   margin: 0 100px 0 100px; }
 
 .slidedeck .imagelist ul {
   list-style-type: none;
-  margin: 30px 60px;
+  margin: 28.8pt 48pt;
   padding: 0;
   display: grid;
   grid-auto-flow: column; }
   .slidedeck .imagelist ul li {
     display: block;
     margin: 20px;
-    font-size: 25px;
+    font-size: 21px;
     text-align: center; }
     .slidedeck .imagelist ul li img {
       display: block;
       max-height: 60%;
       margin: 0 auto 20px auto; }
+
+.slidedeck .figure-left .block-image {
+  display: block;
+  width: 45%;
+  text-align: center;
+  height: 100%; }
+
+.slidedeck .figure-left p {
+  margin: 0 72pt; }
+  .slidedeck .figure-left p br {
+    display: block;
+    margin: 20px 0; }
+
+.slidedeck .figure-left .block-image {
+  float: left; }
+
+.slidedeck .figure-right .block-image {
+  display: block;
+  width: 45%;
+  text-align: center;
+  height: 100%; }
+
+.slidedeck .figure-right p {
+  margin: 0 72pt; }
+  .slidedeck .figure-right p br {
+    display: block;
+    margin: 20px 0; }
+
+.slidedeck .figure-right .block-image {
+  float: right; }
 
 /* --------------------------------------------------------------------------- */
 @keyframes fadeIn {

@@ -25,14 +25,15 @@ easily **explain complex concepts**. **Made** with ❤ by [Javi](https://twitter
 
 [](.imagelist.partial)
 
-## Presentation
+## Why?
 
-**Geekslides** is a different way of managing presentations, designed to provide a better **remote** experience both for the assistants and the speakers. The main non-usual features includes:
+**Geekslides** is a different way of managing presentations, designed to provide a better **remote** experience both for the assistants and the speakers. Many non-usual features are implemented, like:
 
 * ![A group of nodes](images/nodes.png) Remotely controlling a **web based** slideshow
 * ![A whiteboard](images/white-board.png) Painting tools and **whiteboard**  
-(compatible with stylus)
-* ![Transformating shapes](images/transformation.png) Presentation, speaker and **book modes**
+(stylus compatible)
+* ![Transformating shapes](images/transformation.png) Presentation, speaker and  
+  **book modes**
 * ![A line chart](images/graphs.png) Easy presentation of data as animated **charts**
 
 > This page includes a nice markdown syntax trick: a line ended by two or more spaces will not 
@@ -42,7 +43,28 @@ easily **explain complex concepts**. **Made** with ❤ by [Javi](https://twitter
 > [two](https://www.flaticon.com/premium-icon/nodes_1163452?related_id=1163503&origin=search))
 > and [Smashicons](https://www.flaticon.com/premium-icon/white-board_3650916).
 
-[](.simple)
-## Third slide
+[](.figure-left)
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis.
+## Remote control
+
+![A group of nodes](images/nodes.png)
+
+**Synchronize** different browsers (in the same laptop or in the other corner of the world) without
+needing to share your screen, allowing extra-smooth effects while **preserving bandwidth**.  
+More importantly, you can keep using your **communication tool for camera sharing**, enhancing
+both the student and the teacher experience.  
+Also, several persons can control the flow of the show **at the same time**:
+no more *next slide please*!
+
+[](.figure-right)
+
+## Remote control
+
+![A group of nodes](images/nodes.png)
+
+Synchronize different browsers (in the same laptop or in the other corner of the world) without
+needing to share your screen, allowing extra-smooth effects while preserving bandwidth.  
+More importantly, you can keep using your communication tool for camera sharing, enhancing
+both the student and the teacher experience.  
+Also, several persons can control the flow of the show **at the same time**:
+no more "*next slide please*"!

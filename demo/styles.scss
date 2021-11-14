@@ -1,5 +1,8 @@
 @import url("https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap");
+
+
 $base-text-color: #fff;
+$base-text-size: 24pt;
 
 /* */
 
@@ -25,7 +28,7 @@ $base-text-color: #fff;
         font-family: Open Sans, sans-serif;
         font-weight: 400;
         color: $base-text-color;
-        font-size: 28pt;
+        font-size: $base-text-size;
         /*
             Slide designs.
         */
@@ -36,6 +39,10 @@ $base-text-color: #fff;
         }
         strong {
             color : orange;
+        }
+
+        h1, h2, h3 {
+            margin: 20px 30px 40px 30px;
         }
 
     }
@@ -77,15 +84,12 @@ $base-text-color: #fff;
     }
 
     .imagelist {
-        h1, h2, h3 {
-            margin: 20px 30px 40px 30px;
-        }
         p {
             margin: 0 100px 0 100px;
         }
         ul {
             list-style-type: none;
-            margin: 30px 60px;
+            margin: $base-text-size*1.2 $base-text-size*2;
             padding : 0;
             display: grid;
             grid-auto-flow: column;
@@ -94,7 +98,7 @@ $base-text-color: #fff;
                 display: block;
                 margin: 20px;
                 
-                font-size: 25px;
+                font-size: 21px;
                 text-align: center;
 
                 img {
@@ -105,6 +109,37 @@ $base-text-color: #fff;
             }
         }
 
+    }
+
+    @mixin single-figure {
+        .block-image {
+            display: block;
+            width: 45%;
+            text-align: center;
+            height: 100%;
+        }
+
+        p { 
+
+            margin: 0 $base-text-size * 3;
+            br {
+                display: block;
+                margin: 20px 0;
+            }
+        }
+    }
+
+    .figure-left {
+        @include single-figure();
+        .block-image {
+            float: left;
+        }
+    }
+    .figure-right {
+        @include single-figure();
+        .block-image {
+            float: right;
+        }
     }
 }
 
