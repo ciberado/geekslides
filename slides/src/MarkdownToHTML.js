@@ -1,6 +1,8 @@
 import {default as MarkdownIt} from 'markdown-it'; 
 import {default as markdownItFootnotePlugin} from 'markdown-it-footnote';
 import {default as blockImagePlugin } from 'markdown-it-block-image';
+import {default as containerPlugin} from 'markdown-it-container';
+
 /**
  * Transforms a markdown string into another string containing HTML elements compatible with the slideshow.
  * One key feature of the library is to provide a way of consume markdown documents that are legible without
@@ -179,6 +181,23 @@ class MarkdownToHTML {
     md.use(markdownItFootnotePlugin)
       .use(blockImagePlugin, {
         outputContainer : 'div'
+      })
+      .use(containerPlugin, 'notes', {
+        validate: function(params) {
+          const result = params.trim().match(/^notes$/i);
+          console.log('****' + result); console.dir(params);console.log('****'); 
+          return result;
+        },
+      
+        render: function (tokens, idx) {
+          var m = tokens[idx].info.trim().match(/^notes$/i);
+      
+          if (tokens[idx].nesting === 1) {
+            return '<div class="slide-notes">';
+          } else {
+            return '</div>\n';
+          }
+        }
       });
     let defaultImageRenderer = md.renderer.rules.image;
     md.renderer.rules.image = (tokens, idx, options, env, self) => this.#markdownImageTransformation(defaultImageRenderer, tokens, idx, options, env, self);
@@ -194,6 +213,7 @@ class MarkdownToHTML {
     let rawHtml = md.render(this.markdown);
     let processedHtml = this.#replaceEmptyLinksWithSections(rawHtml);
     this.html = processedHtml;
+    console.log(this.html)
   }
 }
 

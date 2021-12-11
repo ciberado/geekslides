@@ -3,12 +3,16 @@
 ![Press right key](images/keyboard-key-pointing-to-right.svg)
 (you are in the hall. press right to start)
 
-> This is the first slide of the presentation, and we advice to use a
-> hall-like approximation: no real content, or even a blank page. This
-> way the speaker will be able to mark the starting time by moving to
-> the next one.
-> 
-> Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-pointing-to-right_30997).
+
+::: Notes
+
+This is the first slide of the presentation, and we advice to use a
+hall-like approximation: no real content, or even a blank page. This
+way the speaker will be able to mark the starting time by moving to
+the next one.
+
+Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-pointing-to-right_30997).
+:::
 
 [](#main-title,.title.fadeincontent)
 
