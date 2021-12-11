@@ -6,12 +6,13 @@
 
 ::: Notes
 
-This is the first slide of the presentation, and we advice to use a
-hall-like approximation: no real content, or even a blank page. This
-way the speaker will be able to mark the starting time by moving to
-the next one.
+  This is the first slide of the presentation, and we advice to use a
+  hall-like approximation: no real content, or even a blank page. This
+  way the speaker will be able to mark the starting time by moving to
+  the next one.
 
-Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-pointing-to-right_30997).
+  Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-pointing-to-right_30997).
+
 :::
 
 [](#main-title,.title.fadeincontent)
@@ -24,8 +25,11 @@ Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-point
 Increase your audience engagement, **rock with your presentations** and
 easily **explain complex concepts**. **Made** with ❤ by [Javi](https://twitter.com/ciberado).
 
-> [Photo by Alex Andrews from Pexels](https://www.pexels.com/photo/full-moon-821718/)
+::: Notes
 
+  [Photo by Alex Andrews from Pexels](https://www.pexels.com/photo/full-moon-821718/)
+
+:::
 
 [](.imagelist.partial)
 
@@ -40,12 +44,16 @@ easily **explain complex concepts**. **Made** with ❤ by [Javi](https://twitter
   **book modes**
 * ![A line chart](images/graphs.png) Easy presentation of data as animated **charts**
 
-> This page includes a nice markdown syntax trick: a line ended by two or more spaces will not 
-> break the current element, but add a new line.
-> Images by [Pixelmeetup](https://www.flaticon.com/premium-icon/graphs_3281319),
-> Freekpik ([one](https://www.flaticon.com/premium-icon/graphs_3281319), 
-> [two](https://www.flaticon.com/premium-icon/nodes_1163452?related_id=1163503&origin=search))
-> and [Smashicons](https://www.flaticon.com/premium-icon/white-board_3650916).
+::: Notes
+
+  This page includes a nice markdown syntax trick: a line ended by two or more spaces will not 
+  break the current element, but add a new line.
+  Images by [Pixelmeetup](https://www.flaticon.com/premium-icon/graphs_3281319),
+  Freekpik ([one](https://www.flaticon.com/premium-icon/graphs_3281319), 
+  [two](https://www.flaticon.com/premium-icon/nodes_1163452?related_id=1163503&origin=search))
+  and [Smashicons](https://www.flaticon.com/premium-icon/white-board_3650916).
+
+:::
 
 [](.figure-left)
 
@@ -60,10 +68,14 @@ both the student and the teacher experience.
 Also, several persons can control the flow of the show **at the same time**:
 no more *next slide please*!
 
-> This slide in particular uses a little-known markdown syntax to control the
-> number of paragraphs generated in the html view: by adding two additional spaces
-> at the end of the line (`  `) a `<br>` element is generated there, providing
-> better control to the styling of the whole element.
+::: Notes
+
+  This slide in particular uses a little-known markdown syntax to control the
+  number of paragraphs generated in the html view: by adding two additional spaces
+  at the end of the line (`  `) a `<br>` element is generated there, providing
+  better control to the styling of the whole element.
+
+:::
 
 [](.figure-right)
 

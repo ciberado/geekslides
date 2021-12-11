@@ -56,7 +56,7 @@
   opacity : 1;
 }
 
-.slidedeck blockquote {
+.slidedeck div.slide-notes {
   display: none;
 }
 
@@ -68,6 +68,7 @@
 .slidedeck.speaker section.active {
   top : 0%;
   left: 0%;
+  overflow: unset;
 }
 
 .slidedeck.speaker section.active + section{
@@ -86,8 +87,7 @@
   opacity : 1;
 }
 
-
-.slidedeck.speaker section.active blockquote {
+.slidedeck.speaker section.active div.slide-notes {
   display: block;
   position: absolute;
   background-color: white;
@@ -101,7 +101,7 @@
   overflow: scroll;
 }
 
-.slidedeck.speaker section.active + section blockquote {
+.slidedeck.speaker section.active + section div.slide-notes {
   display: none;
 }
 
