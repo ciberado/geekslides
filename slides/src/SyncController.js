@@ -151,7 +151,11 @@ class SyncController {
   }
 
   async disconnectFromHub() {
-    return this.hub.disconnect();
+    try {
+      return await this.hub.disconnect();
+    } catch (err) {
+      console.warn(`Error disconnecting from previous hub (${err}).`);
+    }
   }
 
   toggleEmission(optionalNewValue) {
