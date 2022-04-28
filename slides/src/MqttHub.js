@@ -40,7 +40,7 @@ class MqttHub {
       this.client.connect({
         userName : this.username,
         password : this.password || '',
-        useSSL: false, // true, 
+        useSSL: true, 
         reconnect: true,
         onSuccess : () => {
           this.#clientConnected()

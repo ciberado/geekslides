@@ -8,7 +8,7 @@ import MqttHub from './MqttHub';
 class SyncController {
 
   static DEFAULT_HOST = process.env.DEFAULT_HUB_HOST ||'geekslides.aprender.cloud';
-  static DEFAULT_PORT = process.env.DEFAULT_HUB_PORT || 1888;
+  static DEFAULT_PORT = process.env.DEFAULT_HUB_PORT || 443;
 
   uuid;
 
