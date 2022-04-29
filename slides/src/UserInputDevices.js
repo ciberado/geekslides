@@ -1,5 +1,3 @@
-import SwipeListener from 'swipe-listener';
-
 /** 
  * A simple controller that converts keypresses in events, fired at `document` level.
  * 
@@ -47,30 +45,36 @@ class UserInputDevices {
     this.addKeyboardEvent(74, 'joinRoom'); // j
 
     // Slide swipe handling
-    SwipeListener(this.slideshow.slideshowElem, {mouse : false});
-    this.slideshow.slideshowElem.addEventListener('touchstart', evt => this.#blockSwipeWithPencil(evt), true);
-    this.slideshow.slideshowElem.addEventListener('touchend', evt => this.#blockSwipeWithPencil(evt), true);
+    // TODO: Add chrome support
+    this.slideshow.slideshowElem.addEventListener('touchstart', evt => this.#swipeStart(evt), true);
+    this.slideshow.slideshowElem.addEventListener('touchend', evt => this.#swipeEnd(evt), true);
 
-    this.slideshow.slideshowElem.addEventListener('swipe', (evt) => {
-      if (this.lockSwipe === true) return;
-      
-      if (evt.detail.directions.left) {
-        this.#dispatchEvent('nextSlide');
-      } else if (evt.detail.directions.right) {
-        this.#dispatchEvent('previousSlide');
-      }
-    });
   }
 
-  #blockSwipeWithPencil(evt) {
-    console.log(evt)
-    if (evt.type === 'touchstart' || evt.type === 'touchend') {
-      // Apparently, radiusX is really BIG if generated with the surface pencil instead of fingers
-      if (evt.changedTouches[0].radiusX > 1000) {
-        this.lockSwipe = true;
+  #swipeStart(evt) {
+      // In new versions of Firefox, force is set to > 0 for pen events
+      if (evt.changedTouches[0].force > 0) {
+        this.swipeStartX = -1;
+        this.swipeStartY = -1;    
       } else {
-        this.lockSwipe = false;
+        this.swipeStartX = evt.changedTouches[0].screenX;
+        this.swipeStartY = evt.changedTouches[0].screenY;
       }
+  }
+
+  #swipeEnd(evt) {
+    // In new versions of Firefox, force is set to > 0 for pen events
+    if (this.swipeStartX === -1 || evt.changedTouches[0].force > 0) {
+      return;
+    }
+    const swipeWidth = this.swipeStartX - evt.changedTouches[0].screenX;
+    const swipeHeight = Math.abs(this.swipeStartY - evt.changedTouches[0].screenY);
+
+    if (swipeWidth > 150) {
+      this.#dispatchEvent('nextSlide');
+    }
+    if (swipeWidth < -150) {
+      this.#dispatchEvent('previousSlide');
     }
   }
 

@@ -21,3 +21,4 @@ Unless this plugin is added there is no simple way to retrieve static files from
 ### TODO
 
 * https://github.com/SoftwareBrothers/better-docs
+* Add support for swipe and pen drawing on chrome
