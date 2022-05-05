@@ -15,15 +15,15 @@
 .slidedeck {
   font-family: Open Sans, sans-serif;
   font-weight: 400;
-  font-size: 24pt; }
+  font-size: 24pt;
+  /*
+        General slide color, fonts, etc.
+    */ }
   .slidedeck.aspect-ratio-4-3 {
     font-size: 16.8pt; }
   .slidedeck section {
     background-color: black;
-    color: #fff;
-    /*
-            Slide designs.
-        */ }
+    color: #fff; }
     .slidedeck section a:active,
     .slidedeck section a:hover,
     .slidedeck section a:visited {
@@ -61,20 +61,20 @@
       width: 90%;
       left: 5%;
       bottom: 8px; }
-  .slidedeck .imagelist p {
+  .slidedeck section.imagelist > p {
     margin: 0 100px 0 100px; }
-  .slidedeck .imagelist ul {
+  .slidedeck section.imagelist > ul {
     list-style-type: none;
     margin: 28.8pt 48pt;
     padding: 0;
     display: grid;
     grid-auto-flow: column; }
-    .slidedeck .imagelist ul li {
+    .slidedeck section.imagelist > ul li {
       display: block;
       margin: 20px;
       font-size: 21px;
       text-align: center; }
-      .slidedeck .imagelist ul li img {
+      .slidedeck section.imagelist > ul li img {
         display: block;
         max-height: 60%;
         margin: 0 auto 20px auto; }

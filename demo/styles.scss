@@ -30,13 +30,14 @@ $base-text-size: 24pt;
     &.aspect-ratio-4-3 {
         font-size: $base-text-size * 0.7;
     }
-
+    
+    /*
+        General slide color, fonts, etc.
+    */
     section {
         background-color: black;
         color: $base-text-color;
-            /*
-            Slide designs.
-        */
+
         a:active,
         a:hover,
         a:visited {
@@ -89,11 +90,11 @@ $base-text-size: 24pt;
         }
     }
 
-    .imagelist {
-        p {
+    section.imagelist {
+        > p {
             margin: 0 100px 0 100px;
         }
-        ul {
+        > ul {
             list-style-type: none;
             margin: $base-text-size*1.2 $base-text-size*2;
             padding : 0;
@@ -116,6 +117,7 @@ $base-text-size: 24pt;
         }
 
     }
+
 
     @mixin single-figure {
         .block-image {
