@@ -40,21 +40,6 @@
     flex-direction: column;
     justify-content: center;
     text-align: center; }
-    .slidedeck .title > div.block-image {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: -10;
-      opacity: 1; }
-    .slidedeck .title > div.block-image img {
-      object-fit: cover;
-      height: 100%;
-      width: 100%;
-      opacity: 1; }
-    .slidedeck .title.fadedbg > div.block-image {
-      opacity: 0.15; }
     .slidedeck .title > h1 {
       font-size: 300%; }
     .slidedeck .title > h1,
@@ -83,7 +68,11 @@
     width: 100%;
     opacity: 1; }
   .slidedeck .curtain.fadedbg > div.block-image {
-    opacity: 0.15; }
+    filter: contrast(10%) brightness(180%); }
+  .slidedeck .curtain.blurredbg > div.block-image {
+    filter: blur(4px); }
+  .slidedeck .curtain.grayedbg > div.block-image {
+    filter: \grayscale(); }
   .slidedeck .curtain > h2 {
     display: flex;
     justify-content: center;
@@ -95,21 +84,6 @@
     bottom: 0;
     position: absolute;
     width: 100%; }
-  .slidedeck .agenda > div.block-image {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: -10;
-    opacity: 1; }
-  .slidedeck .agenda > div.block-image img {
-    object-fit: cover;
-    height: 100%;
-    width: 100%;
-    opacity: 1; }
-  .slidedeck .agenda.fadedbg > div.block-image {
-    opacity: 0.15; }
   .slidedeck .agenda > ul {
     display: flex;
     flex-wrap: wrap;
@@ -150,52 +124,22 @@
         margin: 0 auto 20px auto; }
       .slidedeck .list > ul li span {
         color: gray; }
-  .slidedeck .figure-left .block-image {
-    display: block;
-    width: 45%;
-    text-align: center;
+  .slidedeck .coverbg > div.block-image {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
     height: 100%;
-    margin: 0 32px; }
-  .slidedeck .figure-left p {
-    margin: 0 72pt; }
-    .slidedeck .figure-left p br {
-      display: block;
-      margin: 20px 0; }
-  .slidedeck .figure-left .block-image {
-    float: left; }
-  .slidedeck .figure-right .block-image {
-    display: block;
-    width: 45%;
-    text-align: center;
+    z-index: -10;
+    opacity: 1; }
+  .slidedeck .coverbg > div.block-image img {
+    object-fit: cover;
     height: 100%;
-    margin: 0 32px; }
-  .slidedeck .figure-right p {
-    margin: 0 72pt; }
-    .slidedeck .figure-right p br {
-      display: block;
-      margin: 20px 0; }
-  .slidedeck .figure-right .block-image {
-    float: right; }
-
-/* --------------------------------------------------------------------------- */
-@keyframes fadeIn {
-  from {
-    opacity: 0.20; } }
-
-#hall p {
-  position: absolute;
-  width: 100%;
-  top: calc(100% - 200px);
-  font-size: 14pt;
-  color: silver; }
-
-#hall p img {
-  width: 64px;
-  left: calc(100% - 120px);
-  position: relative;
-  animation: fadeIn 2s infinite alternate; }
-
-#main-title.active .block-image > img {
-  margin-top: -150px;
-  transition: margin-top 2s 1.5s;
-  transition-timing-function: ease-out; }
+    width: 100%;
+    opacity: 1; }
+  .slidedeck .coverbg.fadedbg > div.block-image {
+    filter: contrast(10%) brightness(180%); }
+  .slidedeck .coverbg.blurredbg > div.block-image {
+    filter: blur(4px); }
+  .slidedeck .coverbg.grayedbg > div.block-image {
+    filter: \grayscale(); }

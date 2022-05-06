@@ -44,7 +44,15 @@ $base-headers-color: white;
     }
 
     &.fadedbg > div.block-image{
-        opacity : 0.15;
+        filter: contrast(10%) brightness(180%);
+    }
+
+    &.blurredbg > div.block-image{
+        filter: blur(4px);
+    }
+
+    &.grayedbg > div.block-image{
+        filter: \grayscale();
     }
 
 }
@@ -90,8 +98,6 @@ $base-headers-color: white;
     }
 
     .title {
-        @include cover-image();
-
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -134,8 +140,6 @@ $base-headers-color: white;
     }
 
     .agenda {
-        @include cover-image();
-
         > ul {
             display: flex;
             flex-wrap: wrap;            
@@ -202,3 +206,9 @@ $base-headers-color: white;
 
     }
 
+
+    .coverbg {
+        @include cover-image();
+    }
+
+}
