@@ -1,4 +1,4 @@
-[](.title)
+[](.title.coverbg)
 
 # Great presentation 
 ## ex proident aliquip sint ullamco sit commodo.
@@ -15,7 +15,7 @@ Pariatur tempor cillum commodo id occaecat aliqua mollit laboris minim do do nul
 
 :::
 
-[](.curtain)
+[](.curtain.coverbg)
 
 ## Let's start with a new section
 
@@ -29,7 +29,7 @@ Ullamco aliqua proident mollit ea incididunt et ipsum Lorem dolor cupidatat anim
 
 :::
 
-[](.agenda.fadedbg)
+[](.agenda.coverbg.fadedbg)
 
 ## Agenda for the day
 
@@ -49,6 +49,34 @@ Ullamco aliqua proident mollit ea incididunt et ipsum Lorem dolor cupidatat anim
 Officia culpa id ea minim nulla nulla veniam non cupidatat non aute deserunt consectetur. Laboris fugiat do irure fugiat enim ea commodo minim aliquip Lorem ipsum deserunt. Minim adipisicing dolor eu voluptate amet elit magna cillum. Laboris ipsum et nisi consequat ea ut sint ipsum nisi eiusmod dolore reprehenderit voluptate fugiat.
 
 Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididunt laborum. Tempor elit non excepteur anim consequat elit commodo. Non pariatur anim et mollit officia mollit minim amet commodo consequat. Qui tempor minim et occaecat cillum do dolore excepteur eiusmod nulla non. Sunt sit qui duis adipisicing ea velit consequat nisi consectetur mollit dolor.
+
+:::
+
+[](.agenda.coverbg.fadedbg.partial)
+
+## Agenda for the day, animated
+
+![Lorem ipsum](https://images.pexels.com/photos/1571442/pexels-photo-1571442.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260)
+
+
+* Laborum labore ullamco Lorem aliqua nostrud adipisicing ut veniam culpa pariatur adipisicing 
+* Qui aliqua qui duis tempor 
+* Proident non mollit
+* Pariatur et consectetur enim laboris 
+* Labore anim nisi 
+* dolor tempor reprehenderit
+* Aliqua adipisicing dolore aliqua
+
+
+[](.curtain.coverbg.blurredbg)
+
+## Section with blurred background
+
+![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+::: Notes
+
+Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621/
 
 :::
 
@@ -117,100 +145,38 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 :::
 
 
+[](.list.partial)
+
+## List of four elements with images, animated
+
+Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
+
+* ![non](images/distributed.png) In ea duis pariatur consequat
+* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
+* ![magna](images/project-management.png) Velit pariatur aliquip
+* ![consecutur](images/school.png) Dolore consectetur pariatur
+
+::: Notes
+
+[Brain icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/brain)
+
+:::
+
+[](.curtain.coverbg.grayedbg)
+
+## Section with grayscaled background
+
+![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+::: Notes
+
+Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621/
+
+:::
+
+
 [](.illustration.cright)
 
 [](.illustration.cleft)
 
 
-
-[](#hall)
-
-![Press right key](images/keyboard-key-pointing-to-right.svg)
-(you are in the hall. press right to start)
-
-
-::: Notes
-
-  This is the first slide of the presentation, and we advice to use a
-  hall-like approximation: no real content, or even a blank page. This
-  way the speaker will be able to mark the starting time by moving to
-  the next one.
-
-  Arrow image from [FreePik](https://www.flaticon.com/free-icon/keyboard-key-pointing-to-right_30997).
-
-:::
-
-[](#main-title,.title.fadeincontent)
-
-![moon](images/pexels-alex-andrews-821718.jpg)
-
-# Geekslides!
-## slides made for teaching
-
-Increase your audience engagement, **rock with your presentations** and
-easily **explain complex concepts**. **Made** with ❤ by [Javi](https://twitter.com/ciberado).
-
-::: Notes
-
-  [Photo by Alex Andrews from Pexels](https://www.pexels.com/photo/full-moon-821718/)
-
-:::
-
-[](.imagelist.partial)
-
-## Why?
-
-**Geekslides** is a different way of managing presentations, designed to provide a better **remote** experience both for the assistants and the speakers. Many non-usual features are implemented, like:
-
-* ![A group of nodes](images/nodes.png) Remotely controlling a **web based** slideshow
-* ![A whiteboard](images/white-board.png) Painting tools and **whiteboard**  
-(stylus compatible)
-* ![Transformating shapes](images/transformation.png) Presentation, speaker and  
-  **book modes**
-* ![A line chart](images/graphs.png) Easy presentation of data as animated **charts**
-
-::: Notes
-
-  This page includes a nice markdown syntax trick: a line ended by two or more spaces will not 
-  break the current element, but add a new line.
-  Images by [Pixelmeetup](https://www.flaticon.com/premium-icon/graphs_3281319),
-  Freekpik ([one](https://www.flaticon.com/premium-icon/graphs_3281319), 
-  [two](https://www.flaticon.com/premium-icon/nodes_1163452?related_id=1163503&origin=search))
-  and [Smashicons](https://www.flaticon.com/premium-icon/white-board_3650916).
-
-:::
-
-[](.figure-left)
-
-## Remote control
-
-![A group of nodes](images/nodes.png)
-
-**Synchronize** different browsers (in the same laptop or in the other corner of the world) without
-needing to share your screen, allowing extra-smooth effects while **preserving bandwidth**.  
-More importantly, you can keep using your **communication tool for camera sharing**, enhancing
-both the student and the teacher experience.  
-Also, several persons can control the flow of the show **at the same time**:
-no more *next slide please*!
-
-::: Notes
-
-  This slide in particular uses a little-known markdown syntax to control the
-  number of paragraphs generated in the html view: by adding two additional spaces
-  at the end of the line (`  `) a `<br>` element is generated there, providing
-  better control to the styling of the whole element.
-
-:::
-
-[](.figure-right)
-
-## Remote control
-
-![A group of nodes](images/nodes.png)
-
-Synchronize different browsers (in the same laptop or in the other corner of the world) without
-needing to share your screen, allowing extra-smooth effects while preserving bandwidth.  
-More importantly, you can keep using your communication tool for camera sharing, enhancing
-both the student and the teacher experience.  
-Also, several persons can control the flow of the show **at the same time**:
-no more "*next slide please*"!
