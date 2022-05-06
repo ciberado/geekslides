@@ -4,6 +4,8 @@
 $base-text-color: #fff;
 $base-text-size: 24pt;
 
+$base-headers-background: rgba(212,196,63,0.7);
+
 /* */
 
 /* Once `:has()` selector is included in major browsers we will be able to move this
@@ -19,6 +21,27 @@ $base-text-size: 24pt;
         opacity: 1;
     }
 }
+
+
+@mixin cover-image {
+    div.block-image {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: -10;
+        opacity: 1;
+    }
+    div.block-image img {
+        object-fit: cover;
+        height: 100%;
+        width: 100%;
+        opacity: 1;
+    }
+
+}
+
 
 /* */
 
@@ -55,6 +78,8 @@ $base-text-size: 24pt;
     }
 
     .title {
+        @include cover-image();
+
         display: flex;
         flex-direction: column;
         justify-content: center;
@@ -65,21 +90,11 @@ $base-text-size: 24pt;
         h1,
         h2 {
             margin: 0;
+            background-color: $base-headers-background;
+            width: 80%;
         }
-        div.block-image {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -10;
-            opacity: 1;
-        }
-        div.block-image img {
-            object-fit: cover;
-            height: 100%;
-            width: 100%;
-            opacity: 1;
+        h2 {
+            padding-bottom: 20px;
         }
         p {
             color: darken($base-text-color, 20%);
@@ -89,6 +104,24 @@ $base-text-size: 24pt;
             bottom: 8px;
         }
     }
+
+    .curtain {
+        @include cover-image();
+
+        h2 {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            height: 45%;
+            background: $base-headers-background;
+            margin: 0;
+            bottom: 0;
+            position: absolute;
+            width: 100%;
+        }        
+    }
+
 
     section.imagelist {
         > p {
