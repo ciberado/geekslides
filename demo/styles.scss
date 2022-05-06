@@ -26,7 +26,7 @@ $base-headers-color: white;
 
 
 @mixin cover-image {
-    div.block-image {
+    > div.block-image {
         position: absolute;
         top: 0;
         left: 0;
@@ -34,16 +34,16 @@ $base-headers-color: white;
         height: 100%;
         z-index: -10;
         opacity: 1;
-
     }
-    div.block-image img {
+
+    > div.block-image img {
         object-fit: cover;
         height: 100%;
         width: 100%;
         opacity: 1;
     }
 
-    &.fadedbg div.block-image{
+    &.fadedbg > div.block-image{
         opacity : 0.15;
     }
 
@@ -80,7 +80,7 @@ $base-headers-color: white;
             color : orange;
         }
 
-        h1, h2, h3 {
+        > h1, > h2, > h3 {
             margin: 20px 30px 40px 30px;
             padding: 4px 16px;
             background-color: $base-headers-background;
@@ -96,18 +96,18 @@ $base-headers-color: white;
         flex-direction: column;
         justify-content: center;
         text-align: center;
-        h1 {
+        > h1 {
             font-size: 300%;
         }
-        h1,
-        h2 {
+        > h1,
+        > h2 {
             margin: 0;
             width: 80%;
         }
-        h2 {
+        > h2 {
             padding-bottom: 20px;
         }
-        p {
+        > p {
             color: darken($base-text-color, 20%);
             position: absolute;
             width: 90%;
@@ -119,7 +119,7 @@ $base-headers-color: white;
     .curtain {
         @include cover-image();
 
-        h2 {
+        > h2 {
             display: flex;
             justify-content: center;
             align-items: center;
@@ -136,7 +136,7 @@ $base-headers-color: white;
     .agenda {
         @include cover-image();
 
-        ul {
+        > ul {
             display: flex;
             flex-wrap: wrap;            
             list-style: none;
@@ -148,7 +148,7 @@ $base-headers-color: white;
 
         }
 
-        li {
+        > ul > li {
             width: 30%;
             min-height: 6em;
             margin: 0.5em;
@@ -158,7 +158,7 @@ $base-headers-color: white;
             counter-increment: agenda-list-counter;
         }
 
-        ul li::before {
+        > ul > li::before {
             content: "0" counter(agenda-list-counter);
             font-weight: bold;
             font-size: 3rem;
@@ -169,10 +169,11 @@ $base-headers-color: white;
     }
 
 
-    section.imagelist {
+    .list {
         > p {
             margin: 0 100px 0 100px;
         }
+
         > ul {
             list-style-type: none;
             margin: $base-text-size*1.2 $base-text-size*2;
@@ -192,71 +193,12 @@ $base-headers-color: white;
                     max-height: 60%;
                     margin: 0 auto 20px auto;
                 }
+
+                span {
+                    color: lighten(  $base-text-color, 50% );
+                }
             }
         }
 
     }
 
-
-    @mixin single-figure {
-        .block-image {
-            display: block;
-            width: 45%;
-            text-align: center;
-            height: 100%;
-            margin : 0 32px;
-        }
-
-        p { 
-
-            margin: 0 $base-text-size * 3;
-            br {
-                display: block;
-                margin: 20px 0;
-            }
-        }
-    }
-
-    .figure-left {
-        @include single-figure();
-        .block-image {
-            float: left;
-        }
-    }
-    .figure-right {
-        @include single-figure();
-        .block-image {
-            float: right;
-        }
-    }
-}
-
-/* --------------------------------------------------------------------------- */
-
-@keyframes fadeIn { 
-    from { opacity: 0.20; } 
-}
-
-#hall {
-    p {
-        position: absolute;
-        width: 100%;
-        top: calc(100% - 200px);
-        font-size: 14pt;
-        color: silver;
-    }
-    p img {
-        width: 64px;
-        left: calc(100% - 120px);
-        position: relative;
-        animation: fadeIn 2s infinite alternate;
-    }    
-}
-
-#main-title.active {
-    .block-image > img {
-        margin-top: -150px;
-        transition: margin-top 2s 1.5s;
-        transition-timing-function: ease-out;
-    }
-}

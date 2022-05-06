@@ -30,7 +30,7 @@
       color: black; }
     .slidedeck section strong {
       color: orange; }
-    .slidedeck section h1, .slidedeck section h2, .slidedeck section h3 {
+    .slidedeck section > h1, .slidedeck section > h2, .slidedeck section > h3 {
       margin: 20px 30px 40px 30px;
       padding: 4px 16px;
       background-color: rgba(212, 196, 63, 0.7);
@@ -40,7 +40,7 @@
     flex-direction: column;
     justify-content: center;
     text-align: center; }
-    .slidedeck .title div.block-image {
+    .slidedeck .title > div.block-image {
       position: absolute;
       top: 0;
       left: 0;
@@ -48,28 +48,28 @@
       height: 100%;
       z-index: -10;
       opacity: 1; }
-    .slidedeck .title div.block-image img {
+    .slidedeck .title > div.block-image img {
       object-fit: cover;
       height: 100%;
       width: 100%;
       opacity: 1; }
-    .slidedeck .title.fadedbg div.block-image {
+    .slidedeck .title.fadedbg > div.block-image {
       opacity: 0.15; }
-    .slidedeck .title h1 {
+    .slidedeck .title > h1 {
       font-size: 300%; }
-    .slidedeck .title h1,
-    .slidedeck .title h2 {
+    .slidedeck .title > h1,
+    .slidedeck .title > h2 {
       margin: 0;
       width: 80%; }
-    .slidedeck .title h2 {
+    .slidedeck .title > h2 {
       padding-bottom: 20px; }
-    .slidedeck .title p {
+    .slidedeck .title > p {
       color: black;
       position: absolute;
       width: 90%;
       left: 5%;
       bottom: 8px; }
-  .slidedeck .curtain div.block-image {
+  .slidedeck .curtain > div.block-image {
     position: absolute;
     top: 0;
     left: 0;
@@ -77,14 +77,14 @@
     height: 100%;
     z-index: -10;
     opacity: 1; }
-  .slidedeck .curtain div.block-image img {
+  .slidedeck .curtain > div.block-image img {
     object-fit: cover;
     height: 100%;
     width: 100%;
     opacity: 1; }
-  .slidedeck .curtain.fadedbg div.block-image {
+  .slidedeck .curtain.fadedbg > div.block-image {
     opacity: 0.15; }
-  .slidedeck .curtain h2 {
+  .slidedeck .curtain > h2 {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -95,7 +95,7 @@
     bottom: 0;
     position: absolute;
     width: 100%; }
-  .slidedeck .agenda div.block-image {
+  .slidedeck .agenda > div.block-image {
     position: absolute;
     top: 0;
     left: 0;
@@ -103,14 +103,14 @@
     height: 100%;
     z-index: -10;
     opacity: 1; }
-  .slidedeck .agenda div.block-image img {
+  .slidedeck .agenda > div.block-image img {
     object-fit: cover;
     height: 100%;
     width: 100%;
     opacity: 1; }
-  .slidedeck .agenda.fadedbg div.block-image {
+  .slidedeck .agenda.fadedbg > div.block-image {
     opacity: 0.15; }
-  .slidedeck .agenda ul {
+  .slidedeck .agenda > ul {
     display: flex;
     flex-wrap: wrap;
     list-style: none;
@@ -118,36 +118,38 @@
     margin: 0 0 0 2.5%;
     padding: 0;
     counter-reset: agenda-list-counter; }
-  .slidedeck .agenda li {
+  .slidedeck .agenda > ul > li {
     width: 30%;
     min-height: 6em;
     margin: 0.5em;
     padding: 0.5em 1em 0.5em 0.4em;
     border-left: 2px solid silver;
     counter-increment: agenda-list-counter; }
-  .slidedeck .agenda ul li::before {
+  .slidedeck .agenda > ul > li::before {
     content: "0" counter(agenda-list-counter);
     font-weight: bold;
     font-size: 3rem;
     margin-right: 0.5rem;
     line-height: 1; }
-  .slidedeck section.imagelist > p {
+  .slidedeck .list > p {
     margin: 0 100px 0 100px; }
-  .slidedeck section.imagelist > ul {
+  .slidedeck .list > ul {
     list-style-type: none;
     margin: 28.8pt 48pt;
     padding: 0;
     display: grid;
     grid-auto-flow: column; }
-    .slidedeck section.imagelist > ul li {
+    .slidedeck .list > ul li {
       display: block;
       margin: 20px;
       font-size: 21px;
       text-align: center; }
-      .slidedeck section.imagelist > ul li img {
+      .slidedeck .list > ul li img {
         display: block;
         max-height: 60%;
         margin: 0 auto 20px auto; }
+      .slidedeck .list > ul li span {
+        color: gray; }
   .slidedeck .figure-left .block-image {
     display: block;
     width: 45%;

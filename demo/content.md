@@ -1,6 +1,6 @@
 [](.title)
 
-# Quis magna ipsum 
+# Great presentation 
 ## ex proident aliquip sint ullamco sit commodo.
 
 ![Consectur pariatur](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
@@ -17,7 +17,7 @@ Pariatur tempor cillum commodo id occaecat aliqua mollit laboris minim do do nul
 
 [](.curtain)
 
-## Sit velit dolore laboris dolor ex 
+## Let's start with a new section
 
 ![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -52,8 +52,70 @@ Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididu
 
 :::
 
+[](.list)
+
+## List of one element with an image
+
+Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
+
+* ![non](images/distributed.png) In ea duis pariatur consequat
+
+::: Notes
+
+[Brain icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/brain)
+
+:::
 
 [](.list)
+
+## List of two elements with images
+
+Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
+
+* ![non](images/distributed.png) In ea duis pariatur consequat
+* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
+
+::: Notes
+
+[Brain icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/brain)
+
+:::
+
+
+[](.list)
+
+## List of three elements with images
+
+Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
+
+* ![non](images/distributed.png) In ea duis pariatur consequat
+* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
+* ![magna](images/project-management.png) Velit pariatur aliquip
+
+::: Notes
+
+[Brain icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/brain)
+
+:::
+
+
+[](.list)
+
+## List of four elements with images
+
+Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
+
+* ![non](images/distributed.png) In ea duis pariatur consequat
+* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
+* ![magna](images/project-management.png) Velit pariatur aliquip
+* ![consecutur](images/school.png) Dolore consectetur pariatur
+
+::: Notes
+
+[Brain icons created by Freepik - Flaticon](https://www.flaticon.com/free-icons/brain)
+
+:::
+
 
 [](.illustration.cright)
 
