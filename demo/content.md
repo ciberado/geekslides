@@ -86,7 +86,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
-* ![non](images/distributed.png) In ea duis pariatur consequat
+* ![consecutur](images/forest.png) Dolore consectetur pariatur
 
 ::: Notes
 
@@ -100,8 +100,8 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
-* ![non](images/distributed.png) In ea duis pariatur consequat
-* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
+* ![consecutur](images/forest.png) Dolore consectetur pariatur
+* ![non](images/camping.png) In ea duis pariatur consequat
 
 ::: Notes
 
@@ -116,9 +116,9 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
-* ![non](images/distributed.png) In ea duis pariatur consequat
-* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
-* ![magna](images/project-management.png) Velit pariatur aliquip
+* ![consecutur](images/forest.png) Dolore consectetur pariatur
+* ![non](images/camping.png) In ea duis pariatur consequat
+* ![aliquip](images/ecology-book.png) Mollit anim elit excepteur consectetur minim
 
 ::: Notes
 
@@ -133,10 +133,10 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
-* ![non](images/distributed.png) In ea duis pariatur consequat
-* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
-* ![magna](images/project-management.png) Velit pariatur aliquip
-* ![consecutur](images/school.png) Dolore consectetur pariatur
+* ![consecutur](images/forest.png) Dolore consectetur pariatur
+* ![non](images/camping.png) In ea duis pariatur consequat
+* ![aliquip](images/ecology-book.png) Mollit anim elit excepteur consectetur minim
+* ![magna](images/trees.png) Velit pariatur aliquip
 
 ::: Notes
 
@@ -151,10 +151,10 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
-* ![non](images/distributed.png) In ea duis pariatur consequat
-* ![aliquip](images/microphone.png) Mollit anim elit excepteur consectetur minim
-* ![magna](images/project-management.png) Velit pariatur aliquip
-* ![consecutur](images/school.png) Dolore consectetur pariatur
+* ![consecutur](images/forest.png) Dolore consectetur pariatur
+* ![non](images/camping.png) In ea duis pariatur consequat
+* ![aliquip](images/ecology-book.png) Mollit anim elit excepteur consectetur minim
+* ![magna](images/trees.png) Velit pariatur aliquip
 
 ::: Notes
 
@@ -175,8 +175,14 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 :::
 
 
-[](.illustration.cright)
+[](.illustration.left)
 
-[](.illustration.cleft)
+## Typical two-column layout with image plus content
+
+![]()
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in nulla est est aliquip id velit proident sit duis minim eiusmod excepteur.
+
+[](.illustration.right)
 
 
