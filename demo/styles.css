@@ -21,7 +21,9 @@
       margin: 20px 30px 40px 30px;
       padding: 4px 16px;
       background-color: rgba(212, 196, 63, 0.7);
-      color: white; }
+      color: white;
+      position: relative;
+      z-index: 10; }
   .slidedeck .title {
     display: flex;
     flex-direction: column;
@@ -58,39 +60,31 @@
     list-style: none;
     width: 100%;
     margin: 0 0 0 2.5%;
-    padding: 0;
-    counter-reset: agenda-list-counter; }
+    padding: 0; }
   .slidedeck .agenda > ul > li {
     width: 30%;
     min-height: 6em;
     margin: 0.5em;
     padding: 0.5em 1em 0.5em 0.4em;
-    border-left: 2px solid silver;
-    counter-increment: agenda-list-counter; }
-  .slidedeck .agenda > ul > li::before {
-    content: "0" counter(agenda-list-counter);
-    font-weight: bold;
-    font-size: 3rem;
-    margin-right: 0.5rem;
-    line-height: 1; }
-  .slidedeck .list > p {
+    border-left: 2px solid silver; }
+  .slidedeck .blocks > p {
     margin: 0 100px 0 100px; }
-  .slidedeck .list > ul {
+  .slidedeck .blocks > ul {
     list-style-type: none;
     margin: 28.8pt 48pt;
     padding: 0;
     display: grid;
     grid-auto-flow: column; }
-    .slidedeck .list > ul li {
+    .slidedeck .blocks > ul li {
       display: block;
       margin: 20px;
       font-size: 21px;
       text-align: center; }
-      .slidedeck .list > ul li img {
+      .slidedeck .blocks > ul li img {
         display: block;
         max-height: 60%;
         margin: 0 auto 20px auto; }
-      .slidedeck .list > ul li span {
+      .slidedeck .blocks > ul li span {
         color: gray; }
   .slidedeck .coverbg > div.block-image {
     position: absolute;
@@ -111,3 +105,32 @@
     filter: blur(4px); }
   .slidedeck .coverbg.grayedbg > div.block-image {
     filter: \grayscale(); }
+  .slidedeck .illustration > div.block-image {
+    position: absolute;
+    top: 0;
+    width: 50%;
+    overflow: hidden;
+    padding: 0;
+    margin: 0; }
+  .slidedeck .illustration > div.block-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; }
+  .slidedeck .illustration > p, .slidedeck .illustration > ul {
+    margin-left: 50%;
+    padding: 0 2em; }
+  .slidedeck .illustration.right > div.block-image {
+    left: 50%; }
+  .slidedeck .illustration.right > p, .slidedeck .illustration.right > ul {
+    margin-left: 0;
+    width: 50%; }
+  .slidedeck .powerlist > ul {
+    counter-reset: powerlist-list-counter; }
+  .slidedeck .powerlist > ul > li {
+    counter-increment: powerlist-list-counter; }
+  .slidedeck .powerlist > ul > li::before {
+    content: "0" counter(powerlist-list-counter);
+    font-weight: bold;
+    font-size: 3rem;
+    margin-right: 0.5rem;
+    line-height: 1; }

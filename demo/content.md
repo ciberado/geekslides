@@ -52,7 +52,23 @@ Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididu
 
 :::
 
-[](.agenda.coverbg.fadedbg.partial)
+[](.agenda.powerlist.coverbg.fadedbg)
+
+## Agenda with powerlist
+
+![Lorem ipsum](https://images.pexels.com/photos/1571442/pexels-photo-1571442.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260)
+
+
+* Laborum labore ullamco Lorem aliqua nostrud adipisicing ut veniam culpa pariatur adipisicing 
+* Qui aliqua qui duis tempor 
+* Proident non mollit
+* Pariatur et consectetur enim laboris 
+* Labore anim nisi 
+* dolor tempor reprehenderit
+* Aliqua adipisicing dolore aliqua
+
+
+[](.agenda.powerlist.coverbg.fadedbg.partial)
 
 ## Agenda for the day, animated
 
@@ -80,7 +96,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 :::
 
-[](.list)
+[](.blocks)
 
 ## List of one element with an image
 
@@ -94,7 +110,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 :::
 
-[](.list)
+[](.blocks)
 
 ## List of two elements with images
 
@@ -110,7 +126,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 :::
 
 
-[](.list)
+[](.blocks)
 
 ## List of three elements with images
 
@@ -127,7 +143,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 :::
 
 
-[](.list)
+[](.blocks)
 
 ## List of four elements with images
 
@@ -145,7 +161,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 :::
 
 
-[](.list.partial)
+[](.blocks.partial)
 
 ## List of four elements with images, animated
 
@@ -175,14 +191,54 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 :::
 
 
-[](.illustration.left)
+[](.illustration)
 
 ## Typical two-column layout with image plus content
 
-![]()
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
-Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in nulla est est aliquip id velit proident sit duis minim eiusmod excepteur.
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.
+
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+:::
+
+[](.illustration)
+
+## Typical two-column layout with image plus a list
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+
+* Qui excepteur enim consequat amet id 
+* Eu irure eiusmod duis aute ex in amet
+* Aliquip ea minim nulla ad Lorem laborum
+* Priatur voluptate aliqua sint culpa duis
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+:::
 
 [](.illustration.right)
+
+## Typical two-column layout with content plus image
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.
+
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+:::
 
 
