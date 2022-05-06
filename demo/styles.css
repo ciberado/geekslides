@@ -24,6 +24,8 @@
       color: white;
       position: relative;
       z-index: 10; }
+    .slidedeck section ul {
+      list-style: none; }
   .slidedeck .title {
     display: flex;
     flex-direction: column;
@@ -57,7 +59,6 @@
   .slidedeck .agenda > ul {
     display: flex;
     flex-wrap: wrap;
-    list-style: none;
     width: 100%;
     margin: 0 0 0 2.5%;
     padding: 0; }
@@ -70,7 +71,6 @@
   .slidedeck .blocks > p {
     margin: 0 100px 0 100px; }
   .slidedeck .blocks > ul {
-    list-style-type: none;
     margin: 28.8pt 48pt;
     padding: 0;
     display: grid;
@@ -119,6 +119,8 @@
   .slidedeck .illustration > p, .slidedeck .illustration > ul {
     margin-left: 50%;
     padding: 0 2em; }
+  .slidedeck .illustration > ul > li {
+    margin-bottom: 1em; }
   .slidedeck .illustration.right > div.block-image {
     left: 50%; }
   .slidedeck .illustration.right > p, .slidedeck .illustration.right > ul {

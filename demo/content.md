@@ -207,17 +207,17 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 :::
 
-[](.illustration)
+[](.illustration.powerlist)
 
-## Typical two-column layout with image plus a list
+## Typical two-column layout with image plus a powerlist
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
 
-* Qui excepteur enim consequat amet id 
-* Eu irure eiusmod duis aute ex in amet
-* Aliquip ea minim nulla ad Lorem laborum
-* Priatur voluptate aliqua sint culpa duis
+* Qui excepteur enim consequat **amet id** eu irure eiusmod duis aute ex in amet
+* Aliquip **ea minim** nulla ad Lorem laborum priatur voluptate aliqua
+* Fugiat enim proident **culpa enim** tempor eu dolore fugiat sint deserunt ex incididunt
+* Magna velit excepteur commodo minim commodo **adipisicing** laborum dolore reprehenderit quis
 
 ::: Notes
 

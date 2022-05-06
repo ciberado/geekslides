@@ -45,6 +45,10 @@ $base-headers-color: white;
             z-index: 10;
         }
 
+        ul {
+            list-style: none;
+        }
+
     }
 
     .title {
@@ -92,7 +96,6 @@ $base-headers-color: white;
         > ul {
             display: flex;
             flex-wrap: wrap;            
-            list-style: none;
             width: 100%;
             margin: 0 0 0 2.5%;
             padding: 0;
@@ -115,7 +118,6 @@ $base-headers-color: white;
         }
 
         > ul {
-            list-style-type: none;
             margin: $base-text-size*1.2 $base-text-size*2;
             padding : 0;
             display: grid;
@@ -195,6 +197,10 @@ $base-headers-color: white;
         > p, > ul {
             margin-left: 50%;
             padding: 0 2em;
+        }
+
+        > ul > li {
+            margin-bottom: 1em;
         }
 
         &.right {
