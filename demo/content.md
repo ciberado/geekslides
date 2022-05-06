@@ -98,7 +98,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 [](.blocks)
 
-## List of one element with an image
+## Blocks with one element
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
@@ -112,7 +112,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 [](.blocks)
 
-## List of two elements with images
+## Blocks with two elements
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
@@ -128,7 +128,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 [](.blocks)
 
-## List of three elements with images
+## Blocks with three elements
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
@@ -145,7 +145,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 [](.blocks)
 
-## List of four elements with images
+## Blocks with four elements
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
@@ -163,7 +163,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 [](.blocks.partial)
 
-## List of four elements with images, animated
+## Blocks with four elements, animated
 
 Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Veniam magna quis dolore mollit non. Aliquip magna qui culpa non mollit sint ullamco. Excepteur esse sit minim elit quis ea consectetur.
 
@@ -207,7 +207,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 :::
 
-[](.illustration.powerlist)
+[](.illustration.powerlist.partial)
 
 ## Typical two-column layout with image plus a powerlist
 
@@ -228,6 +228,23 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 [](.illustration.right)
 
 ## Typical two-column layout with content plus image
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.
+
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+:::
+
+
+[](.illustration.right.grayed)
+
+## Typical two-column layout with content plus b&w image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 

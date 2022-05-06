@@ -136,3 +136,9 @@
     font-size: 3rem;
     margin-right: 0.5rem;
     line-height: 1; }
+  .slidedeck .faded > div.block-image {
+    filter: contrast(10%) brightness(180%); }
+  .slidedeck .blurred > div.block-image {
+    filter: blur(4px); }
+  .slidedeck .grayed > div.block-image {
+    filter: \grayscale(); }

@@ -234,4 +234,16 @@ $base-headers-color: white;
         }        
     }
 
+    .faded > div.block-image{
+        filter: contrast(10%) brightness(180%);
+    }
+
+    .blurred > div.block-image{
+        filter: blur(4px);
+    }
+
+    .grayed > div.block-image{
+        filter: \grayscale();
+    }    
+
 }
