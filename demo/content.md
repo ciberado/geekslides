@@ -1,9 +1,9 @@
 [](.title)
 
-![Consectur pariatur](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
-
 # Quis magna ipsum 
 ## ex proident aliquip sint ullamco sit commodo.
+
+![Consectur pariatur](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
 
 ::: Notes
 
@@ -17,17 +17,40 @@ Pariatur tempor cillum commodo id occaecat aliqua mollit laboris minim do do nul
 
 [](.curtain)
 
-![Duis tempor](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
-
 ## Sit velit dolore laboris dolor ex 
 
+![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
 ::: Notes
+
+Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621/
 
 Ullamco aliqua proident mollit ea incididunt et ipsum Lorem dolor cupidatat anim occaecat elit. Eu duis consequat mollit culpa exercitation nisi enim deserunt. Sunt id aute voluptate incididunt laborum exercitation qui et eu proident consequat cillum amet. Cillum fugiat eiusmod do reprehenderit exercitation tempor proident nostrud ullamco labore sit mollit veniam. Ea nostrud est et id eiusmod. Duis tempor exercitation deserunt elit nisi elit aliquip elit incididunt irure.
 
 :::
 
-[](.agenda)
+[](.agenda.fadedbg)
+
+## Agenda for the day
+
+![Lorem ipsum](https://images.pexels.com/photos/1571442/pexels-photo-1571442.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260)
+
+
+* Laborum labore ullamco Lorem aliqua nostrud adipisicing ut veniam culpa pariatur adipisicing 
+* Qui aliqua qui duis tempor 
+* Proident non mollit
+* Pariatur et consectetur enim laboris 
+* Labore anim nisi 
+* dolor tempor reprehenderit
+* Aliqua adipisicing dolore aliqua
+
+::: Notes
+
+Officia culpa id ea minim nulla nulla veniam non cupidatat non aute deserunt consectetur. Laboris fugiat do irure fugiat enim ea commodo minim aliquip Lorem ipsum deserunt. Minim adipisicing dolor eu voluptate amet elit magna cillum. Laboris ipsum et nisi consequat ea ut sint ipsum nisi eiusmod dolore reprehenderit voluptate fugiat.
+
+Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididunt laborum. Tempor elit non excepteur anim consequat elit commodo. Non pariatur anim et mollit officia mollit minim amet commodo consequat. Qui tempor minim et occaecat cillum do dolore excepteur eiusmod nulla non. Sunt sit qui duis adipisicing ea velit consequat nisi consectetur mollit dolor.
+
+:::
 
 
 [](.list)
