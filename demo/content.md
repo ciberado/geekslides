@@ -259,3 +259,20 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 :::
 
 
+[]()
+
+## Code
+
+```js:index.js
+if (wssCertsPath) {
+    const fs = require('fs');
+    const httpsServer = require('https').createServer({
+        key : fs.readFileSync(wssCertsPath + 'privkey.pem'),
+        cert : fs.readFileSync(wssCertsPath + 'cert.pem')
+    });
+    ws.createServer({ server: httpsServer }, aedes.handle);
+    httpsServer.listen(wssPort, function() {
+        logger.log('info', 'Aedes MQTT-WSS listening on port: ' + wssPort)
+    });    
+}
+```
