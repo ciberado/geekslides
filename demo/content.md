@@ -190,6 +190,40 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 :::
 
+[](.framed-illustration)
+
+## Two-column layout with framed image plus content
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.  
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+The `framed-illustration` class requires a little trick (adding to spaces at the end of the line) if several paragraphs are added to the content, as `display: grid` is being used.
+
+:::
+
+[](.framed-illustration.right)
+
+## Two-column layout with framed content plus image
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.  
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+The `framed-illustration` class requires a little trick (adding to spaces at the end of the line) if several paragraphs are added to the content, as `display: grid` is being used.
+
+:::
+
 
 [](.illustration)
 
