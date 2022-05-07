@@ -193,7 +193,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 [](.illustration)
 
-## Typical two-column layout with image plus content
+## Two-column layout with image plus content
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -209,7 +209,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.powerlist.partial)
 
-## Typical two-column layout with image plus a powerlist
+## Two-column layout with image plus a powerlist
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -227,7 +227,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.right)
 
-## Typical two-column layout with content plus image
+## Two-column layout with content plus image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -244,7 +244,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.right.grayed)
 
-## Typical two-column layout with content plus b&w image
+## Two-column layout with content plus b&w image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
