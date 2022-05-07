@@ -1,6 +1,6 @@
 [](.title.coverbg)
 
-# Great presentation 
+# Great presentations 
 ## ex proident aliquip sint ullamco sit commodo.
 
 ![Consectur pariatur](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
@@ -192,7 +192,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 [](.framed-illustration)
 
-## Two-column layout with framed image plus content
+## Two-columns with framed image plus content
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -209,7 +209,7 @@ The `framed-illustration` class requires a little trick (adding to spaces at the
 
 [](.framed-illustration.right)
 
-## Two-column layout with framed content plus image
+## Two-columns with content plus framed image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -227,7 +227,7 @@ The `framed-illustration` class requires a little trick (adding to spaces at the
 
 [](.illustration)
 
-## Two-column layout with image plus content
+## Two-columns with image plus content
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -243,7 +243,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.powerlist.partial)
 
-## Two-column layout with image plus a powerlist
+## Two-columns with image plus a powerlist
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -261,7 +261,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.right)
 
-## Two-column layout with content plus image
+## Two-columns with content plus image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -278,7 +278,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.right.grayed)
 
-## Two-column layout with content plus b&w image
+## Two-columns with content plus b&w image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
