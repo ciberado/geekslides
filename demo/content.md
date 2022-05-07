@@ -259,3 +259,30 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 :::
 
 
+[](.coverbg.blurredbg.glassed)
+
+## Syntax highlight: javascript
+
+![non esse magna](https://images.pexels.com/photos/1423600/pexels-photo-1423600.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
+
+```js
+    if (room === undefined) {
+        room = new Room(roomName, user.password);
+        roomsByName[roomName] = room;    
+
+        logger.log('info', `[ROOM_CHANGE] New room created 
+          with the name ${roomName} by ${user.username}.`);
+        return callback(null);
+    }
+    // existing room, and client has authorization
+    if ((room !== undefined) && (room.isAuthorizedToPublish(user))) {
+        return callback(null);
+    } 
+```
+
+::: Notes
+
+Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-fog-1423600/
+
+:::
+

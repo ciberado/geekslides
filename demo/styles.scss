@@ -234,6 +234,12 @@ $base-headers-color: white;
         }        
     }
 
+    .glassed {
+        p, ul, pre {
+            opacity : 0.8;
+        }
+    }
+
     .faded > div.block-image{
         filter: contrast(10%) brightness(180%);
     }

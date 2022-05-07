@@ -136,6 +136,8 @@
     font-size: 3rem;
     margin-right: 0.5rem;
     line-height: 1; }
+  .slidedeck .glassed p, .slidedeck .glassed ul, .slidedeck .glassed pre {
+    opacity: 0.8; }
   .slidedeck .faded > div.block-image {
     filter: contrast(10%) brightness(180%); }
   .slidedeck .blurred > div.block-image {
