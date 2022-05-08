@@ -311,6 +311,19 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 :::
 
+[](.curtain.coverbg.huebg90)
+
+## Section with hue rotated background
+
+![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+::: Notes
+
+Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621/
+
+:::
+
+
 
 [](.coverbg.blurredbg.glassed)
 

@@ -105,6 +105,12 @@
     filter: blur(4px); }
   .slidedeck .coverbg.grayedbg > div.block-image {
     filter: \grayscale(); }
+  .slidedeck .coverbg.huebg45 > div.block-image {
+    filter: hue-rotate(45deg); }
+  .slidedeck .coverbg.huebg90 > div.block-image {
+    filter: hue-rotate(90deg); }
+  .slidedeck .coverbg.huebg180 > div.block-image {
+    filter: hue-rotate(180deg); }
   .slidedeck .framed-illustration {
     display: grid;
     grid-template-columns: 50% 50%; }

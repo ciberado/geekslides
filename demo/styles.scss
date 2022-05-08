@@ -173,7 +173,21 @@ $base-headers-color: white;
     
         &.grayedbg > div.block-image{
             filter: \grayscale();
-        }    
+        }
+        
+        &.huebg45 > div.block-image{
+            filter: hue-rotate(45deg);
+        }
+        
+        &.huebg90 > div.block-image{
+            filter: hue-rotate(90deg);
+        }
+        
+        &.huebg180 > div.block-image{
+            filter: hue-rotate(180deg);
+        }
+        
+        
     }
 
     .framed-illustration {
