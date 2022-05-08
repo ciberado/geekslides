@@ -148,6 +148,20 @@
   .slidedeck .illustration.right > p, .slidedeck .illustration.right > ul {
     margin-left: 0;
     width: 50%; }
+  .slidedeck .iconlist > ul > li {
+    display: grid;
+    grid-template-columns: 110px; }
+  .slidedeck .iconlist > ul > li > img {
+    grid-column: 1;
+    grid-row: 1 / span 2; }
+  .slidedeck .iconlist > ul > li > strong {
+    grid-column: 2;
+    grid-row: 1; }
+  .slidedeck .iconlist > ul > li > span {
+    grid-column: 2;
+    grid-row: 2;
+    color: gray;
+    font-size: 80%; }
   .slidedeck .powerlist > ul {
     counter-reset: powerlist-list-counter; }
   .slidedeck .powerlist > ul > li {
