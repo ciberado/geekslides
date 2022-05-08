@@ -2,6 +2,8 @@ import {default as MarkdownIt} from 'markdown-it';
 import {default as markdownItFootnotePlugin} from 'markdown-it-footnote';
 import {default as blockImagePlugin } from 'markdown-it-block-image';
 import {default as containerPlugin} from 'markdown-it-container';
+import {default as codePlugin} from 'markdown-it-highlightjs';
+
 
 /**
  * Transforms a markdown string into another string containing HTML elements compatible with the slideshow.
@@ -179,13 +181,15 @@ class MarkdownToHTML {
   convert() {
     let md = MarkdownIt();
     md.use(markdownItFootnotePlugin)
+      .use(codePlugin, {
+        
+      })
       .use(blockImagePlugin, {
         outputContainer : 'div'
       })
       .use(containerPlugin, 'notes', {
         validate: function(params) {
           const result = params.trim().match(/^notes$/i);
-          console.log('****' + result); console.dir(params);console.log('****'); 
           return result;
         },
       

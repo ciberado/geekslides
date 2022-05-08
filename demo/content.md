@@ -1,6 +1,6 @@
 [](.title.coverbg)
 
-# Great presentation 
+# Great presentations 
 ## ex proident aliquip sint ullamco sit commodo.
 
 ![Consectur pariatur](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
@@ -190,10 +190,44 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 :::
 
+[](.framed-illustration)
+
+## Two-columns with framed image plus content
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.  
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+The `framed-illustration` class requires a little trick (adding to spaces at the end of the line) if several paragraphs are added to the content, as `display: grid` is being used.
+
+:::
+
+[](.framed-illustration.right)
+
+## Two-columns with content plus framed image
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.  
+Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+The `framed-illustration` class requires a little trick (adding to spaces at the end of the line) if several paragraphs are added to the content, as `display: grid` is being used.
+
+:::
+
 
 [](.illustration)
 
-## Typical two-column layout with image plus content
+## Two-columns with image plus content
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -209,7 +243,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.powerlist.partial)
 
-## Typical two-column layout with image plus a powerlist
+## Two-columns with image plus a powerlist
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -227,7 +261,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.right)
 
-## Typical two-column layout with content plus image
+## Two-columns with content plus image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -244,7 +278,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 [](.illustration.right.grayed)
 
-## Typical two-column layout with content plus b&w image
+## Two-columns with content plus b&w image
 
 ![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
 
@@ -259,20 +293,30 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 :::
 
 
-[]()
+[](.coverbg.blurredbg.glassed)
 
-## Code
+## Syntax highlight: javascript
 
-```js:index.js
-if (wssCertsPath) {
-    const fs = require('fs');
-    const httpsServer = require('https').createServer({
-        key : fs.readFileSync(wssCertsPath + 'privkey.pem'),
-        cert : fs.readFileSync(wssCertsPath + 'cert.pem')
-    });
-    ws.createServer({ server: httpsServer }, aedes.handle);
-    httpsServer.listen(wssPort, function() {
-        logger.log('info', 'Aedes MQTT-WSS listening on port: ' + wssPort)
-    });    
-}
+![non esse magna](https://images.pexels.com/photos/1423600/pexels-photo-1423600.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
+
+```js
+    if (room === undefined) {
+        room = new Room(roomName, user.password);
+        roomsByName[roomName] = room;    
+
+        logger.log('info', `[ROOM_CHANGE] New room created 
+          with the name ${roomName} by ${user.username}.`);
+        return callback(null);
+    }
+    // existing room, and client has authorization
+    if ((room !== undefined) && (room.isAuthorizedToPublish(user))) {
+        return callback(null);
+    } 
 ```
+
+::: Notes
+
+Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-fog-1423600/
+
+:::
+
