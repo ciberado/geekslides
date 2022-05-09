@@ -38,7 +38,7 @@
   opacity: 0;
 }
 
-.slidedeck section.chart > p > canvas.chartjs-render-monitor {
+.slidedeck section.chart > canvas.chartjs-render-monitor {
   position : absolute;
   top : 24px;
 }

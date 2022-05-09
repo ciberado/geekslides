@@ -19,7 +19,6 @@ class ChartSlideController {
   constructor(slideElem) {
     this.slideElem = slideElem;
     this.#initCanvas();
-    this.#initData();
     this.#initCards();
     this.#initConfig();
     this.#createChart();
@@ -27,20 +26,16 @@ class ChartSlideController {
   }
 
   #initCanvas() {
-    this.canvasElem = document.createElement('canvas');    
-    const imgElem = this.slideElem.querySelector('img');
-    imgElem.parentNode.appendChild(this.canvasElem, imgElem);
+    this.canvasElem = document.createElement('canvas');
+    this.canvasElem.id = this.slideElem.id + '-chart-canvas';
+    this.slideElem.appendChild(this.canvasElem);
+    const siblingElem = this.slideElem.querySelector('h1,h2,h3');
+    if (siblingElem) {
+      siblingElem.insertAdjacentElement('afterend', this.canvasElem);
+    } else {
+      this.slideElem.appendChild(this.canvasElem);
+    }
     return this.canvasElem;
-  }
-
-  #initData() {
-    const tableElem = this.slideElem.querySelector('table');
-    this.data = [];
-    this.data[0] = [...tableElem.querySelectorAll('thead tr th')].map(e=>e.innerText);
-    [...tableElem.querySelectorAll('tbody tr')].forEach(
-      trElem => this.data.push([...trElem.querySelectorAll('td')].map(td=>td.innerText))
-    );
-    return this.data;
   }
 
   #initCards() {
@@ -70,13 +65,13 @@ class ChartSlideController {
     let config = {
       type: '',
       data: {
-        labels: this.data[0].slice(1),
+        labels: [],
         datasets: [
         ]
       },
       options: {
         title : {
-          display : true,
+          display : false,
           position : 'bottom'
         },
         responsive: true,
@@ -97,6 +92,7 @@ class ChartSlideController {
       }
     };
 
+    /*
     const titleElement = this.slideElem.querySelector('h1, h2, h3');
     config.options.title.fontSize = 
        parseInt(getComputedStyle(titleElement).getPropertyValue('font-size'));
@@ -105,6 +101,7 @@ class ChartSlideController {
     config.options.title.fontColor = 'silver';
 
     config.options.title.text = titleElement.innerText;
+    */ 
 
     // optionsText = "type: line, netflix: red, blockbuster: blue, yAxesSuggestedMax: 6500";
     const optionsText = this.slideElem.dataset.chart;
@@ -120,16 +117,22 @@ class ChartSlideController {
     if (config._options.type) config.type = config._options.type;
     if (config._options.yAxesSuggestedMax) config.options.scales.yAxes[0].ticks.suggestedMax = config._options.yAxesSuggestedMax;
 
-    let dataLabels = this.data.slice(1).map(a => a[0]);
-    dataLabels.forEach((dl, idx) => {
-      const color = config._options[dl.toLowerCase()];
+    const tableElem = this.slideElem.querySelector('table');
+    
+    // First column includes the X axis labels
+    config.data.labels = 
+      [...tableElem.querySelectorAll('tr td:nth-child(1)')].map(e => e.innerText);
+
+    for (let colIdx = 2; colIdx < tableElem.rows[0].cells.length+1; colIdx++) {
+      const header = tableElem.querySelector(`th:nth-child(${colIdx})`).innerText;
+      const color = config._options[header];
       const dataset = {
-        label: dl,
+        label: header,
         borderColor: color ? color : 'black',
         data: []
       };
       config.data.datasets.push(dataset);
-    })
+    }
 
     this.config = config;
     return this.config;
@@ -143,15 +146,21 @@ class ChartSlideController {
   }
   
   #showNextDataPoint(evt) {
-    // not the managed slide
+    // return if not in the current slide    
     if (evt.detail.currentSlideElem !== this.slideElem) return;
-    let columnIdx = evt.detail.lastPartialShownIndex;
-    this.data.slice(1).forEach((row, rowIdx) => {
-      const value = parseInt(row[columnIdx]);
-      this.chart.data.datasets[rowIdx].data.push(value);
+
+    let rowIdx = evt.detail.lastPartialShownIndex;
+
+    const tableElem = this.slideElem.querySelector('table');
+    const tdElems = [...tableElem.querySelectorAll(`tbody tr:nth-child(${rowIdx}) td`)];
+
+    this.config.data.datasets.forEach((ds, idx) => {
+      const value = parseFloat(tdElems[idx+1].innerText);
+      ds.data.push(value);
     });
+
     this.chart.update();
-    this.#updateDataCard(columnIdx);
+    this.#updateDataCard(rowIdx);
   }
 
   #updateDataCard(index) {

@@ -178,6 +178,9 @@ class Slideshow {
 
       let tableItem = currentSlide.querySelector('table');
       if (tableItem !== null) {
+        const trElems = [...tableItem.querySelectorAll('tbody tr')];
+        trElems.forEach(tr => tr.classList.contains('partial-shown') ? shown.push([tr]) : unshown.push([tr]));
+        /*
         for (let columnIdx=1; columnIdx < tableItem.rows[0].cells.length+1; columnIdx++) {
           let columnItems = 
             [...currentSlide.querySelectorAll(`tr th:nth-of-type(${columnIdx}), tr td:nth-of-type(${columnIdx})`)];
@@ -189,10 +192,11 @@ class Slideshow {
               unshown.push(columnItems);
             }
           }
-        }      
+        }
+        */     
       }
     }
-    
+
     return { shown, unshown };
   }
 
