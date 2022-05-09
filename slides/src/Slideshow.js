@@ -114,7 +114,7 @@ class Slideshow {
       factor = sx;
     }
 
-    const css = [...document.styleSheets].filter(s=>s.href && s.href.indexOf('minislides') !== -1)[0];
+    const css = [...document.styleSheets].filter(s=>s.href && s.href.indexOf('index') !== -1)[0];
     const slideRule = [...css.cssRules].filter(r => r.selectorText === '.slidedeck section')[0];
     slideRule.style.transform = `translate(-50%, -50%) scale(${factor})`;
     const slideSpeakerRule = [...css.cssRules].filter(r => r.selectorText === '.slidedeck.speaker section')[0];
@@ -136,7 +136,7 @@ class Slideshow {
     }
 
     // gets the stylesheet named minislides.css where the slides are formated
-    const css = [...document.styleSheets].filter(s=>s.href && s.href.indexOf('minislides') !== -1)[0];
+    const css = [...document.styleSheets].filter(s=>s.href && s.href.indexOf('index') !== -1)[0];
     // finds the rule corresponding to all slide
     const slideRule = [...css.cssRules].filter(r => r.selectorText === '.slidedeck section')[0];
     const {w, h} = this.calcSlideWidthForCurrentAspectRatio();

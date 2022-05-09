@@ -1,6 +1,6 @@
 import { Slideshow } from './Slideshow.js';
 import { UserInputDevices } from './UserInputDevices.js';
-import { SlideshowController as SlideshowController } from './SlideshowController.js';
+import { SlideshowController } from './SlideshowController.js';
 import SyncController from './SyncController.js';
 import GlobalWhiteboard from './whiteboard/GlobalWhiteboard.js';
 import Toolbar from './toolbar/Toolbar.js';
