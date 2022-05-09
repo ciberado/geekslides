@@ -276,6 +276,25 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 :::
 
 
+[](.illustration.right.iconlist)
+
+## Two-columns with iconlist plus image
+
+![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+* ![a](https://picsum.photos/id/1044/100) **Nisi velit** Do laboris qui ex quis Lorem esse commodo nostrud deserunt incididunt.
+* ![b](https://picsum.photos/id/573/100) **Eu consequat dolore** Non sit deserunt veniam dolor tempor reprehenderit.
+* ![c](https://picsum.photos/id/128/100) **Laborum consectetur** Enim minim esse irure veniam aliquip minim non ipsum.
+* ![d](https://picsum.photos/id/324/100) **Pariatur minim** Sint laboris do duis officia velit ipsum cupidatat proident qui.
+* ![e](https://picsum.photos/id/10/100) **Do qui do** do do fugiat.
+
+::: Notes
+
+Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
+
+:::
+
+
 [](.illustration.right.grayed)
 
 ## Two-columns with content plus b&w image
@@ -291,6 +310,19 @@ Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure 
 Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-llevar-flores-mientras-posicion-en-bosque-573302/
 
 :::
+
+[](.curtain.coverbg.huebg90)
+
+## Section with hue rotated background
+
+![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+
+::: Notes
+
+Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621/
+
+:::
+
 
 
 [](.coverbg.blurredbg.glassed)

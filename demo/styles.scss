@@ -173,7 +173,21 @@ $base-headers-color: white;
     
         &.grayedbg > div.block-image{
             filter: \grayscale();
-        }    
+        }
+        
+        &.huebg45 > div.block-image{
+            filter: hue-rotate(45deg);
+        }
+        
+        &.huebg90 > div.block-image{
+            filter: hue-rotate(90deg);
+        }
+        
+        &.huebg180 > div.block-image{
+            filter: hue-rotate(180deg);
+        }
+        
+        
     }
 
     .framed-illustration {
@@ -257,6 +271,31 @@ $base-headers-color: white;
         }
     }
 
+    .iconlist {
+        > ul > li {
+            display: grid;
+            grid-template-columns: 110px;
+        }
+
+        > ul > li > img {
+            grid-column: 1;
+            grid-row: 1 / span 2;
+        }
+
+        > ul > li > strong {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        > ul > li > span {
+            grid-column: 2;
+            grid-row: 2;
+            color: lighten(  $base-text-color, 50% );
+            font-size: 80%;
+        }
+
+        
+    }
 
     .powerlist {
         > ul {
