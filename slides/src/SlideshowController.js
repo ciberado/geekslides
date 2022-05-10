@@ -55,9 +55,9 @@ function footnotesProcessor(slideElem) {
   const footNoteRefElems = [...slideElem.querySelectorAll('.footnote-ref a')];
   if (footNoteRefElems.length === 0) return;
 
-  let slideNotesElem = slideElem.querySelector('blockquote');
+  let slideNotesElem = slideElem.querySelector('.slide-notes');
   if (slideNotesElem === null) {
-    slideNotesElem = document.createElement('blockquote');
+    slideNotesElem = document.createElement('.slide-notes');
   }
   const slideNotesHeaderElem = document.createElement('h2');
   slideNotesHeaderElem.innerText = 'Foot notes';

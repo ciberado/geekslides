@@ -166,12 +166,12 @@ class Slideshow {
     if (currentSlide === null) return;
     
     if (currentSlide.classList.contains('partial') === true) {
-      // list items inside blockquote elements are considered speaker notes
+      // list items inside .slide-notes elements are considered speaker notes
       // and should not stop slide flow.
       let listItems = 
         [...currentSlide.querySelectorAll('ul li, ol li')];
       let speakerNotesItems = 
-        [...currentSlide.querySelectorAll('blockquote ul li, blockquote ol li')];
+        [...currentSlide.querySelectorAll('.slide-notes ul li, .slide-notes ol li')];
       listItems
         .filter(e => speakerNotesItems.indexOf(e) === -1)
         .forEach(e => e.classList.contains('partial-shown') ? shown.push([e]) : unshown.push([e]));
@@ -180,20 +180,6 @@ class Slideshow {
       if (tableItem !== null) {
         const trElems = [...tableItem.querySelectorAll('tbody tr')];
         trElems.forEach(tr => tr.classList.contains('partial-shown') ? shown.push([tr]) : unshown.push([tr]));
-        /*
-        for (let columnIdx=1; columnIdx < tableItem.rows[0].cells.length+1; columnIdx++) {
-          let columnItems = 
-            [...currentSlide.querySelectorAll(`tr th:nth-of-type(${columnIdx}), tr td:nth-of-type(${columnIdx})`)];
-          // Ignore the column if the first row does not contain anything
-          if (columnItems[0].innerHTML.trim() !== '') {
-            if (columnItems[0].classList.contains('partial-shown') === true) {
-              shown.push(columnItems);
-            } else {
-              unshown.push(columnItems);
-            }
-          }
-        }
-        */     
       }
     }
 

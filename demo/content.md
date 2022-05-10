@@ -378,13 +378,14 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 | 2001 | 97.3  [^4] | 97.7       | 97.8       |
 | 2002 | 94.2       | 94.5       | 94.9       |
 
+::: Notes
+
 
 [^1]: Ex dolor ad id velit in labore in do duis labore deserunt nisi. ![a](https://picsum.photos/id/1044/100)
 [^2]: Nisi nostrud labore labore et cillum sunt mollit. Pariatur deserunt quis ipsum sunt deserunt mollit enim exercitation ullamco mollit cupidatat in. ![b](https://picsum.photos/id/573/100)
 [^3]: Anim nostrud mollit irure cillum eu incididunt veniam duis in eu. ![c](https://picsum.photos/id/128/100)
 [^4]: Elit esse nulla adipisicing sint cillum enim anim dolore nostrud consectetur ex. ![d](https://picsum.photos/id/324/100)
 
-::: Notes
 
 TODO:
  * Position and size of the canvas
