@@ -45,15 +45,15 @@ class ChartSlideController {
     // for each data row in the table
     [...tableElem.querySelectorAll('tbody tr')].forEach(
       // for each cell in this row
-      trElem => [...trElem.querySelectorAll('td')]
-        .forEach((tdElem, idx) => {
+      (trElem, rowIdx) => [...trElem.querySelectorAll('td')]
+        .forEach((tdElem, colIdx) => {
           const footNoteRef = tdElem.querySelector('sup a')?.href;
           if (footNoteRef === undefined) return;
 
           const footNoteId = footNoteRef.substring(footNoteRef.indexOf('#'));
           const footNoteImage = document.querySelector(`${footNoteId} img`);
           if (footNoteImage !== null) {
-            this.datacards[idx] = footNoteImage;
+            this.datacards[rowIdx] = footNoteImage;
           }
         }
       )
@@ -160,37 +160,24 @@ class ChartSlideController {
     });
 
     this.chart.update();
-    this.#updateDataCard(rowIdx);
+    this.#updateDataCard(rowIdx-1);
   }
 
   #updateDataCard(index) {
-    
-    if (this.imgElem) {
+    if (this.datacardImgElem) {
       //this.imgElem.transtionend = () => this.imgElem.parentNode.removeChild(this.imgElem);
-      this.imgElem.classList.add('past');
+      this.datacardImgElem.classList.add('past');
       
-      this.imgElem.style.top = parseInt(this.imgElem.style.top) * 0.5 + 'px'
+      this.datacardImgElem.style.top = parseInt(this.datacardImgElem.style.top) * 0.5 + 'px'
     }
     
 
-    this.imgElem = this.datacards[index]?.cloneNode();
-    if (this.imgElem === undefined) return;
+    this.datacardImgElem = this.datacards[index]?.cloneNode();
+    if (this.datacardImgElem === undefined) return;
 
-    this.imgElem.classList.add('datacard');
-    this.imgElem.style.position = 'absolute';
+    this.datacardImgElem.classList.add('datacard');
+    this.canvasElem.insertAdjacentElement('beforebegin', this.datacardImgElem);
 
-    const chartCurrentX = this.chart.getDatasetMeta(0).data[index-1]._model.x;
-    this.canvasElem.parentNode.appendChild(this.imgElem);
-    // lets give some time to the browser to update the scene before using offsetWidth and offsetHeight
-    setTimeout(() => {
-      const displacement = 0.7 * (this.imgElem.offsetWidth * (this.chart.width / 2 < chartCurrentX ? -1 : 1));
-      const imageX = chartCurrentX - this.imgElem.offsetWidth / 2 + displacement;
-      const imageY = (this.chart.height - this.imgElem.offsetHeight) / 2;
-      
-      this.imgElem.style.left = parseInt(imageX) + 'px';
-      this.imgElem.style.top = parseInt(imageY) + 'px';
-      this.imgElem.classList.add('shown');
-    }, 100);
   }
 
 

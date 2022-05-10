@@ -358,8 +358,8 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 
 | Year | Generalist | Specialist | All        |
 |------|------------|------------|------------|
-| 1984 | 94.1  [^1] | 143.9      | 121.6      |
-| 1985 | 92.0       | 143.1      | 120.1      |
+| 1984 | 94.1       | 143.9      | 121.6      |
+| 1985 | 92.0  [^1] | 143.1      | 120.1      |
 | 1986 | 82.0       | 129.6      | 108.1      |
 | 1987 | 83.0       | 132.6      | 109.7      |
 | 1988 | 91.5       | 136.7 [^2] | 116.2      |
@@ -381,10 +381,10 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 ::: Notes
 
 
-[^1]: Ex dolor ad id velit in labore in do duis labore deserunt nisi. ![a](https://picsum.photos/id/1044/100)
-[^2]: Nisi nostrud labore labore et cillum sunt mollit. Pariatur deserunt quis ipsum sunt deserunt mollit enim exercitation ullamco mollit cupidatat in. ![b](https://picsum.photos/id/573/100)
-[^3]: Anim nostrud mollit irure cillum eu incididunt veniam duis in eu. ![c](https://picsum.photos/id/128/100)
-[^4]: Elit esse nulla adipisicing sint cillum enim anim dolore nostrud consectetur ex. ![d](https://picsum.photos/id/324/100)
+[^1]: Ex dolor ad id velit in labore in do duis labore deserunt nisi. ![a](https://picsum.photos/id/1044/200)
+[^2]: Nisi nostrud labore labore et cillum sunt mollit. Pariatur deserunt quis ipsum sunt deserunt mollit enim exercitation ullamco mollit cupidatat in. ![b](https://picsum.photos/id/573/200)
+[^3]: Anim nostrud mollit irure cillum eu incididunt veniam duis in eu. ![c](https://picsum.photos/id/128/200)
+[^4]: Elit esse nulla adipisicing sint cillum enim anim dolore nostrud consectetur ex. ![d](https://picsum.photos/id/324/200)
 
 
 TODO:

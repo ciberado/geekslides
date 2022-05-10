@@ -28,14 +28,20 @@
               top 0.5s ease-in-out; 
 }
 
-.slidedeck section.chart > p > img.datacard.shown {
-  opacity: 1;
- 
+.slidedeck section.chart > img.datacard {
+    width: 30%;
+    opacity: 1;
+    margin: 0 auto;
+    display: block;
+    border: 1px solid silver;
+    padding: 1em;   
+    background: white;
+    position: relative;
+    z-index: 1
 }
 
-.slidedeck section.chart > p > img.datacard.shown.past {
-  
-  opacity: 0;
+.slidedeck section.chart > img.datacard.past {
+  display: none;
 }
 
 .slidedeck section.chart > canvas.chartjs-render-monitor {
