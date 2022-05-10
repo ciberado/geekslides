@@ -3,35 +3,18 @@
 }
 
 .slidedeck section.chart > table,
-.slidedeck section.chart > p > .chartjs-size-monitor {
+.slidedeck section.chart > .chartjs-size-monitor {
   display: none;
 }
 
-.slidedeck section.chart > p > img {
-  display : none;
-}
-
-.slidedeck-book section.chart > p > .chartjs-size-monitor {
+.slidedeck-book section.chart > .chartjs-size-monitor {
   display: none;
-}
-
-.slidedeck section.chart > p > img.datacard {
-	display: block;
-  padding: 18px;
-  max-width: 300px;
-	background-color: white;
-	border: 1px solid silver;
-	border-radius: 10%;
-  box-shadow: gray 5px 5px 50px;
-  opacity: 0;
-  transition: opacity 0.750s ease-in-out,
-              top 0.5s ease-in-out; 
 }
 
 .slidedeck section.chart > img.datacard {
     width: 30%;
     opacity: 1;
-    margin: 0 auto;
+    margin: 3em auto;
     display: block;
     border: 1px solid silver;
     padding: 1em;   
@@ -46,6 +29,9 @@
 
 .slidedeck section.chart > canvas.chartjs-render-monitor {
   position : absolute;
-  top : 24px;
+  top : 100px;
 }
 
+.slidedeck section hr{
+    display: none;
+}

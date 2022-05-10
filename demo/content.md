@@ -358,33 +358,26 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 
 | Year | Generalist | Specialist | All        |
 |------|------------|------------|------------|
-| 1984 | 94.1       | 143.9      | 121.6      |
-| 1985 | 92.0  [^1] | 143.1      | 120.1      |
-| 1986 | 82.0       | 129.6      | 108.1      |
-| 1987 | 83.0       | 132.6      | 109.7      |
-| 1988 | 91.5       | 136.7 [^2] | 116.2      |
-| 1989 | 94.6       | 141.2      | 119.9      |
+| 1989 | 94.6  [^1] | 141.2      | 119.9      |
 | 1990 | 93.1       | 128.5      | 112.5      |
 | 1991 | 81.1       | 120.5      | 103.0      |
 | 1992 | 85.4       | 108.7      | 98.9       |
-| 1993 | 89.0       | 109.3      | 100.8      |
+| 1993 | 89.0       | 109.3 [^2] | 100.8      |
 | 1994 | 92.1       | 108.1      | 101.3      |
 | 1995 | 91.1       | 97.0       | 94.3       |
 | 1996 | 92.0       | 107.0      | 101.1      |
 | 1997 | 86.0       | 115.8      | 104.1  [^3]|
 | 1998 | 88.3       | 107.3      | 100.1      |
 | 1999 | 95.1       | 101.1      | 98.8       |
-| 2000 | 100.0      | 100.0      | 100.0      |
-| 2001 | 97.3  [^4] | 97.7       | 97.8       |
-| 2002 | 94.2       | 94.5       | 94.9       |
+| 2000 | 100.0 [^4] | 100.0      | 100.0      |
 
 ::: Notes
 
 
-[^1]: Ex dolor ad id velit in labore in do duis labore deserunt nisi. ![a](https://picsum.photos/id/1044/200)
-[^2]: Nisi nostrud labore labore et cillum sunt mollit. Pariatur deserunt quis ipsum sunt deserunt mollit enim exercitation ullamco mollit cupidatat in. ![b](https://picsum.photos/id/573/200)
-[^3]: Anim nostrud mollit irure cillum eu incididunt veniam duis in eu. ![c](https://picsum.photos/id/128/200)
-[^4]: Elit esse nulla adipisicing sint cillum enim anim dolore nostrud consectetur ex. ![d](https://picsum.photos/id/324/200)
+[^1]: Ex dolor ad id velit in labore in do duis labore deserunt nisi. ![a](https://picsum.photos/id/1044/400)
+[^2]: Nisi nostrud labore labore et cillum sunt mollit. Pariatur deserunt quis ipsum sunt deserunt mollit enim exercitation ullamco mollit cupidatat in. ![b](https://picsum.photos/id/573/400)
+[^3]: Anim nostrud mollit irure cillum eu incididunt veniam duis in eu. ![c](https://picsum.photos/id/128/400)
+[^4]: Elit esse nulla adipisicing sint cillum enim anim dolore nostrud consectetur ex. ![d](https://picsum.photos/id/324/400)
 
 
 TODO:
@@ -393,6 +386,4 @@ TODO:
 
 :::
 
-
-[]()
 

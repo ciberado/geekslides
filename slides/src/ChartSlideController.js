@@ -28,7 +28,7 @@ class ChartSlideController {
   #initCanvas() {
     this.canvasElem = document.createElement('canvas');
     this.canvasElem.id = this.slideElem.id + '-chart-canvas';
-    this.slideElem.appendChild(this.canvasElem);
+
     const siblingElem = this.slideElem.querySelector('h1,h2,h3');
     if (siblingElem) {
       siblingElem.insertAdjacentElement('afterend', this.canvasElem);
@@ -92,16 +92,6 @@ class ChartSlideController {
       }
     };
 
-    /*
-    const titleElement = this.slideElem.querySelector('h1, h2, h3');
-    config.options.title.fontSize = 
-       parseInt(getComputedStyle(titleElement).getPropertyValue('font-size'));
-    config.options.title.fontFamily = 
-       getComputedStyle(titleElement).getPropertyValue('font-family');
-    config.options.title.fontColor = 'silver';
-
-    config.options.title.text = titleElement.innerText;
-    */ 
 
     // optionsText = "type: line, netflix: red, blockbuster: blue, yAxesSuggestedMax: 6500";
     const optionsText = this.slideElem.dataset.chart;
@@ -165,10 +155,7 @@ class ChartSlideController {
 
   #updateDataCard(index) {
     if (this.datacardImgElem) {
-      //this.imgElem.transtionend = () => this.imgElem.parentNode.removeChild(this.imgElem);
       this.datacardImgElem.classList.add('past');
-      
-      this.datacardImgElem.style.top = parseInt(this.datacardImgElem.style.top) * 0.5 + 'px'
     }
     
 
@@ -179,7 +166,6 @@ class ChartSlideController {
     this.canvasElem.insertAdjacentElement('beforebegin', this.datacardImgElem);
 
   }
-
 
 }
 
