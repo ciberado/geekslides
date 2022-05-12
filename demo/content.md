@@ -406,3 +406,22 @@ TODO:
 | 1999 | 95.1       | 101.1      | 98.8       |
 | 2000 | 300.0      | 300.0      | 300.0      |
 
+[](.illustration.whiteboard-off)
+
+## Q & A
+
+![Do ipsum sunt mollit](https://images.pexels.com/photos/4342352/pexels-photo-4342352.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260)
+
+**Sofía Consectetur**
+
+Magna veniam consequat laborum irure. Irure sint veniam eiusmod eiusmod in exercitation laboris culpa magna.
+
+[@attwitterum](https://twitter.com/)
+
+[linkedin.com/in/consec](https://linkedin.com)
+
+::: Notes
+
+Photo by Edmon Dantès, https://www.pexels.com/es-es/foto/moda-mujer-chaqueta-jefe-4342352/
+
+:::

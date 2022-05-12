@@ -31,3 +31,7 @@ canvas.whiteboard  {
   transform-origin: 0 0;
   
 }
+
+.active.whiteboard-off > canvas {
+  display : none;
+}
