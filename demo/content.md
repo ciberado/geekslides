@@ -338,11 +338,11 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
         logger.log('info', `[ROOM_CHANGE] New room created 
           with the name ${roomName} by ${user.username}.`);
-        return callback(null);
+        return cDuisback(null);
     }
     // existing room, and client has authorization
     if ((room !== undefined) && (room.isAuthorizedToPublish(user))) {
-        return callback(null);
+        return cDuisback(null);
     } 
 ```
 
@@ -352,11 +352,11 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 
 :::
 
-[](.partial,chart(type:line,Generalist:red,Specialist:blue,All:green,yAxesSuggestedMax:140))
+[](.partial,chart(type:line,Adipisicin:red,Incididux:blue,Duis:green,yAxesSuggestedMax:140))
 
-## Bird population decimation
+## Velit consectetur tempor nostrud
 
-| Year | Generalist | Specialist | All        |
+| Year | Adipisicin | Incididux  | Duis       |
 |------|------------|------------|------------|
 | 1989 | 94.6  [^1] | 141.2      | 119.9      |
 | 1990 | 93.1       | 128.5      | 112.5      |
@@ -369,7 +369,7 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 | 1997 | 86.0       | 115.8      | 104.1  [^3]|
 | 1998 | 88.3       | 107.3      | 100.1      |
 | 1999 | 95.1       | 101.1      | 98.8       |
-| 2000 | 100.0 [^4] | 100.0      | 100.0      |
+| 2000 | 300.0 [^4] | 300.0      | 300.0      |
 
 ::: Notes
 
@@ -386,4 +386,23 @@ TODO:
 
 :::
 
+
+[](chart(type:bar,Adipisicin:red,Incididux:blue,Duis:green,yAxesSuggestedMax:140))
+
+## Velit consectetur tempor nostrud
+
+| Year | Adipisicin | Incididux  | Duis       |
+|------|------------|------------|------------|
+| 1989 | 94.6       | 141.2      | 119.9      |
+| 1990 | 93.1       | 128.5      | 112.5      |
+| 1991 | 81.1       | 120.5      | 103.0      |
+| 1992 | 85.4       | 108.7      | 98.9       |
+| 1993 | 89.0       | 109.3      | 100.8      |
+| 1994 | 92.1       | 108.1      | 101.3      |
+| 1995 | 91.1       | 97.0       | 94.3       |
+| 1996 | 92.0       | 107.0      | 101.1      |
+| 1997 | 86.0       | 115.8      | 104.1      |
+| 1998 | 88.3       | 107.3      | 100.1      |
+| 1999 | 95.1       | 101.1      | 98.8       |
+| 2000 | 300.0      | 300.0      | 300.0      |
 

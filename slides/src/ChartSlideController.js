@@ -1,5 +1,6 @@
 import Chart from 'chart.js';
 import chartCSS from './chartslide.css';
+import * as ColorMath from "color-math";
 
 class ChartSlideController {
   
@@ -114,16 +115,21 @@ class ChartSlideController {
       [...tableElem.querySelectorAll('tr td:nth-child(1)')].map(e => e.innerText);
 
     for (let colIdx = 2; colIdx < tableElem.rows[0].cells.length+1; colIdx++) {
-      const header = tableElem.querySelector(`th:nth-child(${colIdx})`).innerText;
-      const color = config._options[header];
+      const label = tableElem.querySelector(`th:nth-child(${colIdx})`).innerText;
+      const color = config._options[label] ? config._options[label] : '';
+      let data = [];
+      if (this.slideElem.classList.contains('partial') === false) {
+        data = [...tableElem.querySelectorAll(`tbody tr td:nth-child(${colIdx})`)]
+                         .map(e => parseFloat(e.innerText));
+      }
       const dataset = {
-        label: header,
-        borderColor: color ? color : 'black',
-        data: []
+        label,
+        borderColor: color,
+        backgroundColor : ColorMath.evaluate(`${color} @a 25%`).result.hex(),
+        data
       };
       config.data.datasets.push(dataset);
     }
-
     this.config = config;
     return this.config;
   }
