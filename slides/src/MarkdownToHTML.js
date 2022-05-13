@@ -202,6 +202,24 @@ class MarkdownToHTML {
             return '</div>\n';
           }
         }
+      })
+      .use(containerPlugin, 'group', {
+        validate: function(params) {
+          const result = params.trim().match(/^\.+$/i);
+          console.log(`****** 1 `, params, result);
+          return result;
+        },
+      
+        render: function (tokens, idx) {
+          var m = tokens[idx].info.trim().match(/^\.+$/i);
+      
+          console.log(`****** 2 `, idx, m, tokens[idx]);
+          if (tokens[idx].nesting === 1) {
+            return '<div class="content-group">';
+          } else {
+            return '</div>\n';
+          }
+        }
       });
     let defaultImageRenderer = md.renderer.rules.image;
     md.renderer.rules.image = (tokens, idx, options, env, self) => this.#markdownImageTransformation(defaultImageRenderer, tokens, idx, options, env, self);

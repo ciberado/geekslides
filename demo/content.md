@@ -3,7 +3,7 @@
 # Great presentations 
 ## ex proident aliquip sint ullamco sit commodo.
 
-![Consectur pariatur](https://images.pexels.com/photos/1761279/pexels-photo-1761279.jpeg)
+![Consectur pariatur](images/pexels-jacob-colvin.jpg)
 
 ::: Notes
 
@@ -19,7 +19,7 @@ Pariatur tempor cillum commodo id occaecat aliqua mollit laboris minim do do nul
 
 ## Let's start with a new section
 
-![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Duis tempor](images/pexels-pixabay-460621.jpg)
 
 ::: Notes
 
@@ -33,7 +33,7 @@ Ullamco aliqua proident mollit ea incididunt et ipsum Lorem dolor cupidatat anim
 
 ## Agenda for the day
 
-![Lorem ipsum](https://images.pexels.com/photos/1571442/pexels-photo-1571442.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260)
+![Lorem ipsum](images/pexels-james-wheeler-1571442.jpg)
 
 
 * Laborum labore ullamco Lorem aliqua nostrud adipisicing ut veniam culpa pariatur adipisicing 
@@ -56,7 +56,7 @@ Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididu
 
 ## Agenda with powerlist
 
-![Lorem ipsum](https://images.pexels.com/photos/1571442/pexels-photo-1571442.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260)
+![Lorem ipsum](images/pexels-james-wheeler-1571442.jpg)
 
 
 * Laborum labore ullamco Lorem aliqua nostrud adipisicing ut veniam culpa pariatur adipisicing 
@@ -67,12 +67,18 @@ Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididu
 * dolor tempor reprehenderit
 * Aliqua adipisicing dolore aliqua
 
+::: Notes
+
+Photo by James wheeler, https://www.pexels.com/es-es/foto/campo-forestal-cubierto-de-nieve-1571442/
+
+:::
+
 
 [](.agenda.powerlist.coverbg.fadedbg.partial)
 
 ## Agenda for the day, animated
 
-![Lorem ipsum](https://images.pexels.com/photos/1571442/pexels-photo-1571442.jpeg?auto=compress&cs=tinysrgb&dpr=3&h=750&w=1260)
+![Lorem ipsum](images/pexels-james-wheeler-1571442.jpg)
 
 
 * Laborum labore ullamco Lorem aliqua nostrud adipisicing ut veniam culpa pariatur adipisicing 
@@ -88,7 +94,7 @@ Laborum labore adipisicing consequat qui ea. Anim labore velit occaecat incididu
 
 ## Section with blurred background
 
-![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Duis tempor](images/pexels-pixabay-460621.jpg)
 
 ::: Notes
 
@@ -182,7 +188,7 @@ Exercitation quis voluptate velit irure amet quis ut magna commodo tempor id. Ve
 
 ## Section with grayscaled background
 
-![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Duis tempor](images/pexels-pixabay-460621.jpg)
 
 ::: Notes
 
@@ -194,7 +200,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 ## Two-columns with framed image plus content
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.  
 Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
@@ -211,7 +217,7 @@ The `framed-illustration` class requires a little trick (adding to spaces at the
 
 ## Two-columns with content plus framed image
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.  
 Exercitation fugiat nos esse magna. Sint magna minim do dolor ex pariatur irure dolore. Anim **exercitation ex nisi dolor** irure tempor ea eiusmod officia. Labore cupidatat pariatur culpa.
@@ -229,7 +235,7 @@ The `framed-illustration` class requires a little trick (adding to spaces at the
 
 ## Two-columns with image plus content
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.
 
@@ -245,7 +251,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 ## Two-columns with image plus a powerlist
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 
 * Qui excepteur enim consequat **amet id** eu irure eiusmod duis aute ex in amet
@@ -263,7 +269,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 ## Two-columns with content plus image
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.
 
@@ -280,7 +286,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 ## Two-columns with iconlist plus image
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 * ![a](https://picsum.photos/id/1044/100) **Nisi velit** Do laboris qui ex quis Lorem esse commodo nostrud deserunt incididunt.
 * ![b](https://picsum.photos/id/573/100) **Eu consequat dolore** Non sit deserunt veniam dolor tempor reprehenderit.
@@ -299,7 +305,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 ## Two-columns with content plus b&w image
 
-![Eisumod barus](https://images.pexels.com/photos/573302/pexels-photo-573302.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Eisumod barus](images/pexels-matheus-bertelli.jpg)
 
 Adipisicing eu officia in ullamco irure enim aliqua. Sunt ipsum mollit Lorem nostrud officia proident enim aute consectetur. Esse in **nulla est aliquip** id velit proident sit duis minim eiusmod excepteur.
 
@@ -315,7 +321,7 @@ Image by Matheus Bertelli, https://www.pexels.com/es-es/foto/mujer-proceso-de-ll
 
 ## Section with hue rotated background
 
-![Duis tempor](https://images.pexels.com/photos/460621/pexels-photo-460621.jpeg?auto=compress&cs=tinysrgb&h=750&w=1260)
+![Duis tempor](images/pexels-pixabay-460621.jpg)
 
 ::: Notes
 
@@ -329,7 +335,7 @@ Photo by Pixabay, https://www.pexels.com/es-es/foto/cascadas-en-el-bosque-460621
 
 ## Syntax highlight: javascript
 
-![non esse magna](https://images.pexels.com/photos/1423600/pexels-photo-1423600.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1)
+![non esse magna](images/pexels-johannes-plenio-1423600.jpg)
 
 ```js
     if (room === undefined) {
@@ -406,13 +412,15 @@ TODO:
 | 1999 | 95.1       | 101.1      | 98.8       |
 | 2000 | 300.0      | 300.0      | 300.0      |
 
-[](.illustration.whiteboard-off)
+[](.framed-illustration.whiteboard-off)
 
 ## Q & A
 
-![Do ipsum sunt mollit](https://images.pexels.com/photos/4342352/pexels-photo-4342352.jpeg?auto=compress&cs=tinysrgb&dpr=2&h=750&w=1260)
+![Do ipsum sunt mollit](images/pexels-edmond-dantes-4342352.jpg)
 
-**Sofía Consectetur**
+::: ..............................................
+
+### Sofía Consectetur
 
 Magna veniam consequat laborum irure. Irure sint veniam eiusmod eiusmod in exercitation laboris culpa magna.
 
@@ -420,8 +428,10 @@ Magna veniam consequat laborum irure. Irure sint veniam eiusmod eiusmod in exerc
 
 [linkedin.com/in/consec](https://linkedin.com)
 
+:::
+
 ::: Notes
 
-Photo by Edmon Dantès, https://www.pexels.com/es-es/foto/moda-mujer-chaqueta-jefe-4342352/
+Photo by Edmon Dantès, https://www.pexels.com/es-es/foto/moda-mujer-chaqueta-jefe-4342352/. WTF with the title.
 
 :::
