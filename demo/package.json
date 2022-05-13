@@ -5,7 +5,7 @@
     "main": "index.js",
     "scripts": {
         "build": "node-sass styles.scss styles.css",
-        "watch-sass": "node-sass -w -i styles.scss styles.css",
+        "watch-sass": "node-sass -w -i *.scss -o .",
         "server": "http-server --cors",
         "dev": "concurrently --kill-others \"npm run watch-sass\" \"npm run server\""
     },
