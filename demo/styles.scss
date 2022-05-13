@@ -8,6 +8,7 @@ $base-text-size: 24pt;
 $base-headers-background: rgba(212,196,63,0.7);
 $base-headers-color: white;
 
+$strong-color : orange;
 
 
 .slidedeck {
@@ -26,14 +27,19 @@ $base-headers-color: white;
         background-color: $base-background;
         color: $base-text-color;
 
+        a,
         a:active,
         a:hover,
-        a:visited {
+        a:visited,
+        a:focus,
+        link {
             color: $base-text-color;
+            text-decoration: none;
+            border-bottom: 8px solid rgba($strong-color, 0.5);
         }
 
         strong {
-            color : orange;
+            color : $strong-color;
         }
 
         > h1, > h2, > h3 {
