@@ -34,14 +34,14 @@
   .slidedeck .title {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    text-align: center; }
+    justify-content: center; }
     .slidedeck .title > h1 {
       font-size: 300%; }
     .slidedeck .title > h1,
     .slidedeck .title > h2 {
       margin: 0;
-      width: 80%; }
+      width: 80%;
+      text-align: center; }
     .slidedeck .title > h2 {
       padding-bottom: 20px; }
     .slidedeck .title > p {

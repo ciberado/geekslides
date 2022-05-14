@@ -61,7 +61,7 @@ $strong-color : orange;
         display: flex;
         flex-direction: column;
         justify-content: center;
-        text-align: center;
+        
         > h1 {
             font-size: 300%;
         }
@@ -69,6 +69,7 @@ $strong-color : orange;
         > h2 {
             margin: 0;
             width: 80%;
+            text-align: center;
         }
         > h2 {
             padding-bottom: 20px;
