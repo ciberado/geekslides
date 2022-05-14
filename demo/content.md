@@ -364,8 +364,8 @@ Photo by Johannnes Plenio, https://www.pexels.com/photo/forest-covered-in-white-
 
 | Year | Adipisicin | Incididux  | Duis       |
 |------|------------|------------|------------|
-| 1989 | 94.6  [^1] | 141.2      | 119.9      |
-| 1990 | 93.1       | 128.5      | 112.5      |
+| 1989 | 94.6       | 141.2      | 119.9      |
+| 1990 | 93.1  [^1] | 128.5      | 112.5      |
 | 1991 | 81.1       | 120.5      | 103.0      |
 | 1992 | 85.4       | 108.7      | 98.9       |
 | 1993 | 89.0       | 109.3 [^2] | 100.8      |
@@ -412,7 +412,7 @@ TODO:
 | 1999 | 95.1       | 101.1      | 98.8       |
 | 2000 | 300.0      | 300.0      | 300.0      |
 
-[](.framed-illustration.whiteboard-off)
+[](#q-and-a,.framed-illustration.whiteboard-off)
 
 ## Q & A
 
@@ -424,9 +424,9 @@ TODO:
 
 Magna veniam consequat laborum irure. Irure sint veniam eiusmod eiusmod in exercitation laboris culpa magna.
 
-[@attwitterum](https://twitter.com/)
+![twitter](images/twitter.svg) [@attwitterum](https://twitter.com/)
 
-[linkedin.com/in/consec](https://linkedin.com)
+![linkedin](images/linkedin.svg) [linkedin.com/in/consec](https://linkedin.com)
 
 :::
 

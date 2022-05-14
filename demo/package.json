@@ -4,8 +4,8 @@
     "description": "",
     "main": "index.js",
     "scripts": {
-        "build": "node-sass styles.scss styles.css",
-        "watch-sass": "node-sass -w -i *.scss -o .",
+        "build": "node-sass scss/ -o css/",
+        "watch-sass": "node-sass -w scss/ -o css/",
         "server": "http-server --cors",
         "dev": "concurrently --kill-others \"npm run watch-sass\" \"npm run server\""
     },

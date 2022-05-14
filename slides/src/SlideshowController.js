@@ -326,8 +326,8 @@ class SlideshowController {
 
     // Add (if exists) local css
     if (this.config.styles) {
-      const url = newBaseUrl + this.config.styles;
-      await this.loadLocalCSS(url);
+      const styles = Array.isArray(this.config.styles) ? this.config.styles : [this.config.styles]; 
+      styles.forEach(url => this.loadLocalCSS(newBaseUrl + url));
     }
 
     // Parse the markdown content and transform it into HTML

@@ -1,10 +1,8 @@
 {
     "content": "content.md",
-    "styles": "styles.css",
+    "styles": ["css/alyssum.css", "css/local.css"],
     "processors": [
         "hiddenSlidesProcessor",
-        "bgUrlProcessor",
-        "bgColorProcessor",
         "footnotesProcessor",
         "chartProcessor",
         "iframeProcessor"
