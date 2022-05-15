@@ -414,6 +414,14 @@ TODO:
 
 [](#q-and-a,.framed-illustration.whiteboard-off)
 
+[](.whiteboard-off,iframe(https://excalidraw.com))
+
+::: Notes
+
+This simple slide shows the use of the `iframe` syntax.
+
+:::
+
 ## Q & A
 
 ![Do ipsum sunt mollit](images/pexels-edmond-dantes-4342352.jpg)
@@ -435,3 +443,4 @@ Magna veniam consequat laborum irure. Irure sint veniam eiusmod eiusmod in exerc
 Photo by Edmon Dantès, https://www.pexels.com/es-es/foto/moda-mujer-chaqueta-jefe-4342352/. WTF with the title.
 
 :::
+
