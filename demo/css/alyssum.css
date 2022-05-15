@@ -31,7 +31,7 @@
       z-index: 10; }
     .slidedeck section ul {
       list-style: none; }
-    .slidedeck section iframe {
+    .slidedeck section iframe, .slidedeck section video {
       width: 100%;
       height: 100%; }
   .slidedeck .title {
