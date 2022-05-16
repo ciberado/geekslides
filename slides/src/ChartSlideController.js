@@ -123,7 +123,7 @@ class ChartSlideController {
       const dataset = {
         label,
         borderColor: color,
-        backgroundColor : tinycolor(color).lighten(80),
+        backgroundColor : tinycolor(color).lighten(35),
         data
       };
       config.data.datasets.push(dataset);
