@@ -1,6 +1,4 @@
-import Chart from 'chart.js';
 import chartCSS from './chartslide.css';
-import * as ColorMath from "color-math";
 
 class ChartSlideController {
   
@@ -125,7 +123,7 @@ class ChartSlideController {
       const dataset = {
         label,
         borderColor: color,
-        backgroundColor : ColorMath.evaluate(`${color} @a 25%`).result.hex(),
+        backgroundColor : tinycolor(color).lighten(80),
         data
       };
       config.data.datasets.push(dataset);

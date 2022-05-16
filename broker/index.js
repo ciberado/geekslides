@@ -244,9 +244,7 @@ setInterval(()=>{
     const payload = JSON.stringify({
         numberOfRooms : Object.keys(roomsByName).length,
         numberOfUsers : Object.keys(usersById).length
-    });2
-    logger.info(`[STATS] ${payload}.`);
-    aedes.publish({
+    });aedes.publish({
         cmd: 'publish',
         qos: 0,
         topic: topic,
