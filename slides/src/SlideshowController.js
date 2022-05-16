@@ -98,6 +98,15 @@ function iframeProcessor(slideElem) {
     const iframeElem = document.createElement('iframe');
     iframeElem.src = iframeSrc;
     slideElem.appendChild(iframeElem);
+
+    const nextSlideBtnElem = document.createElement('button')
+    nextSlideBtnElem.classList.add('iFrameNextSlide');
+    nextSlideBtnElem.addEventListener('click', (evt) => {
+      let event = new CustomEvent('nextSlide');
+      document.dispatchEvent(event);  
+    });
+    nextSlideBtnElem.innerHTML = "➜";
+    slideElem.appendChild(nextSlideBtnElem);
   }
 }
 
