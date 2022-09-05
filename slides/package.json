@@ -12,14 +12,15 @@
   "author": "Javi <email@javier-moreno.com>",
   "license": "GNU General Public License v3.0",
   "dependencies": {
+    "chart.js": "^3.8.0",
     "markdown-it": "^13.0.1",
     "markdown-it-block-image": "^0.0.3",
     "markdown-it-container": "^3.0.0",
     "markdown-it-footnote": "^3.0.2",
-    "markdown-it-highlightjs": "^4.0.1",
     "notie": "^4.3.1",
     "paho-mqtt": "^1.1.0",
     "scripts": "^0.1.0",
+    "tinycolor2": "^1.4.2",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
@@ -30,7 +31,8 @@
     "parcel-plugin-custom-dist-structure": "^1.1.18",
     "parcel-plugin-imagemin": "^4.0.1",
     "parcel-plugin-static-files-copy": "^2.3.1",
-    "path-browserify": "^1.0.1"
+    "path-browserify": "^1.0.1",
+    "punycode": "^2.1.1"
   },
   "staticFiles": {
     "staticPath": [],
