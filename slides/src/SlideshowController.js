@@ -331,6 +331,14 @@ class SlideshowController {
     }
 
     this.baseUrl = newBaseUrl;
+    
+    let baseElem = document.querySelector('base');
+    if (!baseElem) {
+      baseElem = document.createElement('base');
+      document.querySelector('head').appendChild(baseElem);
+    }
+    baseElem.href = this.baseUrl;
+
     let markdown = await fetchedContent.text();
 
     // Add (if exists) local css
