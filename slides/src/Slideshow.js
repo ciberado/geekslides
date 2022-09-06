@@ -13,7 +13,7 @@
  * screen resolution, using `transform` property.
  * 
  * Two aspect ratios are supported, 4:3 and 16:9. The base resolution of the slides (in px) are
- * 960x720 and 1600x900, but they are scaled up and down to fill the whole available space.
+ * 960x720 and 1920x1080, but they are scaled up and down to fill the whole available space.
  * 
  * Partial elements are supported: any slide with `.partial` class on it will require several
  * `.gotoNextSlide()` invocations as each one will reveal a previously hidden element until all
@@ -68,7 +68,7 @@ class Slideshow {
    * Available base resolution in `px` units:
    * 
    * * 4:3 -> 960x720
-   * * 16:9 -> 1600x900
+   * * 16:9 -> 1920x1080
    * 
    * @returns {Size} the desired px resolution of each `slide` element based on the value of
    * `this.aspectRatio`.
@@ -86,8 +86,8 @@ class Slideshow {
         break;
       case '16:9' : 
       default :
-        w = 1600;
-        h = 900;
+        w = 1920;
+        h = 1080;
     }
 
     return {w, h};

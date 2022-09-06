@@ -88,7 +88,7 @@ class WhiteboardLayer {
       // Apparently, touch event with BIG radiusX are originated by a pen/pencil
       if (evt.changedTouches[0].radiusX < 1000) return null;
 
-      const canvasWidth = this.canvas.offsetWidth; // (1600 in 16:9)
+      const canvasWidth = this.canvas.offsetWidth; // (1920 in 16:9)
       const canvasHeight = this.canvas.offsetHeight; // (900 in 16:9)
       const box = this.canvas.getBoundingClientRect();
 

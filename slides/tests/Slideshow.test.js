@@ -24,8 +24,8 @@ test('default aspect ratio set to 16:9 and scales correctly the first slide', ()
   parentElem.style.height="1000px";
   parentElem.appendChild(document.createElement('section'));
   const slideshow = new Slideshow(parentElem, { aspectRatio : "16:9" });
-  expect(document.styleSheets[0].cssRules[0].style.width).toEqual('1600px');
-  expect(document.styleSheets[0].cssRules[0].style.height).toEqual('900px');
+  expect(document.styleSheets[0].cssRules[0].style.width).toEqual('1920px');
+  expect(document.styleSheets[0].cssRules[0].style.height).toEqual('1080px');
 });
 
 test('explicit set of 16:9 aspect ratio works scales correctly the first slide', () => {
@@ -35,8 +35,8 @@ test('explicit set of 16:9 aspect ratio works scales correctly the first slide',
   parentElem.style.height="1000px";
   parentElem.appendChild(document.createElement('section'));
   const slideshow = new Slideshow(parentElem, { aspectRatio : "16:9" });
-  expect(document.styleSheets[0].cssRules[0].style.width).toEqual('1600px');
-  expect(document.styleSheets[0].cssRules[0].style.height).toEqual('900px');
+  expect(document.styleSheets[0].cssRules[0].style.width).toEqual('1920px');
+  expect(document.styleSheets[0].cssRules[0].style.height).toEqual('1080px');
 });
 
 test('explicit set of 4:3 aspect ratio works scales correctly the first slide', () => {

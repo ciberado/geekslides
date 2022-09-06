@@ -20,14 +20,14 @@
 canvas.whiteboard  {
   position: absolute;
   top: 0;
-  width: 1600px;
-  height: 900px;
+  width: 1920px;
+  height: 1080px;
 
 }
 
 #globalwbc {
-  width: 1600px;
-  height: 900px;
+  width: 1920px;
+  height: 1080px;
   transform-origin: 0 0;
   
 }

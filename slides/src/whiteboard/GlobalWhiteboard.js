@@ -39,7 +39,7 @@ class GlobalWhiteboard {
       h: document.body.offsetHeight
     };
 
-    const whiteboardSize = { w : 1600, h : 900};
+    const whiteboardSize = { w : 1920, h : 1080};
     const sx =  (pageSize.w / whiteboardSize.w);
     
 
