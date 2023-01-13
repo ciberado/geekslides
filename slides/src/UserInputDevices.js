@@ -31,7 +31,9 @@ class UserInputDevices {
     });
 
     this.addKeyboardEvent(37, 'previousSlide'); // left
+    this.addKeyboardEvent(33, 'previousSlide'); // page up
     this.addKeyboardEvent(72, 'previousSlide'); // h
+    this.addKeyboardEvent(34, 'nextSlide'); // page down
     this.addKeyboardEvent(39, 'nextSlide'); // right
     this.addKeyboardEvent(76, 'nextSlide'); // l
     this.addKeyboardEvent(83, 'toggleSpeakerView'); // s
