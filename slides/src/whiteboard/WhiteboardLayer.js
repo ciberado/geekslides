@@ -2,7 +2,7 @@ import whiteboardCSS from './whiteboard.css';
 
 class WhiteboardLayer {
 
-  static color = 'green';
+  static color = 'orange';
   static penSize = 1;
   static opacity = 1;
 
