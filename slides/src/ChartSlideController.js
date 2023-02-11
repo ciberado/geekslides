@@ -110,7 +110,7 @@ class ChartSlideController {
     config.type = config._options.type;
     if (config._options.type) config.type = config._options.type;
     if (config._options.yAxesSuggestedMax) config.options.scales.y[0].ticks.suggestedMax = config._options.yAxesSuggestedMax;
-xxxxxxxxxx
+
     const tableElem = this.slideElem.querySelector('table');
     
     // First column includes the X axis labels
