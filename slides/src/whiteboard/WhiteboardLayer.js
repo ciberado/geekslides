@@ -185,14 +185,20 @@ class WhiteboardLayer {
   }
 
   startDrawing(x, y) {
-    this.ctx.strokeStyle = WhiteboardLayer.color;
+    if (WhiteboardLayer.color == 'eraser') {
+      this.ctx.globalCompositeOperation = "destination-out";
+      this.ctx.lineWidth = 20;
+    } else {
+      this.ctx.globalCompositeOperation = "lighter";
+      this.ctx.strokeStyle = WhiteboardLayer.color;
+      this.ctx.lineWidth = WhiteboardLayer.penSize;
+    }
     if (WhiteboardLayer.opacity === 1) {
       this.ctx.shadowBlur = 1;
       this.ctx.shadowColor = WhiteboardLayer.color;  
     } else {
       this.ctx.shadowBlur = 0;
     }
-    this.ctx.lineWidth = WhiteboardLayer.penSize;
     this.ctx.globalAlpha = WhiteboardLayer.opacity;
     this.ctx.beginPath();
     this.ctx.moveTo(x, y);

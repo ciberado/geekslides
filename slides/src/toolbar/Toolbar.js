@@ -22,7 +22,9 @@ class Toolbar {
     
       <li class="action"><button type="button" data-action="transparent">Transparent</button></li>
       <li class="action"><button type="button" data-action="opaque">Opaque</button></li>
-    
+
+      <li class="action"><button type="button" data-action="eraser">Eraser</button></li>
+      
       <li class="action"><button type="button" data-action="whiteboard">Whiteboard</button></li>
     
       <li class="action"><button type="button" data-action="clear">Clear</button></li>
@@ -111,6 +113,11 @@ class Toolbar {
     });
   }
 
+  eraser() {
+    this.#dispatchEvent('changeWhiteboardPen', {
+      color : 'eraser'
+    });
+  }  
 
   #dispatchEvent(eventName, detail) {
     let event = new CustomEvent(eventName, { detail });
