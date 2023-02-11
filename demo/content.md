@@ -420,6 +420,23 @@ This simple slide shows the use of the `iframe` syntax.
 
 :::
 
+[](.whiteboard-filled)
+
+## Mistery diagram
+
+![Geometry diagrams, by Dan Cristian Pădureț, https://unsplash.com/photos/zm1oNbYS7DY](images/dan-cristian-padure-zm1oNbYS7DY-unsplash.jpg)
+
+::: Notes
+
+Whiteboard layers can appear filled with a particular color to hide the content of the slide.
+The speaker can take advantage of the *eraser* tool to present the actual content by removing
+parts of the whiteboard.
+
+Also, to provide a way to view what's behind the whiteboard, transparency level can be controlled
+by pressing `t` or the `Transparency` button.
+
+:::
+
 
 [](#q-and-a,.framed-illustration.whiteboard-off)
 

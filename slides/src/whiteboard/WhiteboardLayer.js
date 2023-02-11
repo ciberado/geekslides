@@ -25,21 +25,29 @@ class WhiteboardLayer {
     this.ctx = this.canvas.getContext('2d');
     this.ctx.lineCap = 'round';
     this.ctx.lineJoin = 'round';
-    //ctx.fillStyle = 'rgb(200, 0, 0)';
-    this.ctx.globalCompositeOperation = "lighter";
     this.canvas.addEventListener('pointerdown', evt => this.#onPointerdown(evt), true);
     this.canvas.addEventListener('touchstart', evt => this.#onPointerdown(evt), true);
     this.canvas.addEventListener('pointerup', evt => this.#onPointerup(evt), true);
     this.canvas.addEventListener('touchend', evt => this.#onPointerup(evt), true);
     this.canvas.addEventListener('pointermove', evt => this.#onPointermove(evt), true);
     this.canvas.addEventListener('touchmove', evt => this.#onPointermove(evt), true);
+    document.addEventListener('translucentWhiteboard', evt => this.#onTranslucentWhiteboard(evt));
     this.canvas.addEventListener('contextmenu', evt => evt.preventDefault());
     this.canvas.addEventListener('remoteWhiteboard', evt => this.#onRemote(evt));
 
+    if (this.parentElem.classList.contains('whiteboard-filled') === true) {
+      this.fillWhiteboard('#fffffc')
+    }
     document.addEventListener('changeWhiteboardPen', 
       evt => this.#changePen(evt.detail.color, evt.detail.opacity, evt.detail.penSize));
 
     document.addEventListener('clearVisibleWhiteboard', evt => this.#clearIfVisible());
+  }
+
+  fillWhiteboard(color) {
+      this.ctx.globalCompositeOperation = "source-source-over";
+      this.ctx.fillStyle = color;
+      this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
   }
 
   #distanceFormLastPoint(x, y) {
@@ -67,6 +75,10 @@ class WhiteboardLayer {
     } else if (action === 'clearWhiteboard') {
       this.clear();
     }
+  }
+
+  #onTranslucentWhiteboard(evt) {
+    this.canvas.classList.toggle('translucent');
   }
 
   /**
@@ -187,7 +199,7 @@ class WhiteboardLayer {
   startDrawing(x, y) {
     if (WhiteboardLayer.color == 'eraser') {
       this.ctx.globalCompositeOperation = "destination-out";
-      this.ctx.lineWidth = 20;
+      this.ctx.lineWidth = 30;
     } else {
       this.ctx.globalCompositeOperation = "lighter";
       this.ctx.strokeStyle = WhiteboardLayer.color;

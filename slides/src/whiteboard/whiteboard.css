@@ -32,6 +32,11 @@ canvas.whiteboard  {
   
 }
 
-.active.whiteboard-off > canvas {
+.active.whiteboard-off > canvas.whiteboard {
   display : none;
 }
+
+.active > canvas.whiteboard.translucent {
+  opacity : 0.5;
+}
+

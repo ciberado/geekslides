@@ -46,6 +46,8 @@ class UserInputDevices {
     this.addKeyboardEvent(87, 'toggleGlobalWhiteboard'); // w
     this.addKeyboardEvent(74, 'joinRoom'); // j
 
+    this.addKeyboardEvent(84, 'translucentWhiteboard'); // t
+
     // Slide swipe handling
     // TODO: Add chrome support
     this.slideshow.slideshowElem.addEventListener('touchstart', evt => this.#swipeStart(evt), true);
