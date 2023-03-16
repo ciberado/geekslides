@@ -322,12 +322,18 @@ class SlideshowController {
       console.log(`Configuration file not present. Trying default config (${JSON.stringify(SlideshowController.DEFAULT_CONFIG)}).`);
       this.config = SlideshowController.DEFAULT_CONFIG;
     }
-    // Ty to load content, return false if it is not possible
+    // Try to load content, return false if it is not possible
+    let markdown = null;
     let fetchedContent = await fetch(newBaseUrl + this.config.content);
     if (fetchedContent.ok !== true) {
-      const errorMsg = `Error retrieving markdown for ${newBaseUrl}: ${fetchedContent.status} ${fetchedContent.statusText}`;
-      console.info(errorMsg);
-      return false;
+      console.info(`Error retrieving markdown for ${newBaseUrl}: ${fetchedContent.status} ${fetchedContent.statusText}`);
+      // Create an artificial markdown document describing 200 slides implemented as images. This
+      // is useful when the presentation is generated exporting from a pptx document (as SVG images).
+      console.info(`Generating synthetic markdown document for SVG images.`);
+      markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide${e+1}.SVG))`).join('\r\n\r\n');
+      debugger;
+    } else {
+      markdown = await fetchedContent.text();
     }
 
     this.baseUrl = newBaseUrl;
@@ -338,8 +344,6 @@ class SlideshowController {
       document.querySelector('head').appendChild(baseElem);
     }
     baseElem.href = this.baseUrl;
-
-    let markdown = await fetchedContent.text();
 
     // Add (if exists) local css
     if (this.config.styles) {
