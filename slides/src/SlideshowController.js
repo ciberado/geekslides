@@ -331,7 +331,6 @@ class SlideshowController {
       // is useful when the presentation is generated exporting from a pptx document (as SVG images).
       console.info(`Generating synthetic markdown document for SVG images.`);
       markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide${e+1}.SVG))`).join('\r\n\r\n');
-      debugger;
     } else {
       markdown = await fetchedContent.text();
     }
