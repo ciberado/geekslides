@@ -66,6 +66,7 @@ if (wssCertsPath) {
     ws.createServer({ server: httpsServer }, aedes.handle);
     httpsServer.listen(wssPort, function() {
         logger.log('info', 'Aedes MQTT-WSS listening on port: ' + wssPort)
+        logger.log('info', `Using certificates provided at ${wssCertsPath}.`);
     });    
 }
 
