@@ -20,12 +20,12 @@ class Toolbar {
       <li class="action"><button type="button" data-action="big">Big</button></li>
       <li class="action"><button type="button" data-action="thin">Thin</button></li>
     
-      <li class="action"><button type="button" data-action="transparent">Highlighter</button></li>
+      <li class="action"><button type="button" data-action="transparent">HL</button></li>
       <li class="action"><button type="button" data-action="opaque">Pen</button></li>
 
       <li class="action"><button type="button" data-action="eraser">Eraser</button></li>
       
-      <li class="action"><button type="button" data-action="whiteboard">Whiteboard</button></li>
+      <li class="action"><button type="button" data-action="whiteboard">WB</button></li>
     
       <li class="action"><button type="button" data-action="clear">Clear</button></li>
     </ul>
