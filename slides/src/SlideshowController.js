@@ -111,6 +111,29 @@ function iframeProcessor(slideElem) {
 }
 
 /**
+ * 
+ * Transforms the whole markdown document before it is converted to HTML,
+ * injecting a slide separator each time three empty lines are found on it.
+ * 
+ * @param {string} markdown 
+ */
+function threeEmptyLinesSlicerPreprocessor(markdown) {
+  return '[]()\n\n' + markdown.replaceAll('\n\n\n\n', '\n\n[]()\n\n');
+}
+
+/**
+ * 
+ * Replaces blank lines with html comments, so an empty paragraph is inserted 
+ * in the resulting html. Specially useful for separating consecutive
+ * lists of elements.
+ * 
+ * @param {string} markdown 
+ */
+function emptyLineSeparatorPreprocessor(markdown) {
+  return markdown.replaceAll('\n\n', '\n\n<!-- -->\n\n');
+}
+
+/**
  * This class reacts to user generated events (`nextSlide`, `previousSlide`, `toggleSpeakerView`, `cloneWindow`),
  * slide lifecycle events (`slideShown`, `partialShown`) and address bar changes (`hashchange`) updating the
  * associated slideshow.
@@ -122,6 +145,9 @@ class SlideshowController {
   static DEFAULT_CONFIG = {
     content: 'content.md',
     styles: '',
+    preprocessor : [
+
+    ],
     processors: [
       hiddenSlidesProcessor,
       bgUrlProcessor,
@@ -317,7 +343,7 @@ class SlideshowController {
     try {
       fetchedConfig = await fetch(newBaseUrl + 'config.json');
       this.config = JSON.parse(await fetchedConfig.text());
-      console.log(`Configuration retrieved.`);
+      console.log(`Configuration retrieved.\n\n${fetchedConfig}\n\n`);
     } catch (error) {
       console.log(`Configuration file not present. Trying default config (${JSON.stringify(SlideshowController.DEFAULT_CONFIG)}).`);
       this.config = SlideshowController.DEFAULT_CONFIG;
@@ -348,6 +374,13 @@ class SlideshowController {
     if (this.config.styles) {
       const styles = Array.isArray(this.config.styles) ? this.config.styles : [this.config.styles]; 
       styles.forEach(url => this.loadLocalCSS(newBaseUrl + url));
+    }
+
+    // Pre-process the markdown document
+    if (this.config.preprocessors) {
+      for (const preprocessor of this.config.preprocessors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp)) {
+        markdown = preprocessor(markdown);
+      }  
     }
 
     // Parse the markdown content and transform it into HTML
