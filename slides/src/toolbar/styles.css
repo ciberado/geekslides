@@ -1,6 +1,6 @@
 ul.toolbar {
   position: absolute;
-  bottom: 1em;
+  bottom: 4px;
   left: 0;
   list-style-type: none;
   margin: 0;
@@ -22,7 +22,7 @@ ul.toolbar li {
 ul.toolbar li button {
 	width: 45px;
 	display: inline-block;
-	background-color: transparent;
+	background-color: #c0c0c0;
 	color: white;
 	border-color: gray;
 	border-radius: 12px;
