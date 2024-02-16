@@ -368,7 +368,7 @@ class SlideshowController {
       // is useful when the presentation is generated exporting from a pdf document using
       // `pdftoppm -r 150 -png slides.pdf Slide`.
       console.info(`Generating synthetic markdown document for png images.`);
-      markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide-${e<10? '0' : ''}${e+1}.png))`).join('\r\n\r\n');
+      markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide-${e<9? '0' : ''}${e+1}.png))`).join('\r\n\r\n');
     } else {
       markdown = await fetchedContent.text();
     }
