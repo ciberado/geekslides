@@ -86,6 +86,17 @@ function hiddenSlidesProcessor(slideElem) {
   }
 }
 
+/**
+ * For each slide containing at least one list, make it partial by appending
+ * the `.partial` class.
+ * 
+ * @param {HTMLElement} slideElem with the slide to be transformed by the processor
+ */
+function partializeProcessor(slideElem) {
+  if (slideElem.querySelector('ul, ol') !== null) {
+    slideElem.classList.add('partial');
+  }
+}
 
 /**
  * Transforms a slide, injecting an <iframe> element based on the `iframe` attribute.
@@ -354,9 +365,10 @@ class SlideshowController {
     if (fetchedContent.ok !== true) {
       console.info(`Error retrieving markdown for ${newBaseUrl}: ${fetchedContent.status} ${fetchedContent.statusText}`);
       // Create an artificial markdown document describing 200 slides implemented as images. This
-      // is useful when the presentation is generated exporting from a pptx document (as SVG images).
-      console.info(`Generating synthetic markdown document for SVG images.`);
-      markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide${e+1}.SVG))`).join('\r\n\r\n');
+      // is useful when the presentation is generated exporting from a pdf document using
+      // `pdftoppm -r 150 -png slides.pdf Slide`.
+      console.info(`Generating synthetic markdown document for png images.`);
+      markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide${e+1}-.png))`).join('\r\n\r\n');
     } else {
       markdown = await fetchedContent.text();
     }
