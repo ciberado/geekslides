@@ -167,7 +167,8 @@ class SlideshowController {
       chartProcessor,
       iframeProcessor
     ],
-    script: ''
+    script: '',
+    liveReload : false
   };
 
 
@@ -336,6 +337,26 @@ class SlideshowController {
 
   /**
    * 
+   * @param {string} url to monitor. Each second, that url will be fetched. If the
+   *        `last-modified` tag doesn't match with the previous version, a window
+   *        reloading will be triggered.
+   */
+  async activateLiveReload(url) {
+    let previousTime = '';
+    setInterval(async function() {
+      const response = await fetch(url);
+      const currentTime = response.headers.get('last-modified');
+      if (previousTime && previousTime !== currentTime) {
+        window.location.reload();
+      } else {
+        previousTime = currentTime;
+      }
+    }      
+    , 1000);
+  }
+
+  /**
+   * 
    * @param {string} newBaseUrl 
    * @param {string} newSlideIndex 
    *
@@ -371,6 +392,9 @@ class SlideshowController {
       markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide-${e<9? '0' : ''}${e+1}.png))`).join('\r\n\r\n');
     } else {
       markdown = await fetchedContent.text();
+      if (this.config.liveReload === true) {
+        this.activateLiveReload(newBaseUrl + this.config.content);
+      }
     }
 
     this.baseUrl = newBaseUrl;
