@@ -41,8 +41,7 @@ class Slideshow {
     this.setAspectRatio(options.aspectRatio);
 
     window.addEventListener('resize',() => this.updateSlidesScale());
-    this.updateSlidesScale();
-  
+    this.updateSlidesScale();  
   }
 
   /**
@@ -65,6 +64,11 @@ class Slideshow {
    */
 
   /**
+   * 
+   * Calculates the resolution of the viewport, based on `this.aspectRation`. Despite the
+   * name of the property, it admits two formats: an actual ration (if contains a ':', like
+   * for example `4:3`), or a explicit resolution (if contains a 'x', like in `1920x1080`).
+   * 
    * Available base resolution in `px` units:
    * 
    * * 4:3 -> 960x720
@@ -79,7 +83,15 @@ class Slideshow {
     /** @property {number} y contains the height */
     let h;
 
-    switch (this.aspectRatio) {
+    if (this.aspectRatio.includes('x') === true) {
+      const parts = this.aspectRatio.split('x');
+      w = parseInt(parts[0]);
+      h = parseInt(parts[1]);
+    } else switch (this.aspectRatio) {
+      case '1:1':
+        w = 1080;
+        h = 1080;
+        break;
       case '4:3' : 
         w = 960;
         h = 720;
