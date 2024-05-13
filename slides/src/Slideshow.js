@@ -135,17 +135,21 @@ class Slideshow {
 
   /**
    * 
+   * Updates the resolution of the viewport, and sets a class in the slideshow element
+   * reflecting it.
+   * 
    * @param {string} aspectRatio (16:9 or 4:3, currently)
    */
   setAspectRatio(aspectRatio = '16:9') {
     this.aspectRatio = aspectRatio;
 
-    /* Using explicit sets for clarity, instead of toggle. */
-    if (aspectRatio === '16:9') {
-      this.slideshowElem.classList.remove('aspect-ratio-4-3');
-    } else /* 4:3 */ {
-      this.slideshowElem.classList.add('aspect-ratio-4-3');
-    }
+    const classes = [...this.slideshowElem.classList];
+    classes.forEach(c => {
+      if (c.startsWith('resolution-') === true) {
+        this.slideshowElem.classList.remove(c); 
+      }
+    });
+    this.slideshowElem.classList.add('resolution-' + aspectRatio);
 
     // gets the stylesheet named minislides.css where the slides are formated
     const css = [...document.styleSheets].filter(s=>s.href && s.href.indexOf('index') !== -1)[0];

@@ -155,6 +155,7 @@ class SlideshowController {
 
   static DEFAULT_CONFIG = {
     content: 'content.md',
+    resolution : '16:9',
     styles: '',
     preprocessor : [
 
@@ -432,6 +433,9 @@ class SlideshowController {
       this.config.processors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp).forEach(sp => sp(e));
     });
 
+    if (this.config.resolution) {
+      this.slideshow.setAspectRatio(this.config.resolution);
+    }
     this.slideshow.refreshSlideshowContent();
     if (newSlideIndex) this.slideshow.gotoSlideIndex(newSlideIndex);
 
