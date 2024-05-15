@@ -337,6 +337,26 @@ class SlideshowController {
   }
 
   /**
+   * Loads into the DOM a new javascript file.
+   * 
+   * @param {string} url with the path to the js file.
+   * @returns the promise that will be resolved once the js is loaded.
+   */
+  async loadLocalJavascript(url) {
+    const cssLoadedPromise = new Promise((resolve, reject) => {
+      console.log(`Loading script from ${url}.`);
+      const jsElem = document.createElement('script');
+      jsElem.src = url;
+      jsElem.onload = (evt) => {
+        resolve();
+      }
+      document.querySelector('head').appendChild(jsElem);
+    });
+
+    return cssLoadedPromise;
+  }
+
+  /**
    * 
    * @param {string} url to monitor. Each second, that url will be fetched. If the
    *        `last-modified` tag doesn't match with the previous version, a window
@@ -411,6 +431,11 @@ class SlideshowController {
     if (this.config.styles) {
       const styles = Array.isArray(this.config.styles) ? this.config.styles : [this.config.styles]; 
       styles.forEach(url => this.loadLocalCSS(newBaseUrl + url));
+    }
+
+    // Add (and await it, so it can be used in the processors) local js files
+    if (this.config.script) {
+      await this.loadLocalJavascript(this.config.script);
     }
 
     // Pre-process the markdown document
