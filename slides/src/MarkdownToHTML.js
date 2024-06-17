@@ -228,7 +228,7 @@ class MarkdownToHTML {
     let rawHtml = md.render(this.markdown);
     let processedHtml = this.#replaceEmptyLinksWithSections(rawHtml);
     this.html = processedHtml;
-    console.log(this.html)
+    console.log("HTML content refreshed.");
   }
 }
 
