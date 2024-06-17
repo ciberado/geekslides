@@ -169,6 +169,7 @@ class SlideshowController {
       iframeProcessor
     ],
     script: '',
+    scripts : [],
     liveReload : false
   };
 
@@ -317,10 +318,14 @@ class SlideshowController {
   /**
    * Loads into the DOM a new CSS file.
    * 
+   * @param {string} baseUrl with the base url for local files.
    * @param {string} url with the path to the CSS file.
    * @returns the promise that will be resolved once the CSS is loaded.
    */
-  async loadLocalCSS(url) {
+  async loadLocalCSS(baseUrl, url) {
+    if (url.match(/^http|\/\//) === null) {
+      url = baseUrl + url;
+    }
     const cssLoadedPromise = new Promise((resolve, reject) => {
       console.log(`Loading styles from ${url}.`);
       const cssElem = document.createElement('link');
@@ -328,6 +333,7 @@ class SlideshowController {
       cssElem.type = 'text/css';
       cssElem.href = url;
       cssElem.onload = (evt) => {
+        console.log(`Styles from ${url} loaded.`);
         resolve();
       }
       document.querySelector('head').appendChild(cssElem);
@@ -348,6 +354,7 @@ class SlideshowController {
       const jsElem = document.createElement('script');
       jsElem.src = url;
       jsElem.onload = (evt) => {
+        console.log(`Scripts from ${url} loaded.`);
         resolve();
       }
       document.querySelector('head').appendChild(jsElem);
@@ -430,14 +437,19 @@ class SlideshowController {
     // Add (if exists) local css
     if (this.config.styles) {
       const styles = Array.isArray(this.config.styles) ? this.config.styles : [this.config.styles]; 
-      styles.forEach(url => this.loadLocalCSS(newBaseUrl + url));
+      styles.forEach(url => this.loadLocalCSS(newBaseUrl, url));
     }
 
     // Add (and await it, so it can be used in the processors) local js files
+    if (this.config.scripts) {
+      for (let script of this.config.scripts) {
+        await this.loadLocalJavascript(script);
+      }
+    }
     if (this.config.script) {
       await this.loadLocalJavascript(this.config.script);
     }
-
+    
     // Pre-process the markdown document
     if (this.config.preprocessors) {
       for (const preprocessor of this.config.preprocessors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp)) {
