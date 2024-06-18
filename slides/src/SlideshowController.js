@@ -467,6 +467,12 @@ class SlideshowController {
     .forEach((e, i) => {
       // Set the ids of the slides without a proper one
       if (!e.id) e.id = `slide${i}`;
+      // Set `regular` as a class of each slide without any class besides 'partial'.
+      const classes = [...e.classList];  
+      if ((classes.length == 0) || (classes.toString() == 'partial')) {
+        e.classList.add('regular');
+      }
+    
       this.config.processors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp).forEach(sp => sp(e));
     });
 
