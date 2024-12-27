@@ -132,6 +132,50 @@ function threeEmptyLinesSlicerPreprocessor(markdown) {
   return '[]()\n\n' + markdown.replaceAll('\n\n\n\n', '\n\n[]()\n\n');
 }
 
+
+/**
+ * 
+ * Automatically prepends an empty (section) link before each
+ * header that hasn't already one. Currently, it will be problematic
+ * with headers in notes, as it will add the link too.
+ * 
+ */
+function headerPreprocessor(markdown) {
+  const oldLines = markdown.split('\n');
+  const newLines = [];
+
+  for (let i=0; i < oldLines.length; i++) {
+    const currentLine = oldLines[i];
+    if (currentLine.startsWith('#') === true) {
+      let sectionAnchorFound = false;
+      let nonAnchorFound = false;
+      let backCounter = i-1;
+      // Let's go back trying to find the first not-empty line and
+      // decide if it is a section anchor or not.
+      while (backCounter >= 0 && !nonAnchorFound && !sectionAnchorFound) {
+        if (backCounter > 0) {
+          const previousLine = oldLines[backCounter].trim();
+          if (previousLine.startsWith('[](') === true) {
+            // A link was already present
+            sectionAnchorFound = true;
+          } else if (previousLine.length > 0) {
+            // There was content, but it was not a link
+            nonAnchorFound = true;
+          }
+        }
+        backCounter--;
+      }
+      if (sectionAnchorFound == false) {
+        newLines.push('[](.default)');
+      }
+    }
+    
+    newLines.push(currentLine);
+  }
+  const newMarkdown = newLines.join('\n');
+  return newMarkdown;  
+}
+
 /**
  * 
  * Replaces blank lines with html comments, so an empty paragraph is inserted 
@@ -398,12 +442,12 @@ class SlideshowController {
       newBaseUrl += '/';
     }
     // load configuration (or use the default one)
-    console.log(`Loading configuration for ${newBaseUrl}.`);
+    console.log(`Loading configuration from ${newBaseUrl}config.json.`);
     let fetchedConfig;
     try {
       fetchedConfig = await fetch(newBaseUrl + 'config.json');
       this.config = JSON.parse(await fetchedConfig.text());
-      console.log(`Configuration retrieved.\n\n${fetchedConfig}\n\n`);
+      console.log(`Configuration retrieved.\n\n${JSON.stringify(this.config, null,2)}\n\n`);
     } catch (error) {
       console.log(`Configuration file not present. Trying default config (${JSON.stringify(SlideshowController.DEFAULT_CONFIG)}).`);
       this.config = SlideshowController.DEFAULT_CONFIG;
