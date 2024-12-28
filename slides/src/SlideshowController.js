@@ -136,7 +136,10 @@ function threeEmptyLinesSlicerPreprocessor(markdown) {
 /**
  * 
  * Automatically prepends an empty (section) link before each
- * header that hasn't already one. Currently, it will be problematic
+ * header that hasn't already one, using the first 30 characters
+ * of the title as the anchor id.
+ * 
+ * Currently, it will be problematic
  * with headers in notes, as it will add the link too.
  * 
  */
@@ -153,7 +156,7 @@ function headerPreprocessor(markdown) {
       // Let's go back trying to find the first not-empty line and
       // decide if it is a section anchor or not.
       while (backCounter >= 0 && !nonAnchorFound && !sectionAnchorFound) {
-        if (backCounter > 0) {
+        if (backCounter >= 0) {
           const previousLine = oldLines[backCounter].trim();
           if (previousLine.startsWith('[](') === true) {
             // A link was already present
@@ -166,7 +169,13 @@ function headerPreprocessor(markdown) {
         backCounter--;
       }
       if (sectionAnchorFound == false) {
-        newLines.push('[](.default)');
+        const id = currentLine
+          .substring(currentLine.lastIndexOf('#')+2, 30)
+          .replace(/[^a-zA-Z\s]/g, '')
+          .trim()
+          .toLowerCase()
+          .replaceAll(' ', '-');
+        newLines.push(`[](#${id},.default)`);
       }
     }
     
