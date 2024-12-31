@@ -144,12 +144,13 @@ function threeEmptyLinesSlicerPreprocessor(markdown) {
  * 
  */
 function headerPreprocessor(markdown) {
+  const pattern = /^##?#? /;
   const oldLines = markdown.split('\n');
   const newLines = [];
 
   for (let i=0; i < oldLines.length; i++) {
     const currentLine = oldLines[i];
-    if (currentLine.startsWith('#') === true) {
+    if (pattern.test(currentLine) === true) {
       let sectionAnchorFound = false;
       let nonAnchorFound = false;
       let backCounter = i-1;
