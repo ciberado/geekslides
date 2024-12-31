@@ -451,6 +451,7 @@ class Slideshow {
       detail: {
         slideshow : this,
         currentSlideElem,
+        currentSlideId : currentSlideElem.id,
         currentSlideIndex : this.getCurrentSlideIndex(),
         lastPartialShownIndex 
       }
