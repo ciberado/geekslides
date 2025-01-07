@@ -245,27 +245,27 @@ class SlideshowController {
 
     document.addEventListener('nextSlide', (event) => {
       this.slideshow.gotoNextSlide();
-    });
+    }, true);
     document.addEventListener('previousSlide', (event) => {
       this.slideshow.gotoPreviousSlide();
-    });
+    }, true);
     document.addEventListener('toggleSpeakerView', (event) => {
       this.slideshow.toggleSpeakerView();
-    });
+    }, true);
     document.addEventListener('slideShown', (event) => {
       let newHash = event.detail.currentSlideIndex;
       if (event.detail.lastPartialShownIndex > 0) {
         newHash += '.' + event.detail.lastPartialShownIndex;
       }
       window.location.hash = newHash;
-    });
+    }, true);
     document.addEventListener('partialShown', (event) => {
       window.location.hash = event.detail.currentSlideIndex + '.' + event.detail.lastPartialShownIndex;
-    });
+    }, true);
 
     window.addEventListener('hashchange', () => {
       this.matchHashIndex();
-    });
+    }, true);
 
 
     document.addEventListener('cloneWindow', () => {
