@@ -471,13 +471,14 @@ class Slideshow {
     const currentSlideElem = this.slideshowElem.querySelectorAll('section')[this.getCurrentSlideIndex()];
     const partialShownItems = this.getCurrentSlidePartials();
     const lastPartialShownIndex = partialShownItems.shown.length;
-    
+    const lastPartialShownElem = partialShownItems.shown[lastPartialShownIndex-1][0];
+
     const event = new CustomEvent("partialShown", {
       detail: {
         slideshow : this,
         currentSlideElem,
         currentSlideIndex : this.getCurrentSlideIndex(),
-        lastPartialShownElem : partialShownItems.shown[lastPartialShownIndex-1],
+        lastPartialShownElem,
         lastPartialShownIndex
       }
     });
