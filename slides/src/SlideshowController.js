@@ -144,13 +144,13 @@ function threeEmptyLinesSlicerPreprocessor(markdown) {
  * 
  */
 function headerPreprocessor(markdown) {
-  const pattern = /^##?#? /;
+  const headerPattern = /^##?#? /;
   const oldLines = markdown.split('\n');
   const newLines = [];
 
   for (let i=0; i < oldLines.length; i++) {
     const currentLine = oldLines[i];
-    if (pattern.test(currentLine) === true) {
+    if (headerPattern.test(currentLine) === true) {
       let sectionAnchorFound = false;
       let nonAnchorFound = false;
       let backCounter = i-1;
@@ -224,7 +224,8 @@ class SlideshowController {
     ],
     script: '',
     scripts : [],
-    liveReload : false
+    liveReload : false,
+    slideWhiteBoard : true,
   };
 
 
@@ -537,7 +538,9 @@ class SlideshowController {
     this.slideshow.refreshSlideshowContent();
     if (newSlideIndex) this.slideshow.gotoSlideIndex(newSlideIndex);
 
-    this.#initWhiteboards();
+    if (this.config.slideWhiteBoard === true) {
+      this.#initWhiteboards();
+    }
     this.#initVideoslides();
 
     window.sessionStorage.setItem('lastInputSlideshowUrl', this.baseUrl);
