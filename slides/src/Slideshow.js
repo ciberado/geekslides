@@ -456,7 +456,7 @@ class Slideshow {
         lastPartialShownIndex 
       }
     });
-    document.dispatchEvent(event);
+    currentSlideElem.dispatchEvent(event);
   }
 
   /**
