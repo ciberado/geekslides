@@ -495,16 +495,6 @@ class SlideshowController {
       const styles = Array.isArray(this.config.styles) ? this.config.styles : [this.config.styles]; 
       styles.forEach(url => this.loadLocalCSS(newBaseUrl, url));
     }
-
-    // Add (and await it, so it can be used in the processors) local js files
-    if (this.config.scripts) {
-      for (let script of this.config.scripts) {
-        await this.loadLocalJavascript(script);
-      }
-    }
-    if (this.config.script) {
-      await this.loadLocalJavascript(this.config.script);
-    }
     
     // Pre-process the markdown document
     if (this.config.preprocessors) {
@@ -544,6 +534,16 @@ class SlideshowController {
     this.#initVideoslides();
 
     window.sessionStorage.setItem('lastInputSlideshowUrl', this.baseUrl);
+
+    // Scripts are not available to procesors and preprocesors.
+    if (this.config.scripts) {
+      for (let script of this.config.scripts) {
+        await this.loadLocalJavascript(script);
+      }
+    }
+    if (this.config.script) {
+      await this.loadLocalJavascript(this.config.script);
+    }
 
     this.#dispatchEvent('slideshowLoaded', { newBaseUrl, currentSlideIndex: newSlideIndex });
 
