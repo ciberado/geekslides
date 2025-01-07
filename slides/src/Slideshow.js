@@ -481,7 +481,7 @@ class Slideshow {
         lastPartialShownIndex
       }
     });
-    document.dispatchEvent(event);
+    lastPartialShownElem.dispatchEvent(event);
   }
 }
 
