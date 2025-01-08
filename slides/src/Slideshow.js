@@ -361,19 +361,8 @@ class Slideshow {
    */
   toggleSpeakerView() {
     if (this.slideshowElem.classList.contains('speaker') == true) {
-      // speaker mode -> book
-      document.body.parentElement.classList.remove('fullviewport');
       this.slideshowElem.classList.remove('speaker');
-      this.slideshowElem.classList.remove('slidedeck');
-      this.slideshowElem.classList.add('slidedeck-book');
-      document.querySelector('.active').scrollIntoView();
-    } else if (this.slideshowElem.classList.contains('slidedeck-book') == true) {
-      // book -> normal slides
-      this.slideshowElem.classList.remove('speaker');
-      this.slideshowElem.classList.remove('slidedeck-book');
-      this.slideshowElem.classList.add('slidedeck');
       this.slideshowElem.classList.add('presentation');
-      document.body.parentElement.classList.add('fullviewport');
       window.scrollTo(0,0);
     } else {
       // normal slides -> speaker mode
