@@ -243,11 +243,16 @@ class SlideshowController {
     /* @property {Slideshow} slideshow object */
     this.slideshow = slideshow;
 
+    // TODO: Clean up event management so it is 
     document.addEventListener('nextSlide', (event) => {
-      this.slideshow.gotoNextSlide();
+      if (event.defaultPrevented === false) {
+        this.slideshow.gotoNextSlide();
+      }
     }, true);
     document.addEventListener('previousSlide', (event) => {
-      this.slideshow.gotoPreviousSlide();
+      if (event.defaultPrevented === false) {
+        this.slideshow.gotoPreviousSlide();
+      }
     }, true);
     document.addEventListener('toggleSpeakerView', (event) => {
       this.slideshow.toggleSpeakerView();

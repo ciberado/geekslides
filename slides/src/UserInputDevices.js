@@ -90,8 +90,10 @@ class UserInputDevices {
   }
 
   #dispatchEvent(eventName) {
-    let event = new CustomEvent(eventName);
-    document.dispatchEvent(event);
+    const event = new CustomEvent(eventName, {  cancelable: true, bubbles: false });
+    const source = eventName === 'nextSlide' || eventName === 'previousSlide' ? 
+                   this.slideshow.getCurrentSlideElem() : document;
+    source.dispatchEvent(event);
   }
 
   handleKeyEvent(keyEvent) {

@@ -34,31 +34,31 @@ class SyncController {
     this.emitting = false;
 
     document.addEventListener('joinRoom',
-      (evt) => this.inputUserForNewSession());
+      (evt) => this.inputUserForNewSession(), true);
     document.addEventListener('toggleEmission', 
-      (evt) => this.toggleEmission());      
+      (evt) => this.toggleEmission(), true);      
     document.addEventListener('userOpenedSlides', 
-      (evt) => this.toggleEmission(true));
+      (evt) => this.toggleEmission(true), true);
     document.addEventListener('slideShown', 
-      (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex));
+      (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex), true);
     document.addEventListener('partialShown', 
-      (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex));
+      (evt) => this.#dispatchCurrentSlide(evt.detail.currentSlideIndex, evt.detail.lastPartialShownIndex), true);
     document.addEventListener('slideshowLoaded', 
-      (evt) => this.#dispatchSlideshowLoaded(evt.detail.newBaseUrl, evt.detail.currentSlideIndex));
+      (evt) => this.#dispatchSlideshowLoaded(evt.detail.newBaseUrl, evt.detail.currentSlideIndex), true);
 
     document.addEventListener('startWhiteboardStroke', 
-      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, false, evt.detail));
+      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, false, evt.detail), true);
     document.addEventListener('endWhiteboardStroke', 
-      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, false, evt.detail));
+      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, false, evt.detail), true);
     document.addEventListener('whiteboardStroke', 
-      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, false, evt.detail));
+      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, false, evt.detail), true);
     document.addEventListener('clearWhiteboard', 
-      evt => this.#dispatchWhiteboard(evt?.detail?.source.id, evt.type, false));
+      evt => this.#dispatchWhiteboard(evt?.detail?.source.id, evt.type, false), true);
 
     document.addEventListener('whiteboardShown', 
-      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true));
+      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true), true);
     document.addEventListener('whiteboardHidden', 
-      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true));
+      evt => this.#dispatchWhiteboard(evt.detail.source.id, evt.type, true), true);
 
     // By default, localhub is used to coordinate the different windows being run in the same laptop.
     this.#subscribeToLocalHub();
