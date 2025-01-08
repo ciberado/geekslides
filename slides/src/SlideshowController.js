@@ -243,9 +243,11 @@ class SlideshowController {
     /* @property {Slideshow} slideshow object */
     this.slideshow = slideshow;
 
-    // TODO: Clean up event management so it is 
+    // TODO: Clean up event management so it correctly manages bubbling and event cancelation.
+    // Currently, it uses `slideElem.dataset.lockNextSlide to provide manual control
+    // over *nextSlide* transitions.
     document.addEventListener('nextSlide', (event) => {
-      if (event.defaultPrevented === false) {
+      if (event.target.dataset?.lockNextSlide !== "true") {
         this.slideshow.gotoNextSlide();
       }
     }, true);
