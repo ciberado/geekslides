@@ -229,8 +229,8 @@ class Slideshow {
       return;  
     }
 
-    let newActiveSlide = currentSlide.nextElementSibling;
-    
+    let newActiveSlide = document.querySelector('.active + section');
+     
     while ((newActiveSlide !== null) && newActiveSlide.classList.contains('hidden') === true) {
       newActiveSlide = newActiveSlide.nextElementSibling;
     }
