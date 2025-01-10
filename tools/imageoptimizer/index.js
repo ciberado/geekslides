@@ -65,9 +65,9 @@ async function optimizeImage(fileName, inputDirectory, outputDirectory) {
     const outputPath =  path.join(outputDirectory, fileName);
 
 
-    if (fileName.match(/\.(jpg|jpeg|png|webp)$/) === false) {
+    if (fileName.match(/\.(jpg|jpeg)$/) === null) {
         await fs.copyFile(inputPath, outputPath);
-        logger.warn(`File ${file} was not processed but just copied.`);
+        logger.warn(`File ${fileName} was not processed but just copied.`);
         return;
     }
 
@@ -78,6 +78,7 @@ async function optimizeImage(fileName, inputDirectory, outputDirectory) {
     }).jpeg({
         quality : QUALITY,
         progressive : true,
+        force: false
     }) .toFile(outputPath, (err, info) => {
         if (err) {
           throw info;
@@ -115,6 +116,24 @@ async function main() {
         await optimizeImages(data.filter(d=>d.sanitizedFileName), '/tmp/images/downloaded/', '/tmp/images/optimized/');
         logger.info('Saving data.');
         await fs.writeFile('/tmp/images/optimized/data.json', JSON.stringify(data, null, 2), 'utf8');
+
+        logger.info(`Removing local paths from data.`);
+        data.forEach(d => {
+            if (d.src.startsWith('https://geekslides.aprender.cloud/xxx/')) {
+                d.src = d.src.replace('https://geekslides.aprender.cloud/xxx/', '');
+            }
+        });
+
+        logger.info('Updating README.md');
+        const readmePath = '/home/ubuntu/projects/decks/xxx/slides/README.md';
+        let readmeContent = await fs.readFile(readmePath, 'utf8');
+
+        data.forEach(d => {
+            const regex = new RegExp(d.src, 'g');
+            readmeContent = readmeContent.replace(regex, `images/optimized/${d.sanitizedFileName}`);
+        });
+
+        await fs.writeFile(readmePath+'.v2', readmeContent, 'utf8');
         logger.info('All done.');
 
     } catch (err) {
