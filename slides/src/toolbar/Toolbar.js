@@ -16,18 +16,20 @@ class Toolbar {
       <li class="action"><button type="button" data-action="red">Red</button></li>
       <li class="action"><button type="button" data-action="green">Green</button></li>
       <li class="action"><button type="button" data-action="yellow">Yellow</button></li>
-    
+      <li/>
       <li class="action"><button type="button" data-action="big">Big</button></li>
       <li class="action"><button type="button" data-action="thin">Thin</button></li>
-    
+      <li/>
       <li class="action"><button type="button" data-action="transparent">HL</button></li>
       <li class="action"><button type="button" data-action="opaque">Pen</button></li>
-
+      <li/>
       <li class="action"><button type="button" data-action="eraser">Eraser</button></li>
-      
+      <li/>
       <li class="action"><button type="button" data-action="whiteboard">WB</button></li>
-    
+      <li/>
       <li class="action"><button type="button" data-action="clear">Clear</button></li>
+      <li/>
+      <li class="action"><button type="button" data-action="join">Join</button></li>
     </ul>
     `.trim();
     
@@ -118,6 +120,11 @@ class Toolbar {
       color : 'eraser'
     });
   }  
+
+  join() {
+    this.#dispatchEvent('joinRoom');
+  }
+
 
   #dispatchEvent(eventName, detail) {
     let event = new CustomEvent(eventName, { detail });
