@@ -414,6 +414,7 @@ class SlideshowController {
     const cssLoadedPromise = new Promise((resolve, reject) => {
       console.log(`Loading script from ${url}.`);
       const jsElem = document.createElement('script');
+      jsElem.type="module";
       jsElem.src = url;
       jsElem.onload = (evt) => {
         console.log(`Scripts from ${url} loaded.`);
