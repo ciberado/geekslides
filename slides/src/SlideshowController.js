@@ -553,6 +553,19 @@ class SlideshowController {
       await this.loadLocalJavascript(this.config.script);
     }
 
+    // If the page/scripts are still loading, wait until they have finished.
+    await new Promise((resolve) => {
+      if (document.readyState === 'complete') {
+        resolve();
+      } else {
+      document.addEventListener('readystatechange', () => {
+        if (document.readyState === 'complete') {
+          resolve();
+        }
+      });
+      }
+    });
+
     this.#dispatchEvent('slideshowLoaded', { newBaseUrl, currentSlideIndex: newSlideIndex });
 
     return true;
