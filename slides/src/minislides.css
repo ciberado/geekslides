@@ -45,6 +45,13 @@
   opacity : 0.25;  
 }
 
+/**
+  * Enable slide replacement if the section has the `.succession` class
+  */
+.slidedeck section + section.succession:not(.prev) {
+  transition: unset;
+}
+
 .slidedeck section.partial ul li, 
 .slidedeck section.partial ol li {
   opacity : 0;
