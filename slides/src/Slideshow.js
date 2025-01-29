@@ -383,7 +383,7 @@ class Slideshow {
    * @returns {number} the index of the current slide (0 based).
    */
   getCurrentSlideIndex() {
-    const currentSlide = this.slideshowElem.querySelector('.active');
+    const currentSlide = this.slideshowElem.querySelector('section.active');
     const allSlides = [...this.slideshowElem.querySelectorAll('section')];
 
     return allSlides.indexOf(currentSlide);
@@ -432,7 +432,7 @@ class Slideshow {
     * @returns {slideShownEvent} with information about the current status of the slideshow
     */
   fireSlideShown() {
-    const currentSlideElem = this.slideshowElem.querySelectorAll('section')[this.getCurrentSlideIndex()];
+    const currentSlideElem = this.slideshowElem.querySelector('section.active');
     const partialShownItems = this.getCurrentSlidePartials();
     const lastPartialShownIndex = currentSlideElem.classList.contains('partial') ?
                                   partialShownItems.shown.length : -1;
