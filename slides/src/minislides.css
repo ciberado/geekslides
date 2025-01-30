@@ -46,11 +46,13 @@
 }
 
 /**
-  * Enable slide replacement if the section has the `.succession` class
+  * Enable slide replacement if the next section has the `.succession` class
   */
-.slidedeck section + section.succession:not(.prev) {
+.slidedeck section + .succession, .slidedeck section.prev:has(+ .succession)  {
   transition: unset;
+  background-color: red !important;
 }
+
 
 .slidedeck section.partial ul li, 
 .slidedeck section.partial ol li {
