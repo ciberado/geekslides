@@ -50,7 +50,6 @@
   */
 .slidedeck section + .succession, .slidedeck section.prev:has(+ .succession)  {
   transition: unset;
-  background-color: red !important;
 }
 
 
