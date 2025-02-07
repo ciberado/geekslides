@@ -208,7 +208,7 @@ function emptyLineSeparatorPreprocessor(markdown) {
 class SlideshowController {
 
   static DEFAULT_CONFIG = {
-    content: 'content.md',
+    content: null,        // null (automatically generates a synthetic markdown document), a string with the path to the markdown file or an array.
     resolution : '16:9',
     styles: '',
     preprocessor : [
@@ -473,19 +473,27 @@ class SlideshowController {
     }
     // Try to load content, return false if it is not possible
     let markdown = null;
-    let fetchedContent = await fetch(newBaseUrl + this.config.content);
-    if (fetchedContent.ok !== true) {
-      console.info(`Error retrieving markdown for ${newBaseUrl}: ${fetchedContent.status} ${fetchedContent.statusText}`);
+    if (!this.config.content) {
       // Create an artificial markdown document describing 200 slides implemented as images. This
       // is useful when the presentation is generated exporting from a pdf document using
       // `pdftoppm -r 150 -png slides.pdf Slide`.
       console.info(`Generating synthetic markdown document for png images.`);
       // markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide-${e<9? '0' : ''}${e+1}.png))`).join('\r\n\r\n');
-      markdown = [...Array(200).keys()].map(e => `[](bgurl(Slide${e<9? '' : ''}${e+1}.SVG))`).join('\r\n\r\n');
+      markdown = [...Array(100).keys()].map(e => `[](bgurl(Slide${e<9? '' : ''}${e+1}.SVG))`).join('\r\n\r\n');
     } else {
-      markdown = await fetchedContent.text();
-      if (this.config.liveReload === true) {
-        this.activateLiveReload(newBaseUrl + this.config.content);
+      if (Array.isArray(this.config.content)) {
+        markdown = '';
+        for (const contentFile of this.config.content) {
+          let fetchedContent = await fetch(newBaseUrl + contentFile);
+          markdown += await fetchedContent.text() + '\n\n';
+        }
+      } else {
+        let fetchedContent = await fetch(newBaseUrl + this.config.content);
+        console.info(`Error retrieving markdown for ${newBaseUrl}: ${fetchedContent.status} ${fetchedContent.statusText}`);
+        markdown = await fetchedContent.text();
+        if (this.config.liveReload === true) {
+          this.activateLiveReload(newBaseUrl + this.config.content);
+        }
       }
     }
 
