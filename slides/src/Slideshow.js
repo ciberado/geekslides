@@ -41,7 +41,7 @@ class Slideshow {
     this.setAspectRatio(options.aspectRatio);
 
     window.addEventListener('resize',() => this.updateSlidesScale());
-    this.updateSlidesScale();  
+    this.updateSlidesScale();
   }
 
   /**
@@ -49,6 +49,8 @@ class Slideshow {
    * listeners and classes.
    */
   refreshSlideshowContent() {
+    this.toggleSpeakerView('presentation');
+
     [...this.slideshowElem.querySelectorAll('section')].forEach( 
       e => e.addEventListener('transitionend', (event) => this.observeSlideTransitions(event)));
 
@@ -347,27 +349,39 @@ class Slideshow {
    * 
    * * Normal (presentation) mode: the `html` tag will have a `fullviewport` class
    *   and the `slideShowElem` will have the `slidedeck` one and the `presentation`. 
+   *   Each section (slide) will have the `presentation` class too.
    *   This is the mode you use to show the slides.
    * 
    * * Speaker (with notes and next slide) mode: the `html` tag will have a `fullviewport` class
    *   and the `slideShowElem` will have both `slidedeck` and `speaker`classes. 
+   *   Each section (slide) will have the `speaker` class too.
    *   This is the mode you use to help you while presenting life.
    * 
-   * * Book (totally paginated, as in a book) mode: the `html` will NOT have any
-   *   special class and the `slideShwElem` will only contain the `slidedeck-book` one.
-   *   This mode will allow to pretty-print the slides like a book but it is also a good
-   *   way to help the presenter while delivering online sessions.
+   * @param {string} enforceMode if present, forces the slideshow to be in the indicated mode
+   *        ('presentation' or 'speaker').
    * 
    */
-  toggleSpeakerView() {
-    if (this.slideshowElem.classList.contains('speaker') == true) {
-      this.slideshowElem.classList.remove('speaker');
+  toggleSpeakerView(enforceMode) {
+    enforceMode = enforceMode || this.slideshowElem.classList.contains('speaker') ? 'presentation' : 'speaker';
+
+    this.slideshowElem.classList.remove('speaker');
+    this.slideshowElem.querySelectorAll('section')
+      .forEach(e => e.classList.remove('speaker'));
+
+    this.slideshowElem.classList.remove('presentation');
+    this.slideshowElem.querySelectorAll('section')
+      .forEach(e => e.classList.remove('presentation'));
+
+    if (enforceMode === 'presentation') {      
       this.slideshowElem.classList.add('presentation');
+      this.slideshowElem.querySelectorAll('section')
+        .forEach(e => e.classList.add('presentation'));
+      
       window.scrollTo(0,0);
-    } else {
-      // normal slides -> speaker mode
-      this.slideshowElem.classList.remove('presentation');
+    } else {      
       this.slideshowElem.classList.add('speaker');
+      this.slideshowElem.querySelectorAll('section')
+        .forEach(e => e.classList.add('speaker'));
     }
   }
 
