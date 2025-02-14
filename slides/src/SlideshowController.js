@@ -170,12 +170,16 @@ function headerPreprocessor(markdown) {
         backCounter--;
       }
       if (sectionAnchorFound == false) {
-        const id = currentLine
+        let id = currentLine
           .substring(currentLine.lastIndexOf('#')+2, 30)
           .replace(/[^a-zA-Z\s]/g, '')
           .trim()
           .toLowerCase()
           .replaceAll(' ', '-');
+        
+        if (newLines.includes(`[](#${id},.default)`)) {
+          id= id + '-' + i;
+        }
         newLines.push(`[](#${id},.default)`);
       }
     }
