@@ -225,7 +225,7 @@ class SlideshowController {
     script: '',
     scripts : [],
     liveReload : false,
-    slideWhiteBoard : true,
+    slideWhiteBoards : true,
   };
 
 
@@ -544,7 +544,7 @@ class SlideshowController {
     this.slideshow.refreshSlideshowContent();
     if (newSlideIndex) this.slideshow.gotoSlideIndex(newSlideIndex);
 
-    if (this.config.slideWhiteBoard === true) {
+    if (this.config.slideWhiteBoards === true) {
       this.#initWhiteboards();
     }
     this.#initVideoslides();
