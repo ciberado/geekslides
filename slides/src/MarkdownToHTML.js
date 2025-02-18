@@ -182,38 +182,28 @@ class MarkdownToHTML {
       .use(blockImagePlugin, {
         outputContainer : 'div'
       })
-      .use(containerPlugin, 'notes', {
+      .use(containerPlugin, 'block', {
         validate: function(params) {
-          const result = params.trim().match(/^notes$/i);
-          return result;
+          return params.trim();
         },
       
         render: function (tokens, idx) {
-          var m = tokens[idx].info.trim().match(/^notes$/i);
+          let className;
+          if (tokens[idx].info.trim().match(/^notes$/i) !== null) {
+            className = 'slide-notes';
+          } else if (tokens[idx].info.trim().match(/^\.+$/i) !== null) {
+            className = 'content-group';
+          } else {
+            className = tokens[idx].info.trim().toLowerCase();
+          }
       
           if (tokens[idx].nesting === 1) {
-            return '<div class="slide-notes">';
+            return `<div class="${className}">`;
           } else {
             return '</div>\n';
           }
         }
-      })
-      .use(containerPlugin, 'group', {
-        validate: function(params) {
-          const result = params.trim().match(/^\.+$/i);
-          return result;
-        },
-      
-        render: function (tokens, idx) {
-          var m = tokens[idx].info.trim().match(/^\.+$/i);
-      
-          if (tokens[idx].nesting === 1) {
-            return '<div class="content-group">';
-          } else {
-            return '</div>\n';
-          }
-        }
-      });
+    });
     let defaultImageRenderer = md.renderer.rules.image;
     md.renderer.rules.image = (tokens, idx, options, env, self) => this.#markdownImageTransformation(defaultImageRenderer, tokens, idx, options, env, self);
 
