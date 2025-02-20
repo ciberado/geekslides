@@ -220,8 +220,15 @@ class Slideshow {
     const currentSlide = this.slideshowElem.querySelector('.active');
     if (currentSlide === null) return;
 
+    // If we are in printing mode, show all partials at once.
+    if ((this.slideshowElem.classList.contains('printing') === true) 
+     && (currentSlide.classList.contains('partial') === true)) {
+      currentSlide.querySelectorAll('ol li, ul li').forEach(e=>e.classList.add('partial-shown'));
+    }
+
     // get the current slide partials (shown and unshown)
     const partials = this.getCurrentSlidePartials();
+
     if (partials.unshown.length > 0) {
       // if there are still available partials, show the first one and
       // fire the corresponding event
@@ -230,6 +237,7 @@ class Slideshow {
       this.firePartialShown();
       return;  
     }
+  
 
     let newActiveSlide = document.querySelector('.active + section');
      
