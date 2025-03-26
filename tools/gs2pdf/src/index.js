@@ -22,6 +22,15 @@ async function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+if (process.argv.length < 4) {
+  logger.error('Usage: node index.js <server-url> <presentation-url>');
+  process.exit(1);
+}
+
+const serverUrl = process.argv[2];
+const presentationUrl = process.argv[3];
+
+logger.info(`Loading ${presentationUrl} from ${serverUrl}.`);
 logger.info('Starting browser context.');
 
 const browser = await firefox.launch({ headless: true }); // Set headless to false to see the browser
@@ -31,11 +40,11 @@ const context = await browser.newContext({
 
 logger.info('Loading presentation.');
 const page = await context.newPage();
-await page.goto('https://geekslides.aprender.cloud/?url=https://geekslides.aprender.cloud/presentations'); 
+await page.goto(`${serverUrl}/?url=${presentationUrl}`); 
 await page.waitForLoadState('load'); 
 
 logger.info('Creating output directory.');
-const workdir= './tmp/gs';
+const workdir= '/tmp/gs';
 fs.rmSync(workdir, { recursive: true, force: true });
 fs.mkdirSync(workdir, { recursive: true });
 
