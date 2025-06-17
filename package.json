@@ -7,7 +7,7 @@
   },
   "//": [
     "\"",
-    "  demo/node_modules/concurrently/bin/concurrently.js --kill-others                ",
+    "  demo/node_modules/concurrently/dist/bin/concurrently.js --kill-others                ",
     "    \"npm --prefix broker run start\"                                          ",
     "    \"npm --prefix slides run start\"                                      ",
     "\""
