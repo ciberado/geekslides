@@ -456,7 +456,7 @@ class SlideshowController {
    * @param {string} newSlideIndex 
    *
    * @returns true if a new slideshow has been correctly loaded, false otherwise.
-   * @fires slideshowLoaded
+   * @fires slideshowLoaded 
    */
   async changeSlideshowContent(newBaseUrl, newSlideIndex) {
     if (this.baseUrl === newBaseUrl) return true;
@@ -477,6 +477,18 @@ class SlideshowController {
     }
     // Try to load content, return false if it is not possible
     let markdown = null;
+
+    async function fetchContent(baseURL, fileURL) {
+      const url = fileURL.startsWith('http') || fileURL.startsWith('//') ? 
+                  fileURL : baseURL + fileURL;
+      console.log(`Loading markdown from ${url}.`);
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Error retrieving markdown for ${url}: ${response.status} ${response.statusText}`);
+      }
+      return await response.text() + '\n\n';
+    }
+
     if (!this.config.content) {
       // Create an artificial markdown document describing 200 slides implemented as images. This
       // is useful when the presentation is generated exporting from a pdf document using
@@ -488,13 +500,11 @@ class SlideshowController {
       if (Array.isArray(this.config.content)) {
         markdown = '';
         for (const contentFile of this.config.content) {
-          let fetchedContent = await fetch(newBaseUrl + contentFile);
-          markdown += await fetchedContent.text() + '\n\n';
+          let fetchedContent = await fetchContent(newBaseUrl, contentFile);
+          markdown += fetchedContent;
         }
       } else {
-        let fetchedContent = await fetch(newBaseUrl + this.config.content);
-        console.info(`Error retrieving markdown for ${newBaseUrl}: ${fetchedContent.status} ${fetchedContent.statusText}`);
-        markdown = await fetchedContent.text();
+        markdown = await fetchContent(newBaseUrl, this.config.content);
         if (this.config.liveReload === true) {
           this.activateLiveReload(newBaseUrl + this.config.content);
         }
@@ -515,7 +525,17 @@ class SlideshowController {
       const styles = Array.isArray(this.config.styles) ? this.config.styles : [this.config.styles]; 
       styles.forEach(url => this.loadLocalCSS(newBaseUrl, url));
     }
-    
+
+    // Scripts are now available to procesors and preprocesors.
+    if (this.config.scripts) {
+      for (let script of this.config.scripts) {
+        await this.loadLocalJavascript(script);
+      }
+    }
+    if (this.config.script) {
+      await this.loadLocalJavascript(this.config.script);
+    }  
+
     // Pre-process the markdown document
     if (this.config.preprocessors) {
       for (const preprocessor of this.config.preprocessors.map(sp => typeof(sp) === 'string' ? eval(sp) : sp)) {
@@ -554,16 +574,6 @@ class SlideshowController {
     this.#initVideoslides();
 
     window.sessionStorage.setItem('lastInputSlideshowUrl', this.baseUrl);
-
-    // Scripts are not available to procesors and preprocesors.
-    if (this.config.scripts) {
-      for (let script of this.config.scripts) {
-        await this.loadLocalJavascript(script);
-      }
-    }
-    if (this.config.script) {
-      await this.loadLocalJavascript(this.config.script);
-    }
 
     // If the page/scripts are still loading, wait until they have finished.
     await new Promise((resolve) => {
