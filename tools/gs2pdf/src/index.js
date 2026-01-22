@@ -33,9 +33,27 @@ const presentationUrl = process.argv[3];
 logger.info(`Loading ${presentationUrl} from ${serverUrl}.`);
 logger.info('Starting browser context.');
 
-const browser = await firefox.launch({ headless: true }); // Set headless to false to see the browser
+const browser = await firefox.launch({ headless: false }); // Set headless to false to see the browser
 const context = await browser.newContext({
     viewport: { width: 1920, height: 1080 }     
+});
+
+context.on('console', msg => {
+  const type = msg.type();
+  const text = msg.text();
+  switch (type) {
+    case 'error':
+      logger.error(text);
+      break;
+    case 'warning':
+      logger.warn(text);
+      break;
+    case 'info':
+      logger.info(text);
+      break;
+    default:
+      logger.debug(text);
+  }
 });
 
 logger.info('Loading presentation.');
