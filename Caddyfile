@@ -1,0 +1,97 @@
+# Caddyfile for Geekslides
+# Supports automatic HTTPS with Let's Encrypt and Tailscale
+# 
+# Environment variables:
+#   DOMAIN: Your domain name (e.g., geekslides.aprender.cloud)
+#           If not set, defaults to :80 (HTTP only, useful for local dev)
+#   EXTERNAL_CONTENT_URL: Optional external URL to proxy /content requests to
+#                         (e.g., https://cdn.example.com or https://slides.storage.com)
+
+{
+	# Automatic HTTPS configuration
+	# Caddy will automatically obtain certificates from Let's Encrypt
+	# For Tailscale, use: tailscale.com/kb/1190
+	auto_https on
+	
+	# Email for Let's Encrypt notifications (optional, use environment variable)
+	# email {$ACME_EMAIL}
+}
+
+# Main server block
+# Use {$DOMAIN:localhost} to default to localhost if DOMAIN is not set
+{$DOMAIN:localhost} {
+	# Enable automatic HTTPS (already default, but explicit)
+	# For Tailscale HTTPS, use: tls internal or configure tailscale cert
+	
+	# Logging (optional, useful for debugging)
+	log {
+		output stdout
+		format console
+	}
+
+	# Proxy /mqtt to the broker (WebSocket support)
+	handle /mqtt* {
+		reverse_proxy localhost:8883 {
+			# WebSocket support
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+
+	# Optional: Proxy /content to external URL if configured
+	@content_external {
+		path /content*
+		expression {$EXTERNAL_CONTENT_URL} != ""
+	}
+	handle @content_external {
+		reverse_proxy {$EXTERNAL_CONTENT_URL} {
+			header_up Host {upstream_hostport}
+			header_down Location ^(.*)/content(.*)$ $1$2
+		}
+	}
+
+	# Serve static slides from /slides directory
+	handle /slides* {
+		root * /usr/share/caddy
+		file_server browse
+	}
+
+	# Default: Proxy everything else to the slides application
+	handle {
+		reverse_proxy localhost:1234 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+}
+
+# If no domain is set, also listen on standard ports
+:80 {
+	# Same configuration as above for local development
+	handle /mqtt* {
+		reverse_proxy localhost:8883
+	}
+
+	@content_external {
+		path /content*
+		expression {$EXTERNAL_CONTENT_URL} != ""
+	}
+	handle @content_external {
+		reverse_proxy {$EXTERNAL_CONTENT_URL} {
+			header_up Host {upstream_hostport}
+		}
+	}
+
+	handle /slides* {
+		root * /usr/share/caddy
+		file_server browse
+	}
+
+	handle {
+		reverse_proxy localhost:1234
+	}
+}

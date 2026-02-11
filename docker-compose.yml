@@ -1,0 +1,38 @@
+services:
+  geekslides:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      # Set your domain for automatic HTTPS
+      # For local development, leave commented out or set to localhost
+      # DOMAIN: geekslides.aprender.cloud
+      
+      # Optional: Email for Let's Encrypt certificate notifications
+      # ACME_EMAIL: admin@example.com
+      
+      # Optional: External URL for hosting slides content
+      # EXTERNAL_CONTENT_URL: https://cdn.example.com
+      
+      # Timezone
+      TZ: Europe/Madrid
+    volumes:
+      # Persist Caddy data for certificates
+      - caddy_data:/data
+      - caddy_config:/config
+      
+      # Optional: Mount local slides directory for development
+      # - ./slides/dist:/usr/share/caddy/slides
+    restart: unless-stopped
+    # For Tailscale, you might want to add:
+    # network_mode: host
+    # Or use a Tailscale sidecar container
+
+volumes:
+  caddy_data:
+    driver: local
+  caddy_config:
+    driver: local
