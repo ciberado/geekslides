@@ -4,6 +4,8 @@
  * Wraps y-websocket's setupWSConnection with room-based routing and auth.
  */
 
+// eslint-disable-next-line @typescript-eslint/triple-slash-reference
+/// <reference path="./types/y-websocket.d.ts" />
 import { WebSocketServer } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 

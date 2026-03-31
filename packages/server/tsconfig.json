@@ -14,10 +14,11 @@
     "outDir": "dist",
     "rootDir": "src",
     "allowImportingTsExtensions": true,
-    "noEmit": true,
+    "emitDeclarationOnly": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "typeRoots": ["../../node_modules/@types", "src/types"],
     "resolveJsonModule": true,
     "isolatedModules": true
   },

@@ -4,6 +4,16 @@
   "type": "module",
   "main": "src/index.ts",
   "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./headless": {
+      "import": "./src/headless.ts",
+      "default": "./src/headless.ts"
+    }
+  },
   "scripts": {
     "build": "vite build",
     "typecheck": "tsc --noEmit"
