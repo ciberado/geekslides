@@ -12,7 +12,13 @@
 <body>
   <geek-slideshow id="slideshow"></geek-slideshow>
   <script type="module">
-    import { parse } from '/packages/engine/src/index.ts';
+    import { parse, headerPreprocessor } from '/packages/engine/src/index.ts';
+
+    // Map of available preprocessors (v1 compat names)
+    const PREPROCESSORS = {
+      'headerPreprocessor': headerPreprocessor,
+      'header': headerPreprocessor,
+    };
 
     const slideshow = document.getElementById('slideshow');
 
@@ -23,22 +29,79 @@
       configUrl = params.get('config');
     }
 
+    // Resolve paths relative to config location
+    const configBase = configUrl.substring(0, configUrl.lastIndexOf('/') + 1);
+    function resolveUrl(path) {
+      if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
+        return path;
+      }
+      return configBase + path;
+    }
+
     try {
       const configRes = await fetch(configUrl);
       const config = await configRes.json();
 
-      // Load content
-      const contentUrl = config.content || 'README.md';
-      const contentRes = await fetch(contentUrl);
+      // Load content (v1 compat: may be array)
+      let contentFile = 'README.md';
+      if (typeof config.content === 'string') {
+        contentFile = config.content;
+      } else if (Array.isArray(config.content) && config.content.length > 0) {
+        contentFile = config.content[0];
+      }
+      const contentRes = await fetch(resolveUrl(contentFile));
       const markdown = await contentRes.text();
 
-      // Parse and render
-      const slides = parse(markdown);
+      // Load external styles from config
+      const styleUrls = Array.isArray(config.styles) ? config.styles : [];
+      const cssTexts = await Promise.all(
+        styleUrls.map(async (url) => {
+          try {
+            const res = await fetch(resolveUrl(url) + '?raw');
+            return await res.text();
+          } catch {
+            console.warn(`Failed to load style: ${url}`);
+            return '';
+          }
+        })
+      );
+      const combinedCss = cssTexts.join('\n');
+
+      // Set <base> so relative paths in markdown (images, etc.) resolve to deck dir
+    // Must be set AFTER all fetch() calls since <base> changes how relative URLs resolve
+    if (configBase) {
+      const base = document.createElement('base');
+      base.href = window.location.origin + '/' + configBase;
+      document.head.appendChild(base);
+    }
+
+    // Apply preprocessors from config (v1 compat: preprocessors at root or plugins.preprocessors)
+    const ppNames = config.preprocessors || config.plugins?.preprocessors || [];
+    let processedMarkdown = markdown;
+    for (const name of ppNames) {
+      const pp = PREPROCESSORS[name];
+      if (pp) {
+        processedMarkdown = pp(processedMarkdown);
+      }
+    }
+
+    // Parse and render
+      const slides = parse(processedMarkdown);
+
+      // Inject external styles before loading slides
+      if (combinedCss) {
+        slideshow.loadStyles(combinedCss);
+      }
       slideshow.loadSlides(slides);
 
-      // Set aspect ratio
+      // Set aspect ratio (v1 compat: resolution "1920x1080")
       if (config.aspectRatio) {
         slideshow.setAspectRatio(config.aspectRatio);
+      } else if (config.resolution) {
+        const [w, h] = config.resolution.split('x');
+        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+        const d = gcd(Number(w), Number(h));
+        slideshow.setAspectRatio(`${w/d}/${h/d}`);
       }
 
       // Temporary keyboard navigation (replaced by CommandSystem in Phase 4)

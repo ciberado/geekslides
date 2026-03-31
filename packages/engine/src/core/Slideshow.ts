@@ -20,6 +20,7 @@ export class Slideshow extends HTMLElement {
   #aspectRatio = 16 / 9;
   #designWidth = 1920;
   #designHeight = 1080;
+  #externalStyles = '';
 
   constructor() {
     super();
@@ -72,6 +73,32 @@ export class Slideshow extends HTMLElement {
   }
 
   /**
+   * Load external CSS to inject into every slide's shadow DOM.
+   * Extracts @import rules (e.g. Google Fonts) and hoists them to
+   * the main document <head> so fonts load globally.
+   * Call before loadSlides() or it will re-inject into existing slides.
+   */
+  loadStyles(css: string): void {
+    // Hoist @import rules to the main document so web fonts work across shadow DOM
+    const importRegex = /@import\s+url\([^)]+\)[^;]*;/g;
+    const imports = css.match(importRegex);
+    if (imports) {
+      const linkStyle = document.createElement('style');
+      linkStyle.classList.add('gs-font-imports');
+      linkStyle.textContent = imports.join('\n');
+      document.head.appendChild(linkStyle);
+    }
+
+    // Keep the remaining CSS (without @import) for shadow DOM injection
+    this.#externalStyles = css.replace(importRegex, '').trim();
+
+    // Re-inject into existing slides
+    for (const el of this.#slideElements) {
+      el.injectStyles(this.#externalStyles);
+    }
+  }
+
+  /**
    * Load slides from parsed SlideData array.
    */
   loadSlides(slides: SlideData[]): void {
@@ -113,6 +140,11 @@ export class Slideshow extends HTMLElement {
       }
 
       slideEl.loadContent(slideData.html, options);
+
+      // Inject external presentation-wide styles into slide shadow DOM
+      if (this.#externalStyles) {
+        slideEl.injectStyles(this.#externalStyles);
+      }
 
       this.#slideElements.push(slideEl);
     }
@@ -190,9 +222,17 @@ export class Slideshow extends HTMLElement {
     const slideEl = this.#slideElements[index];
     if (!slideEl) return;
 
-    // Deactivate all
-    for (const el of this.#slideElements) {
+    // Update all slides: set prev/active classes for scroll transition
+    for (let i = 0; i < this.#slideElements.length; i++) {
+      const el = this.#slideElements[i];
+      if (!el) continue;
+
       el.removeAttribute('active');
+      el.classList.remove('gs-prev');
+
+      if (i < index) {
+        el.classList.add('gs-prev');
+      }
     }
 
     slideEl.setAttribute('active', '');
@@ -252,7 +292,7 @@ export class Slideshow extends HTMLElement {
         height: 100vh;
         overflow: hidden;
         position: relative;
-        background: var(--gs-bg, #fff);
+        background: var(--gs-bg, #404040);
       }
 
       .gs-container {

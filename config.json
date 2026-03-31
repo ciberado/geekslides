@@ -1,0 +1,10 @@
+{
+    "content": "demo/content.md",
+    "styles": ["demo/css/alyssum.css", "demo/css/local.css"],
+    "processors": [
+        "hiddenSlidesProcessor",
+        "footnotesProcessor",
+        "chartProcessor",
+        "iframeProcessor"
+    ]
+}

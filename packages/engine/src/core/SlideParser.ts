@@ -18,6 +18,7 @@ export interface SlideData {
   readonly backgroundColor: string | undefined;
   readonly rawCss: string | undefined;
   readonly notesHtml: string | undefined;
+  readonly detailsHtml: string | undefined;
   readonly partialCount: number;
 }
 
@@ -96,6 +97,17 @@ function countPartials(html: string): number {
   return matches ? matches.length : 0;
 }
 
+/**
+ * Wrap standalone paragraph-images in a .block-image container (v1 compat).
+ * Matches <p><img ...></p> and wraps in <div class="block-image">.
+ */
+function wrapBlockImages(html: string): string {
+  return html.replace(
+    /<p>(\s*<img\s[^>]*>\s*)<\/p>/g,
+    '<div class="block-image"><p>$1</p></div>',
+  );
+}
+
 const md = MarkdownIt({
   html: true,
   linkify: false,
@@ -110,6 +122,19 @@ md.use(container, 'Notes', {
     const token = tokens[idx];
     if (token && token.nesting === 1) {
       return '<div class="gs-notes">';
+    }
+    return '</div>\n';
+  },
+});
+
+// Register the ::: Detail container for book-mode content (hidden in presentation)
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- markdown-it-container typing mismatch
+md.use(container, 'Detail', {
+  validate: (params: string) => params.trim() === 'Detail',
+  render: (tokens: { nesting: number }[], idx: number) => {
+    const token = tokens[idx];
+    if (token && token.nesting === 1) {
+      return '<div class="gs-details">';
     }
     return '</div>\n';
   },
@@ -182,6 +207,27 @@ function extractNotes(sectionHtml: string): { html: string; notesHtml: string | 
   };
 }
 
+/**
+ * Extract detail blocks from a section (used only in book/print mode).
+ * In presentation mode these are hidden via CSS, but kept in the DOM for print rendering.
+ */
+function extractDetails(sectionHtml: string): { html: string; detailsHtml: string | undefined } {
+  const detailsRegex = /<div class="gs-details">([\s\S]*?)<\/div>/;
+  const match = detailsRegex.exec(sectionHtml);
+
+  if (!match) {
+    return { html: sectionHtml, detailsHtml: undefined };
+  }
+
+  const detailsHtml = match[1]?.trim();
+  // Keep the div in the HTML — it's hidden via CSS in presentation mode
+  // but visible when printing in book mode
+  return {
+    html: sectionHtml,
+    detailsHtml: detailsHtml && detailsHtml.length > 0 ? detailsHtml : undefined,
+  };
+}
+
 let autoId = 0;
 
 /**
@@ -197,7 +243,9 @@ export function parse(markdown: string): SlideData[] {
     .map((section) => {
       const attrs = parseSectionAttrs(section.href);
       const { html: htmlWithoutStyles, css } = extractStyleBlocks(section.content);
-      const { html: finalHtml, notesHtml } = extractNotes(htmlWithoutStyles);
+      const wrappedHtml = wrapBlockImages(htmlWithoutStyles);
+      const { html: htmlWithoutNotes, notesHtml } = extractNotes(wrappedHtml);
+      const { html: finalHtml, detailsHtml } = extractDetails(htmlWithoutNotes);
       const partialCount = countPartials(finalHtml);
       const id = attrs.id || `slide-${String(++autoId)}`;
 
@@ -209,6 +257,7 @@ export function parse(markdown: string): SlideData[] {
         backgroundColor: attrs.backgroundColor,
         rawCss: css.length > 0 ? css : undefined,
         notesHtml,
+        detailsHtml,
         partialCount,
       };
     });

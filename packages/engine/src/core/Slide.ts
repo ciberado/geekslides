@@ -50,6 +50,26 @@ export class Slide extends HTMLElement {
   }
 
   /**
+   * Inject external CSS into this slide's shadow DOM.
+   * Used for presentation-wide styles that need to penetrate Shadow DOM.
+   */
+  injectStyles(css: string): void {
+    const shadow = this.shadowRoot;
+    if (!shadow) return;
+
+    // Remove previous external styles if any
+    const existing = shadow.querySelector('.gs-external-styles');
+    if (existing) {
+      existing.remove();
+    }
+
+    const style = document.createElement('style');
+    style.classList.add('gs-external-styles');
+    style.textContent = css;
+    shadow.appendChild(style);
+  }
+
+  /**
    * Load slide content from SlideData.
    */
   loadContent(html: string, options: {
@@ -93,8 +113,16 @@ export class Slide extends HTMLElement {
       style.textContent += '\n' + scopedCss;
     }
 
-    const content = document.createElement('div');
+    // Use <section> with slide classes for v1 CSS backward compatibility.
+    const content = document.createElement('section');
     content.classList.add('content');
+    if (options.id) {
+      content.id = options.id;
+    }
+    for (const cls of options.classes) {
+      content.classList.add(cls);
+    }
+
     content.innerHTML = html;
 
     // Mark partial elements
@@ -142,46 +170,70 @@ export class Slide extends HTMLElement {
   #baseStyles(): string {
     return `
       :host {
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: stretch;
+        display: block;
         width: 100%;
         height: 100%;
-        padding: var(--gs-slide-padding, 2rem 4rem);
-        box-sizing: border-box;
         position: absolute;
-        top: 0;
-        left: 0;
+        top: 50%;
+        left: 150%;
+        transform: translate(-50%, -50%);
         opacity: 0;
-        transition: opacity var(--gs-transition-duration, 0.3s) var(--gs-transition-timing, ease);
+        transition: left var(--gs-transition-duration, 0.5s) ease-in-out,
+                    opacity var(--gs-transition-duration, 0.5s) ease-out;
         pointer-events: none;
-        font-family: var(--gs-font-family, system-ui, sans-serif);
-        font-size: var(--gs-base-font-size, 1.5rem);
-        color: var(--gs-color, #222);
         overflow: hidden;
+        background-color: white;
         background-size: cover;
         background-position: center;
       }
 
       :host([active]) {
+        left: 50%;
         opacity: 1;
         pointer-events: auto;
         z-index: 1;
       }
 
-      .content {
+      :host(.gs-prev) {
+        left: -150%;
+        opacity: 0;
+      }
+
+      /* Transition variants — add class on <geek-slide> */
+      :host(.transition-fade) {
+        left: 50% !important;
+        transition: opacity var(--gs-transition-duration, 0.5s) ease-out;
+      }
+      :host(.transition-fade[active]) { opacity: 1; }
+      :host(.transition-fade:not([active])) { opacity: 0; }
+
+      :host(.transition-none) {
+        transition: none;
+      }
+
+      /* .succession: instant replacement, no transition */
+      :host(.succession), :host(.gs-prev:has(+ .succession)) {
+        transition: none;
+      }
+
+      section.content {
         width: 100%;
         height: 100%;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
+        box-sizing: border-box;
+        position: relative;
+        overflow: hidden;
+        background: transparent;
+      }
+
+      /* ::: Detail blocks hidden in presentation mode */
+      .gs-details {
+        display: none;
       }
 
       .gs-partial {
         visibility: hidden;
         opacity: 0;
-        transition: opacity var(--gs-transition-duration, 0.3s) var(--gs-transition-timing, ease);
+        transition: opacity var(--gs-transition-duration, 0.5s) ease-out;
       }
 
       .gs-partial.gs-visible {
@@ -199,12 +251,11 @@ export class Slide extends HTMLElement {
         padding: 1rem;
         border-radius: 0.5rem;
         overflow-x: auto;
-        font-family: var(--gs-code-font, 'Fira Code', monospace);
-        font-size: var(--gs-code-font-size, 0.9em);
       }
 
-      code {
-        font-family: var(--gs-code-font, 'Fira Code', monospace);
+      /* Speaker notes hidden in presentation mode */
+      .gs-notes {
+        display: none;
       }
     `;
   }

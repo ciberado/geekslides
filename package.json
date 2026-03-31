@@ -7,7 +7,7 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "npm run dev -w @geekslides/cli",
+    "dev": "vite --host 0.0.0.0",
     "build": "npm run build -w @geekslides/engine && npm run build -w @geekslides/server && npm run build -w @geekslides/cli",
     "test": "vitest run",
     "test:e2e": "playwright test",
