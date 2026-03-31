@@ -1,0 +1,41 @@
+services:
+  slides:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - ${CONTENT_DIR:-.}:/srv/content:ro
+
+  yjs-server:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.server
+    restart: unless-stopped
+    environment:
+      PORT: "1234"
+      HOST: "0.0.0.0"
+    volumes:
+      - yjs-data:/app/data
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN:-localhost}
+      ACME_EMAIL: ${ACME_EMAIL:-internal}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - slides
+      - yjs-server
+
+volumes:
+  yjs-data:
+  caddy-data:
+  caddy-config:

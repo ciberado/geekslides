@@ -1,0 +1,16 @@
+{$DOMAIN:localhost} {
+	tls {$ACME_EMAIL:internal}
+
+	# WebSocket sync — proxy to yjs-server
+	handle /ws {
+		reverse_proxy yjs-server:1234 {
+			header_up Upgrade {http.request.header.Upgrade}
+			header_up Connection {http.request.header.Connection}
+		}
+	}
+
+	# Static slides — proxy to slides container
+	handle {
+		reverse_proxy slides:5173
+	}
+}

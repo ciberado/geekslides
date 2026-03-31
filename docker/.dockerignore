@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.git/
+e2e/
+vibe/
+slides/
+broker/
+tools/
+demo/
+.vscode/
+*.tsbuildinfo

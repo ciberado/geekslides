@@ -1,0 +1,7 @@
+:5173
+
+root * /srv/slides
+file_server
+
+# Fallback to index.html for SPA routing
+try_files {path} /index.html
