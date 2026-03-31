@@ -32,45 +32,11 @@ v1 uses a **JavaScript-calculated scale factor** applied via CSS `transform`:
 └──────────────────────────────────────────────┘
 ```
 
-**Step 1**: Each `<section>` gets a fixed `width` and `height` in px matching the design resolution:
+**Step 1**: Each `<section>` gets a fixed `width` and `height` in px matching the design resolution. Sections are absolutely positioned with `top: 50%; left: 50%` for centering and `overflow: hidden`.
 
-```css
-/* v1: set by JavaScript in Slideshow.setAspectRatio() */
-.slidedeck section {
-  position: absolute;
-  top: 50%;
-  left: 50%;              /* centered via translate */
-  width: 1920px;          /* fixed design width */
-  height: 1080px;         /* fixed design height */
-  overflow: hidden;
-}
-```
+**Step 2**: JavaScript computes the scale factor every time the window resizes (in `Slideshow.updateSlidesScale()`). It divides the viewport width by the slide width to get a horizontal scale (`sx`), and the viewport height by the slide height to get a vertical scale (`sy`). It then picks whichever axis is the limiting factor — if `height < slideHeight * sx`, the height is limiting so it uses `sy`; otherwise it uses `sx`. This is "contain" behavior.
 
-**Step 2**: JavaScript computes the scale factor every time the window resizes:
-
-```javascript
-// v1: Slideshow.updateSlidesScale()
-updateSlidesScale() {
-  const slideSize = this.calcSlideWidthForCurrentAspectRatio();
-  // slideSize = { w: 1920, h: 1080 } for 16:9
-
-  const sx = this.slideshowElem.clientWidth / slideSize.w;   // horizontal scale
-  const sy = this.slideshowElem.clientHeight / slideSize.h;  // vertical scale
-
-  // Use whichever axis is the limiting factor (contain behavior)
-  let factor;
-  if (this.slideshowElem.clientHeight < slideSize.h * sx) {
-    factor = sy;  // height is limiting → scale by vertical ratio
-  } else {
-    factor = sx;  // width is limiting → scale by horizontal ratio
-  }
-
-  // Apply to CSS rule directly (modifies stylesheet)
-  const css = [...document.styleSheets].filter(s => s.href?.includes('index'))[0];
-  const slideRule = [...css.cssRules].filter(r => r.selectorText === '.slidedeck section')[0];
-  slideRule.style.transform = `translate(-50%, -50%) scale(${factor})`;
-}
-```
+The computed factor is applied by directly modifying the CSS rule in the stylesheet: it finds the `.slidedeck section` rule by iterating `document.styleSheets` and sets `transform: translate(-50%, -50%) scale(factor)`.
 
 **Step 3**: Centering via `translate(-50%, -50%)`. The slide is positioned at
 `top: 50%; left: 50%` (which places its *top-left corner* at the viewport center),
@@ -100,42 +66,9 @@ appended to the same `transform` so it scales around the center point.
 v2 preserves the core approach (it works) but eliminates the CSSOM mutation in favor of
 a single **CSS custom property** updated by a `ResizeObserver`:
 
-```typescript
-// packages/engine/src/core/Slideshow.ts
+A private `#setupScaling()` method creates a `ResizeObserver` that watches the `<geek-slideshow>` element. On each resize callback, it computes the horizontal and vertical scale factors (viewport dimensions divided by design resolution), picks the smaller one (contain behavior), and sets `--gs-scale-factor` on the element's style.
 
-#setupScaling(): void {
-  const observer = new ResizeObserver(([entry]) => {
-    const { width, height } = entry.contentRect;
-    const { w, h } = this.#designResolution; // e.g. { w: 1920, h: 1080 }
-    
-    const sx = width / w;
-    const sy = height / h;
-    const factor = Math.min(sx, sy); // "contain" behavior
-    
-    this.style.setProperty('--gs-scale-factor', String(factor));
-  });
-  
-  observer.observe(this);
-}
-```
-
-```css
-/* Inside <geek-slideshow> Shadow DOM */
-:host {
-  --gs-scale-factor: 1;
-  --gs-design-width: 1920px;
-  --gs-design-height: 1080px;
-}
-
-::slotted(geek-slide) {
-  position: absolute;
-  width: var(--gs-design-width);
-  height: var(--gs-design-height);
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) scale(var(--gs-scale-factor));
-}
-```
+In the Shadow DOM CSS, `::slotted(geek-slide)` elements are absolutely positioned at the center (50%/50% + translate -50%/-50%) with fixed width/height from custom properties (`--gs-design-width: 1920px`, `--gs-design-height: 1080px`). The transform includes `scale(var(--gs-scale-factor))`, which reactively adapts as the custom property changes.
 
 **Improvements over v1**:
 
@@ -153,13 +86,7 @@ a single **CSS custom property** updated by a `ResizeObserver`:
 
 ### Alternative 1: CSS `zoom` Property
 
-```css
-geek-slide {
-  width: 1920px;
-  height: 1080px;
-  zoom: 0.75; /* browser calculates */
-}
-```
+Apply `zoom: 0.75` on a fixed-size slide element instead of `transform: scale()`.
 
 **Pros**: No `transform`, text renders crisply, affects layout (unlike `transform`).
 **Cons**: Non-standard (only recently added to Firefox in 2024), still not in CSS spec
@@ -169,17 +96,10 @@ production use yet.
 
 ### Alternative 2: CSS `aspect-ratio` + Viewport Units
 
-```css
-geek-slide {
-  aspect-ratio: 16 / 9;
-  width: min(100vw, 100vh * 16 / 9);
-  height: min(100vh, 100vw * 9 / 16);
-  font-size: min(1.8vw, 3.2vh);
-}
-```
+Use `aspect-ratio: 16/9` with viewport-relative sizing (`min(100vw, 100vh * 16/9)`) and all internal dimensions in `vw`/`vh`/`%`/`em` units (e.g. `font-size: min(1.8vw, 3.2vh)`).
 
 **Pros**: Pure CSS, no JavaScript. Responsive by nature.
-**Cons**: All internal dimensions must use relative units (`vw`, `vh`, `%`, `em`).
+**Cons**: All internal dimensions must use relative units.
 This breaks the **fixed-resolution mental model** — authors can't think in pixels.
 Code blocks, images, and complex layouts become unpredictable. Every presentation's
 CSS would need to avoid `px` units entirely. **Rejected** because it shifts complexity
@@ -187,17 +107,7 @@ to content authors.
 
 ### Alternative 3: CSS Container Queries + `cqi`/`cqb` Units
 
-```css
-geek-slideshow {
-  container-type: size;
-  container-name: slideshow;
-}
-
-geek-slide {
-  font-size: 1.8cqi; /* 1.8% of container inline size */
-  padding: 2cqb;
-}
-```
+Set `container-type: size` on the slideshow and use `cqi` (container query inline) units for all content sizing (e.g. `font-size: 1.8cqi`).
 
 **Pros**: Modern CSS, container-scoped, no JavaScript.
 **Cons**: Same problem as viewport units — **all** content must use `cqi`/`cqb` instead
@@ -207,16 +117,7 @@ same reason as viewport units.
 
 ### Alternative 4: CSS `@page` + `size` (Print Only)
 
-```css
-@page {
-  size: 1920px 1080px;
-}
-section {
-  width: 1920px;
-  height: 1080px;
-  page-break-after: always;
-}
-```
+Use `@page { size: 1920px 1080px; }` with fixed-size sections and `page-break-after: always`.
 
 **Pros**: Perfect for PDF output.
 **Cons**: Only applies to print media, not screen. Used by v2's `print.css` for
@@ -225,11 +126,7 @@ for the print path only.
 
 ### Alternative 5: `<iframe>` Per Slide
 
-Each slide renders in an `<iframe>` at native resolution, scaled via `transform`:
-
-```html
-<iframe src="slide-1.html" style="width:1920px; height:1080px; transform:scale(0.5)"></iframe>
-```
+Render each slide in its own `<iframe>` at native resolution, scaled via `transform` on the iframe element.
 
 **Pros**: True isolation — each slide is its own document with its own styles.
 **Cons**: Massive overhead (one document per slide), cross-origin restrictions for
@@ -253,17 +150,7 @@ instead of CSSOM mutation), not the fundamental scaling model.
 
 ### Sub-Pixel Rendering Mitigation
 
-To minimize blurry text at non-integer scale factors:
-
-```css
-::slotted(geek-slide) {
-  /* Promote to GPU layer for sharper subpixel rendering */
-  will-change: transform;
-  /* Ensure text rendering is optimized */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-```
+To minimize blurry text at non-integer scale factors, slotted slides use `will-change: transform` (GPU layer promotion for sharper subpixel rendering) and `-webkit-font-smoothing: antialiased` / `-moz-osx-font-smoothing: grayscale` for optimized text rendering.
 
 On high-DPI displays (most modern screens), sub-pixel rendering is a non-issue because
 the physical pixel density absorbs rounding errors. On 1080p screens, the scale factor

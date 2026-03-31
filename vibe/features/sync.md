@@ -53,194 +53,52 @@ the state converges without custom conflict handling.
 
 ### `sessionState` (Y.Map)
 
-Syncs the presentation state across all connected clients:
+Syncs the presentation state across all connected clients. The map contains five keys:
 
-```typescript
-interface SessionState {
-  /** Current slide index (0-based) */
-  slide: number;
-  /** Current partial index within the slide */
-  partial: number;
-  /** Presentation mode */
-  mode: 'present' | 'speaker' | 'overview';
-  /** Whether the presenter is actively controlling */
-  presenterActive: boolean;
-  /** Presenter's client ID (for authority) */
-  presenterId: string | null;
-}
-```
+- **`slide`** (number) — current slide index, 0-based.
+- **`partial`** (number) — current partial index within the slide.
+- **`mode`** (string) — presentation mode: `'present'`, `'speaker'`, or `'overview'`.
+- **`presenterActive`** (boolean) — whether the presenter is actively controlling.
+- **`presenterId`** (string | null) — the Yjs client ID of the presenter (for authority).
 
 ### `whiteboardStrokes` (Y.Array)
 
-Syncs whiteboard drawing data:
+Syncs whiteboard drawing data. Each element in the array is a stroke object with:
 
-```typescript
-interface WhiteboardStroke {
-  /** Unique stroke ID */
-  id: string;
-  /** Which slide the stroke belongs to */
-  slideIndex: number;
-  /** Array of [x, y] normalized coordinates (0-1 range) */
-  points: [number, number][];
-  /** CSS color */
-  color: string;
-  /** Line width in pixels */
-  width: number;
-  /** Client ID that drew this stroke */
-  clientId: string;
-}
-```
+- **`id`** (string) — unique stroke identifier.
+- **`slideIndex`** (number) — which slide the stroke belongs to.
+- **`points`** (array of `[x, y]` pairs) — normalized coordinates in the 0–1 range.
+- **`color`** (string) — CSS color value.
+- **`width`** (number) — line width in pixels.
+- **`clientId`** (string) — the client that drew the stroke.
 
 ## SyncManager Implementation
 
-```typescript
-import * as Y from 'yjs';
-import { WebsocketProvider } from 'y-websocket';
+`SyncManager` is the bridge between the local slideshow and the Yjs shared document.
 
-export class SyncManager {
-  #doc: Y.Doc;
-  #provider: WebsocketProvider | null = null;
-  #sessionState: Y.Map<unknown>;
-  #whiteboardStrokes: Y.Array<WhiteboardStroke>;
-  #slideshow: GeekSlideshow;
-  #isRemoteUpdate = false;
+**Constructor**: Creates a new `Y.Doc` and obtains references to the `sessionState` Y.Map (`doc.getMap('sessionState')`) and `whiteboardStrokes` Y.Array (`doc.getArray('whiteboardStrokes')`). Stores a reference to the `GeekSlideshow` element. A private `#isRemoteUpdate` flag prevents echo loops.
 
-  constructor(slideshow: GeekSlideshow) {
-    this.#doc = new Y.Doc();
-    this.#sessionState = this.#doc.getMap('sessionState');
-    this.#whiteboardStrokes = this.#doc.getArray('whiteboardStrokes');
-    this.#slideshow = slideshow;
-  }
+**`connect(serverUrl, room)`**: Creates a `WebsocketProvider` connecting to the given server URL and room name. Listens for `status` events and dispatches `geek:sync:state` CustomEvents when connection status changes.
 
-  /**
-   * Connect to a sync room.
-   */
-  connect(serverUrl: string, room: string): void {
-    this.#provider = new WebsocketProvider(serverUrl, room, this.#doc);
+- **Session state observer**: Watches the Y.Map for changes. When a remote transaction arrives (ignoring local ones), reads `slide`, `partial`, and `mode` from the map and applies them to the slideshow via `goTo()` and `mode` setter. Sets `#isRemoteUpdate` to `true` during application to prevent the local change from being re-published.
 
-    this.#provider.on('status', (event: { status: string }) => {
-      document.dispatchEvent(new CustomEvent('geek:sync:state', {
-        detail: { connected: event.status === 'connected', room },
-      }));
-    });
+- **Whiteboard observer**: Watches the Y.Array for added items from remote transactions. For each new stroke, dispatches a `geek:whiteboard:remote-stroke` CustomEvent with the stroke data.
 
-    // Observe remote state changes → update local slideshow
-    this.#sessionState.observe((event) => {
-      if (event.transaction.local) return; // ignore own changes
-      
-      this.#isRemoteUpdate = true;
-      const slide = this.#sessionState.get('slide') as number;
-      const partial = this.#sessionState.get('partial') as number;
-      const mode = this.#sessionState.get('mode') as string;
+**`publishState(slide, partial, mode)`**: Called by local navigation handlers. If `#isRemoteUpdate` is true, returns immediately (preventing echo). Otherwise wraps updates in a `doc.transact()` call, setting the `slide`, `partial`, `mode`, `presenterId` (current client ID), and `presenterActive` keys on the Y.Map.
 
-      this.#slideshow.goTo(slide, partial);
-      this.#slideshow.mode = mode;
-      this.#isRemoteUpdate = false;
-    });
+**`addStroke(stroke)`**: Pushes a whiteboard stroke object to the shared Y.Array.
 
-    // Observe remote whiteboard strokes
-    this.#whiteboardStrokes.observe((event) => {
-      if (event.transaction.local) return;
-      for (const item of event.changes.added) {
-        for (const stroke of item.content.getContent()) {
-          document.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke', {
-            detail: stroke,
-          }));
-        }
-      }
-    });
-  }
+**`clearStrokes(slideIndex)`**: Within a transaction, iterates the Y.Array in reverse and deletes all strokes matching the given slide index.
 
-  /**
-   * Called when local navigation happens.
-   * Updates Y.Map so it propagates to other clients.
-   */
-  publishState(slide: number, partial: number, mode: string): void {
-    if (this.#isRemoteUpdate) return; // prevent echo loops
-    
-    this.#doc.transact(() => {
-      this.#sessionState.set('slide', slide);
-      this.#sessionState.set('partial', partial);
-      this.#sessionState.set('mode', mode);
-      this.#sessionState.set('presenterId', this.#doc.clientID.toString());
-      this.#sessionState.set('presenterActive', true);
-    });
-  }
-
-  /**
-   * Add a whiteboard stroke to the shared array.
-   */
-  addStroke(stroke: WhiteboardStroke): void {
-    this.#whiteboardStrokes.push([stroke]);
-  }
-
-  /**
-   * Clear all whiteboard strokes for a specific slide.
-   */
-  clearStrokes(slideIndex: number): void {
-    this.#doc.transact(() => {
-      // Find and remove strokes for this slide (iterate in reverse)
-      for (let i = this.#whiteboardStrokes.length - 1; i >= 0; i--) {
-        const stroke = this.#whiteboardStrokes.get(i);
-        if (stroke.slideIndex === slideIndex) {
-          this.#whiteboardStrokes.delete(i, 1);
-        }
-      }
-    });
-  }
-
-  disconnect(): void {
-    this.#provider?.destroy();
-    this.#provider = null;
-  }
-}
-```
+**`disconnect()`**: Destroys the WebSocket provider and cleans up.
 
 ## y-websocket Server
 
 ### @geekslides/server
 
-Thin wrapper around the y-websocket server with room auth:
+Thin wrapper around the y-websocket server with room auth.
 
-```typescript
-// packages/server/src/index.ts
-import { WebSocketServer } from 'ws';
-import * as Y from 'yjs';
-import { setupWSConnection } from 'y-websocket/bin/utils';
-
-interface ServerOptions {
-  port: number;
-  host?: string;
-  persistence?: boolean;   // enable LevelDB persistence
-  authCallback?: (room: string, token: string) => boolean;
-}
-
-export function createServer(options: ServerOptions): WebSocketServer {
-  const wss = new WebSocketServer({ port: options.port, host: options.host });
-
-  wss.on('connection', (ws, req) => {
-    const url = new URL(req.url!, `ws://${req.headers.host}`);
-    const room = url.searchParams.get('room');
-    const token = url.searchParams.get('token');
-
-    if (!room) {
-      ws.close(4001, 'Room name required');
-      return;
-    }
-
-    // Optional auth
-    if (options.authCallback && !options.authCallback(room, token ?? '')) {
-      ws.close(4003, 'Unauthorized');
-      return;
-    }
-
-    setupWSConnection(ws, req, { docName: room });
-  });
-
-  console.log(`yjs-server listening on ws://${options.host ?? '0.0.0.0'}:${options.port}`);
-  return wss;
-}
-```
+The server entry point (`packages/server/src/index.ts`) creates a `WebSocketServer` on the configured port and host. On each connection, it parses the URL query parameters to extract the `room` name and optional `token`. If no room is provided, the connection is closed with code 4001. If an `authCallback` is configured and the token fails validation, the connection is closed with code 4003. Otherwise, it delegates to y-websocket's `setupWSConnection` with the room name as the document name.
 
 ### Room Lifecycle
 
@@ -256,24 +114,7 @@ export function createServer(options: ServerOptions): WebSocketServer {
 
 The audience can optionally break sync to navigate independently:
 
-```typescript
-// In SyncManager
-#followPresenter = true;
-
-toggleFollow(): void {
-  this.#followPresenter = !this.#followPresenter;
-  document.dispatchEvent(new CustomEvent('geek:sync:state', {
-    detail: { following: this.#followPresenter },
-  }));
-}
-
-// In the Y.Map observer:
-this.#sessionState.observe((event) => {
-  if (event.transaction.local) return;
-  if (!this.#followPresenter) return; // ignore remote if not following
-  // ... apply remote state
-});
-```
+`SyncManager` maintains a private `#followPresenter` boolean (default `true`). The `toggleFollow()` method flips it and dispatches a `geek:sync:state` event with the current following state. Inside the Y.Map observer, if `#followPresenter` is `false`, remote state changes are silently ignored — the audience member can browse freely. Re-enabling follow snaps back to the presenter's current position.
 
 ## Migration from v1
 

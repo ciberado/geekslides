@@ -34,74 +34,14 @@ framework overhead.
 
 Each component uses Shadow DOM for full style isolation:
 
-```typescript
-class GeekSlideshow extends HTMLElement {
-  #shadow: ShadowRoot;
-  #slides: GeekSlide[] = [];
-
-  constructor() {
-    super();
-    this.#shadow = this.attachShadow({ mode: 'open' });
-  }
-
-  connectedCallback(): void {
-    this.#shadow.innerHTML = `
-      <style>
-        :host {
-          display: block;
-          width: 100vw;
-          height: 100vh;
-          overflow: hidden;
-          position: relative;
-        }
-        :host([mode="speaker"]) {
-          /* speaker mode layout */
-        }
-        ::slotted(geek-slide) {
-          position: absolute;
-          inset: 0;
-          opacity: 0;
-          transition: opacity 0.3s, transform 0.3s;
-        }
-        ::slotted(geek-slide[active]) {
-          opacity: 1;
-        }
-      </style>
-      <slot></slot>
-    `;
-  }
-}
-
-customElements.define('geek-slideshow', GeekSlideshow);
-```
+`GeekSlideshow` extends `HTMLElement` and attaches an open `ShadowRoot` in the constructor. Its connected callback injects Shadow DOM styles that make the `:host` fill the viewport (`100vw × 100vh`, `overflow: hidden`, `position: relative`). The `:host([mode="speaker"])` selector applies a different layout for speaker mode. Slotted `<geek-slide>` elements are positioned absolutely with `inset: 0`, start at `opacity: 0`, and transition to `opacity: 1` when they receive the `[active]` attribute. Transitions on opacity and transform take 0.3 s.
 
 ### Print Rendering (Shadow DOM OFF)
 
 WeasyPrint cannot pierce Shadow DOM boundaries. The `PrintRenderer` produces a flat
 HTML document with equivalent styles inlined in the `<head>`:
 
-```typescript
-class PrintRenderer {
-  render(slides: SlideData[], template: 'slides' | 'slides-notes' | 'book'): string {
-    const templateHtml = this.loadTemplate(template);
-    
-    // Render slides as plain <section> elements (no custom elements)
-    const slidesHtml = slides.map((slide, i) => `
-      <section class="gs-slide" id="slide-${i}" ${slide.attrs}>
-        <style>${slide.scopedCss}</style>
-        ${slide.html}
-        ${template !== 'slides' ? `
-          <aside class="gs-notes">${slide.notes}</aside>
-        ` : ''}
-      </section>
-    `).join('\n');
-
-    return templateHtml
-      .replace('{{slides}}', slidesHtml)
-      .replace('{{styles}}', this.collectStyles());
-  }
-}
-```
+`PrintRenderer` has a `render(slides, template)` method that accepts a `SlideData[]` array and a template name (`'slides'`, `'slides-notes'`, or `'book'`). It loads the corresponding HTML template, renders each slide as a plain `<section class="gs-slide">` element (no Custom Elements) with the slide's attributes, scoped CSS in a `<style>` tag, HTML content, and optionally an `<aside class="gs-notes">` containing speaker notes (depending on template). It returns the complete HTML string by substituting `{{slides}}` and `{{styles}}` placeholders in the template.
 
 ## Component Specifications
 
@@ -109,198 +49,55 @@ class PrintRenderer {
 
 The root orchestrator. Manages slide deck state, navigation, and aspect ratio scaling.
 
-```typescript
-class GeekSlideshow extends HTMLElement {
-  // --- Observed attributes ---
-  static observedAttributes = ['aspect-ratio', 'mode', 'current-slide', 'current-partial'];
+**Observed attributes**: `aspect-ratio`, `mode`, `current-slide`, `current-partial`.
 
-  // --- Public properties ---
-  get currentSlide(): number;
-  set currentSlide(n: number);
-  get currentPartial(): number;
-  set currentPartial(n: number);
-  get mode(): 'present' | 'speaker' | 'overview';
-  set mode(m: string);
-  get slideCount(): number;
+**Public properties**: `currentSlide` (get/set number), `currentPartial` (get/set number), `mode` (get/set `'present' | 'speaker' | 'overview'`), `slideCount` (readonly).
 
-  // --- Public methods ---
-  loadSlides(sections: SlideData[]): void;  // populate from parsed markdown
-  next(): void;                              // next partial or slide
-  prev(): void;                              // previous partial or slide
-  goTo(slide: number, partial?: number): void;
+**Public methods**: `loadSlides(sections: SlideData[])` populates from parsed markdown, `next()` advances to the next partial or slide, `prev()` goes back, `goTo(slide, partial?)` jumps to a specific position.
 
-  // --- Events emitted ---
-  // 'geek:navigate' — after any navigation
-  // 'geek:slides:loaded' — after loadSlides()
+**Events emitted**: `geek:navigate` (after any navigation), `geek:slides:loaded` (after `loadSlides()`).
 
-  // --- Events listened ---
-  // 'geek:navigate' — from CommandSystem/SyncManager
-  // 'geek:mode' — mode changes
-  // 'geek:hmr:update' — re-fetch and re-render markdown
-}
-```
+**Events listened**: `geek:navigate` (from CommandSystem/SyncManager), `geek:mode` (mode changes), `geek:hmr:update` (re-fetch and re-render markdown).
 
-**Aspect ratio scaling** (preserved from v1):
-```typescript
-#rescale(): void {
-  const { width, height } = this.getBoundingClientRect();
-  const targetRatio = this.#aspectRatio; // e.g. 16/9
-  const currentRatio = width / height;
-  
-  const scale = currentRatio > targetRatio
-    ? height / (width / targetRatio)
-    : width / (height * targetRatio);
-  
-  this.#container.style.transform = `scale(${scale})`;
-}
-```
+**Aspect ratio scaling**: A private `#rescale()` method computes the scale factor by comparing the element's bounding rect to the target aspect ratio. It calculates both horizontal (`width / targetWidth`) and vertical (`height / targetHeight`) scale factors, then picks whichever axis is limiting (contain behavior). The result is applied as `transform: scale(factor)` on the inner container.
 
 ### `<geek-slide>`
 
 Individual slide. Lightweight wrapper around content HTML.
 
-```typescript
-class GeekSlide extends HTMLElement {
-  static observedAttributes = ['active', 'partial'];
+**Observed attributes**: `active`, `partial`.
 
-  // --- Properties ---
-  get partialCount(): number;        // count of [partial] elements
-  get notes(): string;               // speaker notes HTML
-  get backgroundImage(): string;     // from slide attributes
-  get backgroundColor(): string;
+**Properties**: `partialCount` (count of `[partial]` elements), `notes` (speaker notes HTML), `backgroundImage` and `backgroundColor` (from slide attributes).
 
-  // --- Internal ---
-  #content: HTMLElement;             // shadow DOM content container
-  #scopedStyle: HTMLStyleElement;    // per-slide scoped CSS
+**Internal structure**: Attaches Shadow DOM with a `.content` div containing a `<slot>`. The `:host` styles center content using flexbox with configurable padding (`--gs-slide-padding`, default 2 rem) and font size (`--gs-base-font-size`, default 1.8 rem). Slotted elements with the `[partial]` attribute start as `visibility: hidden` and become visible when given the `[visible]` attribute.
 
-  connectedCallback(): void {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.innerHTML = `
-      <style>
-        :host {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: var(--gs-slide-padding, 2rem);
-          font-size: var(--gs-base-font-size, 1.8rem);
-        }
-        :host([active]) { /* visible */ }
-        .content ::slotted([partial]) {
-          visibility: hidden;
-        }
-        .content ::slotted([partial][visible]) {
-          visibility: visible;
-        }
-      </style>
-      <div class="content"><slot></slot></div>
-    `;
-  }
-
-  // Reveal next partial
-  revealPartial(n: number): void {
-    const partials = this.querySelectorAll('[partial]');
-    partials.forEach((el, i) => {
-      el.toggleAttribute('visible', i < n);
-    });
-  }
-}
-```
+**`revealPartial(n)`**: Queries all `[partial]` elements and toggles the `visible` attribute on the first `n` of them, hiding the rest.
 
 ### `<geek-toolbar>`
 
 Bottom toolbar for touch/presenter controls.
 
-```typescript
-class GeekToolbar extends HTMLElement {
-  // Renders: prev/next buttons, slide counter, mode toggle, sync indicator
-  // All actions dispatch CustomEvents bubbling up to document
-  
-  connectedCallback(): void {
-    const shadow = this.attachShadow({ mode: 'open' });
-    shadow.innerHTML = `
-      <style>
-        :host {
-          position: fixed;
-          bottom: 0;
-          left: 0;
-          right: 0;
-          height: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          background: rgba(0,0,0,0.8);
-          color: white;
-          z-index: 1000;
-          transform: translateY(100%);
-          transition: transform 0.2s;
-        }
-        :host([visible]) {
-          transform: translateY(0);
-        }
-      </style>
-      <button data-cmd="prev">◀</button>
-      <span class="counter"><slot name="counter"></slot></span>
-      <button data-cmd="next">▶</button>
-      <button data-cmd="toggle-whiteboard">✏️</button>
-      <span class="sync-status"></span>
-    `;
-  }
-}
-```
+Renders prev/next buttons, a slide counter, mode toggle, and sync indicator. All actions dispatch CustomEvents that bubble up to the document.
+
+The component uses Shadow DOM with a fixed-position bottom bar (48 px height). It uses a flexbox layout with space-between alignment, dark semi-transparent background (`rgba(0,0,0,0.8)`), and white text. By default the toolbar is hidden off-screen via `transform: translateY(100%)` and slides in when the `[visible]` attribute is set. The transition takes 0.2 s. The toolbar contains data-cmd buttons for `prev`, `next`, and `toggle-whiteboard`, plus a slide counter and sync status indicator.
 
 ### `<geek-command-palette>`
 
 Modal command search UI activated by `:`.
 
-```typescript
-class GeekCommandPalette extends HTMLElement {
-  // Shadow DOM contains:
-  // - Backdrop overlay
-  // - Search input
-  // - Filtered command list
-  // - Keyboard navigation (up/down/enter/escape)
-
-  open(): void;    // show palette, focus input
-  close(): void;   // hide palette
-  
-  register(commands: Command[]): void;  // populate command list
-}
-```
+Shadow DOM contains a backdrop overlay, a search input, a filtered command list, and keyboard navigation support (up/down/enter/escape). Exposes `open()` and `close()` methods plus `register(commands)` to populate the command list.
 
 ### `<geek-whiteboard>`
 
 Canvas overlay for freehand drawing, synced via Yjs.
 
-```typescript
-class GeekWhiteboard extends HTMLElement {
-  // Canvas element in Shadow DOM
-  // Pointer events for drawing
-  // Color/width selection
-  // Dispatches 'geek:whiteboard:stroke' events
-  // Listens for remote strokes from WhiteboardSync
-  
-  clear(): void;
-  toggle(): void;
-  setColor(color: string): void;
-  setWidth(width: number): void;
-}
-```
+Contains a `<canvas>` element in Shadow DOM that handles pointer events for drawing. Supports color and width selection. Dispatches `geek:whiteboard:stroke` events for new strokes and listens for remote strokes from `WhiteboardSync`. Exposes `clear()`, `toggle()`, `setColor(color)`, and `setWidth(width)` methods.
 
 ### `<geek-chart>`
 
 Replaces `<table>` content with a Chart.js canvas.
 
-```typescript
-class GeekChart extends HTMLElement {
-  static observedAttributes = ['type']; // bar, line, pie, etc.
-  
-  connectedCallback(): void {
-    // Parse table data from light DOM
-    // Create <canvas> in shadow DOM
-    // Initialize Chart.js
-  }
-}
-```
+Observes the `type` attribute (bar, line, pie, etc.). On `connectedCallback`, it parses table data from the light DOM, creates a `<canvas>` in Shadow DOM, and initializes Chart.js with the extracted data and chart type.
 
 ## Per-Slide Style Scoping
 
@@ -321,98 +118,28 @@ Some <span class="highlight">highlighted</span> text.
 
 The `StyleScoper` rewrites selectors at parse time:
 
-```typescript
-class StyleScoper {
-  scope(css: string, slideId: string): string {
-    // Parse CSS, prefix each selector with the slide container
-    // "h2" → "geek-slide#my-slide h2"
-    // ".highlight" → "geek-slide#my-slide .highlight"
-    
-    const sheet = new CSSStyleSheet();
-    sheet.replaceSync(css);
-    
-    let scoped = '';
-    for (const rule of sheet.cssRules) {
-      if (rule instanceof CSSStyleRule) {
-        scoped += `geek-slide[data-id="${slideId}"] ${rule.selectorText} {
-          ${rule.style.cssText}
-        }\n`;
-      }
-    }
-    return scoped;
-  }
-}
-```
+`StyleScoper.scope(css, slideId)` takes a raw CSS string and a slide identifier. It parses the CSS using `CSSStyleSheet.replaceSync()`, iterates over all `CSSStyleRule` entries, and prefixes each selector with `geek-slide[data-id="<slideId>"]`. For example, `h2` becomes `geek-slide[data-id="my-slide"] h2`, and `.highlight` becomes `geek-slide[data-id="my-slide"] .highlight`. At-rules like `@keyframes` and `@media` are preserved without prefixing.
 
 The scoped `<style>` is injected into the light DOM (not shadow) so it only affects
 that specific slide's descendant elements.
 
 ## CSS Custom Properties (Theming)
 
-Components expose CSS custom properties for theme customization:
+Components expose CSS custom properties for theme customization. Authors can override these in their `local.css`:
 
-```css
-/* Default theme (can be overridden in local.css) */
-:root {
-  /* Slideshow */
-  --gs-bg: #ffffff;
-  --gs-color: #333333;
-  --gs-font-family: system-ui, sans-serif;
-  --gs-base-font-size: 1.8rem;
-  --gs-slide-padding: 2rem;
-  --gs-aspect-ratio: 16 / 9;
-  
-  /* Code blocks */
-  --gs-code-bg: #f5f5f5;
-  --gs-code-font: 'Fira Code', monospace;
-  --gs-code-font-size: 0.9em;
-  
-  /* Transitions */
-  --gs-transition-duration: 0.3s;
-  --gs-transition-timing: ease-in-out;
-  
-  /* Toolbar */
-  --gs-toolbar-bg: rgba(0, 0, 0, 0.8);
-  --gs-toolbar-color: #ffffff;
-  --gs-toolbar-height: 48px;
-  
-  /* Whiteboard */
-  --gs-wb-default-color: #ff0000;
-  --gs-wb-default-width: 3px;
-}
-```
+**Slideshow**: `--gs-bg` (white), `--gs-color` (#333), `--gs-font-family` (system-ui), `--gs-base-font-size` (1.8 rem), `--gs-slide-padding` (2 rem), `--gs-aspect-ratio` (16/9).
+
+**Code blocks**: `--gs-code-bg` (#f5f5f5), `--gs-code-font` (Fira Code, monospace), `--gs-code-font-size` (0.9 em).
+
+**Transitions**: `--gs-transition-duration` (0.3 s), `--gs-transition-timing` (ease-in-out).
+
+**Toolbar**: `--gs-toolbar-bg` (rgba(0,0,0,0.8)), `--gs-toolbar-color` (white), `--gs-toolbar-height` (48 px).
+
+**Whiteboard**: `--gs-wb-default-color` (#ff0000), `--gs-wb-default-width` (3 px).
 
 ## Registration
 
-All custom elements are registered in the engine's entry point:
-
-```typescript
-// packages/engine/src/index.ts
-export { GeekSlideshow } from './core/Slideshow';
-export { GeekSlide } from './core/Slide';
-export { GeekToolbar } from './components/Toolbar';
-export { GeekCommandPalette } from './components/CommandPalette';
-export { GeekWhiteboard } from './components/Whiteboard';
-export { GeekChart } from './components/ChartSlide';
-export { GeekVideo } from './components/VideoSlide';
-
-// Auto-register when imported
-const components: [string, CustomElementConstructor][] = [
-  ['geek-slideshow', GeekSlideshow],
-  ['geek-slide', GeekSlide],
-  ['geek-toolbar', GeekToolbar],
-  ['geek-command-palette', GeekCommandPalette],
-  ['geek-whiteboard', GeekWhiteboard],
-  ['geek-chart', GeekChart],
-  ['geek-video', GeekVideo],
-];
-
-for (const [name, ctor] of components) {
-  if (!customElements.get(name)) {
-    customElements.define(name, ctor);
-  }
-}
-```
+All custom elements are registered in the engine's entry point (`packages/engine/src/index.ts`). The module exports all component classes and auto-registers them using `customElements.define()` if they haven't already been defined. The registered tag names are: `geek-slideshow`, `geek-slide`, `geek-toolbar`, `geek-command-palette`, `geek-whiteboard`, `geek-chart`, and `geek-video`.
 
 ## Smartphone / Mobile Browser Support
 
@@ -421,12 +148,9 @@ This requires specific design decisions across all components.
 
 ### Viewport & Scaling
 
-```html
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-```
+The engine's HTML entry point sets the viewport meta tag with `width=device-width`, `initial-scale=1`, `maximum-scale=1`, and `user-scalable=no` to prevent accidental pinch-zoom conflicts with touch gestures.
 
-- Slides always fill the viewport via the CSS scaling technique (see below).
-- `user-scalable=no` prevents accidental pinch-zoom conflicts with touch gestures.
+- Slides always fill the viewport via the CSS scaling technique (see [CSS Scaling](css-scaling.md)).
 - The `<geek-slideshow>` component detects screen size and adjusts layout:
   - **Desktop** (width > 768 px): standard presentation mode
   - **Mobile** (width ≤ 768 px): simplified layout, toolbar auto-visible, larger tap targets
@@ -443,34 +167,7 @@ This requires specific design decisions across all components.
 
 ### Responsive CSS in Components
 
-```typescript
-// Inside <geek-slideshow> Shadow DOM
-const styles = `
-  :host {
-    --gs-mobile-breakpoint: 768px;
-  }
-  
-  @media (max-width: 768px) {
-    ::slotted(geek-toolbar) {
-      transform: translateY(0) !important;  /* always visible */
-    }
-  }
-  
-  @media (max-width: 768px) and (orientation: portrait) {
-    /* Suggest landscape rotation */
-    :host::after {
-      content: '📱 Rotate for best experience';
-      position: fixed;
-      bottom: 60px;
-      text-align: center;
-      width: 100%;
-      color: rgba(255,255,255,0.6);
-      font-size: 0.8rem;
-      animation: fadeOut 3s forwards;
-    }
-  }
-`;
-```
+Inside `<geek-slideshow>` Shadow DOM, a CSS custom property `--gs-mobile-breakpoint` (768 px) gates responsive behavior. A `@media (max-width: 768px)` rule forces the slotted `<geek-toolbar>` to always be visible (no slide-down needed). An additional `@media` rule combining max-width and portrait orientation shows a brief "Rotate for best experience" hint via a `::after` pseudo-element that fades out after 3 seconds.
 
 ### Audience Sync Mode
 

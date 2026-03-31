@@ -78,377 +78,68 @@ config.json + README.md
 The `PrintRenderer` takes parsed slides and produces a flat HTML document suitable for
 WeasyPrint. Key constraint: **no Shadow DOM, no Custom Elements, no JavaScript**.
 
-```typescript
-// packages/engine/src/print/PrintRenderer.ts
+`PrintRenderer` (in `packages/engine/src/print/PrintRenderer.ts`) accepts a `PrintOptions` object with: `template` (`'slides'`, `'slides-notes'`, or `'book'`), `title`, optional `theme` (CSS file path), `pageSize` (e.g. `'A4'`, `'Letter'`, `'16:9'`), and `orientation` (`'landscape'` or `'portrait'`).
 
-export interface PrintOptions {
-  template: 'slides' | 'slides-notes' | 'book';
-  title: string;
-  theme?: string;        // CSS file path
-  pageSize?: string;     // e.g. 'A4', 'Letter', '16:9'
-  orientation?: 'landscape' | 'portrait';
-}
+The `render(slides, options)` method:
 
-export class PrintRenderer {
-  render(slides: SlideData[], options: PrintOptions): string {
-    const template = this.#loadTemplate(options.template);
-    const css = this.#buildPrintCSS(options);
-    
-    let slidesHtml: string;
-    
-    switch (options.template) {
-      case 'slides':
-        slidesHtml = this.#renderSlides(slides);
-        break;
-      case 'slides-notes':
-        slidesHtml = this.#renderSlidesWithNotes(slides);
-        break;
-      case 'book':
-        slidesHtml = this.#renderBook(slides);
-        break;
-    }
+1. Loads the HTML template file matching the selected format.
+2. Builds the print CSS based on options.
+3. Renders slides differently based on template:
 
-    return template
-      .replace('{{title}}', this.#escapeHtml(options.title))
-      .replace('{{styles}}', css)
-      .replace('{{content}}', slidesHtml);
-  }
+   - **Slides**: Each slide becomes a `<section class="gs-print-slide">` with its CSS classes, id, and background styles. Scoped CSS is included in an inline `<style>` tag. Content goes in a `.gs-print-slide-content` div.
 
-  #renderSlides(slides: SlideData[]): string {
-    return slides.map((slide, i) => `
-      <section class="gs-print-slide ${slide.classes.join(' ')}"
-               id="${slide.id || `slide-${i}`}"
-               style="${this.#bgStyles(slide)}">
-        ${slide.scopedCss ? `<style>${slide.scopedCss}</style>` : ''}
-        <div class="gs-print-slide-content">
-          ${slide.html}
-        </div>
-      </section>
-    `).join('\n');
-  }
+   - **Slides + Notes**: Each slide gets a wrapper `<section class="gs-print-slide-with-notes">` containing the slide (same as above) plus an `<aside class="gs-print-notes">` with the speaker notes HTML.
 
-  #renderSlidesWithNotes(slides: SlideData[]): string {
-    return slides.map((slide, i) => `
-      <section class="gs-print-slide-with-notes">
-        <div class="gs-print-slide ${slide.classes.join(' ')}"
-             id="${slide.id || `slide-${i}`}"
-             style="${this.#bgStyles(slide)}">
-          ${slide.scopedCss ? `<style>${slide.scopedCss}</style>` : ''}
-          <div class="gs-print-slide-content">
-            ${slide.html}
-          </div>
-        </div>
-        ${slide.notes ? `
-          <aside class="gs-print-notes">
-            ${slide.notes}
-          </aside>
-        ` : ''}
-      </section>
-    `).join('\n');
-  }
+   - **Book**: Each slide becomes an `<article class="gs-book-chapter">` containing a `<figure class="gs-book-slide">` with the slide content, followed by a `<div class="gs-book-notes">` for the notes as flowing body text.
 
-  #renderBook(slides: SlideData[]): string {
-    return slides.map((slide, i) => `
-      <article class="gs-book-chapter">
-        <figure class="gs-book-slide ${slide.classes.join(' ')}"
-                id="${slide.id || `slide-${i}`}">
-          <div class="gs-book-slide-content">
-            ${slide.html}
-          </div>
-        </figure>
-        ${slide.notes ? `
-          <div class="gs-book-notes">
-            ${slide.notes}
-          </div>
-        ` : ''}
-      </article>
-    `).join('\n');
-  }
-
-  #bgStyles(slide: SlideData): string {
-    const styles: string[] = [];
-    if (slide.backgroundImage) {
-      styles.push(`background-image: url('${slide.backgroundImage}')`);
-      styles.push('background-size: cover');
-      styles.push('background-position: center');
-    }
-    if (slide.backgroundColor) {
-      styles.push(`background-color: ${slide.backgroundColor}`);
-    }
-    return styles.join('; ');
-  }
-
-  #escapeHtml(text: string): string {
-    return text
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;');
-  }
-}
-```
+4. Returns the complete HTML by substituting `{{title}}`, `{{styles}}`, and `{{content}}` placeholders in the template. Titles are HTML-escaped (`&`, `<`, `>` entities).
 
 ## Print CSS
 
-```css
-/* packages/engine/src/print/print.css */
+The print stylesheet (`packages/engine/src/print/print.css`) defines three named page contexts:
 
-/* === Slides PDF === */
+**Slides PDF** (`@page slides`): Page size is 254 mm × 142.9 mm (16:9 landscape) with zero margins. Each `.gs-print-slide` fills the full page, uses flexbox to center content, has 2 rem padding, and triggers `page-break-after: always` (except the last one).
 
-@page slides {
-  size: 254mm 142.9mm; /* 16:9 landscape */
-  margin: 0;
-}
+**Slides + Notes PDF** (`@page slides-notes`): A4 portrait with 15 mm margins. The `.gs-print-slide-with-notes` wrapper breaks after each page. The slide occupies ~55% of the page height inside a bordered box with `page-break-after: avoid` to keep slide and notes together. Notes use 0.9 rem font, 1.5 line height, dark text.
 
-.gs-print-slide {
-  page: slides;
-  page-break-after: always;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  box-sizing: border-box;
-  position: relative;
-  overflow: hidden;
-}
+**Book PDF** (`@page book`): A4 portrait with 20 mm margins and a page number counter in the bottom center (10 pt, gray). Each `.gs-book-chapter` avoids page breaks within. The slide is shown in a bordered, padded box with light background (#fafafa). Notes are set in justified body text (1 rem, 1.6 line height).
 
-.gs-print-slide:last-child {
-  page-break-after: auto;
-}
-
-/* === Slides + Notes PDF === */
-
-@page slides-notes {
-  size: A4 portrait;
-  margin: 15mm;
-}
-
-.gs-print-slide-with-notes {
-  page: slides-notes;
-  page-break-after: always;
-}
-
-.gs-print-slide-with-notes .gs-print-slide {
-  /* Slide as a bordered box, 60% of page height */
-  border: 1px solid #ccc;
-  height: 55%;
-  margin-bottom: 1rem;
-  page-break-after: avoid;
-}
-
-.gs-print-notes {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  color: #333;
-}
-
-/* === Book PDF === */
-
-@page book {
-  size: A4 portrait;
-  margin: 20mm;
-  
-  @bottom-center {
-    content: counter(page);
-    font-size: 10pt;
-    color: #666;
-  }
-}
-
-.gs-book-chapter {
-  page: book;
-  page-break-inside: avoid;
-  margin-bottom: 2rem;
-}
-
-.gs-book-slide {
-  border: 1px solid #ddd;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  background: #fafafa;
-}
-
-.gs-book-notes {
-  font-size: 1rem;
-  line-height: 1.6;
-  text-align: justify;
-}
-
-/* === Shared === */
-
-/* Remove partials — show all content */
-[partial] {
-  visibility: visible !important;
-}
-
-/* Code blocks */
-pre {
-  background: #f5f5f5;
-  padding: 0.8rem;
-  border-radius: 4px;
-  font-size: 0.8rem;
-  overflow-x: auto;
-  page-break-inside: avoid;
-}
-
-/* Images */
-img {
-  max-width: 100%;
-  height: auto;
-}
-
-/* Tables */
-table {
-  border-collapse: collapse;
-  width: 100%;
-  page-break-inside: avoid;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 0.4rem 0.8rem;
-  text-align: left;
-}
-```
+**Shared rules**: All `[partial]` elements are forced visible (`visibility: visible !important`) since there's no navigation in print. Code blocks (`pre`) get light background, padding, border-radius, and `page-break-inside: avoid`. Images are constrained to `max-width: 100%`. Tables use `border-collapse: collapse`, full width, and avoid page breaks within.
 
 ## HTML Templates
 
-### slides.html
+Three minimal HTML templates live in `packages/engine/src/print/templates/`:
 
-```html
-<!-- packages/engine/src/print/templates/slides.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{{title}}</title>
-  <style>{{styles}}</style>
-</head>
-<body class="gs-print gs-print-slides">
-  {{content}}
-</body>
-</html>
-```
+- **slides.html**: A standard HTML5 document with `{{title}}` in the `<title>` tag, `{{styles}}` in a `<style>` block in the head, and `{{content}}` in the `<body class="gs-print gs-print-slides">`.
 
-### slides-notes.html
+- **slides-notes.html**: Same structure but with body class `gs-print gs-print-slides-notes`, title suffixed with " — Speaker Notes", and an `<h1>{{title}}</h1>` header before the content.
 
-```html
-<!-- packages/engine/src/print/templates/slides-notes.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{{title}} — Speaker Notes</title>
-  <style>{{styles}}</style>
-</head>
-<body class="gs-print gs-print-slides-notes">
-  <header class="gs-print-header">
-    <h1>{{title}}</h1>
-  </header>
-  {{content}}
-</body>
-</html>
-```
-
-### book.html
-
-```html
-<!-- packages/engine/src/print/templates/book.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>{{title}}</title>
-  <style>{{styles}}</style>
-</head>
-<body class="gs-print gs-print-book">
-  <header class="gs-book-cover">
-    <h1>{{title}}</h1>
-  </header>
-  {{content}}
-</body>
-</html>
-```
+- **book.html**: Body class `gs-print gs-print-book`, with a cover page header `<h1>{{title}}</h1>` inside a `.gs-book-cover` wrapper before the content.
 
 ## CLI Integration
 
-```typescript
-// packages/cli/src/commands/pdf.ts
-import { execFile } from 'node:child_process';
-import { writeFile, mkdtemp, rm } from 'node:fs/promises';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+The `pdf` command (`packages/cli/src/commands/pdf.ts`) takes a config path, output format, and output PDF path. It:
 
-interface PdfOptions {
-  config: string;       // path to config.json
-  format: 'slides' | 'slides-notes' | 'book';
-  output: string;       // output PDF path
-}
-
-export async function generatePdf(options: PdfOptions): Promise<void> {
-  // 1. Load config and markdown
-  const config = JSON.parse(await readFile(options.config, 'utf-8'));
-  const markdown = await readFile(config.content, 'utf-8');
-
-  // 2. Parse and render to flat HTML
-  const parser = new SlideParser();
-  const plugins = new PluginManager();
-  // ... register built-in plugins
-  
-  const processed = plugins.preprocess(markdown, config);
-  const slides = parser.parse(processed);
-  
-  const renderer = new PrintRenderer();
-  const html = renderer.render(slides, {
-    template: options.format,
-    title: config.title,
-  });
-
-  // 3. Write to temp file
-  const tmpDir = await mkdtemp(join(tmpdir(), 'geekslides-'));
-  const htmlPath = join(tmpDir, 'input.html');
-  await writeFile(htmlPath, html);
-
-  // 4. Invoke WeasyPrint
-  try {
-    await new Promise<void>((resolve, reject) => {
-      execFile('weasyprint', [htmlPath, options.output], (error) => {
-        if (error) reject(error);
-        else resolve();
-      });
-    });
-    console.log(`PDF generated: ${options.output}`);
-  } finally {
-    await rm(tmpDir, { recursive: true });
-  }
-}
-```
+1. Loads `config.json` and the referenced markdown file.
+2. Parses and preprocesses the markdown using `SlideParser` and `PluginManager` with built-in plugins.
+3. Renders to flat HTML via `PrintRenderer` with the selected template and title from config.
+4. Writes the HTML to a temporary file in a system temp directory.
+5. Invokes `weasyprint <input.html> <output.pdf>` via `child_process.execFile`.
+6. Cleans up the temp directory.
 
 ### CLI Usage
 
-```bash
-# Generate all three formats
-npx geekslides pdf --config config.json --format slides -o slides.pdf
-npx geekslides pdf --config config.json --format slides-notes -o notes.pdf
-npx geekslides pdf --config config.json --format book -o book.pdf
-```
+- `npx geekslides pdf --config config.json --format slides -o slides.pdf`
+- `npx geekslides pdf --config config.json --format slides-notes -o notes.pdf`
+- `npx geekslides pdf --config config.json --format book -o book.pdf`
 
 ## WeasyPrint Installation
 
 WeasyPrint is a Python package. It's required only for PDF generation, not for authoring or presenting.
 
-```dockerfile
-# In the CLI Docker image or CI
-RUN pip install weasyprint
-```
-
-```bash
-# Local development
-pip install weasyprint
-# or
-brew install weasyprint  # macOS
-```
+- **Docker/CI**: Install via `pip install weasyprint` in the Dockerfile.
+- **Local (pip)**: `pip install weasyprint`
+- **Local (macOS)**: `brew install weasyprint`
 
 ## WeasyPrint Compatibility Notes
 

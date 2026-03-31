@@ -37,120 +37,29 @@ MQTT broker with a single y-websocket server.
 
 ### docker-compose.yml
 
-```yaml
-# docker/docker-compose.yml
-services:
-  slides:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile
-    restart: unless-stopped
-    volumes:
-      # Mount presentation content from host
-      - ${CONTENT_DIR:-.}:/srv/content:ro
+The `docker/docker-compose.yml` defines three services:
 
-  yjs-server:
-    build:
-      context: ..
-      dockerfile: docker/Dockerfile.server
-    restart: unless-stopped
-    environment:
-      - PORT=1234
-      - HOST=0.0.0.0
-    # Optional: persist Yjs docs
-    # volumes:
-    #   - yjs-data:/data
+- **slides**: Builds from the root Dockerfile, restarts unless stopped. Mounts the `CONTENT_DIR` (defaults to `.`) as read-only at `/srv/content`.
 
-  caddy:
-    image: caddy:2-alpine
-    restart: unless-stopped
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy-data:/data
-      - caddy-config:/config
-    environment:
-      - DOMAIN=${DOMAIN:-localhost}
-    depends_on:
-      - slides
-      - yjs-server
+- **yjs-server**: Builds from Dockerfile.server, restarts unless stopped. Environment variables `PORT=1234` and `HOST=0.0.0.0`. Optionally mounts a `yjs-data` volume for persistence.
 
-volumes:
-  caddy-data:
-  caddy-config:
-  # yjs-data:
-```
+- **caddy**: Uses the `caddy:2-alpine` image, restarts unless stopped. Maps ports 80 and 443. Mounts the Caddyfile as read-only, plus `caddy-data` and `caddy-config` volumes. Takes `DOMAIN` from the environment (defaults to `localhost`). Depends on both slides and yjs-server.
+
+Two named volumes are defined: `caddy-data` and `caddy-config`.
 
 ### Dockerfile (slides — multi-stage)
 
-```dockerfile
-# docker/Dockerfile
-# Stage 1: Build
-FROM node:22-alpine AS builder
+Stage 1 (builder): Uses `node:22-alpine`. Copies workspace package.json files for engine and CLI, runs `npm ci` for those workspaces, copies the source files, tsconfig, and vite config, then runs the engine build.
 
-WORKDIR /app
-COPY package.json package-lock.json ./
-COPY packages/engine/package.json packages/engine/
-COPY packages/cli/package.json packages/cli/
-
-RUN npm ci --workspace=@geekslides/engine --workspace=@geekslides/cli
-
-COPY packages/engine/ packages/engine/
-COPY packages/cli/ packages/cli/
-COPY tsconfig.json vite.config.ts ./
-
-RUN npm run build --workspace=@geekslides/engine
-
-# Stage 2: Serve with Caddy
-FROM caddy:2-alpine
-
-COPY --from=builder /app/packages/engine/dist /srv/slides
-COPY docker/Caddyfile.slides /etc/caddy/Caddyfile
-
-EXPOSE 5173
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
-```
+Stage 2 (serve): Uses `caddy:2-alpine`. Copies the built dist from the builder into `/srv/slides`, copies a Caddyfile for static serving, exposes port 5173.
 
 ### Dockerfile.server (yjs-server)
 
-```dockerfile
-# docker/Dockerfile.server
-FROM node:22-alpine
-
-WORKDIR /app
-COPY package.json package-lock.json ./
-COPY packages/server/package.json packages/server/
-
-RUN npm ci --workspace=@geekslides/server --omit=dev
-
-COPY packages/server/ packages/server/
-
-EXPOSE 1234
-USER node
-CMD ["node", "packages/server/src/index.js"]
-```
+Uses `node:22-alpine`. Copies the workspace root and server package.json, runs `npm ci --workspace=@geekslides/server --omit=dev`, copies the server source. Exposes port 1234, runs as the `node` user, and starts with `node packages/server/src/index.js`.
 
 ### Caddyfile
 
-```caddyfile
-# docker/Caddyfile
-{$DOMAIN:localhost} {
-    # Static slides files
-    handle /* {
-        reverse_proxy slides:5173
-    }
-
-    # Yjs WebSocket
-    handle /ws {
-        reverse_proxy yjs-server:1234
-    }
-
-    # HTTPS (automatic with real domain, self-signed for localhost)
-    tls {$ACME_EMAIL:internal}
-}
-```
+The `docker/Caddyfile` listens on the configured domain (or localhost). It reverse-proxies `/*` to `slides:5173` for static files, and `/ws` to `yjs-server:1234` for WebSocket connections. TLS is configured via the `ACME_EMAIL` variable — setting it to `internal` generates self-signed certs for development.
 
 ## Environment Variables
 
@@ -170,78 +79,32 @@ CMD ["node", "packages/server/src/index.js"]
 
 ### Setup
 
-```bash
-# Clone and install
-git clone <repo>
-cd geekslides
-npm install
+Prerequisites: Node.js 22+ and npm 10+.
 
-# Start dev server (watches all packages)
-npm run dev
-# → Engine dev server: http://localhost:5173
-# → Yjs server: ws://localhost:1234
-# → HMR active for .ts, .css, .md, .json files
-```
+1. Clone and `npm install` to install all workspace dependencies.
+2. `npm run dev` starts the engine dev server (`http://localhost:5173`), the Yjs server (`ws://localhost:1234`), and watches `.ts`, `.css`, `.md`, `.json` files with HMR.
 
 ### Developing a Presentation
 
-```bash
-# In a separate terminal, serve a presentation repo
-cd ~/presentations/my-talk
-npx geekslides dev
-# → Opens http://localhost:5173 serving this presentation
-# → Watches README.md, config.json, images/, local.css
-# → HMR reloads on save, preserving current slide position
-```
+In a separate terminal, navigate to a presentation repo and run `npx geekslides dev`. This opens `http://localhost:5173` serving that presentation, watching `README.md`, `config.json`, `images/`, and `local.css` for changes. HMR preserves the current slide position on save.
 
 ### Development with Docker
 
-```bash
-# Build and run with docker compose
-cd docker
-CONTENT_DIR=~/presentations/my-talk docker compose up --build
-
-# Access at https://localhost (self-signed cert)
-```
+From the `docker/` directory, run `CONTENT_DIR=~/presentations/my-talk docker compose up --build`. Access at `https://localhost` (self-signed cert).
 
 ## Production Deployment
 
 ### Quick Deploy
 
-```bash
-# On a server with Docker installed
-git clone <repo>
-cd geekslides/docker
-
-# Set environment
-export DOMAIN=slides.example.com
-export ACME_EMAIL=admin@example.com
-
-# Build and start
-docker compose up -d --build
-```
+On a server with Docker: clone the repo, `cd` into `docker/`, set `DOMAIN` and `ACME_EMAIL` environment variables, and run `docker compose up -d --build`.
 
 ### With External Presentation Content
 
-```bash
-# Serve a specific presentation
-CONTENT_DIR=/path/to/presentation docker compose up -d
-```
+Mount a specific presentation via `CONTENT_DIR=/path/to/presentation docker compose up -d`.
 
 ### Azure Static Website (Alternative)
 
-For static deployments without real-time sync:
-
-```bash
-# Build static site
-npm run build
-
-# Upload to Azure Blob Storage
-az storage blob upload-batch \
-  --account-name $STORAGE_ACCOUNT \
-  --source packages/engine/dist \
-  --destination '$web'
-```
+For static deployments without real-time sync: run `npm run build`, then upload the `packages/engine/dist` directory to an Azure Blob Storage `$web` container using `az storage blob upload-batch`.
 
 ## Comparison with v1 Deployment
 
@@ -257,23 +120,10 @@ az storage blob upload-batch \
 
 ## Health Checks
 
-```yaml
-# docker-compose.yml additions
-services:
-  slides:
-    healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:5173/"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
+Both services should include Docker health checks:
 
-  yjs-server:
-    healthcheck:
-      test: ["CMD", "node", "-e", "const ws = new (require('ws'))('ws://localhost:1234'); ws.on('open', () => { ws.close(); process.exit(0); }); ws.on('error', () => process.exit(1));"]
-      interval: 30s
-      timeout: 5s
-      retries: 3
-```
+- **slides**: Uses `wget --spider -q http://localhost:5173/` every 30 s with a 5 s timeout and 3 retries.
+- **yjs-server**: Uses a Node.js one-liner that opens a WebSocket to `ws://localhost:1234`, exits 0 on successful open, exits 1 on error. Same 30 s interval, 5 s timeout, 3 retries.
 
 ## Checklist
 

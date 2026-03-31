@@ -16,245 +16,58 @@
 
 ### Vite Configuration
 
-```typescript
-// vite.config.ts (root)
-import { defineConfig } from 'vite';
-import { resolve } from 'path';
-
-export default defineConfig({
-  root: 'packages/engine',
-  
-  build: {
-    lib: {
-      entry: resolve(__dirname, 'packages/engine/src/index.ts'),
-      name: 'GeekSlides',
-      formats: ['es'],
-    },
-    rollupOptions: {
-      // Externalize deps that shouldn't be bundled
-      external: ['yjs', 'y-websocket', 'chart.js'],
-    },
-  },
-
-  server: {
-    // Dev server for presentation authoring
-    proxy: {
-      '/ws': {
-        target: 'ws://localhost:1234',
-        ws: true,
-      },
-    },
-  },
-
-  // Custom HMR handler for markdown reload
-  plugins: [geekslidesHMR()],
-});
-```
+The root `vite.config.ts` sets the engine package as the build entry, outputs a single ES module library named `GeekSlides`, and externalizes `yjs`, `y-websocket`, and `chart.js` so they are not bundled into the library output. The dev server proxies `/ws` requests to the local yjs-server at `ws://localhost:1234` and loads the custom HMR plugin.
 
 ### Custom HMR Plugin
 
-```typescript
-// vite-plugin-geekslides-hmr.ts
-function geekslidesHMR(): Plugin {
-  return {
-    name: 'geekslides-hmr',
-    handleHotUpdate({ file, server }) {
-      if (file.endsWith('.md') || file.endsWith('.json')) {
-        // Send custom event to client instead of full reload
-        server.ws.send({
-          type: 'custom',
-          event: 'geekslides:content-update',
-          data: { file },
-        });
-        return []; // prevent default HMR
-      }
-    },
-  };
-}
-
-// Client-side HMR handler (in engine)
-if (import.meta.hot) {
-  import.meta.hot.on('geekslides:content-update', (data) => {
-    document.dispatchEvent(new CustomEvent('geek:hmr:update', {
-      detail: { file: data.file }
-    }));
-  });
-}
-```
+A Vite plugin (`vite-plugin-geekslides-hmr.ts`) intercepts hot-update events for `.md` and `.json` files. Instead of triggering a full page reload, it sends a custom WebSocket event (`geekslides:content-update`) to the browser with the changed file path. On the client side, the engine subscribes to this custom event via `import.meta.hot` and dispatches a `geek:hmr:update` CustomEvent on the document, which the slideshow controller listens for to re-fetch and re-render content while preserving the current slide position.
 
 ## TypeScript Configuration
 
 ### Strict Mode
 
-```jsonc
-// tsconfig.json (root)
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "declaration": true,
-    "declarationMap": true,
-    "sourceMap": true,
-    "outDir": "dist",
-    "rootDir": "src"
-  }
-}
-```
+The root `tsconfig.json` targets ES2022 with ESNext modules and bundler module resolution. It enables full strict mode plus `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes` for maximum type safety. The DOM and DOM.Iterable libs are included. Source maps and declaration maps are generated for debugging.
 
 ### Per-package tsconfig
 
-Each package extends the root:
-
-```jsonc
-// packages/engine/tsconfig.json
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src"
-  },
-  "include": ["src"],
-  "references": []  // engine has no internal deps
-}
-```
-
-```jsonc
-// packages/server/tsconfig.json
-{
-  "extends": "../../tsconfig.json",
-  "compilerOptions": {
-    "outDir": "dist",
-    "rootDir": "src",
-    "lib": ["ES2022"]  // no DOM
-  },
-  "include": ["src"]
-}
-```
+Each package extends the root config. The engine package includes its `src/` directory with DOM libs. The server package also extends root but omits DOM libs (only `ES2022`) since it runs in Node.js. The CLI package references both engine and server as TypeScript project references.
 
 ## npm Workspaces
 
 ### Root package.json
 
-```jsonc
-{
-  "name": "geekslides",
-  "private": true,
-  "workspaces": [
-    "packages/*"
-  ],
-  "scripts": {
-    "dev": "npm run dev -w @geekslides/engine",
-    "build": "npm run build --workspaces",
-    "test": "npm run test --workspaces",
-    "test:e2e": "playwright test",
-    "lint": "eslint packages/*/src",
-    "typecheck": "tsc --build"
-  },
-  "devDependencies": {
-    "typescript": "^5.x",
-    "vite": "^6.x",
-    "vitest": "^3.x",
-    "@playwright/test": "^1.x",
-    "eslint": "^9.x"
-  }
-}
-```
+The root `package.json` is a private workspace configuration with `"workspaces": ["packages/*"]`. The top-level scripts delegate to workspaces: `dev` runs the engine dev server, `build` and `test` run across all workspaces, `test:e2e` invokes Playwright, `lint` runs ESLint on all package sources, and `typecheck` runs `tsc --build`. Dev dependencies include TypeScript 5.x, Vite 6.x, Vitest 3.x, Playwright, and ESLint 9.x.
 
 ### Package Dependencies
 
-```
-@geekslides/engine (browser)
-├── markdown-it          # markdown → HTML
-├── yjs                  # CRDT shared types
-├── y-websocket          # WebSocket provider (client)
-└── chart.js             # table → chart rendering
-
-@geekslides/server (Node.js)
-├── yjs
-├── y-websocket          # WebSocket server
-└── ws                   # WebSocket implementation
-
-@geekslides/cli (Node.js)
-├── @geekslides/engine   # for build/render
-├── vite                 # dev server API
-├── sharp                # image optimization
-└── commander            # CLI argument parsing
-```
+- **@geekslides/engine** (browser): depends on `markdown-it` (markdown→HTML), `yjs` (CRDT shared types), `y-websocket` (WebSocket provider client), and `chart.js` (table→chart rendering).
+- **@geekslides/server** (Node.js): depends on `yjs`, `y-websocket` (server), and `ws` (WebSocket implementation).
+- **@geekslides/cli** (Node.js): depends on `@geekslides/engine` (for build/render), `vite` (dev server API), `sharp` (image optimization), and `commander` (CLI argument parsing).
 
 ### Inter-package References
 
-```
-@geekslides/cli ──depends──> @geekslides/engine (for SSR/print rendering)
-@geekslides/cli ──depends──> @geekslides/server (for dev command)
-@geekslides/engine ──independent──
-@geekslides/server ──independent──
-```
+- `@geekslides/cli` depends on `@geekslides/engine` (for SSR/print rendering) and `@geekslides/server` (for the dev command).
+- `@geekslides/engine` and `@geekslides/server` are independent of each other.
 
 ## Development Workflow
 
 ### Local Development
 
-```bash
-# Install all workspace dependencies
-npm install
-
-# Start dev server (serves presentation from current dir)
-npm run dev
-# → Vite dev server on http://localhost:5173
-# → yjs-server on ws://localhost:1234
-# → HMR watches .md, .css, .json files
-
-# Run all unit tests
-npm test
-
-# Run E2E tests
-npm run test:e2e
-
-# Type-check all packages
-npm run typecheck
-
-# Build production bundle
-npm run build
-```
+- `npm install` — installs all workspace dependencies.
+- `npm run dev` — starts the Vite dev server on `http://localhost:5173` and the yjs-server on `ws://localhost:1234`. HMR watches `.md`, `.css`, and `.json` files.
+- `npm test` — runs all unit tests via Vitest.
+- `npm run test:e2e` — runs Playwright E2E tests.
+- `npm run typecheck` — type-checks all packages with `tsc --build`.
+- `npm run build` — creates the production bundle.
 
 ### Package Development
 
-```bash
-# Work on engine only
-npm run dev -w @geekslides/engine
+Individual packages can be targeted using npm workspace flags:
 
-# Test server only
-npm test -w @geekslides/server
-
-# Add dependency to a specific package
-npm install chart.js -w @geekslides/engine
-```
+- `npm run dev -w @geekslides/engine` — work on the engine only.
+- `npm test -w @geekslides/server` — test the server only.
+- `npm install chart.js -w @geekslides/engine` — add a dependency to a specific package.
 
 ## Linting & Formatting
 
-```jsonc
-// eslint.config.js (flat config, ESLint 9)
-import tseslint from 'typescript-eslint';
-
-export default tseslint.config(
-  tseslint.configs.strictTypeChecked,
-  {
-    languageOptions: {
-      parserOptions: {
-        projectService: true,
-      },
-    },
-    rules: {
-      // Enforce explicit return types on public API
-      '@typescript-eslint/explicit-module-boundary-types': 'error',
-      // No any
-      '@typescript-eslint/no-explicit-any': 'error',
-    },
-  }
-);
-```
+The project uses ESLint 9 flat config (`eslint.config.js`) with `typescript-eslint`'s `strictTypeChecked` preset. Project-aware type information is enabled via `parserOptions.projectService`. Two additional rules are enforced: `@typescript-eslint/explicit-module-boundary-types` (error — all public API functions must have explicit return types) and `@typescript-eslint/no-explicit-any` (error — no `any` types anywhere).

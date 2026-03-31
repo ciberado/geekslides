@@ -6,17 +6,7 @@ v1 implements speaker notes as a **CSS trick**: a `div.slide-notes` is absolutel
 at `left: 100%` of the active slide, becoming visible only when `.speaker` class is toggled
 on the slideshow container. The notes panel overlays the right half of the viewport.
 
-```css
-/* v1: minislides.css */
-.slidedeck.speaker section.active div.slide-notes {
-  display: block;
-  position: absolute;
-  left: 100%;      /* pushed to the right of the slide */
-  width: 100%;
-  height: 200%;
-  font-size: 40pt;
-}
-```
+In v1's `minislides.css`, the `.slidedeck.speaker section.active div.slide-notes` rule sets `display: block`, `position: absolute`, `left: 100%` (pushed to the right of the slide), `width: 100%`, `height: 200%`, and `font-size: 40pt`.
 
 **Limitations**:
 
@@ -87,204 +77,34 @@ view's controls, and the change syncs back to the presentation tab via Yjs.
 
 ### `<geek-speaker-view>` Component
 
-A dedicated Web Component that renders the full speaker interface:
+A dedicated Web Component that renders the full speaker interface.
 
-```typescript
-// packages/engine/src/components/SpeakerView.ts
+`GeekSpeakerView` extends HTMLElement with Shadow DOM. Its layout is a CSS Grid with three columns and two rows:
 
-class GeekSpeakerView extends HTMLElement {
-  #shadow: ShadowRoot;
-  #slides: SlideData[];
-  #currentSlide = 0;
-  #timer: SpeakerTimer;
+- **Column 1, Row 1**: Current slide thumbnail (bordered in blue `#4a9eff`).
+- **Column 2, Row 1**: Next slide thumbnail (dimmed to `0.7` opacity, bordered in gray).
+- **Column 3, Rows 1–2**: Speaker notes panel — scrollable, padded, dark background (`#2a2a2a`), 1.2 rem font with 1.6 line height. Renders the full markdown-formatted notes.
+- **Columns 1–2, Row 2**: Controls bar with the timer display (2 rem, tabular-nums for alignment), slide counter, and prev/next navigation buttons.
 
-  connectedCallback(): void {
-    this.#shadow = this.attachShadow({ mode: 'open' });
-    this.#shadow.innerHTML = `
-      <style>
-        :host {
-          display: grid;
-          grid-template-columns: 1fr 1fr 1fr;
-          grid-template-rows: 1fr auto;
-          gap: 1rem;
-          height: 100vh;
-          padding: 1rem;
-          background: #1a1a1a;
-          color: #fff;
-          font-family: system-ui, sans-serif;
-        }
-        .current-slide {
-          grid-column: 1;
-          grid-row: 1;
-          border: 2px solid #4a9eff;
-          border-radius: 4px;
-          overflow: hidden;
-        }
-        .next-slide {
-          grid-column: 2;
-          grid-row: 1;
-          border: 1px solid #555;
-          border-radius: 4px;
-          overflow: hidden;
-          opacity: 0.7;
-        }
-        .notes {
-          grid-column: 3;
-          grid-row: 1 / -1;
-          overflow-y: auto;
-          padding: 1rem;
-          background: #2a2a2a;
-          border-radius: 4px;
-          font-size: 1.2rem;
-          line-height: 1.6;
-        }
-        .controls {
-          grid-column: 1 / 3;
-          grid-row: 2;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 0.5rem;
-        }
-        .timer {
-          font-size: 2rem;
-          font-variant-numeric: tabular-nums;
-        }
-        .slide-counter {
-          font-size: 1.2rem;
-          opacity: 0.8;
-        }
-      </style>
-      <div class="current-slide">
-        <slot name="current"></slot>
-      </div>
-      <div class="next-slide">
-        <slot name="next"></slot>
-      </div>
-      <div class="notes"></div>
-      <div class="controls">
-        <span class="timer">00:00:00</span>
-        <span class="slide-counter"></span>
-        <div class="nav-buttons">
-          <button data-cmd="prev">◀ Prev</button>
-          <button data-cmd="next">Next ▶</button>
-        </div>
-      </div>
-    `;
-  }
+The `:host` fills `100vh` with 1 rem padding, uses a dark background (`#1a1a1a`), and white text with system-ui font.
 
-  /** Update view when slide changes (called by Yjs observer) */
-  updateSlide(index: number): void {
-    this.#currentSlide = index;
-    
-    // Render current slide thumbnail
-    this.#renderThumbnail('current', this.#slides[index]);
-    
-    // Render next slide preview
-    if (index + 1 < this.#slides.length) {
-      this.#renderThumbnail('next', this.#slides[index + 1]);
-    }
-    
-    // Update notes (full markdown rendering, independently scrollable)
-    const notesEl = this.#shadow.querySelector('.notes')!;
-    notesEl.innerHTML = this.#slides[index].notesHtml || '<em>No notes for this slide</em>';
-    notesEl.scrollTop = 0;
-    
-    // Update counter
-    const counter = this.#shadow.querySelector('.slide-counter')!;
-    counter.textContent = `Slide ${index + 1} / ${this.#slides.length}`;
-  }
-
-  #renderThumbnail(slot: string, slide: SlideData): void {
-    const container = this.#shadow.querySelector(`.${slot}-slide`)!;
-    // Render a scaled-down clone of the slide HTML
-    container.innerHTML = `
-      <div style="transform: scale(0.3); transform-origin: top left; width: 333%; height: 333%;">
-        ${slide.html}
-      </div>
-    `;
-  }
-}
-```
+**`updateSlide(index)`**: Called when slide changes (via Yjs observer). Renders a scaled-down clone (30% scale, transform-origin top-left) of the current and next slide HTML into the thumbnails. Updates the notes panel's innerHTML with the slide's `notesHtml` (or an "No notes for this slide" fallback), resets scroll position, and updates the counter text.
 
 ### SpeakerTimer
 
-```typescript
-// packages/engine/src/components/SpeakerTimer.ts
+`SpeakerTimer` manages the presentation timer using `requestAnimationFrame` for smooth updates.
 
-export class SpeakerTimer {
-  #startTime: number | null = null;
-  #elapsed = 0;
-  #running = false;
-  #callback: (formatted: string) => void;
-  #frameId: number | null = null;
+It tracks a start time, accumulated elapsed milliseconds, and a running state. It receives a callback function `(formatted: string) => void` that is called with an `HH:MM:SS` formatted string on each animation frame.
 
-  constructor(callback: (formatted: string) => void) {
-    this.#callback = callback;
-  }
-
-  start(): void {
-    this.#startTime = Date.now() - this.#elapsed;
-    this.#running = true;
-    this.#tick();
-  }
-
-  pause(): void {
-    this.#running = false;
-    this.#elapsed = Date.now() - (this.#startTime ?? Date.now());
-    if (this.#frameId) cancelAnimationFrame(this.#frameId);
-  }
-
-  reset(): void {
-    this.#startTime = null;
-    this.#elapsed = 0;
-    this.#running = false;
-    this.#callback('00:00:00');
-  }
-
-  #tick(): void {
-    if (!this.#running) return;
-    const ms = Date.now() - (this.#startTime ?? Date.now());
-    const secs = Math.floor(ms / 1000);
-    const h = String(Math.floor(secs / 3600)).padStart(2, '0');
-    const m = String(Math.floor((secs % 3600) / 60)).padStart(2, '0');
-    const s = String(secs % 60).padStart(2, '0');
-    this.#callback(`${h}:${m}:${s}`);
-    this.#frameId = requestAnimationFrame(() => this.#tick());
-  }
-}
-```
+- **`start()`**: Records the current time (minus any previously accumulated elapsed time for resume) and begins the `requestAnimationFrame` loop.
+- **`pause()`**: Stops the loop and records the elapsed time.
+- **`reset()`**: Clears all state and calls the callback with `'00:00:00'`.
 
 ### Opening the Speaker View
 
-From the presentation tab:
+The `Ctrl+B → s` command constructs a new URL from the current location with `?view=speaker` appended, then opens it via `window.open()` with suggested dimensions of 1200×800.
 
-```typescript
-// Ctrl+B → s triggers this command
-commands.register({
-  name: 'open-speaker-view',
-  label: 'Open Speaker View',
-  category: 'mode',
-  execute: () => {
-    const url = new URL(window.location.href);
-    url.searchParams.set('view', 'speaker');
-    window.open(url.toString(), 'geek-speaker', 'width=1200,height=800');
-  },
-});
-```
-
-The engine's initialization detects `?view=speaker` and renders `<geek-speaker-view>`
-instead of `<geek-slideshow>`:
-
-```typescript
-// packages/engine/src/index.ts (simplified)
-const params = new URLSearchParams(window.location.search);
-if (params.get('view') === 'speaker') {
-  document.body.appendChild(document.createElement('geek-speaker-view'));
-} else {
-  document.body.appendChild(document.createElement('geek-slideshow'));
-}
-```
+On initialization, the engine checks `URLSearchParams` for `view=speaker`. If present, it creates and appends a `<geek-speaker-view>` element instead of the normal `<geek-slideshow>`. Both connect to the same Yjs room, so they share state automatically.
 
 ### Notes Authoring Format
 

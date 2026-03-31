@@ -11,222 +11,61 @@ Plugins are simple functions registered via config. No classes, no complex lifec
 
 ## Plugin Types
 
-```typescript
-// packages/engine/src/plugins/types.ts
+Defined in `packages/engine/src/plugins/types.ts`:
 
-/**
- * Preprocessor: transforms raw markdown before markdown-it parsing.
- * Receives the full markdown string, returns transformed markdown.
- */
-export type Preprocessor = (markdown: string, config: GeekSlidesConfig) => string;
+- **`Preprocessor`**: A function `(markdown: string, config: GeekSlidesConfig) => string` that transforms raw markdown before markdown-it parsing. Receives the full markdown string and returns transformed markdown.
 
-/**
- * Processor: transforms a rendered slide's DOM element after HTML generation.
- * Called once per slide. Can modify the element in place, add event listeners, etc.
- */
-export type Processor = (slideElement: HTMLElement, context: ProcessorContext) => void;
+- **`Processor`**: A function `(slideElement: HTMLElement, context: ProcessorContext) => void` that transforms a rendered slide's DOM element after HTML generation. Called once per slide. Can modify the element in place, add event listeners, etc.
 
-/**
- * Context passed to processors.
- */
-export interface ProcessorContext {
-  /** 0-based slide index */
-  slideIndex: number;
-  /** Total number of slides */
-  slideCount: number;
-  /** The full config object */
-  config: GeekSlidesConfig;
-  /** Reference to the slideshow element */
-  slideshow: GeekSlideshow;
-}
+- **`ProcessorContext`**: An object passed to processors containing `slideIndex` (0-based), `slideCount` (total), `config` (the full config object), and `slideshow` (reference to the slideshow element).
 
-/**
- * A plugin bundle can provide preprocessors, processors, or both.
- */
-export interface Plugin {
-  name: string;
-  preprocessors?: Preprocessor[];
-  processors?: Processor[];
-}
-```
+- **`Plugin`**: A bundle with a `name` string, optional `preprocessors` array, and optional `processors` array. A plugin can provide both preprocessors and processors.
 
 ## PluginManager
 
-```typescript
-// packages/engine/src/plugins/PluginManager.ts
+`PluginManager` (in `packages/engine/src/plugins/PluginManager.ts`) maintains two private arrays: `#preprocessors` and `#processors`, each storing objects with `name` and `fn` fields.
 
-export class PluginManager {
-  #preprocessors: Array<{ name: string; fn: Preprocessor }> = [];
-  #processors: Array<{ name: string; fn: Processor }> = [];
+- **`register(plugin)`**: Iterates the plugin's `preprocessors` and `processors` arrays, pushing each function into the corresponding internal array along with the plugin's name.
 
-  /**
-   * Register a plugin bundle.
-   */
-  register(plugin: Plugin): void {
-    for (const pp of plugin.preprocessors ?? []) {
-      this.#preprocessors.push({ name: plugin.name, fn: pp });
-    }
-    for (const proc of plugin.processors ?? []) {
-      this.#processors.push({ name: plugin.name, fn: proc });
-    }
-  }
+- **`preprocess(markdown, config)`**: Runs all registered preprocessors sequentially using `reduce()`. Each preprocessor receives the output of the previous one, forming a pipeline. Returns the final transformed markdown string.
 
-  /**
-   * Run all preprocessors sequentially on the markdown string.
-   * Each preprocessor receives the output of the previous one.
-   */
-  preprocess(markdown: string, config: GeekSlidesConfig): string {
-    return this.#preprocessors.reduce(
-      (md, { fn }) => fn(md, config),
-      markdown,
-    );
-  }
+- **`process(slideElement, context)`**: Runs all registered processors on a single slide element, calling each function in order.
 
-  /**
-   * Run all processors on a slide element.
-   */
-  process(slideElement: HTMLElement, context: ProcessorContext): void {
-    for (const { fn } of this.#processors) {
-      fn(slideElement, context);
-    }
-  }
-
-  /**
-   * List registered plugin names (for debugging).
-   */
-  list(): { preprocessors: string[]; processors: string[] } {
-    return {
-      preprocessors: this.#preprocessors.map(p => p.name),
-      processors: this.#processors.map(p => p.name),
-    };
-  }
-}
-```
+- **`list()`**: Returns a diagnostic object with two arrays of plugin names for debugging.
 
 ## Built-in Plugins
 
 ### header-preprocessor
 
-Converts `##` headers into slide separators with auto-generated anchors (same logic as v1's `headerPreprocessor`):
+Converts `##` headers into slide separators with auto-generated anchors (same logic as v1's `headerPreprocessor`).
 
-```typescript
-// packages/engine/src/plugins/builtins/header-preprocessor.ts
-
-export const headerPreprocessor: Plugin = {
-  name: 'header-preprocessor',
-  preprocessors: [
-    (markdown: string): string => {
-      return markdown.replace(
-        /^## (.+)$/gm,
-        (_, title) => {
-          const anchor = title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, '-')
-            .replace(/(^-|-$)/g, '');
-          return `\n[](.slide#${anchor})\n\n## ${title}`;
-        },
-      );
-    },
-  ],
-};
-```
+A single preprocessor function uses a regex to match lines starting with `## `. For each match, it generates a URL-friendly anchor by lowercasing the title, replacing non-alphanumeric runs with hyphens, and trimming leading/trailing hyphens. It inserts an empty link `[](.slide#anchor)` before the header line, which the slide parser later uses as a section separator.
 
 ### chart-processor
 
-Converts `<table>` elements inside slides marked with `.chart` class into Chart.js canvases
-(replacing v1's `ChartSlideController`):
+Converts `<table>` elements inside slides marked with the `.chart` class into Chart.js canvases (replacing v1's `ChartSlideController`).
 
-```typescript
-// packages/engine/src/plugins/builtins/chart-processor.ts
-
-export const chartProcessor: Plugin = {
-  name: 'chart-processor',
-  processors: [
-    (slideElement: HTMLElement, ctx: ProcessorContext): void => {
-      if (!slideElement.classList.contains('chart')) return;
-
-      const tables = slideElement.querySelectorAll('table');
-      for (const table of tables) {
-        const chartEl = document.createElement('geek-chart');
-        chartEl.setAttribute('type', getChartType(slideElement));
-        
-        // Move table data into the chart component
-        chartEl.innerHTML = table.outerHTML;
-        table.replaceWith(chartEl);
-      }
-    },
-  ],
-};
-
-function getChartType(el: HTMLElement): string {
-  const classes = el.classList;
-  if (classes.contains('bar')) return 'bar';
-  if (classes.contains('line')) return 'line';
-  if (classes.contains('pie')) return 'pie';
-  if (classes.contains('doughnut')) return 'doughnut';
-  if (classes.contains('radar')) return 'radar';
-  return 'bar'; // default
-}
-```
+A single processor function checks if the slide element has the `chart` class. If so, it queries all `<table>` elements, and for each one creates a `<geek-chart>` custom element, sets its `type` attribute based on additional CSS classes on the slide (`.bar`, `.line`, `.pie`, `.doughnut`, `.radar` — defaulting to `bar`), moves the table HTML inside the chart element, and replaces the table in the DOM.
 
 ### video-processor
 
-Handles `<video>` elements with timestamp-based partials (replacing v1's `VideoSlideController`):
+Handles `<video>` elements with timestamp-based partials (replacing v1's `VideoSlideController`).
 
-```typescript
-// packages/engine/src/plugins/builtins/video-processor.ts
-
-export const videoProcessor: Plugin = {
-  name: 'video-processor',
-  processors: [
-    (slideElement: HTMLElement): void => {
-      const video = slideElement.querySelector('video');
-      if (!video) return;
-
-      const videoEl = document.createElement('geek-video');
-      video.replaceWith(videoEl);
-      videoEl.appendChild(video);
-    },
-  ],
-};
-```
+A single processor function queries for a `<video>` element inside the slide. If found, it creates a `<geek-video>` custom element, replaces the original `<video>` in the DOM, and appends the `<video>` as a child of the new component.
 
 ### iframe-processor
 
-Lazy-loads iframes (converts `data-src` to `src` only when slide becomes active):
+Lazy-loads iframes by converting `data-src` to `src` only when the slide becomes active.
 
-```typescript
-// packages/engine/src/plugins/builtins/iframe-processor.ts
-
-export const iframeProcessor: Plugin = {
-  name: 'iframe-processor',
-  processors: [
-    (slideElement: HTMLElement): void => {
-      const iframes = slideElement.querySelectorAll('iframe[data-src]');
-      if (iframes.length === 0) return;
-
-      // Observe slide activation to load iframes
-      const observer = new MutationObserver(() => {
-        if (slideElement.hasAttribute('active')) {
-          for (const iframe of iframes) {
-            if (!iframe.getAttribute('src')) {
-              iframe.setAttribute('src', iframe.getAttribute('data-src')!);
-            }
-          }
-        }
-      });
-
-      observer.observe(slideElement, { attributes: true, attributeFilter: ['active'] });
-    },
-  ],
-};
-```
+A single processor function queries all `iframe[data-src]` elements in the slide. It sets up a `MutationObserver` on the slide element watching for changes to the `active` attribute. When the slide becomes active, each iframe's `data-src` value is copied to `src` (only once — it checks that `src` isn't already set).
 
 ## Plugin Registration via Config
 
 Plugins are registered in `config.json` or programmatically:
 
 ### Via config.json
+
+The `plugins` field in `config.json` lists built-in plugin short names:
 
 ```json
 {
@@ -239,44 +78,11 @@ Plugins are registered in `config.json` or programmatically:
 }
 ```
 
-All built-in plugins are available by short name. The engine resolves them:
-
-```typescript
-const BUILTIN_PLUGINS: Record<string, Plugin> = {
-  'header': headerPreprocessor,
-  'chart': chartProcessor,
-  'video': videoProcessor,
-  'iframe': iframeProcessor,
-};
-```
+All built-in plugins are available by short name. The engine maintains a `BUILTIN_PLUGINS` registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`) to their corresponding plugin objects.
 
 ### Programmatic (custom plugins)
 
-```typescript
-import { createSlideshow, PluginManager } from '@geekslides/engine';
-
-const plugins = new PluginManager();
-
-// Register built-ins
-plugins.register(headerPreprocessor);
-plugins.register(chartProcessor);
-
-// Register custom plugin
-plugins.register({
-  name: 'my-custom-plugin',
-  preprocessors: [
-    (md) => md.replace(/TODO/g, '⚠️ TODO'),
-  ],
-  processors: [
-    (el) => {
-      // Add click handlers to all images
-      el.querySelectorAll('img').forEach(img => {
-        img.addEventListener('click', () => img.classList.toggle('zoomed'));
-      });
-    },
-  ],
-});
-```
+Plugins can also be registered programmatically by importing `PluginManager` from `@geekslides/engine` and calling `register()` with a plugin object. Custom plugins follow the same shape: a `name`, optional `preprocessors` array of `(md) => md` functions, and optional `processors` array of `(el) => void` functions. For example, a custom plugin could replace all `TODO` markers in markdown with a warning emoji, or add click-to-zoom handlers to images after rendering.
 
 ## Pipeline Execution Order
 
