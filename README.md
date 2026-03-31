@@ -1,60 +1,99 @@
-# geekslides
+# GeekSlides
 
-TODO: Write an actual README ;-)
+A markdown-driven presentation engine built with TypeScript, Web Components, and Yjs real-time sync. Designed for technical presentations with support for charts, video slides, whiteboards, speaker notes, and mobile audiences.
 
-## Installation on Ubuntu
-
-* Setup the `node` runtime and tooling
-
-```
-curl -L https://git.io/n-install | bash
-. $HOME/.bashrc 
-
-node --version
-npm --version
-```
-
-* Get the code and the dependencies
+## Quick Start
 
 ```bash
 git clone https://github.com/ciberado/geekslides
 cd geekslides
-npm run install
+npm ci
+npm run dev
 ```
 
-## Quick overview
+Open `http://localhost:5173` in your browser.
 
-* Start the communications [broker](https://github.com/ciberado/geekslides/tree/main/broker), the [slides server](https://github.com/ciberado/geekslides/tree/main/slides) and the [demo presentation](https://github.com/ciberado/geekslides/tree/main/demo).
+## Creating a Presentation
 
 ```bash
-npm run start
+npx geekslides create --title "My Talk"
+cd my-talk
+npx geekslides dev
 ```
 
-### Simple local synchronization
+This scaffolds a presentation repo with:
+- `README.md` — your slides in markdown
+- `config.json` — presentation settings
+- `css/local.css` — custom styles
+- `images/` — assets
 
-* Point your browser to the slides engine address on `http://localhost:1234`
-* Press the `o` (open) key and type `http://localhost:8080` (where the presentation demo resides)
-* Press the `c` (clone) key and accept the popup window 
-* Press the `s` (speaker view) **once** to toggle the presenation notes
-* Use the arrow keys or `h`/`l` to move through the slides on both windows
+Slides are separated by `---`. Use the empty-link syntax for slide attributes:
 
-Now you should see two copies of the same show, in sync.
+```markdown
+[](#title,bgcolor(#1a1a2e))
 
-### Whiteboard
+## My Talk
 
-* Use the left button of the mouse or the pencil of a Surface to draw on top of the slides
-* Use the right button of the mouse or the control bar appearing in the top margin to clean the strokes
-* Press `w` to show the whiteboard, and press it again to hide it
+---
 
-### Simple remote synchronization
+[](#agenda)
 
-TBD
+## Agenda
 
-### Book view
+- Topic 1
+- Topic 2
 
-TBD
+::: Notes
+Speaker notes go here.
+:::
+```
 
-### Extras
+## CLI Commands
 
-* Focus on mouse: https://codepen.io/wakana-k/pen/QWYyXXW
+| Command | Description |
+|---------|-------------|
+| `geekslides dev` | Start Vite dev server + sync server |
+| `geekslides build` | Production static build |
+| `geekslides pdf --format slides` | Generate PDF (requires WeasyPrint) |
+| `geekslides create --title "..."` | Scaffold new presentation |
+
+## Keyboard Controls
+
+**Navigation** (direct keystrokes):
+- Arrow keys, Space, PageUp/Down, Home/End
+
+**Commands** (tmux-style `Ctrl+B` prefix):
+- `Ctrl+B, w` — toggle whiteboard
+- `Ctrl+B, s` — open speaker view
+- `Ctrl+B, u` — unfollow sync
+- `Ctrl+B, :` — open command palette
+
+## Docker Deployment
+
+```bash
+cd docker
+DOMAIN=slides.example.com ACME_EMAIL=you@example.com docker compose up -d
+```
+
+## Architecture
+
+See [vibe/features/](vibe/features/) for detailed architecture documentation:
+- [Architecture Overview](vibe/features/architecture-v2.md)
+- [Web Components](vibe/features/components.md)
+- [Plugin System](vibe/features/plugin-system.md)
+- [Sync (Yjs)](vibe/features/sync.md)
+- [Command System](vibe/features/command-system.md)
+
+## v1 (Legacy)
+
+The original v1 implementation is in `slides/`, `broker/`, and `demo/`. See [vibe/v1/](vibe/v1/) for v1 documentation.
+
+```bash
+npm run v1:install
+npm run v1:start
+```
+
+## License
+
+See [LICENCE.txt](LICENCE.txt).
 
