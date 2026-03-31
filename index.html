@@ -4,9 +4,70 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GeekSlides v2</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; overflow: hidden; }
+  </style>
 </head>
 <body>
-  <div id="app">GeekSlides v2 — dev server running</div>
-  <script type="module" src="/packages/engine/src/index.ts"></script>
+  <geek-slideshow id="slideshow"></geek-slideshow>
+  <script type="module">
+    import { parse } from '/packages/engine/src/index.ts';
+
+    const slideshow = document.getElementById('slideshow');
+
+    // Load config
+    let configUrl = 'config.json';
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('config')) {
+      configUrl = params.get('config');
+    }
+
+    try {
+      const configRes = await fetch(configUrl);
+      const config = await configRes.json();
+
+      // Load content
+      const contentUrl = config.content || 'README.md';
+      const contentRes = await fetch(contentUrl);
+      const markdown = await contentRes.text();
+
+      // Parse and render
+      const slides = parse(markdown);
+      slideshow.loadSlides(slides);
+
+      // Set aspect ratio
+      if (config.aspectRatio) {
+        slideshow.setAspectRatio(config.aspectRatio);
+      }
+
+      // Temporary keyboard navigation (replaced by CommandSystem in Phase 4)
+      document.addEventListener('keydown', (e) => {
+        switch (e.key) {
+          case 'ArrowRight':
+          case ' ':
+          case 'PageDown':
+            e.preventDefault();
+            slideshow.next();
+            break;
+          case 'ArrowLeft':
+          case 'PageUp':
+            e.preventDefault();
+            slideshow.prev();
+            break;
+          case 'Home':
+            e.preventDefault();
+            slideshow.goTo(0);
+            break;
+          case 'End':
+            e.preventDefault();
+            slideshow.goTo(slideshow.slideCount - 1);
+            break;
+        }
+      });
+    } catch (err) {
+      document.body.innerHTML = `<pre style="padding: 2rem; color: #c00;">${err}</pre>`;
+    }
+  </script>
 </body>
 </html>
