@@ -12,6 +12,10 @@
     "./headless": {
       "import": "./src/headless.ts",
       "default": "./src/headless.ts"
+    },
+    "./hmr": {
+      "import": "./src/hmr/vite-plugin-geekslides-hmr.ts",
+      "default": "./src/hmr/vite-plugin-geekslides-hmr.ts"
     }
   },
   "scripts": {

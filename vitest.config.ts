@@ -5,6 +5,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@geekslides/engine/headless': resolve(__dirname, 'packages/engine/src/headless.ts'),
+      '@geekslides/engine/hmr': resolve(__dirname, 'packages/engine/src/hmr/vite-plugin-geekslides-hmr.ts'),
       '@geekslides/engine': resolve(__dirname, 'packages/engine/src/index.ts'),
     },
   },

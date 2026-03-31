@@ -6,6 +6,7 @@
 
 import type { Command } from 'commander';
 import { createServer, type InlineConfig } from 'vite';
+import { geekSlidesHmr } from '@geekslides/engine/hmr';
 
 export function registerDevCommand(program: Command): void {
   program
@@ -29,6 +30,7 @@ export function registerDevCommand(program: Command): void {
 
       // Vite dev server config
       const viteConfig: InlineConfig = {
+        plugins: [geekSlidesHmr()],
         server: {
           port,
           open: opts.open,
