@@ -52,6 +52,10 @@ export class Slide extends HTMLElement {
   /**
    * Inject external CSS into this slide's shadow DOM.
    * Used for presentation-wide styles that need to penetrate Shadow DOM.
+   *
+   * Rewrites `body` selectors to `:host` so that deck CSS like
+   * `body { font-size: 40pt }` works inside shadow DOM.
+   * Also rewrites `.slidedeck section` to `section.content` for v1 compat.
    */
   injectStyles(css: string): void {
     const shadow = this.shadowRoot;
@@ -63,9 +67,15 @@ export class Slide extends HTMLElement {
       existing.remove();
     }
 
+    // Rewrite selectors for shadow DOM compatibility:
+    // 1. `body` → `:host` (font-size, font-family, color etc. set on body in v1)
+    // 2. `.slidedeck section` → `section.content` (v1 uses .slidedeck > section)
+    let rewritten = css.replace(/(?<![.\w-])body(?=\s*[{,]|\s+[.#\w[:*])/g, ':host');
+    rewritten = rewritten.replace(/\.slidedeck\s+section/g, 'section.content');
+
     const style = document.createElement('style');
     style.classList.add('gs-external-styles');
-    style.textContent = css;
+    style.textContent = rewritten;
     shadow.appendChild(style);
   }
 
@@ -223,6 +233,7 @@ export class Slide extends HTMLElement {
         position: relative;
         overflow: hidden;
         background: transparent;
+        isolation: isolate;
       }
 
       /* ::: Detail blocks hidden in presentation mode */
@@ -243,7 +254,6 @@ export class Slide extends HTMLElement {
 
       img {
         max-width: 100%;
-        height: auto;
       }
 
       pre {

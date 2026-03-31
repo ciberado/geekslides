@@ -13,7 +13,7 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D7 | Yjs shared data | **Y.Map for session state** | Sync slide position, partial, mode. Not collaborative editing |
 | D8 | Broker | **Drop Aedes, use y-websocket server** | Yjs server replaces custom MQTT broker entirely |
 | D9 | PDF generation | **WeasyPrint (3 outputs)** | Slides PDF, slides+notes PDF, book PDF from HTML/CSS templates |
-| D10 | Command system | **Direct keys for navigation, Ctrl+B prefix for everything else** | Navigation must be zero-friction (no modifier key during a live talk); all other commands use tmux-style prefix for discoverability |
+| D10 | Command system | **Direct keys for navigation, `t` opens terminal prompt for everything else** | Navigation must be zero-friction (arrows/space during a live talk); all other commands typed into a terminal-like prompt opened by pressing `t` — discoverable via `help`, with tab-completion and history |
 | D11 | Plugin architecture | **Simple function-based callbacks** | Preprocessors: `(md) => md`. Processors: `(el) => void`. Registered via config |
 | D12 | Slide-scoped styles | **Compile-time selector scoping** | Extract `<style>` blocks, rewrite selectors to slide container scope |
 | D13 | Testing | **Vitest + Playwright** | Vitest for unit/integration (Vite-native), Playwright for E2E |

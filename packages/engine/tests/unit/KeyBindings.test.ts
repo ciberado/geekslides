@@ -8,7 +8,6 @@ describe('KeyBindings', () => {
   let kb: KeyBindings;
 
   beforeEach(() => {
-    vi.useFakeTimers();
     cs = new CommandSystem();
     kb = new KeyBindings(cs, document);
     kb.activate();
@@ -25,7 +24,6 @@ describe('KeyBindings', () => {
 
   afterEach(() => {
     kb.deactivate();
-    vi.useRealTimers();
   });
 
   it('direct keys execute immediately in NORMAL mode', () => {
@@ -44,48 +42,45 @@ describe('KeyBindings', () => {
     expect(spy).toHaveBeenCalledWith('go-last');
   });
 
-  it('Ctrl+B transitions to PREFIX mode', () => {
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }));
-    expect(kb.mode).toBe('prefix');
+  it('pressing t transitions to TERMINAL mode', () => {
+    const terminalSpy = vi.fn();
+    kb.onTerminalOpen(terminalSpy);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
+    expect(kb.mode).toBe('terminal');
+    expect(terminalSpy).toHaveBeenCalledOnce();
   });
 
-  it('follow-up key in PREFIX mode executes command and returns to NORMAL', () => {
+  it('in TERMINAL mode, direct keys are not handled', () => {
     const spy = vi.spyOn(cs, 'execute');
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }));
-    expect(kb.mode).toBe('prefix');
+    // Enter terminal mode
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
+    expect(kb.mode).toBe('terminal');
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 's' }));
-    expect(spy).toHaveBeenCalledWith('toggle-speaker');
-    expect(kb.mode).toBe('normal');
+    // Arrow keys should NOT be handled (terminal captures them)
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
+    // Only the initial 't' call should be absent from execute (t opens terminal, not a command)
+    expect(spy).not.toHaveBeenCalled();
   });
 
-  it('timeout in PREFIX mode returns to NORMAL', () => {
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'b', ctrlKey: true }));
-    expect(kb.mode).toBe('prefix');
+  it('closeTerminal returns to NORMAL mode', () => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
+    expect(kb.mode).toBe('terminal');
 
-    vi.advanceTimersByTime(1500);
+    kb.closeTerminal();
     expect(kb.mode).toBe('normal');
-  });
-
-  it(': opens palette mode', () => {
-    const paletteSpy = vi.fn();
-    kb.onPaletteOpen(paletteSpy);
-
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: ':' }));
-    expect(kb.mode).toBe('palette');
-    expect(paletteSpy).toHaveBeenCalledOnce();
   });
 
   it('ignores events on input elements', () => {
     const spy = vi.spyOn(cs, 'execute');
 
-    const inputEl = { tagName: 'INPUT' } as HTMLElement;
     document.dispatchEvent(new KeyboardEvent('keydown', {
       key: 'ArrowRight',
     }));
 
     // Create event with input target manually
+    const inputEl = { tagName: 'INPUT' } as HTMLElement;
     const event = new KeyboardEvent('keydown', { key: 'ArrowLeft' });
     Object.defineProperty(event, 'target', { value: inputEl });
     document.dispatchEvent(event);

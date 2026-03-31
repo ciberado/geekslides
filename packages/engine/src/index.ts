@@ -32,6 +32,14 @@ import { SpeakerView as SpeakerViewImpl } from './components/SpeakerView.ts';
 export { SpeakerView } from './components/SpeakerView.ts';
 export { SpeakerTimer } from './components/SpeakerTimer.ts';
 
+// Phase 4: Input & Terminal
+export { CommandSystem } from './input/CommandSystem.ts';
+export type { Command } from './input/CommandSystem.ts';
+export { KeyBindings } from './input/KeyBindings.ts';
+export { TouchInput } from './input/TouchInput.ts';
+import { Terminal as TerminalImpl } from './components/Terminal.ts';
+export { Terminal } from './components/Terminal.ts';
+
 // Phase 8: Print
 export { renderPrint } from './print/PrintRenderer.ts';
 export type { TemplateName, PrintOptions } from './print/PrintRenderer.ts';
@@ -47,6 +55,9 @@ function registerElements(): void {
     }
     if (!customElements.get('geek-speaker-view')) {
       customElements.define('geek-speaker-view', SpeakerViewImpl);
+    }
+    if (!customElements.get('geek-terminal')) {
+      customElements.define('geek-terminal', TerminalImpl);
     }
   }
 }

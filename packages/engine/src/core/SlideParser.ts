@@ -103,8 +103,8 @@ function countPartials(html: string): number {
  */
 function wrapBlockImages(html: string): string {
   return html.replace(
-    /<p>(\s*<img\s[^>]*>\s*)<\/p>/g,
-    '<div class="block-image"><p>$1</p></div>',
+    /<p>(\s*<img\s[^>]*>)\s*<\/p>/g,
+    '<div class="block-image">$1</div>',
   );
 }
 

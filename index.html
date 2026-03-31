@@ -11,8 +11,9 @@
 </head>
 <body>
   <geek-slideshow id="slideshow"></geek-slideshow>
+  <geek-terminal></geek-terminal>
   <script type="module">
-    import { parse, headerPreprocessor } from '/packages/engine/src/index.ts';
+    import { parse, headerPreprocessor, CommandSystem, KeyBindings, Terminal } from '/packages/engine/src/index.ts';
 
     // Map of available preprocessors (v1 compat names)
     const PREPROCESSORS = {
@@ -104,30 +105,30 @@
         slideshow.setAspectRatio(`${w/d}/${h/d}`);
       }
 
-      // Temporary keyboard navigation (replaced by CommandSystem in Phase 4)
-      document.addEventListener('keydown', (e) => {
-        switch (e.key) {
-          case 'ArrowRight':
-          case ' ':
-          case 'PageDown':
-            e.preventDefault();
-            slideshow.next();
-            break;
-          case 'ArrowLeft':
-          case 'PageUp':
-            e.preventDefault();
-            slideshow.prev();
-            break;
-          case 'Home':
-            e.preventDefault();
-            slideshow.goTo(0);
-            break;
-          case 'End':
-            e.preventDefault();
-            slideshow.goTo(slideshow.slideCount - 1);
-            break;
-        }
-      });
+      // --- Command System & Terminal ---
+      const commands = new CommandSystem();
+      commands.register({ name: 'next', label: 'Next slide/partial', execute: () => slideshow.next(), category: 'navigation' });
+      commands.register({ name: 'prev', label: 'Previous slide/partial', execute: () => slideshow.prev(), category: 'navigation' });
+      commands.register({ name: 'go-first', label: 'Go to first slide', execute: () => slideshow.goTo(0), category: 'navigation' });
+      commands.register({ name: 'go-last', label: 'Go to last slide', execute: () => slideshow.goTo(slideshow.slideCount - 1), category: 'navigation' });
+      commands.register({ name: 'fullscreen', label: 'Toggle fullscreen', execute: () => {
+        if (document.fullscreenElement) { document.exitFullscreen(); }
+        else { document.documentElement.requestFullscreen(); }
+      }, category: 'view' });
+      commands.register({ name: 'overview', label: 'Toggle overview mode', execute: () => { slideshow.mode = slideshow.mode === 'overview' ? 'present' : 'overview'; }, category: 'view' });
+      commands.register({ name: 'speaker', label: 'Toggle speaker view', execute: () => { slideshow.mode = slideshow.mode === 'speaker' ? 'present' : 'speaker'; }, category: 'view' });
+
+      // Terminal component
+      const terminal = document.querySelector('geek-terminal');
+      terminal.setCommandSystem(commands);
+
+      // Key bindings
+      const keys = new KeyBindings(commands);
+      keys.onTerminalOpen(() => terminal.open());
+      keys.activate();
+
+      // Terminal close → return to normal mode
+      terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
     } catch (err) {
       document.body.innerHTML = `<pre style="padding: 2rem; color: #c00;">${err}</pre>`;
     }
