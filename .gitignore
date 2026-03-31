@@ -7,3 +7,17 @@ node_modules/
 *.log
 notes.md
 *tmp*
+
+# v2
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+*.d.ts.map
+# Ignore tsc output in non-dist directories
+vite.config.js
+vite.config.d.ts
+vite.config.js.map
+vitest.config.js
+vitest.config.d.ts
+vitest.config.js.map
