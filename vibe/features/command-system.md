@@ -2,13 +2,22 @@
 
 ## Overview
 
-v2 replaces v1's scattered hotkeys with a structured command system inspired by vim and tmux:
+v2 keeps v1's **direct-keystroke navigation** (arrows, space, page up/down) exactly as-is —
+presenters should never need a modifier key to advance slides. All other commands (mode
+toggles, whiteboard, sync, etc.) move to a **tmux-style prefix key** system:
 
-- **Prefix key** (`Ctrl+B`): press, then a single key for quick actions
-- **Command palette** (`:`): opens a searchable command list
-- **Direct keys**: arrows, space, etc. for basic navigation (no prefix needed)
+- **Direct keys** (no prefix): `→` `←` `Space` `PageDown` `PageUp` `Home` `End`
+  — muscle-memory slide navigation, always active in NORMAL mode.
+- **Prefix key** (`Ctrl+B` then a single key): for non-navigation actions.
+  After pressing `Ctrl+B`, a 1.5 s window opens for the follow-up key.
+  A visual indicator shows the system is waiting.
+- **Command palette** (`:`): opens a searchable list of all registered commands.
+  Useful for discoverable access to infrequent or plugin-provided actions.
 
-This eliminates key conflicts, makes the system discoverable, and supports extensibility.
+This separation keeps the most critical operation (next slide) zero-friction while
+organizing everything else under a consistent, discoverable prefix — exactly like
+tmux uses `Ctrl+B` + key for window management while leaving normal terminal input
+untouched.
 
 ## Command Architecture
 
@@ -46,7 +55,9 @@ CustomEvent dispatched
 
 ## Key Bindings
 
-### Direct Keys (no prefix, NORMAL mode)
+### Direct Navigation Keys (no prefix, always active in NORMAL mode)
+
+These work identically to v1 — no prefix, no modifier, instant response:
 
 | Key | Action | Event |
 |-----|--------|-------|
@@ -57,7 +68,13 @@ CustomEvent dispatched
 | `Escape` | Exit current mode / close palette | context-dependent |
 | `:` | Open command palette | (internal) |
 
-### Prefix Keys (Ctrl+B, then key)
+> **Rationale**: Navigation is the most frequent presenter action. Requiring a prefix
+> would add latency and cognitive load during a live talk. Direct keys give tactile confidence.
+
+### Prefix Keys (Ctrl+B → key) — Non-Navigation Commands
+
+Everything that is *not* slide navigation lives behind the prefix. This mirrors tmux:
+`Ctrl+B` enters prefix mode, then the follow-up key selects the action.
 
 | Sequence | Action | Event |
 |----------|--------|-------|
@@ -251,7 +268,23 @@ export class KeyBindings {
 }
 ```
 
-### TouchInput
+### TouchInput (Smartphone/Tablet)
+
+Audience members following on a smartphone need gesture-based navigation.
+The `TouchInput` class maps touch gestures to commands, designed for one-handed phone use:
+
+| Gesture | Action | Threshold |
+|---------|--------|-----------|
+| Swipe left | Next slide | > 50 px horizontal |
+| Swipe right | Previous slide | > 50 px horizontal |
+| Tap right 2/3 | Next slide | x > 33% viewport width |
+| Tap left 1/3 | Previous slide | x < 33% viewport width |
+| Long press (500 ms) | Open toolbar | any position |
+| Swipe up | Toggle overview | > 80 px vertical |
+
+Tap zones are critical for smartphone where swipes can conflict with browser
+back/forward gestures. The right-2/3 → next / left-1/3 → prev split gives
+the dominant action (next) a larger tap target.
 
 ```typescript
 // packages/engine/src/input/TouchInput.ts
@@ -260,27 +293,72 @@ export class TouchInput {
   #commandSystem: CommandSystem;
   #startX = 0;
   #startY = 0;
-  #threshold = 50; // px
+  #startTime = 0;
+  #swipeThreshold = 50; // px
+  #longPressThreshold = 500; // ms
+  #longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor(commandSystem: CommandSystem, element: HTMLElement) {
     this.#commandSystem = commandSystem;
     
     element.addEventListener('touchstart', this.#onStart.bind(this), { passive: true });
     element.addEventListener('touchend', this.#onEnd.bind(this), { passive: true });
+    element.addEventListener('touchmove', this.#onMove.bind(this), { passive: true });
   }
 
   #onStart(e: TouchEvent): void {
     this.#startX = e.touches[0].clientX;
     this.#startY = e.touches[0].clientY;
+    this.#startTime = Date.now();
+    
+    // Start long-press timer
+    this.#longPressTimer = setTimeout(() => {
+      this.#commandSystem.execute('toggle-toolbar');
+      this.#longPressTimer = null;
+    }, this.#longPressThreshold);
+  }
+
+  #onMove(e: TouchEvent): void {
+    // Cancel long press if finger moves
+    const dx = Math.abs(e.touches[0].clientX - this.#startX);
+    const dy = Math.abs(e.touches[0].clientY - this.#startY);
+    if ((dx > 10 || dy > 10) && this.#longPressTimer) {
+      clearTimeout(this.#longPressTimer);
+      this.#longPressTimer = null;
+    }
   }
 
   #onEnd(e: TouchEvent): void {
+    if (this.#longPressTimer) {
+      clearTimeout(this.#longPressTimer);
+      this.#longPressTimer = null;
+    }
+    
     const dx = e.changedTouches[0].clientX - this.#startX;
     const dy = e.changedTouches[0].clientY - this.#startY;
 
     // Horizontal swipe
-    if (Math.abs(dx) > this.#threshold && Math.abs(dx) > Math.abs(dy)) {
+    if (Math.abs(dx) > this.#swipeThreshold && Math.abs(dx) > Math.abs(dy)) {
       this.#commandSystem.execute(dx > 0 ? 'prev' : 'next');
+      return;
+    }
+    
+    // Vertical swipe (up = overview)
+    if (Math.abs(dy) > 80 && Math.abs(dy) > Math.abs(dx) && dy < 0) {
+      this.#commandSystem.execute('toggle-overview');
+      return;
+    }
+    
+    // Tap zones (no significant swipe, short press)
+    const elapsed = Date.now() - this.#startTime;
+    if (Math.abs(dx) < 10 && Math.abs(dy) < 10 && elapsed < 300) {
+      const viewportWidth = window.innerWidth;
+      const tapX = e.changedTouches[0].clientX;
+      if (tapX < viewportWidth / 3) {
+        this.#commandSystem.execute('prev');
+      } else {
+        this.#commandSystem.execute('next');
+      }
     }
   }
 }

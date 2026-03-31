@@ -13,7 +13,7 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D7 | Yjs shared data | **Y.Map for session state** | Sync slide position, partial, mode. Not collaborative editing |
 | D8 | Broker | **Drop Aedes, use y-websocket server** | Yjs server replaces custom MQTT broker entirely |
 | D9 | PDF generation | **WeasyPrint (3 outputs)** | Slides PDF, slides+notes PDF, book PDF from HTML/CSS templates |
-| D10 | Command system | **Prefix key (Ctrl+B) + colon (:) command palette** | Quick actions via prefix, full command search via palette |
+| D10 | Command system | **Direct keys for navigation, Ctrl+B prefix for everything else** | Navigation must be zero-friction (no modifier key during a live talk); all other commands use tmux-style prefix for discoverability |
 | D11 | Plugin architecture | **Simple function-based callbacks** | Preprocessors: `(md) => md`. Processors: `(el) => void`. Registered via config |
 | D12 | Slide-scoped styles | **Compile-time selector scoping** | Extract `<style>` blocks, rewrite selectors to slide container scope |
 | D13 | Testing | **Vitest + Playwright** | Vitest for unit/integration (Vite-native), Playwright for E2E |
@@ -22,6 +22,9 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D16 | Live preview | **Vite HMR + custom hot reload handler** | File watcher built-in, stays on current slide during reload |
 | D17 | Presentation format | **Same as v1** | `README.md` + `config.json`, GitHub-readable, backward compatible |
 | D18 | Docker topology | **2 services** | slides (Vite dev / Caddy prod) + yjs-server, Caddy reverse proxies both |
+| D19 | Speaker notes | **Separate browser tab/window (not CSS overlay)** | v1's CSS trick (absolute positioning at left:100%) caused scaling conflicts, no timer, no next-slide preview. Separate view via Yjs sync gives full speaker UI |
+| D20 | Mobile/smartphone | **Touch gestures + responsive toolbar** | Audience follows on phone: swipe/tap nav, always-visible toolbar on small screens, auto-sync with presenter |
+| D21 | Slide scaling | **`transform: scale()` + CSS custom property** | Proven technique (reveal.js, Impress.js), author at fixed resolution. v2 improves over v1 by using `--gs-scale-factor` + ResizeObserver instead of CSSOM mutation |
 
 ## Detailed Documents
 
@@ -31,6 +34,8 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 - [Yjs Synchronization](sync.md)
 - [Plugin System](plugin-system.md)
 - [Command System](command-system.md)
+- [Speaker Notes Architecture](speaker-notes.md)
+- [CSS Slide Scaling](css-scaling.md)
 - [Testing Strategy](testing.md)
 - [Print & PDF Generation](print.md)
 - [Deployment](deployment-v2.md)

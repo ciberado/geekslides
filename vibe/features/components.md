@@ -413,3 +413,73 @@ for (const [name, ctor] of components) {
   }
 }
 ```
+
+## Smartphone / Mobile Browser Support
+
+Audience members should be able to follow a presentation on a smartphone browser.
+This requires specific design decisions across all components.
+
+### Viewport & Scaling
+
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+```
+
+- Slides always fill the viewport via the CSS scaling technique (see below).
+- `user-scalable=no` prevents accidental pinch-zoom conflicts with touch gestures.
+- The `<geek-slideshow>` component detects screen size and adjusts layout:
+  - **Desktop** (width > 768 px): standard presentation mode
+  - **Mobile** (width ≤ 768 px): simplified layout, toolbar auto-visible, larger tap targets
+
+### Mobile-Specific Component Behavior
+
+| Component | Desktop | Mobile (≤ 768 px) |
+|-----------|---------|---------------------|
+| `<geek-toolbar>` | Hidden by default (Ctrl+B → t) | Always visible, bottom-fixed |
+| `<geek-command-palette>` | Full palette with keyboard | Simplified action sheet |
+| `<geek-whiteboard>` | Full canvas drawing | Disabled (view-only for remote strokes) |
+| `<geek-slide>` | `transform: scale()` | Same scaling, but base font boosted |
+| Navigation | Keyboard + mouse | Swipes + tap zones (see [Command System](command-system.md)) |
+
+### Responsive CSS in Components
+
+```typescript
+// Inside <geek-slideshow> Shadow DOM
+const styles = `
+  :host {
+    --gs-mobile-breakpoint: 768px;
+  }
+  
+  @media (max-width: 768px) {
+    ::slotted(geek-toolbar) {
+      transform: translateY(0) !important;  /* always visible */
+    }
+  }
+  
+  @media (max-width: 768px) and (orientation: portrait) {
+    /* Suggest landscape rotation */
+    :host::after {
+      content: '📱 Rotate for best experience';
+      position: fixed;
+      bottom: 60px;
+      text-align: center;
+      width: 100%;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.8rem;
+      animation: fadeOut 3s forwards;
+    }
+  }
+`;
+```
+
+### Audience Sync Mode
+
+On mobile the typical use case is an audience member following the presenter:
+
+1. Open the presentation URL on the phone
+2. Yjs sync connects automatically
+3. Slides advance in lock-step with the presenter
+4. Tap to temporarily break sync and browse freely
+5. Toolbar button "Follow presenter" re-enables sync
+
+This flow requires no typing, no keyboard, no prefix keys — just tap and swipe.

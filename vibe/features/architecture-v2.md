@@ -38,7 +38,20 @@ browser as interactive slide decks with real-time synchronization, and exported 
 │       │                                                     │
 │  ┌────┴────┐                                                │
 │  │ Browser │   (audience, synced via Yjs Y.Map)             │
+│  │ Desktop │   (swipes + tap zones on mobile)               │
+│  │ Mobile  │                                                │
 │  └─────────┘                                                │
+└─────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────┐
+│                   Speaker View                              │
+│                                                             │
+│  Separate browser tab/window (same Yjs room)                │
+│  ├── Current slide thumbnail                                │
+│  ├── Next slide preview                                     │
+│  ├── Speaker notes (scrollable, full markdown)              │
+│  └── Timer + navigation controls                            │
+│  See: speaker-notes.md                                      │
 └─────────────────────────────────────────────────────────────┘
 
 ┌─────────────────────────────────────────────────────────────┐
@@ -73,7 +86,9 @@ geekslides/
 │   │   │   │   ├── CommandPalette.ts     # <geek-command-palette>
 │   │   │   │   ├── Whiteboard.ts         # <geek-whiteboard>
 │   │   │   │   ├── ChartSlide.ts         # <geek-chart> (table → Chart.js)
-│   │   │   │   └── VideoSlide.ts         # <geek-video> (timestamp partials)
+│   │   │   │   ├── VideoSlide.ts         # <geek-video> (timestamp partials)
+│   │   │   │   ├── SpeakerView.ts        # <geek-speaker-view> (separate tab)
+│   │   │   │   └── SpeakerTimer.ts       # presentation timer
 │   │   │   ├── input/
 │   │   │   │   ├── CommandSystem.ts      # prefix key + command palette logic
 │   │   │   │   ├── KeyBindings.ts        # key → command mapping
@@ -190,13 +205,15 @@ Ready (first slide visible)
 User Input
     │
     ├─ Key press → KeyBindings.ts
-    │  ├─ Direct keys (arrows, space, etc.) → navigation
-    │  ├─ Ctrl+B (prefix) → await next key → command
+    │  ├─ Direct keys (arrows, space, etc.) → navigation (no prefix, like v1)
+    │  ├─ Ctrl+B (prefix) → await next key → non-navigation command (tmux-style)
     │  └─ : (colon) → CommandPalette.open()
     │
-    ├─ Touch → TouchInput.ts
+    ├─ Touch → TouchInput.ts  (smartphone/tablet)
     │  ├─ Swipe left/right → prev/next
-    │  └─ Tap zones → partial advance
+    │  ├─ Tap right-2/3 → next, tap left-1/3 → prev
+    │  ├─ Long press → toggle toolbar
+    │  └─ Swipe up → toggle overview
     │
     └─ CommandPalette
        ├─ Fuzzy search over registered commands
