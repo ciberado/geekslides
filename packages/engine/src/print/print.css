@@ -1,0 +1,162 @@
+/* GeekSlides v2 — Print stylesheet */
+
+@page {
+  size: A4;
+  margin: 2cm;
+
+  @bottom-center {
+    content: counter(page);
+    font-size: 10pt;
+    color: #666;
+  }
+}
+
+@page :first {
+  @bottom-center {
+    content: none;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 12pt;
+  line-height: 1.5;
+  color: #222;
+}
+
+/* --- Slides template --- */
+.gs-slide {
+  page-break-after: always;
+  page-break-inside: avoid;
+  width: 100%;
+  max-height: 100vh;
+  padding: 2rem;
+  position: relative;
+}
+
+.gs-slide:last-child {
+  page-break-after: auto;
+}
+
+/* --- Slides-notes template --- */
+.gs-slide-with-notes {
+  page-break-after: always;
+  page-break-inside: avoid;
+}
+
+.gs-slide-with-notes .gs-slide {
+  page-break-after: auto;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin-bottom: 1rem;
+  min-height: 55vh;
+}
+
+.gs-slide-with-notes .gs-notes {
+  font-size: 10pt;
+  line-height: 1.6;
+  color: #444;
+  padding: 1rem;
+  border-top: 2px solid #4a9eff;
+}
+
+/* --- Book template --- */
+.gs-book-slide {
+  page-break-inside: avoid;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  background: #fafafa;
+}
+
+.gs-book-notes {
+  margin: 1rem 0 2rem;
+  line-height: 1.7;
+}
+
+.gs-book-chapter {
+  page-break-before: always;
+}
+
+.gs-book-chapter:first-child {
+  page-break-before: auto;
+}
+
+/* --- Common --- */
+h1, h2, h3, h4, h5, h6 {
+  page-break-after: avoid;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  break-inside: avoid;
+}
+
+pre, code {
+  font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 0.9em;
+}
+
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  background: #f5f5f5;
+  padding: 1em;
+  border-radius: 4px;
+  break-inside: avoid;
+}
+
+code {
+  background: #f0f0f0;
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+}
+
+table {
+  border-collapse: collapse;
+  width: 100%;
+  break-inside: avoid;
+  margin: 1em 0;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 0.5em 0.75em;
+  text-align: left;
+}
+
+th {
+  background: #f5f5f5;
+  font-weight: 600;
+}
+
+blockquote {
+  border-left: 3px solid #4a9eff;
+  margin: 1em 0;
+  padding: 0.5em 1em;
+  color: #555;
+}
+
+a {
+  color: #4a9eff;
+  text-decoration: none;
+}
+
+ul, ol {
+  margin: 0.5em 0;
+  padding-left: 1.5em;
+}

@@ -10,11 +10,14 @@ if (!customElements.get('geek-speaker-view')) {
 
 function makeSlides(count: number): SlideData[] {
   return Array.from({ length: count }, (_, i) => ({
-    html: `<h2>Slide ${i + 1}</h2>`,
-    notesHtml: i % 2 === 0 ? `<p>Notes for slide ${i + 1}</p>` : undefined,
-    css: '',
-    attrs: {},
-    partials: 0,
+    id: `slide-${String(i + 1)}`,
+    html: `<h2>Slide ${String(i + 1)}</h2>`,
+    notesHtml: i % 2 === 0 ? `<p>Notes for slide ${String(i + 1)}</p>` : undefined,
+    rawCss: undefined,
+    classes: [] as string[],
+    backgroundImage: undefined,
+    backgroundColor: undefined,
+    partialCount: 0,
   }));
 }
 

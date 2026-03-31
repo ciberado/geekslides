@@ -32,6 +32,10 @@ import { SpeakerView as SpeakerViewImpl } from './components/SpeakerView.ts';
 export { SpeakerView } from './components/SpeakerView.ts';
 export { SpeakerTimer } from './components/SpeakerTimer.ts';
 
+// Phase 8: Print
+export { renderPrint } from './print/PrintRenderer.ts';
+export type { TemplateName, PrintOptions } from './print/PrintRenderer.ts';
+
 // Register custom elements
 function registerElements(): void {
   if (typeof customElements !== 'undefined') {
