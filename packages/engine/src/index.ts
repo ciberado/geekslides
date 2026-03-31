@@ -16,6 +16,12 @@ export { Slideshow } from './core/Slideshow.ts';
 export type { SlideshowMode } from './core/Slideshow.ts';
 export { Slide } from './core/Slide.ts';
 
+// Phase 3: Plugin System
+export { PluginManager } from './plugins/PluginManager.ts';
+export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
+export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
+export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
+
 // Register custom elements
 function registerElements(): void {
   if (typeof customElements !== 'undefined') {

@@ -1,0 +1,8 @@
+/**
+ * GeekSlides v2 — Plugin barrel export.
+ */
+
+export { PluginManager } from './PluginManager.ts';
+export type { Plugin, Preprocessor, Processor, ProcessorContext } from './types.ts';
+export { headerPreprocessor } from './builtins/header-preprocessor.ts';
+export { iframeProcessor } from './builtins/iframe-processor.ts';
