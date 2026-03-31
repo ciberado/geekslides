@@ -22,6 +22,16 @@ export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugin
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
 
+// Phase 6: Rich Components
+export { ChartSlide } from './components/ChartSlide.ts';
+export { VideoSlide } from './components/VideoSlide.ts';
+export { Whiteboard } from './components/Whiteboard.ts';
+
+// Phase 7: Speaker View
+import { SpeakerView as SpeakerViewImpl } from './components/SpeakerView.ts';
+export { SpeakerView } from './components/SpeakerView.ts';
+export { SpeakerTimer } from './components/SpeakerTimer.ts';
+
 // Register custom elements
 function registerElements(): void {
   if (typeof customElements !== 'undefined') {
@@ -30,6 +40,9 @@ function registerElements(): void {
     }
     if (!customElements.get('geek-slide')) {
       customElements.define('geek-slide', SlideImpl);
+    }
+    if (!customElements.get('geek-speaker-view')) {
+      customElements.define('geek-speaker-view', SpeakerViewImpl);
     }
   }
 }
