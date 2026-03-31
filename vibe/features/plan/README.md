@@ -1,0 +1,91 @@
+# v2 Implementation Plan
+
+Complete rewrite of geekslides from JavaScript/Parcel to TypeScript/Vite with Web Components,
+Yjs sync, WeasyPrint PDF, and tmux-style commands.
+
+## Phase Dependency Graph
+
+```
+Phase 0: Foundation
+    │
+    ▼
+Phase 1: Parser & Config ──────────────────────────┐
+    │                                               │
+    ▼                                               │
+Phase 2: Slide Rendering (Web Components) ──┐       │
+    │                                       │       │
+    ├──────────────┬──────────────┐         │       │
+    ▼              ▼              ▼         │       │
+Phase 3:       Phase 4:       Phase 5:      │       │
+Plugin Sys.    Navigation     Sync          │       │
+    │              │              │         │       │
+    ├──────────────┼──────────────┤         │       │
+    ▼              ▼              ▼         │       │
+Phase 6: Rich Components (chart, video, whiteboard)
+                   │              │         │       │
+                   ▼              │         │       │
+            Phase 7: Speaker View│         │       │
+                                 │         │       │
+                   ┌─────────────┘         │       │
+                   ▼                       ▼       ▼
+            Phase 8: Print & PDF ◄─────────┘───────┘
+                   │
+                   ▼
+            Phase 9: CLI Tooling
+                   │
+                   ├───────────────┐
+                   ▼               ▼
+            Phase 10:        Phase 11:
+            HMR / Live       Deployment
+            Preview          (Docker)
+                   │               │
+                   └───────┬───────┘
+                           ▼
+                    Phase 12: E2E Tests & Polish
+```
+
+## Phase Summary
+
+| Phase | Name | Depends On | Key Deliverables | Est. Files |
+|-------|------|------------|------------------|------------|
+| [0](phase-00-foundation.md) | Project Foundation | — | Monorepo, TS, Vite, ESLint, Vitest skeleton | ~12 |
+| [1](phase-01-parser.md) | Parser & Config | 0 | SlideParser, Config, StyleScoper + unit tests | ~8 |
+| [2](phase-02-rendering.md) | Slide Rendering | 1 | `<geek-slideshow>`, `<geek-slide>`, CSS scaling | ~8 |
+| [3](phase-03-plugins.md) | Plugin System | 1, 2 | PluginManager, header + iframe built-ins | ~7 |
+| [4](phase-04-navigation.md) | Navigation & Input | 2 | CommandSystem, KeyBindings, TouchInput, Toolbar, Palette | ~10 |
+| [5](phase-05-sync.md) | Synchronization | 2 | SyncManager, WhiteboardSync, y-websocket server | ~8 |
+| [6](phase-06-rich-components.md) | Rich Components | 3, 5 | Chart, Video, Whiteboard components + plugins | ~8 |
+| [7](phase-07-speaker-view.md) | Speaker View | 2, 5 | `<geek-speaker-view>`, SpeakerTimer, two-tab model | ~5 |
+| [8](phase-08-print.md) | Print & PDF | 1, 3 | PrintRenderer, 3 templates, print.css | ~6 |
+| [9](phase-09-cli.md) | CLI Tooling | 8, 5 | @geekslides/cli: dev, build, pdf, create commands | ~7 |
+| [10](phase-10-hmr.md) | HMR & Live Preview | 9 | Vite HMR plugin, slide-preserving reload | ~3 |
+| [11](phase-11-deployment.md) | Deployment | 9 | Docker, Compose, Caddyfile, env config | ~5 |
+| [12](phase-12-e2e.md) | E2E Tests & Polish | all | Playwright suites, CI, demo migration | ~8 |
+
+## Principles
+
+- **Each phase produces a working, testable increment.** Phase 2 renders slides from
+  markdown. Phase 4 adds keyboard/touch navigation. Phase 5 adds sync. No dead code waiting
+  for later phases.
+- **Tests are written alongside code, not deferred.** Every phase includes its unit and
+  integration tests. E2E tests (Phase 12) are the only tests that span the full system.
+- **Phases can overlap where dependencies allow.** Phases 3, 4, and 5 are independent of
+  each other (all depend on 2) and can be developed in parallel. Same for 10 and 11.
+- **v1 feature parity is complete at Phase 7.** Phases 8–12 add capabilities that exceed v1.
+
+## Architecture Reference
+
+All decisions and specifications are in the sibling docs:
+
+- [decisions.md](../decisions.md) — 21 architectural decisions
+- [architecture-v2.md](../architecture-v2.md) — system diagrams, package structure
+- [toolchain.md](../toolchain.md) — Vite, TypeScript, npm workspaces
+- [components.md](../components.md) — Web Components, Shadow DOM, mobile
+- [sync.md](../sync.md) — Yjs CRDT synchronization
+- [plugin-system.md](../plugin-system.md) — preprocessor/processor pipeline
+- [command-system.md](../command-system.md) — direct keys + Ctrl+B prefix
+- [speaker-notes.md](../speaker-notes.md) — separate speaker view
+- [css-scaling.md](../css-scaling.md) — transform:scale() technique
+- [testing.md](../testing.md) — Vitest + Playwright strategy
+- [print.md](../print.md) — WeasyPrint, 3 output formats
+- [deployment-v2.md](../deployment-v2.md) — Docker, Caddy
