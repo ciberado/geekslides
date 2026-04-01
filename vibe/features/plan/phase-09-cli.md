@@ -1,6 +1,6 @@
 # Phase 9: CLI Tooling
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Phase 5 (server for `dev` command), Phase 8 (PrintRenderer for `pdf` command)
 **Unlocks**: Phase 10 (HMR plugin), Phase 11 (Docker uses build output)
 

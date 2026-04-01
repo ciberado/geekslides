@@ -41,8 +41,8 @@
     // Load config
     let configUrl = params.get('config') || 'config.json';
 
-    // Resolve paths relative to config location
-    const configBase = configUrl.substring(0, configUrl.lastIndexOf('/') + 1);
+    // Resolve paths relative to config location (updated when config changes)
+    let configBase = configUrl.substring(0, configUrl.lastIndexOf('/') + 1);
     function resolveUrl(path) {
       if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
         return path;
@@ -230,6 +230,89 @@
 
         // --- Command System & Terminal ---
         const commands = new CommandSystem();
+        const terminal = document.querySelector('geek-terminal');
+
+        // Helper to display command output in terminal
+        function showCmdOutput(msg) {
+          terminal.setOutput(msg);
+        }
+
+        // Helper to reload deck from a new config URL
+        async function reloadDeck(newConfigUrl) {
+          showCmdOutput('Loading...');
+          try {
+            const newConfig = await fetch(newConfigUrl).then(r => r.json());
+            
+            // Update configUrl and configBase BEFORE calling fetchMarkdown/fetchStyles
+            configUrl = newConfigUrl;
+            configBase = newConfigUrl.substring(0, newConfigUrl.lastIndexOf('/') + 1);
+            
+            const newMarkdown = await fetchMarkdown(newConfig);
+            const newCss = await fetchStyles(newConfig);
+
+            // Update global state
+            Object.assign(config, newConfig);
+            if (newCss) {
+              slideshow.loadStyles(newCss);
+            }
+
+            // Parse and load slides
+            const processedMd = applyPreprocessors(newMarkdown, newConfig);
+            const newSlides = parse(processedMd);
+            slideshow.loadSlides(newSlides);
+            applyProcessors(slideshow, newConfig);
+
+            // Update aspect ratio if new config specifies it
+            if (newConfig.aspectRatio) {
+              slideshow.setAspectRatio(newConfig.aspectRatio);
+            } else if (newConfig.resolution) {
+              const [w, h] = newConfig.resolution.split('x');
+              const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+              const d = gcd(Number(w), Number(h));
+              slideshow.setAspectRatio(`${w/d}/${h/d}`);
+            }
+
+            // Reset to first slide
+            slideshow.goTo(0);
+
+            // Publish state to sync
+            if (sync && sync.isConnected) {
+              sync.publishState(0, 0, 'present');
+            }
+
+            showCmdOutput(`✓ Loaded: ${newConfigUrl}`);
+            console.log('[load] Switched to:', newConfigUrl);
+          } catch (err) {
+            showCmdOutput(`✗ Failed to load: ${err.message}`);
+            console.error('[load] Error:', err);
+          }
+        }
+
+        // Helper to switch sync room
+        async function changeRoom(roomName) {
+          if (!sync) {
+            showCmdOutput('✗ Sync not enabled');
+            return;
+          }
+          if (sync.currentRoom === roomName) {
+            showCmdOutput(`Already in room: ${roomName}`);
+            return;
+          }
+          try {
+            showCmdOutput('Connecting...');
+            sync.disconnect();
+            await new Promise(r => setTimeout(r, 100)); // brief delay
+            const wsUrl = config.sync?.server || `ws://${location.hostname}:1234`;
+            sync.connect(wsUrl, roomName);
+            sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+            showCmdOutput(`✓ Room changed: ${roomName}`);
+            console.log('[room] Switched to:', roomName);
+          } catch (err) {
+            showCmdOutput(`✗ Failed to change room: ${err.message}`);
+            console.error('[room] Error:', err);
+          }
+        }
+
         commands.register({ name: 'next', label: 'Next slide/partial', execute: () => slideshow.next(), category: 'navigation' });
         commands.register({ name: 'prev', label: 'Previous slide/partial', execute: () => slideshow.prev(), category: 'navigation' });
         commands.register({ name: 'go-first', label: 'Go to first slide', execute: () => slideshow.goTo(0), category: 'navigation' });
@@ -238,6 +321,22 @@
           const n = parseInt(args?.[0], 10);
           if (!isNaN(n) && n >= 1 && n <= slideshow.slideCount) slideshow.goTo(n - 1);
         }, category: 'navigation' });
+        commands.register({ name: 'load', label: 'Load a different deck (usage: load config.json)', execute: (args) => {
+          const deckUrl = args?.[0];
+          if (!deckUrl) {
+            showCmdOutput('✗ Usage: load <config-url>');
+            return;
+          }
+          reloadDeck(deckUrl);
+        }, category: 'config' });
+        commands.register({ name: 'room', label: 'Switch sync room (usage: room my-talk)', execute: (args) => {
+          const roomName = args?.[0];
+          if (!roomName) {
+            showCmdOutput('✗ Usage: room <room-name>');
+            return;
+          }
+          changeRoom(roomName);
+        }, category: 'sync' });
         commands.register({ name: 'fullscreen', label: 'Toggle fullscreen', execute: () => {
           if (document.fullscreenElement) { document.exitFullscreen(); }
           else { document.documentElement.requestFullscreen(); }
@@ -262,12 +361,11 @@
           }, category: 'sync' });
           commands.register({ name: 'sync-disconnect', label: 'Disconnect from sync', execute: () => {
             sync.disconnect();
+            showCmdOutput('✓ Sync disconnected');
             console.log('[sync] Disconnected');
           }, category: 'sync' });
         }
 
-        // Terminal component
-        const terminal = document.querySelector('geek-terminal');
         terminal.setCommandSystem(commands);
 
         // Key bindings

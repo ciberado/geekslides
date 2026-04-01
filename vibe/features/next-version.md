@@ -8,7 +8,7 @@
 * Compatible with weasyprint for generating the pdf of the slides, the slides with speaker notes and a book with the slides and details.
 * Simpler synchronization of the decks and whiteboards, based in realtime collaboration framework.
 * Livepreview of the changes in the browser with support basics for future VSCode extension.
-* Commands based on active key (like vim or tmux with ctrl+b and :) instead of a mess of hotkeys. Navigation (arrows, space, etc.) stays as direct keystrokes — no prefix needed.
+* Commands based on an active key opening a terminal-like prompt (`t`) instead of a mess of hotkeys. Navigation (arrows, space, etc.) stays as direct keystrokes — no prefix needed.
 * Extensible, with support for processors and pre-processors but with a cleaner plugin architecture.
 * With the ability of adding local styles to each single slide using a simple <style>...</style> syntax in addition to the current one without polluting the rendered mardkown.
 * Fully testeable and full of tests (including end-to-end).
@@ -25,7 +25,7 @@
 - [Web Components](components.md) — Custom Elements, Shadow DOM, dual rendering for print, per-slide style scoping, mobile support
 - [Yjs Synchronization](sync.md) — CRDT sync replacing MQTT, Y.Map session state, y-websocket server
 - [Plugin System](plugin-system.md) — preprocessor/processor pipeline, built-in plugins, registration via config
-- [Command System](command-system.md) — direct keys for navigation, Ctrl+B prefix for commands, touch gestures for mobile
+- [Command System](command-system.md) — direct keys for navigation, `t` terminal prompt for commands, touch gestures for mobile
 - [Speaker Notes](speaker-notes.md) — separate view architecture, `<geek-speaker-view>` component, timer, v1 vs v2 comparison
 - [CSS Slide Scaling](css-scaling.md) — `transform: scale()` technique, v1 vs v2 improvements, 5 alternatives evaluated
 - [Testing Strategy](testing.md) — Vitest unit/integration, Playwright E2E, CI pipeline

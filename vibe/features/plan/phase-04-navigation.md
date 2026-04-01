@@ -1,6 +1,6 @@
 # Phase 4: Navigation & Input
 
-**Status**: Implemented (updating to terminal-based system)
+**Status**: Implemented
 **Depends on**: Phase 2 (slideshow to navigate)
 **Unlocks**: Phase 6 (rich components use commands), Phase 7 (speaker view navigation)
 

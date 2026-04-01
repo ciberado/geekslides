@@ -1,6 +1,6 @@
 # Phase 11: Deployment
 
-**Status**: Not started
+**Status**: In progress (implementation landed; deployment validation pending)
 **Depends on**: Phase 9 (build output for static serving, server package)
 **Unlocks**: Phase 12 (E2E tests can run against Docker setup)
 

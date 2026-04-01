@@ -1,6 +1,6 @@
 # Phase 8: Print & PDF
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Phase 1 (SlideData), Phase 3 (plugin pipeline for preprocessing)
 **Unlocks**: Phase 9 (CLI `pdf` command invokes PrintRenderer)
 

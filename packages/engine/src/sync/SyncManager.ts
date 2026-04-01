@@ -22,6 +22,7 @@ export class SyncManager {
   readonly #sessionState: Y.Map<unknown>;
   readonly #whiteboardStrokes: Y.Array<unknown>;
   #provider: WebsocketProvider | null = null;
+  #currentRoom: string | null = null;
   #target: SyncTarget | null = null;
   #isRemoteUpdate = false;
   #followPresenter = true;
@@ -53,6 +54,7 @@ export class SyncManager {
       this.disconnect();
     }
 
+    this.#currentRoom = room;
     this.#provider = new WebsocketProvider(serverUrl, room, this.doc);
 
     this.#provider.on('status', (event: { status: string }) => {
@@ -69,6 +71,7 @@ export class SyncManager {
   disconnect(): void {
     this.#provider?.destroy();
     this.#provider = null;
+    this.#currentRoom = null;
   }
 
   /**
@@ -135,6 +138,10 @@ export class SyncManager {
 
   get isConnected(): boolean {
     return this.#provider !== null;
+  }
+
+  get currentRoom(): string | null {
+    return this.#currentRoom;
   }
 
   get clientId(): string {

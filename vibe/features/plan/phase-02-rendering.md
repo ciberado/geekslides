@@ -1,6 +1,6 @@
 # Phase 2: Slide Rendering (Web Components)
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Phase 1 (parser produces `SlideData[]`)
 **Unlocks**: Phases 3, 4, 5, 6, 7 (all of which need a rendered slideshow)
 

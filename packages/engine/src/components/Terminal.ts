@@ -69,6 +69,19 @@ export class Terminal extends HTMLElement {
     return this.style.display !== 'none';
   }
 
+  /**
+   * Set the output message (for programmatic display of command results).
+   * @param message The message to display (plain text or HTML)
+   * @param isError Whether this is an error message (uses red color)
+   */
+  setOutput(message: string, isError: boolean = false): void {
+    if (!this.#output) return;
+    const className = isError ? 'error' : 'success';
+    this.#output.innerHTML = `<span class="${className}">${this.#escapeHtml(message)}</span>`;
+    this.#autoDismiss();
+  }
+
+
   #render(): void {
     const shadow = this.shadowRoot;
     if (!shadow) return;
@@ -272,8 +285,13 @@ export class Terminal extends HTMLElement {
     // Look up command
     const cmd = this.#commandSystem.all().find((c) => c.name === cmdName);
     if (cmd) {
-      cmd.execute();
-      output.innerHTML = `<span class="success">${cmdName}: done</span>`;
+      // Clear output before executing, so we know if the command sets it
+      output.innerHTML = '';
+      cmd.execute(args);
+      // Only print default message if output wasn't set by the command
+      if (!output.innerHTML) {
+        output.innerHTML = `<span class="success">${cmdName}: done</span>`;
+      }
     } else {
       output.innerHTML = `<span class="error">unknown command: ${this.#escapeHtml(cmdName)}</span>`;
     }

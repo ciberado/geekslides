@@ -1,6 +1,19 @@
 # GeekSlides
 
-A markdown-driven presentation engine built with TypeScript, Web Components, and Yjs real-time sync. Designed for technical presentations with support for charts, video slides, whiteboards, speaker notes, and mobile audiences.
+Markdown-first presentation system for technical talks, rewritten in TypeScript with Web Components, Yjs synchronization, and Playwright-tested workflows.
+
+## What Is Implemented
+
+v2 currently includes:
+
+- Web Components slideshow engine (`geek-slideshow`, `geek-slide`)
+- Real-time sync by room using Yjs + y-websocket
+- Speaker view in a separate tab (`?view=speaker`)
+- Terminal-style command mode (press `t`)
+- Rich slide components (chart, video, whiteboard)
+- HMR flow for local authoring
+- Print rendering pipeline for slides/slides+notes/book
+- Unit/integration tests (Vitest) and E2E tests (Playwright)
 
 ## Quick Start
 
@@ -11,82 +24,134 @@ npm ci
 npm run dev
 ```
 
-Open `http://localhost:5173` in your browser.
+Open:
 
-## Creating a Presentation
+- `http://localhost:5173/` presentation view
+- `http://localhost:5173/?view=speaker` speaker view
 
-```bash
-npx geekslides create --title "My Talk"
-cd my-talk
-npx geekslides dev
-```
+`npm run dev` binds to `0.0.0.0`, starts Vite, and starts the sync server.
 
-This scaffolds a presentation repo with:
-- `README.md` — your slides in markdown
-- `config.json` — presentation settings
-- `css/local.css` — custom styles
-- `images/` — assets
+## Loading & Managing Decks
 
-Slides are separated by `---`. Use the empty-link syntax for slide attributes:
+By default, root `config.json` is loaded.
+
+### URL Parameters (for initial load)
+
+- `?config=<path>` — Load a specific deck config: `?config=decks/slides-cuatro-cosas-aws/config.json`
+- `?view=speaker` — Start in speaker notes view instead of presentation
+
+### Terminal Commands (change at runtime)
+
+Press `t` during the presentation to enter terminal mode. Commands include:
+
+- `help` — List all available commands
+- `load <config-url>` — Load a different deck, e.g. `load decks/slides-cuatro-cosas-aws/config.json`
+- `room <room-name>` — Switch to a different sync room, e.g. `room my-talk`
+- `speaker` — Open speaker notes in a new tab
+- `goto <n>` — Jump to slide N
+
+### Room Sync
+
+Presentations in the same room sync in real-time. Open multiple browser tabs with the same `?room=` to see sync in action:
+
+- URL: `http://localhost:5173/?config=decks/slides-cuatro-cosas-aws/config.json&room=my-talk`
+- Terminal: press `t`, type `room my-talk`, press Enter
+
+Decks can also specify a default room in their `config.json` via `"sync": { "room": "name" }`.
+
+## Slide Authoring Format
+
+Slides are authored in markdown and split with empty-link markers:
 
 ```markdown
-[](#title,bgcolor(#1a1a2e))
+[](#cover)
 
-## My Talk
-
----
+# Title
 
 [](#agenda)
 
 ## Agenda
 
-- Topic 1
-- Topic 2
+- Item 1
+- Item 2
 
 ::: Notes
-Speaker notes go here.
+Speaker notes for this slide.
+:::
+
+::: Detail
+Book-only detail content (hidden during presentation).
 :::
 ```
 
-## CLI Commands
+## Controls
 
-| Command | Description |
-|---------|-------------|
-| `geekslides dev` | Start Vite dev server + sync server |
-| `geekslides build` | Production static build |
-| `geekslides pdf --format slides` | Generate PDF (requires WeasyPrint) |
-| `geekslides create --title "..."` | Scaffold new presentation |
+### Navigation (Direct Keys, Always Available)
 
-## Keyboard Controls
+No modifiers needed — direct keystrokes advance slides, even if you accidentally open the terminal:
 
-**Navigation** (direct keystrokes):
-- Arrow keys, Space, PageUp/Down, Home/End
+- Arrow keys, Space, PageUp/PageDown, Home/End
 
-**Commands** (tmux-style `Ctrl+B` prefix):
-- `Ctrl+B, w` — toggle whiteboard
-- `Ctrl+B, s` — open speaker view
-- `Ctrl+B, u` — unfollow sync
-- `Ctrl+B, :` — open command palette
+### Advanced Features (Terminal Mode)
 
-## Docker Deployment
+Press `t` to open the terminal command prompt:
+
+- **Terminal input prompt**: appears at the bottom, monospace `> ` prefix
+- **Type a command**: e.g. `load decks/slides-cuatro-cosas-aws/config.json`
+- **Tab completion**: pressing Tab auto-completes the command
+- **Up/Down arrows**: navigate command history
+- **Help**: type `help` to list all commands
+- **Escape**: close the terminal without executing
+
+### Common Commands
+
+- `speaker` — Open speaker notes in separate tab
+- `goto 12` — Jump to slide 12
+- `room my-talk` — Switch to a different presentation room
+- `load decks/demo/config.json` — Load a different deck
+- `whiteboard` — Toggle whiteboard overlay
+- `sync-follow` — Toggle following presenter changes
+- `fullscreen` — Toggle fullscreen mode
+
+### Mobile
+
+- **Swipe left/right** — navigate slides
+- **Long press (500ms)** — open terminal
+- **Tap right 2/3 of screen** — next slide
+- **Tap left 1/3 of screen** — previous slide
+
+## Development Commands
 
 ```bash
-cd docker
-DOMAIN=slides.example.com ACME_EMAIL=you@example.com docker compose up -d
+npm run dev         # vite + sync server
+npm run dev:nosync  # vite only
+npm run typecheck
+npm run lint
+npm run test
+npm run test:e2e
 ```
 
-## Architecture
+## Deployment
 
-See [vibe/features/](vibe/features/) for detailed architecture documentation:
-- [Architecture Overview](vibe/features/architecture-v2.md)
-- [Web Components](vibe/features/components.md)
-- [Plugin System](vibe/features/plugin-system.md)
-- [Sync (Yjs)](vibe/features/sync.md)
-- [Command System](vibe/features/command-system.md)
+v2 deployment files are under `docker/` and documented in:
+
+- [vibe/features/deployment-v2.md](vibe/features/deployment-v2.md)
+
+## Documentation
+
+Detailed v2 architecture and implementation docs:
+
+- [vibe/features/architecture-v2.md](vibe/features/architecture-v2.md)
+- [vibe/features/decisions.md](vibe/features/decisions.md)
+- [vibe/features/command-system.md](vibe/features/command-system.md)
+- [vibe/features/sync.md](vibe/features/sync.md)
+- [vibe/features/plan/README.md](vibe/features/plan/README.md)
 
 ## v1 (Legacy)
 
-The original v1 implementation is in `slides/`, `broker/`, and `demo/`. See [vibe/v1/](vibe/v1/) for v1 documentation.
+v1 docs live in [vibe/v1/](vibe/v1/).
+
+Legacy runtime:
 
 ```bash
 npm run v1:install

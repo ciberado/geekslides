@@ -8,7 +8,7 @@
 export interface Command {
   readonly name: string;
   readonly label: string;
-  readonly execute: () => void;
+  readonly execute: (args?: string[]) => void;
   readonly category?: string;
 }
 
@@ -25,13 +25,13 @@ export class CommandSystem {
   /**
    * Execute a command by name.
    */
-  execute(name: string): void {
+  execute(name: string, args?: string[]): void {
     const cmd = this.#commands.get(name);
     if (!cmd) {
       console.warn(`[geekslides] Unknown command: ${name}`);
       return;
     }
-    cmd.execute();
+    cmd.execute(args);
   }
 
   /**

@@ -1,6 +1,6 @@
 # Phase 6: Rich Components
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Phase 3 (plugin processors), Phase 5 (whiteboard sync)
 **Unlocks**: Phase 12 (E2E tests for these components)
 
@@ -61,7 +61,7 @@ Plugin processor. Queries for `<video>` elements in the slide. If found, creates
 Canvas overlay for freehand drawing, synced via Yjs.
 
 **Shadow DOM**: A full-viewport `<canvas>` element overlaying the slideshow, capturing
-pointer events. Hidden by default (`display: none`), toggled via `Ctrl+B → w`.
+pointer events. Hidden by default (`display: none`), toggled from terminal mode (`t`, then `whiteboard`).
 
 **Drawing**: Handles `pointerdown` → `pointermove` → `pointerup` for smooth freehand
 lines. Normalizes coordinates to 0–1 range (relative to canvas dimensions) for
@@ -134,7 +134,7 @@ packages/engine/tests/integration/
 - [ ] Whiteboard draws smooth lines on canvas overlay.
 - [ ] Whiteboard strokes sync between two tabs via Yjs.
 - [ ] Whiteboard is view-only on mobile (no accidental draws).
-- [ ] `Ctrl+B → w` toggles whiteboard, `Ctrl+B → c` clears it.
+- [ ] `whiteboard` command toggles whiteboard, `clear` clears it.
 - [ ] All unit and integration tests pass.
 
 ## Reference Docs

@@ -110,9 +110,9 @@ Tests in `e2e/navigation.spec.ts`:
 
 Tests in `e2e/commands.spec.ts`:
 
-- **Ctrl+B then s** toggles speaker mode — sends the key sequence, asserts the `mode` attribute on `<geek-slideshow>` becomes `'speaker'`.
-- **Colon opens command palette** — presses `:`, asserts `<geek-command-palette>` becomes visible.
-- **Command palette filters and executes** — types `'speaker'` into the palette, presses Enter, verifies mode changes.
+- **Open terminal with `t`** — asserts terminal prompt becomes visible.
+- **`help` lists available commands** — types `help`, presses Enter, verifies output panel is populated.
+- **Terminal command execution** — runs `speaker` or `goto <n>`, presses Enter, verifies expected mode/state change.
 
 ### Sync E2E
 
@@ -124,8 +124,8 @@ Tests in `e2e/sync.spec.ts`:
 
 Tests in `e2e/whiteboard.spec.ts`:
 
-- **Toggle whiteboard** — sends `Ctrl+B → w`, asserts `<geek-whiteboard>` becomes visible.
-- **Draw strokes** — opens whiteboard, performs mouse drag on the canvas, verifies the stroke was drawn.
+- **Toggle whiteboard** — opens terminal (`t`), runs `whiteboard`, asserts `<geek-whiteboard>` becomes visible.
+- **Draw strokes** — performs mouse drag on the canvas, verifies the stroke was drawn.
 
 ## CI Integration
 

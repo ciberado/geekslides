@@ -1,6 +1,6 @@
 # Phase 7: Speaker View
 
-**Status**: Not started
+**Status**: Implemented
 **Depends on**: Phase 2 (slideshow rendering), Phase 5 (Yjs sync between tabs)
 **Unlocks**: Phase 12 (E2E test for speaker workflow)
 
@@ -11,7 +11,7 @@ in a second browser tab, connected to the same Yjs room, showing current slide
 thumbnail, next slide preview, scrollable speaker notes, timer, and navigation
 controls. This replaces v1's CSS overlay approach.
 
-At the end of this phase, pressing `Ctrl+B → s` opens a new tab with the full
+At the end of this phase, running `speaker` from terminal mode (`t`) opens a new tab with the full
 speaker interface. Navigation in either tab syncs to the other. The timer starts
 automatically and can be paused/reset.
 
@@ -106,7 +106,7 @@ packages/engine/tests/integration/
 
 ## Acceptance Criteria
 
-- [ ] `Ctrl+B → s` opens a new browser tab with the speaker view.
+- [ ] `speaker` command opens a new browser tab with the speaker view.
 - [ ] Current slide thumbnail matches the presentation tab's active slide.
 - [ ] Next slide preview shows the following slide.
 - [ ] Speaker notes render with full markdown formatting and scroll independently.

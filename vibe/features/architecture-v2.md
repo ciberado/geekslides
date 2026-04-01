@@ -82,15 +82,14 @@ geekslides/
 │   │   │   │   ├── StyleScoper.ts        # per-slide <style> scoping
 │   │   │   │   └── Config.ts             # typed config (config.json schema)
 │   │   │   ├── components/
-│   │   │   │   ├── Toolbar.ts            # <geek-toolbar>
-│   │   │   │   ├── CommandPalette.ts     # <geek-command-palette>
+│   │   │   │   ├── Terminal.ts           # <geek-terminal>
 │   │   │   │   ├── Whiteboard.ts         # <geek-whiteboard>
 │   │   │   │   ├── ChartSlide.ts         # <geek-chart> (table → Chart.js)
 │   │   │   │   ├── VideoSlide.ts         # <geek-video> (timestamp partials)
 │   │   │   │   ├── SpeakerView.ts        # <geek-speaker-view> (separate tab)
 │   │   │   │   └── SpeakerTimer.ts       # presentation timer
 │   │   │   ├── input/
-│   │   │   │   ├── CommandSystem.ts      # prefix key + command palette logic
+│   │   │   │   ├── CommandSystem.ts      # command registry + execution
 │   │   │   │   ├── KeyBindings.ts        # key → command mapping
 │   │   │   │   └── TouchInput.ts         # swipe/tap handlers
 │   │   │   ├── plugins/
@@ -206,8 +205,8 @@ User Input
     │
     ├─ Key press → KeyBindings.ts
     │  ├─ Direct keys (arrows, space, etc.) → navigation (no prefix, like v1)
-    │  ├─ Ctrl+B (prefix) → await next key → non-navigation command (tmux-style)
-    │  └─ : (colon) → CommandPalette.open()
+    │  ├─ t → open terminal command prompt
+    │  └─ Enter in terminal → execute command via CommandSystem
     │
     ├─ Touch → TouchInput.ts  (smartphone/tablet)
     │  ├─ Swipe left/right → prev/next
@@ -215,9 +214,9 @@ User Input
     │  ├─ Long press → toggle toolbar
     │  └─ Swipe up → toggle overview
     │
-    └─ CommandPalette
-       ├─ Fuzzy search over registered commands
-       └─ Enter → execute command
+     └─ geek-terminal
+         ├─ help output + command history
+         └─ Tab completion + Enter execution
     │
     ▼
 CommandSystem.execute(command)
@@ -266,9 +265,9 @@ Presenter Browser                      Audience Browser
 | `geek:whiteboard:toggle` | `{}` | CommandSystem | Whiteboard |
 | `geek:whiteboard:stroke` | `{ points, color, width }` | Whiteboard | WhiteboardSync |
 | `geek:whiteboard:clear` | `{}` | CommandSystem | Whiteboard |
-| `geek:sync:state` | `{ connected, room }` | SyncManager | Toolbar |
-| `geek:command:execute` | `{ name, args }` | CommandPalette | CommandSystem |
-| `geek:slides:loaded` | `{ count }` | Slideshow | Toolbar, SyncManager |
+| `geek:sync:state` | `{ connected, room }` | SyncManager | Terminal, SyncManager listeners |
+| `geek:command:execute` | `{ name, args }` | Terminal | CommandSystem |
+| `geek:slides:loaded` | `{ count }` | Slideshow | SyncManager, SpeakerView |
 | `geek:config:loaded` | `{ config }` | CLI/dev server | Slideshow |
 | `geek:hmr:update` | `{ contentUrl }` | Vite HMR handler | Slideshow (re-render) |
 
@@ -281,7 +280,7 @@ Presenter Browser                      Audience Browser
 | Components | Vanilla DOM classes | Web Components (Custom Elements + Shadow DOM) |
 | Sync | Custom MQTT protocol (Aedes broker) | Yjs CRDT (y-websocket) |
 | Broker | Aedes (TCP + WS + WSS) | y-websocket server (single WS) |
-| Input | Scattered hotkeys | Prefix key + command palette |
+| Input | Scattered hotkeys | Direct navigation + terminal prompt (`t`) |
 | Plugins | Hardcoded preprocessor array | Function-based plugin registry |
 | Per-slide CSS | Not supported | `<style>` blocks with compile-time scoping |
 | PDF export | Playwright screenshots → PDFKit | WeasyPrint HTML → PDF (3 formats) |

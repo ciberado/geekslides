@@ -61,7 +61,7 @@ v2 treats speaker notes as a **first-class separate view** rather than a CSS ove
 
 ### Two-Tab Model
 
-The speaker view opens in a **second browser tab/window** (via `window.open()` or Ctrl+B → s),
+The speaker view opens in a **second browser tab/window** (via `window.open()` or the `speaker` terminal command),
 connected to the same Yjs room. Both tabs share the same session state:
 
 | Shared State (Y.Map) | Written by | Read by |
@@ -102,7 +102,7 @@ It tracks a start time, accumulated elapsed milliseconds, and a running state. I
 
 ### Opening the Speaker View
 
-The `Ctrl+B → s` command constructs a new URL from the current location with `?view=speaker` appended, then opens it via `window.open()` with suggested dimensions of 1200×800.
+The `speaker` terminal command constructs a new URL from the current location with `?view=speaker` appended, then opens it via `window.open()` with suggested dimensions of 1200×800.
 
 On initialization, the engine checks `URLSearchParams` for `view=speaker`. If present, it creates and appends a `<geek-speaker-view>` element instead of the normal `<geek-slideshow>`. Both connect to the same Yjs room, so they share state automatically.
 
