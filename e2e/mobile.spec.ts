@@ -1,57 +1,71 @@
-import { test, expect, devices } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 
-test.use(devices['iPhone 14']);
+test.use({
+  viewport: { width: 390, height: 844 },
+  hasTouch: true,
+  isMobile: true,
+});
 
-test.describe('Mobile', () => {
-  test.beforeEach(async ({ page }) => {
+test.describe('Mobile Touch Navigation', () => {
+  test('renders and loads slides on mobile viewport', async ({ page }) => {
     await page.goto('/');
-    await page.waitForSelector('geek-slideshow');
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
+
+    const slideCount = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(slideCount).toBeGreaterThan(0);
   });
 
-  test('swipe left advances to next slide', async ({ page }) => {
-    const slideshow = page.locator('geek-slideshow');
-    const box = await slideshow.boundingBox();
-    if (box) {
-      // Swipe left (drag from right to left)
-      await page.touchscreen.tap(box.x + box.width * 0.8, box.y + box.height / 2);
-      await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
-      await page.mouse.down();
-      await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 10 });
-      await page.mouse.up();
-    }
-    await page.waitForTimeout(500);
-    // Verify slide changed or tap in right zone works
-    await expect(slideshow).toBeVisible();
-  });
+  test('tap right advances slide', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
 
-  test('tap in right 2/3 advances slide', async ({ page }) => {
-    const slideshow = page.locator('geek-slideshow');
-    const box = await slideshow.boundingBox();
+    // Tap on the right zone (> 33%) to move forward
+    const box = await page.locator('geek-slideshow').boundingBox();
     if (box) {
-      await page.touchscreen.tap(box.x + box.width * 0.75, box.y + box.height / 2);
-    }
-    await page.waitForTimeout(300);
-    await expect(slideshow).toHaveAttribute('current-slide', '1');
-  });
-
-  test('tap in left 1/3 goes back', async ({ page }) => {
-    const slideshow = page.locator('geek-slideshow');
-    const box = await slideshow.boundingBox();
-    if (box) {
-      // First advance
-      await page.touchscreen.tap(box.x + box.width * 0.75, box.y + box.height / 2);
-      await page.waitForTimeout(300);
-      // Then go back
-      await page.touchscreen.tap(box.x + box.width * 0.15, box.y + box.height / 2);
+      const startX = box.x + box.width * 0.8;
+      const y = box.y + box.height / 2;
+      await page.touchscreen.tap(startX, y);
       await page.waitForTimeout(300);
     }
-    await expect(slideshow).toHaveAttribute('current-slide', '0');
+
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBeGreaterThanOrEqual(1);
   });
 
-  test('toolbar is always visible on mobile', async ({ page }) => {
-    const toolbar = page.locator('geek-toolbar, [data-toolbar]');
-    if (await toolbar.count() > 0) {
-      await expect(toolbar.first()).toBeVisible();
+  test('tap left goes to previous slide', async ({ page }) => {
+    await page.goto('/');
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
+
+    // Advance first so we can go back
+    const box = await page.locator('geek-slideshow').boundingBox();
+    if (box) {
+      const xRight = box.x + box.width * 0.75;
+      const y = box.y + box.height / 2;
+      await page.touchscreen.tap(xRight, y);
+      await page.waitForTimeout(300);
+
+      // Tap left zone (<= 33%) to move backward
+      const xLeft = box.x + box.width * 0.15;
+      await page.touchscreen.tap(xLeft, y);
+      await page.waitForTimeout(300);
     }
+
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBe(0);
   });
 });

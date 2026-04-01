@@ -148,6 +148,10 @@ export class SpeakerView extends HTMLElement {
     this.#timer.reset();
   }
 
+  get currentIndex(): number {
+    return this.#currentIndex;
+  }
+
   loadSlides(slides: SlideData[]): void {
     this.#slides = slides;
     this.updateSlide(0);

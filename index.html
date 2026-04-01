@@ -10,10 +10,14 @@
   </style>
 </head>
 <body>
-  <geek-slideshow id="slideshow"></geek-slideshow>
-  <geek-terminal></geek-terminal>
   <script type="module">
-    import { parse, headerPreprocessor, CommandSystem, KeyBindings, Terminal } from '/packages/engine/src/index.ts';
+    import {
+      parse, headerPreprocessor,
+      CommandSystem, KeyBindings, TouchInput, Terminal,
+      SyncManager, SpeakerView,
+      iframeProcessor, chartProcessor, videoProcessor,
+    } from '/packages/engine/src/index.ts';
+    import { registerHotClient } from '/packages/engine/src/hmr/hot-client.ts';
 
     // Map of available preprocessors (v1 compat names)
     const PREPROCESSORS = {
@@ -21,14 +25,21 @@
       'header': headerPreprocessor,
     };
 
-    const slideshow = document.getElementById('slideshow');
+    // Map of available processors (v1 compat names)
+    const PROCESSORS = {
+      'chartProcessor': chartProcessor,
+      'chart': chartProcessor,
+      'iframeProcessor': iframeProcessor,
+      'iframe': iframeProcessor,
+      'videoProcessor': videoProcessor,
+      'video': videoProcessor,
+    };
+
+    const params = new URLSearchParams(window.location.search);
+    const viewMode = params.get('view'); // null = presentation, 'speaker' = speaker view
 
     // Load config
-    let configUrl = 'config.json';
-    const params = new URLSearchParams(window.location.search);
-    if (params.has('config')) {
-      configUrl = params.get('config');
-    }
+    let configUrl = params.get('config') || 'config.json';
 
     // Resolve paths relative to config location
     const configBase = configUrl.substring(0, configUrl.lastIndexOf('/') + 1);
@@ -39,21 +50,23 @@
       return configBase + path;
     }
 
-    try {
-      const configRes = await fetch(configUrl);
-      const config = await configRes.json();
+    async function fetchConfig() {
+      const res = await fetch(configUrl);
+      return await res.json();
+    }
 
-      // Load content (v1 compat: may be array)
+    async function fetchMarkdown(config) {
       let contentFile = 'README.md';
       if (typeof config.content === 'string') {
         contentFile = config.content;
       } else if (Array.isArray(config.content) && config.content.length > 0) {
         contentFile = config.content[0];
       }
-      const contentRes = await fetch(resolveUrl(contentFile));
-      const markdown = await contentRes.text();
+      const res = await fetch(resolveUrl(contentFile));
+      return await res.text();
+    }
 
-      // Load external styles from config
+    async function fetchStyles(config) {
       const styleUrls = Array.isArray(config.styles) ? config.styles : [];
       const cssTexts = await Promise.all(
         styleUrls.map(async (url) => {
@@ -66,71 +79,235 @@
           }
         })
       );
-      const combinedCss = cssTexts.join('\n');
-
-      // Set <base> so relative paths in markdown (images, etc.) resolve to deck dir
-    // Must be set AFTER all fetch() calls since <base> changes how relative URLs resolve
-    if (configBase) {
-      const base = document.createElement('base');
-      base.href = window.location.origin + '/' + configBase;
-      document.head.appendChild(base);
+      return cssTexts.join('\n');
     }
 
-    // Apply preprocessors from config (v1 compat: preprocessors at root or plugins.preprocessors)
-    const ppNames = config.preprocessors || config.plugins?.preprocessors || [];
-    let processedMarkdown = markdown;
-    for (const name of ppNames) {
-      const pp = PREPROCESSORS[name];
-      if (pp) {
-        processedMarkdown = pp(processedMarkdown);
+    function applyPreprocessors(markdown, config) {
+      const ppNames = config.preprocessors || config.plugins?.preprocessors || [];
+      let result = markdown;
+      for (const name of ppNames) {
+        const pp = PREPROCESSORS[name];
+        if (pp) result = pp(result);
+      }
+      return result;
+    }
+
+    function applyProcessors(slideshow, config) {
+      const processorNames = config.processors || config.plugins?.processors || [];
+      const activeProcessors = processorNames
+        .map((name) => PROCESSORS[name])
+        .filter(Boolean);
+      if (activeProcessors.length === 0) return;
+
+      const slideElements = slideshow.shadowRoot?.querySelectorAll('geek-slide') || [];
+      for (const slideEl of slideElements) {
+        const content = slideEl.shadowRoot?.querySelector('section.content');
+        if (!content) continue;
+        for (const proc of activeProcessors) {
+          proc(content);
+        }
       }
     }
 
-    // Parse and render
+    try {
+      const config = await fetchConfig();
+      const markdown = await fetchMarkdown(config);
+      const combinedCss = await fetchStyles(config);
+
+      // Set <base> AFTER all fetch() calls
+      if (configBase) {
+        const base = document.createElement('base');
+        base.href = window.location.origin + '/' + configBase;
+        document.head.appendChild(base);
+      }
+
+      const processedMarkdown = applyPreprocessors(markdown, config);
       const slides = parse(processedMarkdown);
 
-      // Inject external styles before loading slides
-      if (combinedCss) {
-        slideshow.loadStyles(combinedCss);
+      // ---- SPEAKER VIEW ----
+      if (viewMode === 'speaker') {
+        document.body.innerHTML = '<geek-speaker-view id="speaker"></geek-speaker-view>';
+        const speaker = document.getElementById('speaker');
+        speaker.loadSlides(slides);
+
+        // Sync with presentation tab via Yjs
+        const syncConfig = config.sync || {};
+        const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
+        const room = syncConfig.room || params.get('room') || 'default';
+
+        const sync = new SyncManager();
+        sync.connect(wsUrl, room);
+
+        // Listen for remote navigation changes
+        document.addEventListener('geek:sync:state', (e) => {
+          if (e.detail?.connected) {
+            console.log('[speaker] Connected to sync server');
+          }
+        });
+
+        // Poll shared state to update speaker view
+        sync.doc.getMap('sessionState').observe((event) => {
+          const state = sync.doc.getMap('sessionState');
+          const slide = state.get('slide');
+          if (typeof slide === 'number') {
+            speaker.updateSlide(slide);
+          }
+        });
+
+        // Keyboard navigation in speaker view also publishes state
+        document.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight' || e.key === ' ') {
+            const next = Math.min(speaker.currentIndex + 1, slides.length - 1);
+            speaker.updateSlide(next);
+            sync.publishState(next, 0, 'present');
+          } else if (e.key === 'ArrowLeft') {
+            const prev = Math.max(speaker.currentIndex - 1, 0);
+            speaker.updateSlide(prev);
+            sync.publishState(prev, 0, 'present');
+          }
+        });
+
+        // Speaker navigate events (from prev/next buttons in the speaker UI)
+        speaker.addEventListener('geek:speaker:navigate', (e) => {
+          const dir = e.detail?.direction;
+          if (dir === 'next') {
+            const next = Math.min(speaker.currentIndex + 1, slides.length - 1);
+            speaker.updateSlide(next);
+            sync.publishState(next, 0, 'present');
+          } else if (dir === 'prev') {
+            const prev = Math.max(speaker.currentIndex - 1, 0);
+            speaker.updateSlide(prev);
+            sync.publishState(prev, 0, 'present');
+          }
+        });
+
+      // ---- PRESENTATION VIEW ----
+      } else {
+        document.body.innerHTML = '<geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
+        const slideshow = document.getElementById('slideshow');
+
+        if (combinedCss) {
+          slideshow.loadStyles(combinedCss);
+        }
+        slideshow.loadSlides(slides);
+
+        // Apply post-processors to each slide's shadow DOM content
+        applyProcessors(slideshow, config);
+
+        // Set aspect ratio (v1 compat: resolution "1920x1080")
+        if (config.aspectRatio) {
+          slideshow.setAspectRatio(config.aspectRatio);
+        } else if (config.resolution) {
+          const [w, h] = config.resolution.split('x');
+          const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
+          const d = gcd(Number(w), Number(h));
+          slideshow.setAspectRatio(`${w/d}/${h/d}`);
+        }
+
+        // --- Sync ---
+        const syncConfig = config.sync || {};
+        const syncEnabled = syncConfig.enabled !== false;
+        let sync = null;
+
+        if (syncEnabled) {
+          try {
+            sync = new SyncManager();
+            const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
+            const room = syncConfig.room || params.get('room') || 'default';
+            sync.bind(slideshow);
+            sync.connect(wsUrl, room);
+
+            // Publish state on navigation
+            slideshow.addEventListener('geek:navigate', (e) => {
+              sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
+            });
+
+            console.log('[sync] Connected to', wsUrl, 'room:', room);
+          } catch (err) {
+            console.warn('[sync] Failed to connect:', err.message);
+          }
+        }
+
+        // --- Command System & Terminal ---
+        const commands = new CommandSystem();
+        commands.register({ name: 'next', label: 'Next slide/partial', execute: () => slideshow.next(), category: 'navigation' });
+        commands.register({ name: 'prev', label: 'Previous slide/partial', execute: () => slideshow.prev(), category: 'navigation' });
+        commands.register({ name: 'go-first', label: 'Go to first slide', execute: () => slideshow.goTo(0), category: 'navigation' });
+        commands.register({ name: 'go-last', label: 'Go to last slide', execute: () => slideshow.goTo(slideshow.slideCount - 1), category: 'navigation' });
+        commands.register({ name: 'go', label: 'Go to slide N (usage: go 5)', execute: (args) => {
+          const n = parseInt(args?.[0], 10);
+          if (!isNaN(n) && n >= 1 && n <= slideshow.slideCount) slideshow.goTo(n - 1);
+        }, category: 'navigation' });
+        commands.register({ name: 'fullscreen', label: 'Toggle fullscreen', execute: () => {
+          if (document.fullscreenElement) { document.exitFullscreen(); }
+          else { document.documentElement.requestFullscreen(); }
+        }, category: 'view' });
+        commands.register({ name: 'overview', label: 'Toggle overview mode', execute: () => { slideshow.mode = slideshow.mode === 'overview' ? 'present' : 'overview'; }, category: 'view' });
+        commands.register({ name: 'speaker', label: 'Open speaker view', execute: () => {
+          window.open(`${location.pathname}?view=speaker&config=${configUrl}`, '_blank');
+        }, category: 'view' });
+        commands.register({ name: 'whiteboard', label: 'Toggle whiteboard', execute: () => {
+          let wb = document.querySelector('geek-whiteboard');
+          if (!wb) {
+            wb = document.createElement('geek-whiteboard');
+            slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(wb);
+          }
+          wb.toggle();
+        }, category: 'built-in' });
+
+        // Sync-related commands
+        if (sync) {
+          commands.register({ name: 'sync-follow', label: 'Toggle follow presenter', execute: () => {
+            sync.toggleFollow();
+          }, category: 'sync' });
+          commands.register({ name: 'sync-disconnect', label: 'Disconnect from sync', execute: () => {
+            sync.disconnect();
+            console.log('[sync] Disconnected');
+          }, category: 'sync' });
+        }
+
+        // Terminal component
+        const terminal = document.querySelector('geek-terminal');
+        terminal.setCommandSystem(commands);
+
+        // Key bindings
+        const keys = new KeyBindings(commands);
+        keys.onTerminalOpen(() => terminal.open());
+        keys.activate();
+
+        // Touch input (mobile gestures)
+        const touch = new TouchInput(commands, slideshow);
+        touch.activate();
+
+        // Terminal close → return to normal mode
+        terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
+
+        // --- HMR (Vite dev mode only) ---
+        if (import.meta.hot) {
+          registerHotClient(import.meta.hot, {
+            fetchMarkdown: async () => {
+              const md = await fetchMarkdown(config);
+              return applyPreprocessors(md, config);
+            },
+            fetchConfig: fetchConfig,
+            reloadSlides: (md) => {
+              const newSlides = parse(md);
+              if (combinedCss) slideshow.loadStyles(combinedCss);
+              slideshow.loadSlides(newSlides);
+              applyProcessors(slideshow, config);
+            },
+            applyConfig: () => location.reload(),
+            getCurrentSlide: () => slideshow.currentSlide,
+            getCurrentPartial: () => slideshow.currentPartial,
+            goTo: (s, p) => slideshow.goTo(s, p),
+            getSlideCount: () => slideshow.slideCount,
+            styleSheets: Array.isArray(config.styles) ? config.styles : [],
+          });
+        }
       }
-      slideshow.loadSlides(slides);
 
-      // Set aspect ratio (v1 compat: resolution "1920x1080")
-      if (config.aspectRatio) {
-        slideshow.setAspectRatio(config.aspectRatio);
-      } else if (config.resolution) {
-        const [w, h] = config.resolution.split('x');
-        const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-        const d = gcd(Number(w), Number(h));
-        slideshow.setAspectRatio(`${w/d}/${h/d}`);
-      }
-
-      // --- Command System & Terminal ---
-      const commands = new CommandSystem();
-      commands.register({ name: 'next', label: 'Next slide/partial', execute: () => slideshow.next(), category: 'navigation' });
-      commands.register({ name: 'prev', label: 'Previous slide/partial', execute: () => slideshow.prev(), category: 'navigation' });
-      commands.register({ name: 'go-first', label: 'Go to first slide', execute: () => slideshow.goTo(0), category: 'navigation' });
-      commands.register({ name: 'go-last', label: 'Go to last slide', execute: () => slideshow.goTo(slideshow.slideCount - 1), category: 'navigation' });
-      commands.register({ name: 'fullscreen', label: 'Toggle fullscreen', execute: () => {
-        if (document.fullscreenElement) { document.exitFullscreen(); }
-        else { document.documentElement.requestFullscreen(); }
-      }, category: 'view' });
-      commands.register({ name: 'overview', label: 'Toggle overview mode', execute: () => { slideshow.mode = slideshow.mode === 'overview' ? 'present' : 'overview'; }, category: 'view' });
-      commands.register({ name: 'speaker', label: 'Toggle speaker view', execute: () => { slideshow.mode = slideshow.mode === 'speaker' ? 'present' : 'speaker'; }, category: 'view' });
-
-      // Terminal component
-      const terminal = document.querySelector('geek-terminal');
-      terminal.setCommandSystem(commands);
-
-      // Key bindings
-      const keys = new KeyBindings(commands);
-      keys.onTerminalOpen(() => terminal.open());
-      keys.activate();
-
-      // Terminal close → return to normal mode
-      terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
     } catch (err) {
-      document.body.innerHTML = `<pre style="padding: 2rem; color: #c00;">${err}</pre>`;
+      document.body.innerHTML = `<pre style="padding: 2rem; color: #c00;">${err.stack || err}</pre>`;
     }
   </script>
 </body>

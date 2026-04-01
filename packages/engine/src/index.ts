@@ -21,8 +21,13 @@ export { PluginManager } from './plugins/PluginManager.ts';
 export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
+export { chartProcessor } from './plugins/builtins/chart-processor.ts';
+export { videoProcessor } from './plugins/builtins/video-processor.ts';
 
 // Phase 6: Rich Components
+import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';
+import { VideoSlide as VideoSlideImpl } from './components/VideoSlide.ts';
+import { Whiteboard as WhiteboardImpl } from './components/Whiteboard.ts';
 export { ChartSlide } from './components/ChartSlide.ts';
 export { VideoSlide } from './components/VideoSlide.ts';
 export { Whiteboard } from './components/Whiteboard.ts';
@@ -44,6 +49,11 @@ export { Terminal } from './components/Terminal.ts';
 export { renderPrint } from './print/PrintRenderer.ts';
 export type { TemplateName, PrintOptions } from './print/PrintRenderer.ts';
 
+// Phase 5: Sync
+export { SyncManager } from './sync/SyncManager.ts';
+export type { SyncTarget } from './sync/SyncManager.ts';
+export type { WhiteboardStroke } from './sync/types.ts';
+
 // Register custom elements
 function registerElements(): void {
   if (typeof customElements !== 'undefined') {
@@ -58,6 +68,15 @@ function registerElements(): void {
     }
     if (!customElements.get('geek-terminal')) {
       customElements.define('geek-terminal', TerminalImpl);
+    }
+    if (!customElements.get('geek-chart')) {
+      customElements.define('geek-chart', ChartSlideImpl);
+    }
+    if (!customElements.get('geek-video')) {
+      customElements.define('geek-video', VideoSlideImpl);
+    }
+    if (!customElements.get('geek-whiteboard')) {
+      customElements.define('geek-whiteboard', WhiteboardImpl);
     }
   }
 }

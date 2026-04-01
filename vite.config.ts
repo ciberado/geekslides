@@ -1,7 +1,9 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { geekSlidesHmr } from './packages/engine/src/hmr/vite-plugin-geekslides-hmr';
 
 export default defineConfig({
+  plugins: [geekSlidesHmr()],
   resolve: {
     alias: {
       '@geekslides/engine': resolve(__dirname, 'packages/engine/src/index.ts'),

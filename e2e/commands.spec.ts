@@ -1,36 +1,81 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Command System', () => {
+test.describe('Terminal Command System', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForSelector('geek-slideshow');
-  });
-
-  test('Ctrl+B enters prefix mode and shows indicator', async ({ page }) => {
-    await page.keyboard.press('Control+b');
-    const indicator = page.locator('[data-prefix-indicator]');
-    // Prefix mode should be visually indicated
-    await expect(indicator).toBeVisible({ timeout: 2000 }).catch(() => {
-      // Indicator may be implemented differently — just verify no crash
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
     });
   });
 
-  test('prefix mode auto-cancels after timeout', async ({ page }) => {
-    await page.keyboard.press('Control+b');
-    // Wait for auto-cancel (1.5s + buffer)
-    await page.waitForTimeout(2000);
-    // Subsequent key should navigate, not execute a command
-    await page.keyboard.press('ArrowRight');
-    const slideshow = page.locator('geek-slideshow');
-    await expect(slideshow).toHaveAttribute('current-slide', '1');
+  test('pressing t opens the terminal', async ({ page }) => {
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+
+    // Terminal should be visible in the DOM
+    const visible = await page.evaluate(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display !== 'none';
+    });
+    expect(visible).toBe(true);
   });
 
-  test('Escape cancels prefix mode', async ({ page }) => {
-    await page.keyboard.press('Control+b');
+  test('Escape closes the terminal', async ({ page }) => {
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
     await page.keyboard.press('Escape');
-    // Regular navigation should work
+    await page.waitForTimeout(200);
+
+    const visible = await page.evaluate(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display !== 'none';
+    });
+    expect(visible).toBe(false);
+  });
+
+  test('typing help shows command list', async ({ page }) => {
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('help');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(200);
+
+    const outputText = await page.evaluate(() => {
+      const term = document.querySelector('geek-terminal');
+      const output = term?.shadowRoot?.querySelector('.output');
+      return output?.textContent ?? '';
+    });
+    expect(outputText).toContain('next');
+    expect(outputText).toContain('prev');
+  });
+
+  test('typing next advances slide', async ({ page }) => {
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('next');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBeGreaterThanOrEqual(1);
+  });
+
+  test('navigation still works after closing terminal', async ({ page }) => {
+    // Open and close terminal
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Navigation should work
     await page.keyboard.press('ArrowRight');
-    const slideshow = page.locator('geek-slideshow');
-    await expect(slideshow).toHaveAttribute('current-slide', '1');
+    await page.waitForTimeout(200);
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBeGreaterThanOrEqual(1);
   });
 });

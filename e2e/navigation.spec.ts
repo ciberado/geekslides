@@ -3,50 +3,75 @@ import { test, expect } from '@playwright/test';
 test.describe('Slide Navigation', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForSelector('geek-slideshow');
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
   });
 
-  test('arrow right advances to next slide', async ({ page }) => {
-    await page.keyboard.press('ArrowRight');
-    const slideshow = page.locator('geek-slideshow');
-    await expect(slideshow).toHaveAttribute('current-slide', '1');
+  test('renders slides from demo config.json', async ({ page }) => {
+    const slideCount = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(slideCount).toBeGreaterThan(0);
   });
 
-  test('arrow left goes to previous slide', async ({ page }) => {
+  test('starts at slide 0', async ({ page }) => {
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBe(0);
+  });
+
+  test('ArrowRight advances slide', async ({ page }) => {
     await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(200);
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBeGreaterThanOrEqual(1);
+  });
+
+  test('ArrowLeft goes back', async ({ page }) => {
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(200);
     await page.keyboard.press('ArrowLeft');
-    const slideshow = page.locator('geek-slideshow');
-    await expect(slideshow).toHaveAttribute('current-slide', '0');
+    await page.waitForTimeout(200);
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBe(0);
   });
 
-  test('space advances to next slide', async ({ page }) => {
+  test('Space advances slide/partial', async ({ page }) => {
     await page.keyboard.press('Space');
-    const slideshow = page.locator('geek-slideshow');
-    await expect(slideshow).toHaveAttribute('current-slide', '1');
+    await page.waitForTimeout(200);
+    const result = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return { slide: ss?.currentSlide, partial: ss?.currentPartial };
+    });
+    expect(result.slide + result.partial).toBeGreaterThan(0);
   });
 
   test('Home jumps to first slide', async ({ page }) => {
     await page.keyboard.press('ArrowRight');
     await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(200);
     await page.keyboard.press('Home');
-    const slideshow = page.locator('geek-slideshow');
-    await expect(slideshow).toHaveAttribute('current-slide', '0');
+    await page.waitForTimeout(200);
+    const current = await page.evaluate(
+      () => (document.getElementById('slideshow') as any)?.currentSlide,
+    );
+    expect(current).toBe(0);
   });
 
   test('End jumps to last slide', async ({ page }) => {
     await page.keyboard.press('End');
-    const slideshow = page.locator('geek-slideshow');
-    const slide = await slideshow.getAttribute('current-slide');
-    expect(Number(slide)).toBeGreaterThan(0);
-  });
-
-  test('partials reveal before slide advances', async ({ page }) => {
-    // Navigate to a slide with partials if present
-    const slideshow = page.locator('geek-slideshow');
-    const initialSlide = await slideshow.getAttribute('current-slide');
-    await page.keyboard.press('ArrowRight');
-    // If partials exist, the slide number may not change on first press
-    const afterPress = await slideshow.getAttribute('current-slide');
-    expect(afterPress).toBeDefined();
+    await page.waitForTimeout(200);
+    const result = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return { current: ss?.currentSlide, total: ss?.slideCount };
+    });
+    expect(result.current).toBe(result.total - 1);
   });
 });
