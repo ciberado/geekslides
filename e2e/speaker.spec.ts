@@ -193,4 +193,99 @@ test.describe('Speaker View', () => {
     expect(partialState!.next[0]?.visibility).toBe('visible');
     expect(Number(partialState!.next[0]?.opacity ?? '1')).toBeLessThan(1);
   });
+
+  test('notes font controls and splitters resize the speaker layout while keeping slides centered', async ({ page }) => {
+    await page.goto(`/?view=speaker&room=${uniqueRoom('speaker')}`);
+    await page.waitForFunction(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.currentIndex !== undefined;
+    });
+
+    const before = await page.evaluate(() => {
+      const shadow = (document.querySelector('geek-speaker-view') as HTMLElement | null)?.shadowRoot;
+      const notesBody = shadow?.querySelector('.notes-body') as HTMLElement | null;
+      const notesRect = shadow?.querySelector('.notes')?.getBoundingClientRect();
+      const currentCardRect = shadow?.querySelector('.current-card')?.getBoundingClientRect();
+      const currentViewportRect = shadow?.querySelector('.current-card .viewport')?.getBoundingClientRect();
+      const currentStageRect = shadow?.querySelector('.current-card .stage')?.getBoundingClientRect();
+      const mainSplitterRect = shadow?.querySelector('.main-splitter')?.getBoundingClientRect();
+      const previewSplitterRect = shadow?.querySelector('.preview-splitter')?.getBoundingClientRect();
+
+      return {
+        fontSize: notesBody ? getComputedStyle(notesBody).fontSize : null,
+        notesWidth: notesRect?.width ?? 0,
+        currentHeight: currentCardRect?.height ?? 0,
+        currentViewportRect,
+        currentStageRect,
+        mainSplitterRect,
+        previewSplitterRect,
+      };
+    });
+
+    await page.evaluate(() => {
+      const shadow = (document.querySelector('geek-speaker-view') as HTMLElement | null)?.shadowRoot;
+      (shadow?.querySelector('.notes-font-increase') as HTMLButtonElement | null)?.click();
+    });
+
+    const mainSplitterCenter = {
+      x: (before.mainSplitterRect?.left ?? 0) + (before.mainSplitterRect?.width ?? 0) / 2,
+      y: (before.mainSplitterRect?.top ?? 0) + (before.mainSplitterRect?.height ?? 0) / 2,
+    };
+    await page.mouse.move(mainSplitterCenter.x, mainSplitterCenter.y);
+    await page.mouse.down();
+    await page.mouse.move(mainSplitterCenter.x + 120, mainSplitterCenter.y, { steps: 8 });
+    await page.mouse.up();
+
+    const previewSplitterCenter = {
+      x: (before.previewSplitterRect?.left ?? 0) + (before.previewSplitterRect?.width ?? 0) / 2,
+      y: (before.previewSplitterRect?.top ?? 0) + (before.previewSplitterRect?.height ?? 0) / 2,
+    };
+    await page.mouse.move(previewSplitterCenter.x, previewSplitterCenter.y);
+    await page.mouse.down();
+    await page.mouse.move(previewSplitterCenter.x, previewSplitterCenter.y + 80, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(100);
+
+    const after = await page.evaluate(() => {
+      const shadow = (document.querySelector('geek-speaker-view') as HTMLElement | null)?.shadowRoot;
+      const notesBody = shadow?.querySelector('.notes-body') as HTMLElement | null;
+      const notesRect = shadow?.querySelector('.notes')?.getBoundingClientRect();
+      const currentCardRect = shadow?.querySelector('.current-card')?.getBoundingClientRect();
+      const currentViewportRect = shadow?.querySelector('.current-card .viewport')?.getBoundingClientRect();
+      const currentStageRect = shadow?.querySelector('.current-card .stage')?.getBoundingClientRect();
+
+      const viewportCenterX = currentViewportRect
+        ? currentViewportRect.left + (currentViewportRect.width / 2)
+        : null;
+      const viewportCenterY = currentViewportRect
+        ? currentViewportRect.top + (currentViewportRect.height / 2)
+        : null;
+      const stageCenterX = currentStageRect
+        ? currentStageRect.left + (currentStageRect.width / 2)
+        : null;
+      const stageCenterY = currentStageRect
+        ? currentStageRect.top + (currentStageRect.height / 2)
+        : null;
+
+      return {
+        fontSize: notesBody ? getComputedStyle(notesBody).fontSize : null,
+        notesWidth: notesRect?.width ?? 0,
+        currentHeight: currentCardRect?.height ?? 0,
+        centeredX: viewportCenterX !== null && stageCenterX !== null
+          ? Math.abs(viewportCenterX - stageCenterX)
+          : null,
+        centeredY: viewportCenterY !== null && stageCenterY !== null
+          ? Math.abs(viewportCenterY - stageCenterY)
+          : null,
+      };
+    });
+
+    expect(Number.parseFloat(after.fontSize ?? '0')).toBeGreaterThan(Number.parseFloat(before.fontSize ?? '0'));
+    expect(after.notesWidth).toBeGreaterThan(before.notesWidth);
+    expect(after.currentHeight).toBeGreaterThan(before.currentHeight);
+    expect(after.centeredX).not.toBeNull();
+    expect(after.centeredY).not.toBeNull();
+    expect(after.centeredX!).toBeLessThanOrEqual(2);
+    expect(after.centeredY!).toBeLessThanOrEqual(12);
+  });
 });

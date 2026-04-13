@@ -20,6 +20,14 @@ const SUPPORTS_ZOOM = typeof CSS !== 'undefined' && typeof CSS.supports === 'fun
   ? CSS.supports('zoom', '1')
   : false;
 
+const DEFAULT_NOTES_FONT_SIZE_REM = 1.15;
+const MIN_NOTES_FONT_SIZE_REM = 0.9;
+const MAX_NOTES_FONT_SIZE_REM = 1.75;
+const MIN_NOTES_WIDTH_PX = 300;
+const MIN_PREVIEW_HEIGHT_PX = 180;
+const SPLITTER_SIZE_PX = 14;
+const MOBILE_LAYOUT_BREAKPOINT_PX = 1100;
+
 const SPEAKER_PREVIEW_PARTIAL_STYLES = `
   .gs-partial {
     visibility: visible !important;
@@ -34,12 +42,10 @@ const SPEAKER_PREVIEW_PARTIAL_STYLES = `
 const SPEAKER_STYLES = `
   :host {
     --gs-speaker-gap: 1rem;
+    --gs-speaker-notes-font-size: ${String(DEFAULT_NOTES_FONT_SIZE_REM)}rem;
     display: grid;
-    grid-template-columns: minmax(22rem, 32rem) minmax(0, 1fr);
+    grid-template-columns: 1fr;
     grid-template-rows: minmax(0, 1fr) auto;
-    grid-template-areas:
-      "notes previews"
-      "controls controls";
     gap: var(--gs-speaker-gap);
     width: 100vw;
     height: 100vh;
@@ -52,12 +58,27 @@ const SPEAKER_STYLES = `
     font-family: system-ui, sans-serif;
   }
 
+  :host([data-resizing]) {
+    user-select: none;
+  }
+
+  .main-layout {
+    min-height: 0;
+    display: grid;
+    grid-template-columns: minmax(22rem, 32rem) ${String(SPLITTER_SIZE_PX)}px minmax(0, 1fr);
+    grid-template-areas: "notes notes-splitter previews";
+    align-items: stretch;
+  }
+
   .preview-stack {
     grid-area: previews;
     display: grid;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    gap: var(--gs-speaker-gap);
+    grid-template-rows: minmax(0, 1fr) ${String(SPLITTER_SIZE_PX)}px minmax(0, 1fr);
     min-height: 0;
+  }
+
+  .preview-splitter {
+    grid-row: 2;
   }
 
   .preview-card {
@@ -127,38 +148,103 @@ const SPEAKER_STYLES = `
   .notes {
     grid-area: notes;
     min-width: 0;
+    min-height: 0;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr);
     background: rgba(15, 23, 42, 0.8);
     border: 1px solid rgba(148, 163, 184, 0.2);
     border-radius: 12px;
-    padding: 1.5rem;
-    overflow-y: auto;
-    font-size: 1.15rem;
-    line-height: 1.6;
+    overflow: hidden;
     box-shadow: 0 18px 36px rgba(0, 0, 0, 0.25);
   }
 
-  .notes::-webkit-scrollbar {
+  .notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .notes-title {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #94a3b8;
+  }
+
+  .notes-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .notes-font-button {
+    min-width: 2.5rem;
+    padding: 0.35rem 0.7rem;
+  }
+
+  .notes-body {
+    min-height: 0;
+    overflow-y: auto;
+    padding: 1.25rem 1.5rem 1.5rem;
+    font-size: var(--gs-speaker-notes-font-size);
+    line-height: 1.6;
+  }
+
+  .notes-body::-webkit-scrollbar {
     width: 8px;
   }
 
-  .notes::-webkit-scrollbar-thumb {
+  .notes-body::-webkit-scrollbar-thumb {
     background: rgba(148, 163, 184, 0.45);
     border-radius: 4px;
   }
 
-  .notes p { margin: 0.5em 0; }
-  .notes ul, .notes ol { margin: 0.5em 0; padding-left: 1.5em; }
-  .notes code { background: rgba(30, 41, 59, 0.9); padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
-  .notes pre { background: rgba(30, 41, 59, 0.9); padding: 1em; border-radius: 4px; overflow-x: auto; }
-  .notes a { color: #4a9eff; }
+  .notes-body p { margin: 0.5em 0; }
+  .notes-body ul, .notes-body ol { margin: 0.5em 0; padding-left: 1.5em; }
+  .notes-body code { background: rgba(30, 41, 59, 0.9); padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+  .notes-body pre { background: rgba(30, 41, 59, 0.9); padding: 1em; border-radius: 4px; overflow-x: auto; }
+  .notes-body a { color: #4a9eff; }
 
   .no-notes {
     color: #64748b;
     font-style: italic;
   }
 
+  .splitter {
+    position: relative;
+    min-width: 0;
+    min-height: 0;
+    touch-action: none;
+  }
+
+  .splitter::before {
+    content: '';
+    position: absolute;
+    inset: 2px;
+    border-radius: 999px;
+    background: rgba(148, 163, 184, 0.18);
+    transition: background 0.15s ease;
+  }
+
+  .splitter:hover::before,
+  .splitter:focus-visible::before {
+    background: rgba(125, 211, 252, 0.34);
+  }
+
+  .main-splitter {
+    grid-area: notes-splitter;
+    cursor: col-resize;
+  }
+
+  .preview-splitter {
+    cursor: row-resize;
+  }
+
   .controls {
-    grid-area: controls;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -200,14 +286,28 @@ const SPEAKER_STYLES = `
 
   button:active { background: rgba(100, 116, 139, 0.95); }
 
-  @media (max-width: 1100px) {
+  @media (max-width: ${String(MOBILE_LAYOUT_BREAKPOINT_PX)}px) {
     :host {
+      grid-template-rows: minmax(0, 1fr) auto;
+    }
+
+    .main-layout {
       grid-template-columns: 1fr;
-      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr) auto;
+      grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
       grid-template-areas:
         "previews"
-        "notes"
-        "controls";
+        "notes";
+      gap: var(--gs-speaker-gap);
+    }
+
+    .main-splitter,
+    .preview-splitter {
+      display: none;
+    }
+
+    .preview-stack {
+      grid-template-rows: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: var(--gs-speaker-gap);
     }
 
     .notes {
@@ -240,14 +340,20 @@ export class SpeakerView extends HTMLElement {
   #currentPartial = 0;
   #designWidth = 1920;
   #designHeight = 1080;
+  #notesFontSizeRem = DEFAULT_NOTES_FONT_SIZE_REM;
+  #notesWidthPx: number | null = null;
+  #currentPreviewHeightPx: number | null = null;
   #externalStyles = '';
   #fontImportsEl: HTMLStyleElement | null = null;
   #processors: readonly Processor[] = [];
   #processorConfig: GeekSlidesConfig | null = null;
   #resizeObserver: ResizeObserver | null = null;
   #timer: SpeakerTimer;
+  #mainLayout: HTMLElement | null = null;
+  #previewStack: HTMLElement | null = null;
   #timerDisplay: HTMLElement | null = null;
   #notesPanel: HTMLElement | null = null;
+  #notesBody: HTMLElement | null = null;
   #currentViewport: HTMLElement | null = null;
   #nextViewport: HTMLElement | null = null;
   #currentStage: HTMLElement | null = null;
@@ -299,7 +405,7 @@ export class SpeakerView extends HTMLElement {
     if (width > 0 && height > 0) {
       this.#designWidth = width * 120;
       this.#designHeight = height * 120;
-      this.updateSlide(this.#currentIndex);
+      this.updateSlide(this.#currentIndex, this.#currentPartial);
       this.#rescalePreviews();
     }
   }
@@ -343,16 +449,16 @@ export class SpeakerView extends HTMLElement {
     const nextSlide = this.#slides[this.#currentIndex + 1];
     this.#renderPreview(this.#nextViewport, nextSlide, this.#currentIndex + 1, 0, 'End of presentation');
 
-    if (this.#notesPanel) {
+    if (this.#notesPanel && this.#notesBody) {
       const notes = slide?.notesHtml;
       if (notes) {
-        this.#notesPanel.innerHTML = notes;
+        this.#notesBody.innerHTML = notes;
         this.#notesPanel.classList.remove('no-notes');
       } else {
-        this.#notesPanel.textContent = 'No notes for this slide';
+        this.#notesBody.textContent = 'No notes for this slide';
         this.#notesPanel.classList.add('no-notes');
       }
-      this.#notesPanel.scrollTop = 0;
+      this.#notesBody.scrollTop = 0;
     }
 
     if (this.#counterEl) {
@@ -361,6 +467,7 @@ export class SpeakerView extends HTMLElement {
         : '0 / 0';
     }
 
+    this.#applyLayout();
     this.#rescalePreviews();
   }
 
@@ -473,6 +580,19 @@ export class SpeakerView extends HTMLElement {
     return empty;
   }
 
+  #adjustNotesFontSize(delta: number): void {
+    this.#notesFontSizeRem = this.#clamp(
+      this.#notesFontSizeRem + delta,
+      MIN_NOTES_FONT_SIZE_REM,
+      MAX_NOTES_FONT_SIZE_REM,
+    );
+    this.#applyNotesFontSize();
+  }
+
+  #applyNotesFontSize(): void {
+    this.style.setProperty('--gs-speaker-notes-font-size', `${String(this.#notesFontSizeRem)}rem`);
+  }
+
   #setStageRef(viewport: HTMLElement, stage: HTMLElement | null): void {
     if (viewport === this.#currentViewport) {
       this.#currentStage = stage;
@@ -490,16 +610,130 @@ export class SpeakerView extends HTMLElement {
     }
 
     this.#resizeObserver = new ResizeObserver(() => {
+      this.#applyLayout();
       this.#rescalePreviews();
     });
 
     this.#resizeObserver.observe(this);
+    if (this.#mainLayout) {
+      this.#resizeObserver.observe(this.#mainLayout);
+    }
+    if (this.#previewStack) {
+      this.#resizeObserver.observe(this.#previewStack);
+    }
     if (this.#currentViewport) {
       this.#resizeObserver.observe(this.#currentViewport);
     }
     if (this.#nextViewport) {
       this.#resizeObserver.observe(this.#nextViewport);
     }
+  }
+
+  #applyLayout(): void {
+    if (!this.#mainLayout || !this.#previewStack) {
+      return;
+    }
+
+    if (this.clientWidth <= MOBILE_LAYOUT_BREAKPOINT_PX) {
+      this.#mainLayout.style.removeProperty('grid-template-columns');
+      this.#previewStack.style.removeProperty('grid-template-rows');
+      return;
+    }
+
+    const mainWidth = this.#mainLayout.clientWidth;
+    if (mainWidth > 0) {
+      const maxNotesWidth = Math.max(
+        MIN_NOTES_WIDTH_PX,
+        mainWidth - MIN_NOTES_WIDTH_PX - SPLITTER_SIZE_PX,
+      );
+      if (this.#notesWidthPx === null) {
+        this.#notesWidthPx = this.#clamp(mainWidth * 0.38, MIN_NOTES_WIDTH_PX, maxNotesWidth);
+      } else {
+        this.#notesWidthPx = this.#clamp(this.#notesWidthPx, MIN_NOTES_WIDTH_PX, maxNotesWidth);
+      }
+
+      this.#mainLayout.style.gridTemplateColumns = `${String(this.#notesWidthPx)}px ${String(SPLITTER_SIZE_PX)}px minmax(0, 1fr)`;
+    }
+
+    const previewHeight = this.#previewStack.clientHeight;
+    if (previewHeight > 0) {
+      const maxCurrentHeight = Math.max(
+        MIN_PREVIEW_HEIGHT_PX,
+        previewHeight - MIN_PREVIEW_HEIGHT_PX - SPLITTER_SIZE_PX,
+      );
+      if (this.#currentPreviewHeightPx === null) {
+        this.#currentPreviewHeightPx = this.#clamp(previewHeight * 0.56, MIN_PREVIEW_HEIGHT_PX, maxCurrentHeight);
+      } else {
+        this.#currentPreviewHeightPx = this.#clamp(this.#currentPreviewHeightPx, MIN_PREVIEW_HEIGHT_PX, maxCurrentHeight);
+      }
+
+      this.#previewStack.style.gridTemplateRows = `${String(this.#currentPreviewHeightPx)}px ${String(SPLITTER_SIZE_PX)}px minmax(0, 1fr)`;
+    }
+  }
+
+  #startResize(kind: 'main' | 'preview', event: PointerEvent): void {
+    if (this.clientWidth <= MOBILE_LAYOUT_BREAKPOINT_PX) {
+      return;
+    }
+
+    event.preventDefault();
+    const target = event.currentTarget;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    target.setPointerCapture(event.pointerId);
+    this.setAttribute('data-resizing', kind);
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startNotesWidth = this.#notesWidthPx ?? 0;
+    const startPreviewHeight = this.#currentPreviewHeightPx ?? 0;
+
+    const onMove = (moveEvent: PointerEvent): void => {
+      if (kind === 'main' && this.#mainLayout) {
+        const maxNotesWidth = Math.max(
+          MIN_NOTES_WIDTH_PX,
+          this.#mainLayout.clientWidth - MIN_NOTES_WIDTH_PX - SPLITTER_SIZE_PX,
+        );
+        this.#notesWidthPx = this.#clamp(
+          startNotesWidth + (moveEvent.clientX - startX),
+          MIN_NOTES_WIDTH_PX,
+          maxNotesWidth,
+        );
+      }
+
+      if (kind === 'preview' && this.#previewStack) {
+        const maxCurrentHeight = Math.max(
+          MIN_PREVIEW_HEIGHT_PX,
+          this.#previewStack.clientHeight - MIN_PREVIEW_HEIGHT_PX - SPLITTER_SIZE_PX,
+        );
+        this.#currentPreviewHeightPx = this.#clamp(
+          startPreviewHeight + (moveEvent.clientY - startY),
+          MIN_PREVIEW_HEIGHT_PX,
+          maxCurrentHeight,
+        );
+      }
+
+      this.#applyLayout();
+      this.#rescalePreviews();
+    };
+
+    const onEnd = (): void => {
+      target.releasePointerCapture(event.pointerId);
+      this.removeAttribute('data-resizing');
+      target.removeEventListener('pointermove', onMove);
+      target.removeEventListener('pointerup', onEnd);
+      target.removeEventListener('pointercancel', onEnd);
+    };
+
+    target.addEventListener('pointermove', onMove);
+    target.addEventListener('pointerup', onEnd);
+    target.addEventListener('pointercancel', onEnd);
+  }
+
+  #clamp(value: number, min: number, max: number): number {
+    return Math.max(min, Math.min(value, max));
   }
 
   #rescalePreviews(): void {
@@ -544,12 +778,50 @@ export class SpeakerView extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = SPEAKER_STYLES;
 
+    this.#applyNotesFontSize();
+
+    this.#mainLayout = document.createElement('section');
+    this.#mainLayout.className = 'main-layout';
+
     this.#notesPanel = document.createElement('div');
     this.#notesPanel.className = 'notes no-notes';
-    this.#notesPanel.textContent = 'No notes for this slide';
+    const notesHeader = document.createElement('div');
+    notesHeader.className = 'notes-header';
+    const notesTitle = document.createElement('span');
+    notesTitle.className = 'notes-title';
+    notesTitle.textContent = 'Notes';
+    const notesActions = document.createElement('div');
+    notesActions.className = 'notes-actions';
+    const notesFontDecrease = document.createElement('button');
+    notesFontDecrease.className = 'notes-font-button notes-font-decrease';
+    notesFontDecrease.textContent = 'A-';
+    notesFontDecrease.title = 'Decrease notes font size';
+    notesFontDecrease.addEventListener('click', () => {
+      this.#adjustNotesFontSize(-0.1);
+    });
+    const notesFontIncrease = document.createElement('button');
+    notesFontIncrease.className = 'notes-font-button notes-font-increase';
+    notesFontIncrease.textContent = 'A+';
+    notesFontIncrease.title = 'Increase notes font size';
+    notesFontIncrease.addEventListener('click', () => {
+      this.#adjustNotesFontSize(0.1);
+    });
+    notesActions.append(notesFontDecrease, notesFontIncrease);
+    notesHeader.append(notesTitle, notesActions);
 
-    const previewStack = document.createElement('section');
-    previewStack.className = 'preview-stack';
+    this.#notesBody = document.createElement('div');
+    this.#notesBody.className = 'notes-body no-notes';
+    this.#notesBody.textContent = 'No notes for this slide';
+    this.#notesPanel.append(notesHeader, this.#notesBody);
+
+    const mainSplitter = document.createElement('div');
+    mainSplitter.className = 'splitter main-splitter';
+    mainSplitter.addEventListener('pointerdown', (event) => {
+      this.#startResize('main', event);
+    });
+
+    this.#previewStack = document.createElement('section');
+    this.#previewStack.className = 'preview-stack';
 
     const currentCard = document.createElement('section');
     currentCard.className = 'preview-card current-card';
@@ -569,7 +841,14 @@ export class SpeakerView extends HTMLElement {
     this.#nextViewport.className = 'viewport';
     nextCard.append(nextLabel, this.#nextViewport);
 
-    previewStack.append(currentCard, nextCard);
+    const previewSplitter = document.createElement('div');
+    previewSplitter.className = 'splitter preview-splitter';
+    previewSplitter.addEventListener('pointerdown', (event) => {
+      this.#startResize('preview', event);
+    });
+
+    this.#previewStack.append(currentCard, previewSplitter, nextCard);
+    this.#mainLayout.append(this.#notesPanel, mainSplitter, this.#previewStack);
 
     const controls = document.createElement('div');
     controls.className = 'controls';
@@ -619,8 +898,13 @@ export class SpeakerView extends HTMLElement {
     this.#counterEl.className = 'counter';
     this.#counterEl.textContent = '0 / 0';
 
+    pauseBtn.className = 'speaker-pause';
+    resetBtn.className = 'speaker-reset';
+    prevBtn.className = 'speaker-prev';
+    nextBtn.className = 'speaker-next';
+
     controls.append(this.#timerDisplay, pauseBtn, resetBtn, prevBtn, nextBtn, this.#counterEl);
 
-    shadow.replaceChildren(style, this.#notesPanel, previewStack, controls);
+    shadow.replaceChildren(style, this.#mainLayout, controls);
   }
 }

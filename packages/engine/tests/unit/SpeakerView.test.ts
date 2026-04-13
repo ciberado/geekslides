@@ -54,9 +54,15 @@ describe('SpeakerView', () => {
     const shadow = el.shadowRoot;
     expect(shadow).not.toBeNull();
     expect(shadow!.querySelector('.preview-stack')).not.toBeNull();
+    expect(shadow!.querySelector('.main-layout')).not.toBeNull();
+    expect(shadow!.querySelector('.main-splitter')).not.toBeNull();
+    expect(shadow!.querySelector('.preview-splitter')).not.toBeNull();
     expect(shadow!.querySelector('.current-card')).not.toBeNull();
     expect(shadow!.querySelector('.next-card')).not.toBeNull();
     expect(shadow!.querySelector('.notes')).not.toBeNull();
+    expect(shadow!.querySelector('.notes-body')).not.toBeNull();
+    expect(shadow!.querySelector('.notes-font-decrease')).not.toBeNull();
+    expect(shadow!.querySelector('.notes-font-increase')).not.toBeNull();
     expect(shadow!.querySelector('.controls')).not.toBeNull();
     expect(shadow!.querySelector('.timer')).not.toBeNull();
     expect(shadow!.querySelector('.counter')).not.toBeNull();
@@ -83,7 +89,7 @@ describe('SpeakerView', () => {
     expect(nextSlide?.shadowRoot?.querySelector('section.content')?.innerHTML).toContain('Slide 2');
 
     // First slide has notes (even index)
-    const notes = shadow.querySelector('.notes');
+    const notes = shadow.querySelector('.notes-body');
     expect(notes!.innerHTML).toContain('Notes for slide 1');
 
     // Counter
@@ -109,9 +115,9 @@ describe('SpeakerView', () => {
     expect(nextSlide?.shadowRoot?.querySelector('section.content')?.innerHTML).toContain('Slide 3');
 
     // Slide 2 (index 1) has no notes (odd index)
-    const notes = shadow.querySelector('.notes');
+    const notes = shadow.querySelector('.notes-body');
     expect(notes!.textContent).toBe('No notes for this slide');
-    expect(notes!.classList.contains('no-notes')).toBe(true);
+    expect(shadow.querySelector('.notes')!.classList.contains('no-notes')).toBe(true);
 
     // Counter
     const counter = shadow.querySelector('.counter');
@@ -151,6 +157,28 @@ describe('SpeakerView', () => {
     document.body.removeChild(el);
   });
 
+  it('adjusts notes font size from the notes toolbar', () => {
+    const el = document.createElement('geek-speaker-view') as SpeakerView;
+    document.body.appendChild(el);
+
+    el.loadSlides(makeSlides(1));
+
+    const shadow = el.shadowRoot!;
+    const increaseBtn = shadow.querySelector('.notes-font-increase') as HTMLButtonElement | null;
+    const decreaseBtn = shadow.querySelector('.notes-font-decrease') as HTMLButtonElement | null;
+
+    const initialFontSize = el.style.getPropertyValue('--gs-speaker-notes-font-size');
+    increaseBtn?.click();
+    const increasedFontSize = el.style.getPropertyValue('--gs-speaker-notes-font-size');
+    decreaseBtn?.click();
+    const decreasedFontSize = el.style.getPropertyValue('--gs-speaker-notes-font-size');
+
+    expect(Number.parseFloat(increasedFontSize)).toBeGreaterThan(Number.parseFloat(initialFontSize));
+    expect(Number.parseFloat(decreasedFontSize)).toBeLessThanOrEqual(Number.parseFloat(increasedFontSize));
+
+    document.body.removeChild(el);
+  });
+
   it('renders unrevealed partials with speaker-preview styling', () => {
     const el = document.createElement('geek-speaker-view') as SpeakerView;
     document.body.appendChild(el);
@@ -184,10 +212,8 @@ describe('SpeakerView', () => {
     }) as EventListener);
 
     const shadow = el.shadowRoot!;
-    const buttons = shadow.querySelectorAll('button');
-    // Buttons: Pause, Reset, Prev, Next
-    const prevBtn = buttons[2];
-    const nextBtn = buttons[3];
+    const prevBtn = shadow.querySelector('.speaker-prev') as HTMLButtonElement | null;
+    const nextBtn = shadow.querySelector('.speaker-next') as HTMLButtonElement | null;
 
     prevBtn?.click();
     nextBtn?.click();
