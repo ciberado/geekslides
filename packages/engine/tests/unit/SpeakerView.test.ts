@@ -21,15 +21,41 @@ function makeSlides(count: number): SlideData[] {
   }));
 }
 
+function makePartialSlides(): SlideData[] {
+  return [
+    {
+      id: 'slide-1',
+      html: '<ul><li partial>First point</li><li partial>Second point</li></ul>',
+      notesHtml: '<p>Notes</p>',
+      rawCss: undefined,
+      classes: [] as string[],
+      backgroundImage: undefined,
+      backgroundColor: undefined,
+      partialCount: 2,
+    },
+    {
+      id: 'slide-2',
+      html: '<ul><li partial>Upcoming point</li></ul>',
+      notesHtml: undefined,
+      rawCss: undefined,
+      classes: [] as string[],
+      backgroundImage: undefined,
+      backgroundColor: undefined,
+      partialCount: 1,
+    },
+  ];
+}
+
 describe('SpeakerView', () => {
-  it('renders shadow DOM with thumbnails and controls', () => {
+  it('renders shadow DOM with previews, notes, and controls', () => {
     const el = document.createElement('geek-speaker-view') as SpeakerView;
     document.body.appendChild(el);
 
     const shadow = el.shadowRoot;
     expect(shadow).not.toBeNull();
-    expect(shadow!.querySelector('.thumbnail.current')).not.toBeNull();
-    expect(shadow!.querySelector('.thumbnail.next')).not.toBeNull();
+    expect(shadow!.querySelector('.preview-stack')).not.toBeNull();
+    expect(shadow!.querySelector('.current-card')).not.toBeNull();
+    expect(shadow!.querySelector('.next-card')).not.toBeNull();
     expect(shadow!.querySelector('.notes')).not.toBeNull();
     expect(shadow!.querySelector('.controls')).not.toBeNull();
     expect(shadow!.querySelector('.timer')).not.toBeNull();
@@ -46,11 +72,15 @@ describe('SpeakerView', () => {
     el.loadSlides(slides);
 
     const shadow = el.shadowRoot!;
-    const currentThumb = shadow.querySelector('.current .thumbnail-inner');
-    expect(currentThumb!.innerHTML).toContain('Slide 1');
+    const currentStage = shadow.querySelector('.current-card .stage') as HTMLElement | null;
+    expect(currentStage?.style.width).toBe('1920px');
+    expect(currentStage?.style.height).toBe('1080px');
 
-    const nextThumb = shadow.querySelector('.next .thumbnail-inner');
-    expect(nextThumb!.innerHTML).toContain('Slide 2');
+    const currentSlide = shadow.querySelector('.current-card geek-slide') as HTMLElement | null;
+    expect(currentSlide?.shadowRoot?.querySelector('section.content')?.innerHTML).toContain('Slide 1');
+
+    const nextSlide = shadow.querySelector('.next-card geek-slide') as HTMLElement | null;
+    expect(nextSlide?.shadowRoot?.querySelector('section.content')?.innerHTML).toContain('Slide 2');
 
     // First slide has notes (even index)
     const notes = shadow.querySelector('.notes');
@@ -72,11 +102,11 @@ describe('SpeakerView', () => {
     el.updateSlide(1);
 
     const shadow = el.shadowRoot!;
-    const currentThumb = shadow.querySelector('.current .thumbnail-inner');
-    expect(currentThumb!.innerHTML).toContain('Slide 2');
+    const currentSlide = shadow.querySelector('.current-card geek-slide') as HTMLElement | null;
+    expect(currentSlide?.shadowRoot?.querySelector('section.content')?.innerHTML).toContain('Slide 2');
 
-    const nextThumb = shadow.querySelector('.next .thumbnail-inner');
-    expect(nextThumb!.innerHTML).toContain('Slide 3');
+    const nextSlide = shadow.querySelector('.next-card geek-slide') as HTMLElement | null;
+    expect(nextSlide?.shadowRoot?.querySelector('section.content')?.innerHTML).toContain('Slide 3');
 
     // Slide 2 (index 1) has no notes (odd index)
     const notes = shadow.querySelector('.notes');
@@ -99,8 +129,47 @@ describe('SpeakerView', () => {
     el.updateSlide(1);
 
     const shadow = el.shadowRoot!;
-    const nextThumb = shadow.querySelector('.next .thumbnail-inner');
-    expect(nextThumb!.innerHTML).toContain('End of presentation');
+    const emptyState = shadow.querySelector('.next-card .empty-state');
+    expect(emptyState?.textContent).toBe('End of presentation');
+
+    document.body.removeChild(el);
+  });
+
+  it('injects shared styles into rendered previews', () => {
+    const el = document.createElement('geek-speaker-view') as SpeakerView;
+    document.body.appendChild(el);
+
+    el.loadStyles('.deck-title { color: rgb(255, 0, 0); }');
+    el.loadSlides(makeSlides(2));
+
+    const shadow = el.shadowRoot!;
+    const currentSlide = shadow.querySelector('.current-card geek-slide') as HTMLElement | null;
+    const injectedStyles = currentSlide?.shadowRoot?.querySelector('.gs-external-styles');
+
+    expect(injectedStyles?.textContent).toContain('.deck-title { color: rgb(255, 0, 0); }');
+
+    document.body.removeChild(el);
+  });
+
+  it('renders unrevealed partials with speaker-preview styling', () => {
+    const el = document.createElement('geek-speaker-view') as SpeakerView;
+    document.body.appendChild(el);
+
+    el.loadSlides(makePartialSlides());
+    el.updateSlide(0, 1);
+
+    const shadow = el.shadowRoot!;
+    const currentSlide = shadow.querySelector('.current-card geek-slide') as HTMLElement | null;
+    const currentPartials = currentSlide?.shadowRoot?.querySelectorAll('.gs-partial') ?? [];
+    expect(currentPartials[0]?.classList.contains('gs-visible')).toBe(true);
+    expect(currentPartials[1]?.classList.contains('gs-visible')).toBe(false);
+    const previewStyles = currentSlide?.shadowRoot?.querySelector('.gs-speaker-preview-styles');
+    expect(previewStyles?.textContent).toContain('.gs-partial');
+    expect(previewStyles?.textContent).toContain('opacity: 0.42');
+
+    const nextSlide = shadow.querySelector('.next-card geek-slide') as HTMLElement | null;
+    const nextPartials = nextSlide?.shadowRoot?.querySelectorAll('.gs-partial') ?? [];
+    expect(nextPartials[0]?.classList.contains('gs-visible')).toBe(false);
 
     document.body.removeChild(el);
   });

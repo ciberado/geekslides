@@ -1,8 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+function uniqueRoom(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 test.describe('Slide Navigation', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/?room=${uniqueRoom('navigation')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;

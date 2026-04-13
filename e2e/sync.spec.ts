@@ -61,7 +61,7 @@ test.describe('Sync between tabs', () => {
   });
 
   test('slides-cuatro-cosas-aws deck renders with images and text', async ({ page }) => {
-    const deckUrl = '/?config=decks/slides-cuatro-cosas-aws/config.json';
+    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${uniqueRoom('deck-render')}`;
     await page.goto(deckUrl);
 
     // Wait for slideshow to load
@@ -81,16 +81,23 @@ test.describe('Sync between tabs', () => {
     expect(imgCount).toBeGreaterThan(0);
 
     // Navigate through a few slides and verify content changes
-    let prevIndex = 0;
+    let previousState = { slide: 0, partial: 0 };
     for (let i = 0; i < 3; i++) {
       await page.keyboard.press('ArrowRight');
       await page.waitForTimeout(400);
 
-      const currentIndex = await page.evaluate(
-        () => (document.getElementById('slideshow') as any)?.currentSlide,
-      );
-      expect(currentIndex).toBeGreaterThan(prevIndex);
-      prevIndex = currentIndex;
+      const currentState = await page.evaluate(() => {
+        const ss = document.getElementById('slideshow') as any;
+        return {
+          slide: ss?.currentSlide ?? 0,
+          partial: ss?.currentPartial ?? 0,
+        };
+      });
+      expect(
+        currentState.slide > previousState.slide
+          || (currentState.slide === previousState.slide && currentState.partial > previousState.partial),
+      ).toBe(true);
+      previousState = currentState;
     }
   });
 

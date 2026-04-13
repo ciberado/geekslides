@@ -111,6 +111,35 @@ Some content
     expect(slides[0]!.html).not.toContain('[partial]');
   });
 
+  it('treats slide-level .partial as implicit list partials', () => {
+    const md = `[](.partial)
+
+# Slide
+
+- Item 1
+- Item 2
+- Item 3
+`;
+    const slides = parse(md);
+
+    expect(slides[0]!.partialCount).toBe(3);
+    expect(slides[0]!.classes).toContain('partial');
+  });
+
+  it('does not double-count explicit [partial] markers on .partial slides', () => {
+    const md = `[](.partial)
+
+# Slide
+
+- Item 1 [partial]
+- Item 2
+`;
+    const slides = parse(md);
+
+    expect(slides[0]!.partialCount).toBe(2);
+    expect(slides[0]!.html).not.toContain('[partial]');
+  });
+
   it('handles slide with no attributes', () => {
     const md = `# Simple slide
 

@@ -112,7 +112,10 @@ function findPartialOwner(openTokens: MarkdownToken[]): MarkdownToken | undefine
     ?? reversed[0];
 }
 
-function normalizePartialMarkers(tokens: MarkdownToken[]): { tokens: MarkdownToken[]; partialCount: number } {
+function normalizePartialMarkers(
+  tokens: MarkdownToken[],
+  slideClasses: readonly string[],
+): { tokens: MarkdownToken[]; partialCount: number } {
   const openTokens: MarkdownToken[] = [];
   let partialCount = 0;
 
@@ -138,6 +141,25 @@ function normalizePartialMarkers(tokens: MarkdownToken[]): { tokens: MarkdownTok
 
     if (token.nesting === -1) {
       openTokens.pop();
+    }
+  }
+
+  if (slideClasses.includes('partial')) {
+    for (const token of tokens) {
+      if (token.nesting !== 1) {
+        continue;
+      }
+
+      if (token.tag !== 'li' && token.tag !== 'tr') {
+        continue;
+      }
+
+      if (getTokenAttr(token, 'partial') !== undefined) {
+        continue;
+      }
+
+      setTokenAttr(token, 'partial', '');
+      partialCount++;
     }
   }
 
@@ -313,7 +335,7 @@ export function parse(markdown: string): SlideData[] {
       const attrs = parseSectionAttrs(section.href);
       const { mainTokens: withoutNotesTokens, extractedTokens: noteTokens } = extractContainerTokens(section.tokens, 'Notes', true);
       const { mainTokens: contentTokens, extractedTokens: detailTokens } = extractContainerTokens(withoutNotesTokens, 'Detail', false);
-      const { tokens: normalizedContentTokens, partialCount } = normalizePartialMarkers(contentTokens);
+      const { tokens: normalizedContentTokens, partialCount } = normalizePartialMarkers(contentTokens, attrs.classes);
       const renderedContent = md.renderer.render(normalizedContentTokens, md.options, {}).trim();
       const { html: htmlWithoutStyles, css } = extractStyleBlocks(renderedContent);
       const finalHtml = wrapBlockImages(htmlWithoutStyles);

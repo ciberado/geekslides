@@ -1,5 +1,9 @@
 import { test, expect } from '@playwright/test';
 
+function uniqueRoom(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 test.use({
   viewport: { width: 390, height: 844 },
   hasTouch: true,
@@ -8,7 +12,7 @@ test.use({
 
 test.describe('Mobile Touch Navigation', () => {
   test('renders and loads slides on mobile viewport', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/?room=${uniqueRoom('mobile')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
@@ -21,7 +25,7 @@ test.describe('Mobile Touch Navigation', () => {
   });
 
   test('tap right advances slide', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/?room=${uniqueRoom('mobile')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
@@ -43,7 +47,7 @@ test.describe('Mobile Touch Navigation', () => {
   });
 
   test('tap left goes to previous slide', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/?room=${uniqueRoom('mobile')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;

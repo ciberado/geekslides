@@ -41,7 +41,17 @@ describe('AWS sample deck parity', () => {
     expect(slides).toHaveLength(13);
     expect(slides.filter((slide) => slide.notesHtml)).toHaveLength(8);
     expect(slides.filter((slide) => slide.detailsHtml)).toHaveLength(0);
-    expect(slides.filter((slide) => slide.partialCount > 0)).toHaveLength(0);
+    expect(slides.filter((slide) => slide.partialCount > 0).map((slide) => ({
+      id: slide.id,
+      partialCount: slide.partialCount,
+    }))).toEqual([
+      { id: 'slide-3', partialCount: 6 },
+      { id: 'slide-4', partialCount: 2 },
+      { id: 'rds-aurora', partialCount: 3 },
+      { id: 'asg', partialCount: 5 },
+      { id: 'alb', partialCount: 3 },
+      { id: 'cloudfront', partialCount: 3 },
+    ]);
     expect(slides.map((slide) => slide.id)).toEqual([
       'slide-1',
       'slide-2',
