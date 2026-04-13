@@ -10,6 +10,8 @@
 import MarkdownIt from 'markdown-it';
 import container from 'markdown-it-container';
 
+type MarkdownToken = ReturnType<MarkdownIt['parse']>[number];
+
 export interface SlideData {
   readonly id: string;
   readonly html: string;
@@ -88,13 +90,58 @@ function extractStyleBlocks(html: string): { css: string; html: string } {
   };
 }
 
-/**
- * Count elements with the [partial] attribute in HTML.
- */
-function countPartials(html: string): number {
-  const partialRegex = /\[partial\]/gi;
-  const matches = html.match(partialRegex);
-  return matches ? matches.length : 0;
+function setTokenAttr(token: MarkdownToken, name: string, value: string): void {
+  if (!token.attrs) {
+    token.attrs = [];
+  }
+
+  const existingAttr = token.attrs.find((attr) => attr[0] === name);
+  if (existingAttr) {
+    existingAttr[1] = value;
+    return;
+  }
+
+  token.attrs.push([name, value]);
+}
+
+function findPartialOwner(openTokens: MarkdownToken[]): MarkdownToken | undefined {
+  const reversed = [...openTokens].reverse();
+  return reversed.find((token) => token.tag === 'li')
+    ?? reversed.find((token) => token.tag === 'tr')
+    ?? reversed.find((token) => token.tag === 'p')
+    ?? reversed[0];
+}
+
+function normalizePartialMarkers(tokens: MarkdownToken[]): { tokens: MarkdownToken[]; partialCount: number } {
+  const openTokens: MarkdownToken[] = [];
+  let partialCount = 0;
+
+  for (const token of tokens) {
+    if (token.nesting === 1) {
+      openTokens.push(token);
+    }
+
+    if (token.type === 'inline' && token.content.includes('[partial]')) {
+      const owner = findPartialOwner(openTokens);
+      if (owner && getTokenAttr(owner, 'partial') === undefined) {
+        setTokenAttr(owner, 'partial', '');
+        partialCount++;
+      }
+
+      token.content = token.content.replace(/\s*\[partial\]\s*/gi, ' ').replace(/\s{2,}/g, ' ').trimEnd();
+      token.children?.forEach((childToken) => {
+        if (childToken.type === 'text') {
+          childToken.content = childToken.content.replace(/\s*\[partial\]\s*/gi, ' ').replace(/\s{2,}/g, ' ').trimEnd();
+        }
+      });
+    }
+
+    if (token.nesting === -1) {
+      openTokens.pop();
+    }
+  }
+
+  return { tokens, partialCount };
 }
 
 /**
@@ -113,6 +160,116 @@ const md = MarkdownIt({
   linkify: false,
   typographer: false,
 });
+
+function getTokenAttr(token: MarkdownToken, name: string): string | undefined {
+  const attr = token.attrs?.find(([key]) => key === name);
+  return attr?.[1];
+}
+
+function getSeparatorHref(
+  paragraphOpen: MarkdownToken | undefined,
+  inline: MarkdownToken | undefined,
+  paragraphClose: MarkdownToken | undefined,
+): string | undefined {
+  if (!paragraphOpen || !inline || !paragraphClose) {
+    return undefined;
+  }
+  if (paragraphOpen.type !== 'paragraph_open' || paragraphClose.type !== 'paragraph_close') {
+    return undefined;
+  }
+  if (inline.type !== 'inline') {
+    return undefined;
+  }
+
+  const children = inline.children ?? [];
+  if (children.length !== 2) {
+    return undefined;
+  }
+
+  const [linkOpen, linkClose] = children;
+  if (!linkOpen || !linkClose || linkOpen.type !== 'link_open' || linkClose.type !== 'link_close') {
+    return undefined;
+  }
+
+  return getTokenAttr(linkOpen, 'href');
+}
+
+/**
+ * Split markdown-it tokens on empty-link separators.
+ * Empty links look like: [](.class#id,bgurl(...))
+ */
+function splitOnSeparators(tokens: MarkdownToken[]): { href: string; tokens: MarkdownToken[] }[] {
+  const sections: { href: string; tokens: MarkdownToken[] }[] = [];
+  let currentHref = '';
+  let currentTokens: MarkdownToken[] = [];
+
+  const pushCurrentSection = () => {
+    if (currentTokens.length > 0 || currentHref.length > 0) {
+      sections.push({ href: currentHref, tokens: [...currentTokens] });
+    }
+    currentTokens = [];
+  };
+
+  for (let index = 0; index < tokens.length; index++) {
+    const href = getSeparatorHref(tokens[index], tokens[index + 1], tokens[index + 2]);
+    if (href !== undefined) {
+      pushCurrentSection();
+      currentHref = href;
+      index += 2;
+      continue;
+    }
+
+    const token = tokens[index];
+    if (token) {
+      currentTokens.push(token);
+    }
+  }
+
+  pushCurrentSection();
+  return sections;
+}
+
+function extractContainerTokens(
+  tokens: MarkdownToken[],
+  containerName: 'Notes' | 'Detail',
+  removeFromMain: boolean,
+): { mainTokens: MarkdownToken[]; extractedTokens: MarkdownToken[] } {
+  const openType = `container_${containerName}_open`;
+  const closeType = `container_${containerName}_close`;
+  const mainTokens: MarkdownToken[] = [];
+  const extractedTokens: MarkdownToken[] = [];
+  let depth = 0;
+
+  for (const token of tokens) {
+    if (token.type === openType) {
+      if (!removeFromMain) {
+        mainTokens.push(token);
+      }
+      depth++;
+      continue;
+    }
+
+    if (token.type === closeType) {
+      depth--;
+      if (!removeFromMain) {
+        mainTokens.push(token);
+      }
+      continue;
+    }
+
+    if (depth > 0) {
+      extractedTokens.push(token);
+      if (!removeFromMain) {
+        mainTokens.push(token);
+      }
+      continue;
+    }
+
+    mainTokens.push(token);
+  }
+
+  return { mainTokens, extractedTokens };
+}
 
 // Register the ::: Notes container for speaker notes
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- markdown-it-container typing mismatch
@@ -140,94 +297,6 @@ md.use(container, 'Detail', {
   },
 });
 
-/**
- * Split rendered HTML on empty <a> separators.
- * Empty links look like: <a href=".class#id,bgurl(...)"></a>
- */
-function splitOnSeparators(html: string): { href: string; content: string }[] {
-  // Match empty anchor tags that serve as slide separators
-  const separatorRegex = /<p><a href="([^"]*)"[^>]*>\s*<\/a><\/p>/g;
-
-  const sections: { href: string; content: string }[] = [];
-  let lastIndex = 0;
-  let match: RegExpExecArray | null;
-
-  while ((match = separatorRegex.exec(html)) !== null) {
-    // Content before this separator belongs to the previous section
-    const before = html.slice(lastIndex, match.index).trim();
-    if (sections.length > 0 || before.length > 0) {
-      if (sections.length === 0) {
-        sections.push({ href: '', content: before });
-      } else {
-        const last = sections[sections.length - 1];
-        if (last) {
-          last.content = before;
-        }
-      }
-    }
-    // Start a new section with this separator's attributes
-    const href = match[1];
-    sections.push({ href: href ?? '', content: '' });
-    lastIndex = match.index + match[0].length;
-  }
-
-  // Remaining content after the last separator
-  const remaining = html.slice(lastIndex).trim();
-  if (sections.length === 0) {
-    sections.push({ href: '', content: remaining });
-  } else {
-    const last = sections[sections.length - 1];
-    if (last) {
-      last.content = last.content.length > 0
-        ? last.content + remaining
-        : remaining;
-    }
-  }
-
-  return sections;
-}
-
-/**
- * Extract notes HTML from a section and return the section without notes.
- */
-function extractNotes(sectionHtml: string): { html: string; notesHtml: string | undefined } {
-  const notesRegex = /<div class="gs-notes">([\s\S]*?)<\/div>/;
-  const match = notesRegex.exec(sectionHtml);
-
-  if (!match) {
-    return { html: sectionHtml, notesHtml: undefined };
-  }
-
-  const notesHtml = match[1]?.trim();
-  const html = sectionHtml.replace(notesRegex, '').trim();
-
-  return {
-    html,
-    notesHtml: notesHtml && notesHtml.length > 0 ? notesHtml : undefined,
-  };
-}
-
-/**
- * Extract detail blocks from a section (used only in book/print mode).
- * In presentation mode these are hidden via CSS, but kept in the DOM for print rendering.
- */
-function extractDetails(sectionHtml: string): { html: string; detailsHtml: string | undefined } {
-  const detailsRegex = /<div class="gs-details">([\s\S]*?)<\/div>/;
-  const match = detailsRegex.exec(sectionHtml);
-
-  if (!match) {
-    return { html: sectionHtml, detailsHtml: undefined };
-  }
-
-  const detailsHtml = match[1]?.trim();
-  // Keep the div in the HTML — it's hidden via CSS in presentation mode
-  // but visible when printing in book mode
-  return {
-    html: sectionHtml,
-    detailsHtml: detailsHtml && detailsHtml.length > 0 ? detailsHtml : undefined,
-  };
-}
-
 let autoId = 0;
 
 /**
@@ -235,18 +304,25 @@ let autoId = 0;
  */
 export function parse(markdown: string): SlideData[] {
   autoId = 0;
-  const rendered = md.render(markdown);
-  const sections = splitOnSeparators(rendered);
+  const tokens = md.parse(markdown, {});
+  const sections = splitOnSeparators(tokens);
 
   return sections
-    .filter((s) => s.content.length > 0 || s.href.length > 0)
+    .filter((s) => s.tokens.length > 0 || s.href.length > 0)
     .map((section) => {
       const attrs = parseSectionAttrs(section.href);
-      const { html: htmlWithoutStyles, css } = extractStyleBlocks(section.content);
-      const wrappedHtml = wrapBlockImages(htmlWithoutStyles);
-      const { html: htmlWithoutNotes, notesHtml } = extractNotes(wrappedHtml);
-      const { html: finalHtml, detailsHtml } = extractDetails(htmlWithoutNotes);
-      const partialCount = countPartials(finalHtml);
+      const { mainTokens: withoutNotesTokens, extractedTokens: noteTokens } = extractContainerTokens(section.tokens, 'Notes', true);
+      const { mainTokens: contentTokens, extractedTokens: detailTokens } = extractContainerTokens(withoutNotesTokens, 'Detail', false);
+      const { tokens: normalizedContentTokens, partialCount } = normalizePartialMarkers(contentTokens);
+      const renderedContent = md.renderer.render(normalizedContentTokens, md.options, {}).trim();
+      const { html: htmlWithoutStyles, css } = extractStyleBlocks(renderedContent);
+      const finalHtml = wrapBlockImages(htmlWithoutStyles);
+      const notesHtml = noteTokens.length > 0
+        ? md.renderer.render(noteTokens, md.options, {}).trim()
+        : undefined;
+      const detailsHtml = detailTokens.length > 0
+        ? md.renderer.render(detailTokens, md.options, {}).trim()
+        : undefined;
       const id = attrs.id || `slide-${String(++autoId)}`;
 
       return {

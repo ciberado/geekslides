@@ -48,6 +48,29 @@ These are speaker notes with **bold**.
     expect(slides[0]!.html).not.toContain('speaker notes');
   });
 
+  it('merges multiple ::: Notes blocks into notesHtml', () => {
+    const md = `# Slide
+
+Intro
+
+::: Notes
+First note.
+:::
+
+Middle
+
+::: Notes
+Second note.
+:::
+`;
+    const slides = parse(md);
+
+    expect(slides[0]!.notesHtml).toContain('First note.');
+    expect(slides[0]!.notesHtml).toContain('Second note.');
+    expect(slides[0]!.html).not.toContain('First note.');
+    expect(slides[0]!.html).not.toContain('Second note.');
+  });
+
   it('extracts <style> blocks into rawCss', () => {
     const md = `# Styled Slide
 
@@ -76,6 +99,18 @@ Some content
     expect(slides[0]!.partialCount).toBe(3);
   });
 
+  it('removes [partial] marker text from rendered html', () => {
+    const md = `# Slide
+
+- Item 1 [partial]
+- Item 2 [partial]
+`;
+    const slides = parse(md);
+
+    expect(slides[0]!.partialCount).toBe(2);
+    expect(slides[0]!.html).not.toContain('[partial]');
+  });
+
   it('handles slide with no attributes', () => {
     const md = `# Simple slide
 
@@ -99,6 +134,27 @@ Only notes here.
     const slides = parse(md);
     expect(slides.length).toBe(1);
     expect(slides[0]!.notesHtml).toContain('Only notes here.');
+  });
+
+  it('merges multiple ::: Detail blocks into detailsHtml', () => {
+    const md = `# Slide
+
+Intro
+
+::: Detail
+First detail.
+:::
+
+Middle
+
+::: Detail
+Second detail.
+:::
+`;
+    const slides = parse(md);
+
+    expect(slides[0]!.detailsHtml).toContain('First detail.');
+    expect(slides[0]!.detailsHtml).toContain('Second detail.');
   });
 
   it('handles empty markdown gracefully', () => {
