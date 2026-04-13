@@ -34,7 +34,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
   },
   aspectRatio: '16/9',
   sync: {
-    enabled: false,
+    enabled: true,
     server: 'ws://localhost:1234',
     room: 'default',
   },

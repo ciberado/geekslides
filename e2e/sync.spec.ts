@@ -1,13 +1,18 @@
 import { test, expect } from '@playwright/test';
 
+function uniqueRoom(prefix: string): string {
+  return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
 test.describe('Sync between tabs', () => {
   test('two tabs in same room share navigation state', async ({ browser }) => {
     const context = await browser.newContext();
     const page1 = await context.newPage();
     const page2 = await context.newPage();
+    const room = uniqueRoom('test-sync-room');
 
     // Both open with slides-cuatro-cosas-aws deck in the same room
-    const deckUrl = '/?config=decks/slides-cuatro-cosas-aws/config.json&room=test-sync-room';
+    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
     await page1.goto(deckUrl);
     await page2.goto(deckUrl);
 
@@ -31,12 +36,15 @@ test.describe('Sync between tabs', () => {
     expect(initialIndex1).toBe(0);
     expect(initialIndex2).toBe(0);
 
-    // Navigate in page1 to slide 2
-    await page1.keyboard.press('ArrowRight');
-    await page1.waitForTimeout(800);
+    // Navigate directly to a later slide so the test is not affected by partial reveals.
+    await page1.evaluate(() => {
+      (document.getElementById('slideshow') as any)?.goTo(2);
+    });
 
-    // Give sync time to propagate (aim for y-websocket to deliver state)
-    await page2.waitForTimeout(1500);
+    await page2.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.currentSlide === 2;
+    });
 
     // Check both pages are on the same slide
     const page1SlideAfter = await page1.evaluate(
@@ -46,13 +54,8 @@ test.describe('Sync between tabs', () => {
       () => (document.getElementById('slideshow') as any)?.currentSlide,
     );
 
-    // At minimum, page1 should have advanced
-    expect(page1SlideAfter).toBeGreaterThan(0);
-    // Ideally page2 syncs, but even if not, the test confirms nav works
-    // If sync is working, both should match
-    if (page2SlideAfter > 0) {
-      expect(page2SlideAfter).toBe(page1SlideAfter);
-    }
+    expect(page1SlideAfter).toBe(2);
+    expect(page2SlideAfter).toBe(page1SlideAfter);
 
     await context.close();
   });
@@ -95,12 +98,14 @@ test.describe('Sync between tabs', () => {
     const context = await browser.newContext();
     const room1Page = await context.newPage();
     const room2Page = await context.newPage();
+    const room1 = uniqueRoom('room-1');
+    const room2 = uniqueRoom('room-2');
 
     const deckUrl = '/?config=decks/slides-cuatro-cosas-aws/config.json';
 
     // Open same deck but in different rooms
-    await room1Page.goto(`${deckUrl}&room=room-1`);
-    await room2Page.goto(`${deckUrl}&room=room-2`);
+    await room1Page.goto(`${deckUrl}&room=${room1}`);
+    await room2Page.goto(`${deckUrl}&room=${room2}`);
 
     // Wait for both to load
     await room1Page.waitForFunction(() => {
@@ -148,8 +153,9 @@ test.describe('Sync between tabs', () => {
     const context = await browser.newContext();
     const presenterPage = await context.newPage();
     const speakerPage = await context.newPage();
+    const room = uniqueRoom('speaker-test');
 
-    const deckUrl = '/?config=decks/slides-cuatro-cosas-aws/config.json&room=speaker-test';
+    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
 
     await presenterPage.goto(deckUrl);
     await speakerPage.goto(`${deckUrl}&view=speaker`);

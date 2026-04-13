@@ -122,7 +122,7 @@
         // Sync with presentation tab via Yjs
         const syncConfig = config.sync || {};
         const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
-        const room = syncConfig.room || params.get('room') || 'default';
+        const room = params.get('room') || syncConfig.room || 'default';
 
         const sync = new SyncManager();
         sync.connect(wsUrl, room);
@@ -194,7 +194,7 @@
           try {
             sync = new SyncManager();
             const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
-            const room = syncConfig.room || params.get('room') || 'default';
+            const room = params.get('room') || syncConfig.room || 'default';
             sync.bind(slideshow);
             sync.connect(wsUrl, room);
 

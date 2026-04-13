@@ -28,7 +28,8 @@ export function createServer(options: Partial<ServerOptions> = {}): WebSocketSer
 
   wss.on('connection', (ws, req) => {
     const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-    const room = url.searchParams.get('room');
+    const pathSegments = url.pathname.split('/').filter(Boolean);
+    const room = pathSegments[pathSegments.length - 1] || url.searchParams.get('room');
 
     if (!room) {
       ws.close(4001, 'Missing room parameter');

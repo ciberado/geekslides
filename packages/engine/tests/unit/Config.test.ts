@@ -17,7 +17,7 @@ describe('Config', () => {
     expect(config.title).toBe(DEFAULT_CONFIG.title);
     expect(config.content).toBe('slides.md');
     expect(config.aspectRatio).toBe('16/9');
-    expect(config.sync.enabled).toBe(false);
+    expect(config.sync.enabled).toBe(true);
     expect(config.plugins.preprocessors).toEqual(['header']);
   });
 
