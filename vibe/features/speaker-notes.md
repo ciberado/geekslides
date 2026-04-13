@@ -79,16 +79,32 @@ view's controls, and the change syncs back to the presentation tab via Yjs.
 
 A dedicated Web Component that renders the full speaker interface.
 
-`GeekSpeakerView` extends HTMLElement with Shadow DOM. Its layout is a CSS Grid with three columns and two rows:
+`GeekSpeakerView` extends HTMLElement with Shadow DOM. The current implementation uses a two-part layout:
 
-- **Column 1, Row 1**: Current slide thumbnail (bordered in blue `#4a9eff`).
-- **Column 2, Row 1**: Next slide thumbnail (dimmed to `0.7` opacity, bordered in gray).
-- **Column 3, Rows 1–2**: Speaker notes panel — scrollable, padded, dark background (`#2a2a2a`), 1.2 rem font with 1.6 line height. Renders the full markdown-formatted notes.
-- **Columns 1–2, Row 2**: Controls bar with the timer display (2 rem, tabular-nums for alignment), slide counter, and prev/next navigation buttons.
+- **Left pane**: speaker notes in a dedicated card with its own scroll container.
+- **Right pane**: current slide preview above next slide preview.
+- **Bottom row**: timer, slide counter, and navigation controls.
 
-The `:host` fills `100vh` with 1 rem padding, uses a dark background (`#1a1a1a`), and white text with system-ui font.
+The main notes/preview split and the current/next preview split are both draggable in desktop layouts. The notes card header also includes `A-` and `A+` controls to adjust notes font size without affecting slide previews.
 
-**`updateSlide(index)`**: Called when slide changes (via Yjs observer). Renders a scaled-down clone (30% scale, transform-origin top-left) of the current and next slide HTML into the thumbnails. Updates the notes panel's innerHTML with the slide's `notesHtml` (or an "No notes for this slide" fallback), resets scroll position, and updates the counter text.
+The component no longer injects raw slide HTML into simple thumbnail divs. Instead, it renders real `geek-slide` instances in both preview panes, which means the speaker view now reuses:
+
+- slide Shadow DOM rendering
+- per-slide scoped CSS
+- presentation-wide deck CSS
+- active slide processors (iframe/chart/video/etc.)
+- the deck's configured aspect ratio
+
+Preview stages are scaled to fit their panes while keeping the slide centered both horizontally and vertically.
+
+**`updateSlide(index, partial)`**: Called when slide or partial state changes (via Yjs observer or local speaker navigation). It renders the current slide preview using the active partial index and renders the next slide preview at partial `0`.
+
+Speaker preview partial semantics differ intentionally from presentation mode:
+
+- already revealed partials render normally
+- unrevealed partials remain visible but de-emphasized
+
+This gives the presenter full context without losing which parts of the slide have already been shown.
 
 ### SpeakerTimer
 
@@ -104,7 +120,7 @@ It tracks a start time, accumulated elapsed milliseconds, and a running state. I
 
 The `speaker` terminal command constructs a new URL from the current location with `?view=speaker` appended, then opens it via `window.open()` with suggested dimensions of 1200×800.
 
-On initialization, the engine checks `URLSearchParams` for `view=speaker`. If present, it creates and appends a `<geek-speaker-view>` element instead of the normal `<geek-slideshow>`. Both connect to the same Yjs room, so they share state automatically.
+On initialization, the engine checks `URLSearchParams` for `view=speaker`. If present, it creates and appends a `<geek-speaker-view>` element instead of the normal `<geek-slideshow>`. The speaker view receives the same deck CSS, active processors, slide index, and partial index as the presentation view. Both connect to the same Yjs room, so they share state automatically.
 
 ### Notes Authoring Format
 
@@ -143,12 +159,13 @@ No CSS tricks needed — print templates explicitly place notes using standard H
 
 | Aspect | v1 (CSS trick) | v2 (Separate view) |
 |--------|----------------|---------------------|
-| Layout | Notes overlay right half of slide | Dedicated window/tab with grid layout |
+| Layout | Notes overlay right half of slide | Dedicated window/tab with resizable notes and preview panes |
 | Slide size | Shrinks to ~50% in speaker mode | Full-screen presentation, unaffected |
 | Scrolling | Fragile (overflow + transform conflicts) | Native scrollable container |
 | Next slide preview | None | Thumbnail of next slide |
 | Timer | None | Built-in, start/pause/reset |
 | Navigation controls | Keyboard only | Buttons + keyboard |
+| Notes readability | Scaled with slide CSS hack | Independent font-size controls |
 | Sync mechanism | CSS class toggle | Yjs Y.Map shared state |
 | Multi-monitor | Awkward (one window, split) | Tab 1 on projector, Tab 2 on laptop |
 | Print | Same div reused with CSS overrides | Separate template, clean rendering |

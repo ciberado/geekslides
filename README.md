@@ -36,6 +36,7 @@ npm run dev
 - Partial reveals and slide navigation
 - Room-based sync (Yjs + y-websocket)
 - Speaker view in separate tab/window
+- Resizable speaker panes and notes font controls
 - Terminal command mode (press `t`)
 - Touch and mobile gestures
 - Rich processors/components: iframe, chart, video, whiteboard
@@ -89,6 +90,16 @@ Press `t` to open the terminal.
 - ArrowUp/ArrowDown: command history
 - Escape: close terminal
 - `help`: list available commands
+
+### Speaker View
+
+Open `?view=speaker` in a second tab/window to get presenter controls and notes.
+
+- Notes are shown in a left pane with independent scrolling.
+- Current and next slides are stacked on the right.
+- Drag the separators to resize the notes pane or rebalance current/next preview height.
+- Use the `A-` and `A+` buttons in the notes header to decrease or increase notes font size.
+- Current-slide partials stay visible in the preview: revealed items use normal slide styling, and unrevealed items stay visible but lighter.
 
 ## Terminal Commands
 
@@ -148,6 +159,25 @@ Speaker notes for this slide.
 ::: Detail
 Detail text for book mode; hidden in normal presentation view.
 :::
+```
+
+### Partial Reveals
+
+GeekSlides v2 supports two ways to author partials:
+
+- Inline markers with `[partial]`
+- Slide-level `.partial` class on the separator, which turns list items and table rows into progressive reveals
+
+Example:
+
+```markdown
+[](.partial#agenda)
+
+## Agenda
+
+- First point
+- Second point
+- Third point
 ```
 
 ## Development Commands

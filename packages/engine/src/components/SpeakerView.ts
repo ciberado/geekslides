@@ -759,13 +759,15 @@ export class SpeakerView extends HTMLElement {
 
     stage.style.width = `${String(this.#designWidth)}px`;
     stage.style.height = `${String(this.#designHeight)}px`;
-    stage.style.left = `${String((viewportWidth - (this.#designWidth * scale)) / 2)}px`;
-    stage.style.top = `${String((viewportHeight - (this.#designHeight * scale)) / 2)}px`;
 
     if (SUPPORTS_ZOOM) {
+      stage.style.left = `${String(((viewportWidth / scale) - this.#designWidth) / 2)}px`;
+      stage.style.top = `${String(((viewportHeight / scale) - this.#designHeight) / 2)}px`;
       stage.style.setProperty('zoom', String(scale));
       stage.style.transform = 'none';
     } else {
+      stage.style.left = `${String((viewportWidth - (this.#designWidth * scale)) / 2)}px`;
+      stage.style.top = `${String((viewportHeight - (this.#designHeight * scale)) / 2)}px`;
       stage.style.removeProperty('zoom');
       stage.style.transform = `scale(${String(scale)})`;
     }
