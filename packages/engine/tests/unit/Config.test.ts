@@ -63,4 +63,37 @@ describe('Config', () => {
     expect(config.plugins.preprocessors).toEqual(['custom']);
     expect(config.plugins.processors).toEqual([]);
   });
+
+  it('rejects array content from the archived v1 config shape', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({ content: ['README.md'] }),
+    }));
+
+    await expect(loadConfig('config.json')).rejects.toThrow("'content' must be a single string path");
+  });
+
+  it('rejects root-level legacy plugin fields', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        content: 'README.md',
+        preprocessors: ['headerPreprocessor'],
+      }),
+    }));
+
+    await expect(loadConfig('config.json')).rejects.toThrow("plugins.preprocessors");
+  });
+
+  it('rejects legacy resolution field', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        content: 'README.md',
+        resolution: '1920x1080',
+      }),
+    }));
+
+    await expect(loadConfig('config.json')).rejects.toThrow("'resolution'");
+  });
 });

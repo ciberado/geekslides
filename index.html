@@ -12,34 +12,30 @@
 <body>
   <script type="module">
     import {
-      parse, headerPreprocessor,
+      loadConfig, parse, headerPreprocessor,
       CommandSystem, KeyBindings, TouchInput, Terminal,
       SyncManager, SpeakerView,
       iframeProcessor, chartProcessor, videoProcessor,
     } from '/packages/engine/src/index.ts';
     import { registerHotClient } from '/packages/engine/src/hmr/hot-client.ts';
 
-    // Map of available preprocessors (v1 compat names)
+    // Map of available preprocessors.
     const PREPROCESSORS = {
-      'headerPreprocessor': headerPreprocessor,
       'header': headerPreprocessor,
     };
 
-    // Map of available processors (v1 compat names)
+    // Map of available processors.
     const PROCESSORS = {
-      'chartProcessor': chartProcessor,
       'chart': chartProcessor,
-      'iframeProcessor': iframeProcessor,
       'iframe': iframeProcessor,
-      'videoProcessor': videoProcessor,
       'video': videoProcessor,
     };
 
     const params = new URLSearchParams(window.location.search);
     const viewMode = params.get('view'); // null = presentation, 'speaker' = speaker view
 
-    // Load config
-    let configUrl = params.get('config') || 'config.json';
+    // Load the default v2 sample deck unless a specific config is requested.
+    let configUrl = params.get('config') || 'decks/slides-cuatro-cosas-aws/config.json';
 
     // Resolve paths relative to config location (updated when config changes)
     let configBase = configUrl.substring(0, configUrl.lastIndexOf('/') + 1);
@@ -51,18 +47,11 @@
     }
 
     async function fetchConfig() {
-      const res = await fetch(configUrl);
-      return await res.json();
+      return await loadConfig(configUrl);
     }
 
     async function fetchMarkdown(config) {
-      let contentFile = 'README.md';
-      if (typeof config.content === 'string') {
-        contentFile = config.content;
-      } else if (Array.isArray(config.content) && config.content.length > 0) {
-        contentFile = config.content[0];
-      }
-      const res = await fetch(resolveUrl(contentFile));
+      const res = await fetch(resolveUrl(config.content));
       return await res.text();
     }
 
@@ -83,7 +72,7 @@
     }
 
     function applyPreprocessors(markdown, config) {
-      const ppNames = config.preprocessors || config.plugins?.preprocessors || [];
+      const ppNames = config.plugins.preprocessors;
       let result = markdown;
       for (const name of ppNames) {
         const pp = PREPROCESSORS[name];
@@ -93,7 +82,7 @@
     }
 
     function applyProcessors(slideshow, config) {
-      const processorNames = config.processors || config.plugins?.processors || [];
+      const processorNames = config.plugins.processors;
       const activeProcessors = processorNames
         .map((name) => PROCESSORS[name])
         .filter(Boolean);
@@ -110,9 +99,9 @@
     }
 
     try {
-      const config = await fetchConfig();
+      let config = await fetchConfig();
       const markdown = await fetchMarkdown(config);
-      const combinedCss = await fetchStyles(config);
+      let combinedCss = await fetchStyles(config);
 
       // Set <base> AFTER all fetch() calls
       if (configBase) {
@@ -194,15 +183,7 @@
         // Apply post-processors to each slide's shadow DOM content
         applyProcessors(slideshow, config);
 
-        // Set aspect ratio (v1 compat: resolution "1920x1080")
-        if (config.aspectRatio) {
-          slideshow.setAspectRatio(config.aspectRatio);
-        } else if (config.resolution) {
-          const [w, h] = config.resolution.split('x');
-          const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-          const d = gcd(Number(w), Number(h));
-          slideshow.setAspectRatio(`${w/d}/${h/d}`);
-        }
+        slideshow.setAspectRatio(config.aspectRatio);
 
         // --- Sync ---
         const syncConfig = config.sync || {};
@@ -241,7 +222,7 @@
         async function reloadDeck(newConfigUrl) {
           showCmdOutput('Loading...');
           try {
-            const newConfig = await fetch(newConfigUrl).then(r => r.json());
+            const newConfig = await loadConfig(newConfigUrl);
             
             // Update configUrl and configBase BEFORE calling fetchMarkdown/fetchStyles
             configUrl = newConfigUrl;
@@ -251,7 +232,8 @@
             const newCss = await fetchStyles(newConfig);
 
             // Update global state
-            Object.assign(config, newConfig);
+            config = newConfig;
+            combinedCss = newCss;
             if (newCss) {
               slideshow.loadStyles(newCss);
             }
@@ -262,15 +244,7 @@
             slideshow.loadSlides(newSlides);
             applyProcessors(slideshow, newConfig);
 
-            // Update aspect ratio if new config specifies it
-            if (newConfig.aspectRatio) {
-              slideshow.setAspectRatio(newConfig.aspectRatio);
-            } else if (newConfig.resolution) {
-              const [w, h] = newConfig.resolution.split('x');
-              const gcd = (a, b) => b === 0 ? a : gcd(b, a % b);
-              const d = gcd(Number(w), Number(h));
-              slideshow.setAspectRatio(`${w/d}/${h/d}`);
-            }
+            slideshow.setAspectRatio(newConfig.aspectRatio);
 
             // Reset to first slide
             slideshow.goTo(0);

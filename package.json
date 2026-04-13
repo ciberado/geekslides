@@ -13,9 +13,7 @@
     "test": "vitest run",
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "lint": "eslint .",
-    "typecheck": "tsc --build",
-    "v1:install": "npm i --prefix broker && npm i --prefix demo && npm i --prefix slides",
-    "v1:start": "demo/node_modules/concurrently/dist/bin/concurrently.js --kill-others \"npm --prefix broker run start\" \"npm --prefix slides run start\" "
+    "typecheck": "tsc --build"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

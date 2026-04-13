@@ -23,7 +23,7 @@ speaker notes, style blocks, and partial counts.
 Typed configuration object mirroring `config.json`. Responsible for:
 
 - **Type definition**: `GeekSlidesConfig` interface with all fields from
-  [presentation-format](../../v1/presentation-format.md): `title`, `content` (URL),
+  [presentation-format](../../../archived/v1/vibe/v1/presentation-format.md): `title`, `content` (URL),
   `styles` (array of CSS URLs), `plugins` (preprocessors/processors lists),
   `aspectRatio` (default `"16/9"`), `sync` (object with `enabled`, `server`, `room`),
   `background`, `class`.
@@ -110,7 +110,7 @@ packages/engine/tests/unit/
 
 ## Acceptance Criteria
 
-- [ ] `SlideParser.parse()` correctly splits the v1 `demo/content.md` into the
+- [ ] `SlideParser.parse()` correctly splits the archived v1 `archived/v1/demo/content.md` into the
       expected number of slides with correct attributes.
 - [ ] Speaker notes are extracted and excluded from slide HTML.
 - [ ] `<style>` blocks are extracted into `rawCss` and excluded from slide HTML.
@@ -124,4 +124,4 @@ packages/engine/tests/unit/
 - [architecture-v2.md](../architecture-v2.md) — SlideParser in data flow diagram
 - [components.md](../components.md) — StyleScoper usage in `<geek-slide>`
 - [plugin-system.md](../plugin-system.md) — preprocessors run before SlideParser
-- [presentation-format](../../v1/presentation-format.md) — v1 separator syntax and config schema
+- [presentation-format](../../../archived/v1/vibe/v1/presentation-format.md) — v1 separator syntax and config schema

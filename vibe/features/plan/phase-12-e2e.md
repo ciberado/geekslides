@@ -7,7 +7,7 @@
 ## Goal
 
 Write Playwright end-to-end tests covering all major user flows, set up CI pipeline,
-migrate the demo presentation to v2 format, and polish any remaining rough edges.
+align the sample presentation with the v2 runtime, and polish any remaining rough edges.
 
 At the end of this phase, the v2 rewrite is complete, fully tested, and ready for
 production use.
@@ -64,9 +64,9 @@ GitHub Actions workflow:
   9. Upload Playwright report as artifact on failure.
   10. Coverage threshold check (80% branches/functions/lines).
 
-### 3. Demo presentation migration
+### 3. Sample presentation alignment
 
-Migrate the v1 `demo/` directory to v2 format:
+Use the active sample deck as the v2 baseline and archive the old v1 `demo/` directory.
 
 ### 4. Root README update
 
@@ -92,7 +92,8 @@ e2e/
 └── ci.yml
 
 README.md                     (rewritten)
-demo/                         (migrated)
+decks/slides-cuatro-cosas-aws/ (active sample deck)
+archived/v1/demo/             (legacy sample deck)
 ```
 
 ## Acceptance Criteria

@@ -9,7 +9,7 @@ test.describe('Slide Navigation', () => {
     });
   });
 
-  test('renders slides from demo config.json', async ({ page }) => {
+  test('renders slides from the default v2 sample deck', async ({ page }) => {
     const slideCount = await page.evaluate(
       () => (document.getElementById('slideshow') as any)?.slideCount,
     );

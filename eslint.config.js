@@ -16,14 +16,10 @@ export default tseslint.config(
   },
   {
     ignores: [
+      'archived/',
       'node_modules/',
       '**/dist/',
       'coverage/',
-      'broker/',
-      'slides/',
-      'demo/',
-      'tools/',
-      'cicd/',
       'vibe/',
       'e2e/',
       'docker/',

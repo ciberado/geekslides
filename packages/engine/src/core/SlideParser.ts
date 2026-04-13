@@ -98,7 +98,7 @@ function countPartials(html: string): number {
 }
 
 /**
- * Wrap standalone paragraph-images in a .block-image container (v1 compat).
+ * Wrap standalone paragraph-images in a .block-image container used by deck layouts.
  * Matches <p><img ...></p> and wraps in <div class="block-image">.
  */
 function wrapBlockImages(html: string): string {
