@@ -9,6 +9,10 @@
       "import": "./src/index.ts",
       "default": "./src/index.ts"
     },
+    "./hot-client": {
+      "import": "./src/hmr/hot-client.ts",
+      "default": "./src/hmr/hot-client.ts"
+    },
     "./headless": {
       "import": "./src/headless.ts",
       "default": "./src/headless.ts"

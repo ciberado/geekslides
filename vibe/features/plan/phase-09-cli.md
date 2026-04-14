@@ -12,7 +12,9 @@ yjs-server), `build` (production bundle), `pdf` (invoke WeasyPrint), and `create
 
 At the end of this phase, `npx geekslides dev` starts a full development environment,
 `npx geekslides build` produces a deployable static bundle, and
-`npx geekslides pdf --format slides-notes` generates a PDF.
+`npx geekslides pdf --format slides-notes` generates a PDF. The packaged `dev`
+command can target a deck config outside the GeekSlides repo and still serve the
+runtime UI from assets shipped with the CLI package.
 
 ## Deliverables
 
@@ -32,7 +34,11 @@ Starts the full local development environment:
 5. Prints URLs for presentation view and speaker view.
 
 Options: `--port <n>` (Vite port), `--ws-port <n>` (yjs port), `--no-sync` (skip
-yjs server), `--open` (open browser automatically).
+yjs server), `--open` (open browser automatically). The command may target a deck
+config outside the repo by resolving `--config` from the caller's working directory
+and serving it through Vite's filesystem access (`/@fs/...`) support. The browser
+app is served from `packages/cli/app/` so installed CLI usage does not depend on the
+monorepo root layout.
 
 ### 3. `build` command (`packages/cli/src/commands/build.ts`)
 
@@ -83,9 +89,10 @@ production image optimization.
 ### 7. Package configuration
 
 `packages/cli/package.json`:
-- `"bin": { "geekslides": "./dist/index.js" }`.
+- `"bin": { "geekslides": "./dist/index.cjs" }`.
+- Bundles a runnable Node entrypoint into `dist/index.cjs` and ships `app/` runtime assets.
 - Dependencies: `commander`, `vite`, `sharp`, `@geekslides/engine`, `@geekslides/server`.
-- Build script compiles TypeScript to `dist/`.
+- Build script cleans `dist/`, emits declarations, and writes a bundled executable bin.
 
 ### 8. Tests
 
@@ -99,6 +106,9 @@ production image optimization.
 
 ```
 packages/cli/
+├── app/
+│   ├── index.html
+│   └── main.js
 ├── package.json
 ├── tsconfig.json
 ├── src/
@@ -115,13 +125,13 @@ packages/cli/
 
 ## Acceptance Criteria
 
-- [ ] `npx geekslides dev` starts Vite + yjs-server and serves a presentation.
+- [x] `npx geekslides dev` starts Vite + yjs-server and serves a presentation.
 - [ ] `npx geekslides build` produces a self-contained `dist/` directory.
 - [ ] `npx geekslides pdf --format slides-notes` generates a PDF (with WeasyPrint installed).
 - [ ] `npx geekslides create --title "My Talk"` scaffolds a valid presentation repo.
 - [ ] Image optimizer processes images from a JSON manifest.
 - [ ] `--help` on all commands shows usage information.
-- [ ] All CLI tests pass.
+- [x] All CLI tests pass.
 
 ## Reference Docs
 

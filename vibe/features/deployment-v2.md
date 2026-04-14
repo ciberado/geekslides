@@ -86,7 +86,7 @@ Prerequisites: Node.js 22+ and npm 10+.
 
 ### Developing a Presentation
 
-In a separate terminal, navigate to a presentation repo and run `npx geekslides dev`. This opens `http://localhost:5173` serving that presentation, watching `README.md`, `config.json`, `images/`, and `local.css` for changes. HMR preserves the current slide position on save.
+In a separate terminal, navigate to a presentation repo and run `npx geekslides dev --config /absolute/path/to/config.json`. The installed CLI serves its packaged app shell on `http://localhost:5173`, points the browser at the chosen deck, and watches `README.md`, `config.json`, and author CSS for changes. The same workflow works for decks outside the GeekSlides repo via Vite's `/@fs/...` file serving, and HMR preserves the current slide position on save.
 
 ### Development with Docker
 

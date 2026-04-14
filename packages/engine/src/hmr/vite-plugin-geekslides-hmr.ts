@@ -6,7 +6,7 @@
  */
 
 import type { Plugin, ViteDevServer, HmrContext } from 'vite';
-import { relative, resolve } from 'node:path';
+import { isAbsolute, relative, resolve } from 'node:path';
 
 const HMR_EVENT = 'geekslides:content-update';
 const WATCHED_EXTENSIONS = /\.(md|json|css)$/;
@@ -24,6 +24,36 @@ function classifyFile(filePath: string): ContentUpdatePayload['type'] | null {
   return null;
 }
 
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/');
+}
+
+function toPublicFilePath(filePath: string, root: string): string {
+  const absolutePath = resolve(filePath);
+  const relativePath = relative(root, absolutePath);
+
+  if (relativePath.length > 0 && !relativePath.startsWith('..') && !isAbsolute(relativePath)) {
+    return normalizePath(relativePath);
+  }
+
+  return `/@fs/${normalizePath(absolutePath)}`;
+}
+
+function toWatchedFilePath(filePath: string, root: string): string | null {
+  const normalized = filePath.split('?')[0] ?? '';
+
+  if (normalized.startsWith('/@fs/')) {
+    return normalized.slice('/@fs/'.length);
+  }
+
+  const relativePath = normalized.replace(/^\/+/, '');
+  if (relativePath.length === 0) {
+    return null;
+  }
+
+  return resolve(root, relativePath);
+}
+
 export function geekSlidesHmr(): Plugin {
   let server: ViteDevServer | undefined;
   let root = '';
@@ -35,10 +65,8 @@ export function geekSlidesHmr(): Plugin {
       return;
     }
 
-    const relativePath = relative(root, filePath);
-
     const payload: ContentUpdatePayload = {
-      file: relativePath,
+      file: toPublicFilePath(filePath, root),
       type: fileType,
       timestamp: Date.now(),
     };
@@ -73,12 +101,12 @@ export function geekSlidesHmr(): Plugin {
                   continue;
                 }
 
-                const relativePath = file.replace(/^\/+/, '').split('?')[0] ?? '';
-                if (relativePath.length === 0) {
+                const watchedPath = toWatchedFilePath(file, root);
+                if (!watchedPath) {
                   continue;
                 }
 
-                srv.watcher.add(resolve(root, relativePath));
+                srv.watcher.add(watchedPath);
               }
 
               res.statusCode = 204;
@@ -97,8 +125,10 @@ export function geekSlidesHmr(): Plugin {
       srv.middlewares.use((req, _res, next) => {
         const requestPath = req.url?.split('?')[0] ?? '';
         if (WATCHED_EXTENSIONS.test(requestPath)) {
-          const relativePath = requestPath.replace(/^\/+/, '');
-          srv.watcher.add(resolve(root, relativePath));
+          const watchedPath = toWatchedFilePath(requestPath, root);
+          if (watchedPath) {
+            srv.watcher.add(watchedPath);
+          }
         }
         next();
       });

@@ -32,7 +32,9 @@ export function createProgram(): Command {
 // Run when executed directly via bin entry point
 const isDirectRun =
   process.argv[1]?.endsWith('/geekslides') ||
-  process.argv[1]?.endsWith('/geekslides/packages/cli/src/index.ts');
+  process.argv[1]?.endsWith('/packages/cli/src/index.ts') ||
+  process.argv[1]?.endsWith('/dist/index.js') ||
+  process.argv[1]?.endsWith('/dist/index.cjs');
 if (isDirectRun) {
   const program = createProgram();
   program.parse();

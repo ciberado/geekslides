@@ -15,6 +15,15 @@ export default tseslint.config(
     },
   },
   {
+    files: ['packages/cli/app/**/*.js'],
+    ...tseslint.configs.disableTypeChecked,
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
     ignores: [
       'archived/',
       'node_modules/',

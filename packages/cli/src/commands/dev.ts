@@ -5,8 +5,85 @@
  */
 
 import type { Command } from 'commander';
+import { existsSync } from 'node:fs';
+import { access } from 'node:fs/promises';
+import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { createServer, type InlineConfig } from 'vite';
 import { geekSlidesHmr } from '@geekslides/engine/hmr';
+
+declare const __dirname: string | undefined;
+
+function resolveCliRoot(): string {
+  const candidateDirs = [
+    typeof __dirname === 'string' ? __dirname : '',
+    process.argv[1] ? dirname(resolve(process.argv[1])) : '',
+    resolve(process.cwd(), 'packages/cli'),
+    resolve(process.cwd(), 'node_modules', '@geekslides', 'cli'),
+    process.cwd(),
+  ].filter(Boolean);
+
+  for (const startDir of candidateDirs) {
+    let currentDir = startDir;
+    while (currentDir !== dirname(currentDir)) {
+      if (
+        existsSync(resolve(currentDir, 'package.json')) &&
+        existsSync(resolve(currentDir, 'app', 'index.html'))
+      ) {
+        return currentDir;
+      }
+      currentDir = dirname(currentDir);
+    }
+  }
+
+  throw new Error('Could not locate the GeekSlides CLI package root.');
+}
+
+const CLI_ROOT = resolveCliRoot();
+const APP_ROOT = resolve(CLI_ROOT, 'app');
+
+function normalizePathForUrl(path: string): string {
+  return path.replace(/\\/g, '/');
+}
+
+export function resolveDeckConfigPath(configPath: string, cwd: string = process.cwd()): string {
+  return isAbsolute(configPath) ? configPath : resolve(cwd, configPath);
+}
+
+export function toBrowserServedPath(filePath: string, appRoot: string = APP_ROOT): string {
+  const absolutePath = resolve(filePath);
+  const relativePath = relative(appRoot, absolutePath);
+
+  if (relativePath.length > 0 && !relativePath.startsWith('..') && !isAbsolute(relativePath)) {
+    return `/${normalizePathForUrl(relativePath)}`;
+  }
+
+  return `/@fs/${normalizePathForUrl(absolutePath)}`;
+}
+
+export function resolveCliAppRoot(): string {
+  return APP_ROOT;
+}
+
+export function buildDeckDevUrl(baseUrl: string, browserConfigPath: string, speakerView: boolean = false): string {
+  const url = new URL('/', baseUrl);
+  url.searchParams.set('config', browserConfigPath);
+  if (speakerView) {
+    url.searchParams.set('view', 'speaker');
+  }
+  return url.toString();
+}
+
+export function getDeckRedirectTarget(requestUrl: string, browserConfigPath: string): string | null {
+  const url = new URL(requestUrl, 'http://localhost');
+  const isHtmlRequest = url.pathname === '/' || url.pathname === '/index.html';
+
+  if (!isHtmlRequest || url.searchParams.has('config')) {
+    return null;
+  }
+
+  url.searchParams.set('config', browserConfigPath);
+  return `${url.pathname}${url.search}`;
+}
 
 export function registerDevCommand(program: Command): void {
   program
@@ -20,6 +97,14 @@ export function registerDevCommand(program: Command): void {
     .action(async (opts: { port: string; wsPort: string; sync: boolean; open: boolean; config: string }) => {
       const port = Number(opts.port);
       const wsPort = Number(opts.wsPort);
+      const deckConfigPath = resolveDeckConfigPath(opts.config);
+      const deckDir = dirname(deckConfigPath);
+      const browserConfigPath = toBrowserServedPath(deckConfigPath);
+      const presentationUrl = buildDeckDevUrl(`http://localhost:${String(port)}`, browserConfigPath);
+      const speakerUrl = buildDeckDevUrl(`http://localhost:${String(port)}`, browserConfigPath, true);
+      const openTarget = new URL(presentationUrl);
+
+      await access(deckConfigPath);
 
       // Start y-websocket server if sync enabled
       if (opts.sync) {
@@ -33,19 +118,36 @@ export function registerDevCommand(program: Command): void {
         plugins: [geekSlidesHmr()],
         server: {
           port,
-          open: opts.open,
+          open: opts.open ? `${openTarget.pathname}${openTarget.search}` : false,
+          fs: {
+            allow: [APP_ROOT, deckDir],
+          },
           ...(opts.sync
             ? { proxy: { '/ws': { target: `ws://localhost:${String(wsPort)}`, ws: true } } }
             : {}),
         },
         configFile: false,
-        root: process.cwd(),
+        root: APP_ROOT,
       };
 
       const server = await createServer(viteConfig);
+
+      server.middlewares.use((req, res, next) => {
+        const redirectTarget = getDeckRedirectTarget(req.url ?? '/', browserConfigPath);
+        if (!redirectTarget) {
+          next();
+          return;
+        }
+
+        res.statusCode = 302;
+        res.setHeader('Location', redirectTarget);
+        res.end();
+      });
+
       await server.listen();
 
-      console.log(`  Presentation:  http://localhost:${String(port)}/`);
-      console.log(`  Speaker view:  http://localhost:${String(port)}/?view=speaker`);
+      console.log(`  Deck config:   ${deckConfigPath}`);
+      console.log(`  Presentation:  ${presentationUrl}`);
+      console.log(`  Speaker view:  ${speakerUrl}`);
     });
 }

@@ -50,7 +50,10 @@ export function createServer(options: Partial<ServerOptions> = {}): WebSocketSer
 }
 
 // Start server when run directly
-if (process.argv[1] && import.meta.url.endsWith(process.argv[1])) {
+if (
+  process.argv[1]?.endsWith('/packages/server/src/index.ts') ||
+  process.argv[1]?.endsWith('/packages/server/dist/index.js')
+) {
   const port = Number(process.env['PORT']) || DEFAULT_OPTIONS.port;
   const host = process.env['HOST'] ?? DEFAULT_OPTIONS.host;
   const wss = createServer({ port, host });

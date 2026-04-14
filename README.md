@@ -202,6 +202,24 @@ npm run test
 npm run test:e2e
 ```
 
+## CLI Deck Development
+
+You can also develop a deck directly through the CLI instead of using the root dev server.
+
+With the packaged CLI installed:
+
+```bash
+npx geekslides dev --config /absolute/path/to/config.json
+```
+
+Inside this monorepo:
+
+```bash
+npx tsx packages/cli/src/index.ts dev --config /absolute/path/to/config.json
+```
+
+This works for deck directories outside the repo as well. The CLI now serves its own packaged app shell and points the browser at the chosen deck config, including HMR for markdown, config, and author CSS.
+
 ## Documentation Map
 
 - [vibe/features/architecture-v2.md](vibe/features/architecture-v2.md)
