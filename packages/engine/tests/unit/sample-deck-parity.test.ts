@@ -40,7 +40,7 @@ describe('AWS sample deck parity', () => {
     expect(config.title).toBe('4 Cosicas Sobre Tus Servicios Favoritos');
     expect(slides).toHaveLength(13);
     expect(slides.filter((slide) => slide.notesHtml)).toHaveLength(8);
-    expect(slides.filter((slide) => slide.detailsHtml)).toHaveLength(0);
+    expect(slides.filter((slide) => slide.detailsHtml)).toHaveLength(6);
     expect(slides.filter((slide) => slide.partialCount > 0).map((slide) => ({
       id: slide.id,
       partialCount: slide.partialCount,

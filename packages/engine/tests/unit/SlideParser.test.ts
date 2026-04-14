@@ -165,18 +165,18 @@ Only notes here.
     expect(slides[0]!.notesHtml).toContain('Only notes here.');
   });
 
-  it('merges multiple ::: Detail blocks into detailsHtml', () => {
+  it('merges multiple ::: Details blocks into detailsHtml', () => {
     const md = `# Slide
 
 Intro
 
-::: Detail
+::: Details
 First detail.
 :::
 
 Middle
 
-::: Detail
+::: Details
 Second detail.
 :::
 `;

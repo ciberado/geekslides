@@ -17,4 +17,4 @@ export { scope } from './core/StyleScoper.ts';
 
 // Print
 export { renderPrint } from './print/PrintRenderer.ts';
-export type { TemplateName, PrintOptions } from './print/PrintRenderer.ts';
+export type { TemplateName, PrintOptions, DetailsLayout } from './print/PrintRenderer.ts';

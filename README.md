@@ -167,8 +167,8 @@ Slides are written in markdown and separated with empty-link markers.
 Speaker notes for this slide.
 :::
 
-::: Detail
-Detail text for book mode; hidden in normal presentation view.
+::: Details
+Details text for book mode; hidden in normal presentation view.
 :::
 ```
 

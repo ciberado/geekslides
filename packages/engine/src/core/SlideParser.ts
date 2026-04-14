@@ -145,7 +145,21 @@ function normalizePartialMarkers(
   }
 
   if (slideClasses.includes('partial')) {
+    let detailDepth = 0;
     for (const token of tokens) {
+      if (token.type === 'container_Details_open') {
+        detailDepth++;
+        continue;
+      }
+      if (token.type === 'container_Details_close') {
+        detailDepth--;
+        continue;
+      }
+
+      if (detailDepth > 0) {
+        continue;
+      }
+
       if (token.nesting !== 1) {
         continue;
       }
@@ -253,7 +267,7 @@ function splitOnSeparators(tokens: MarkdownToken[]): { href: string; tokens: Mar
 
 function extractContainerTokens(
   tokens: MarkdownToken[],
-  containerName: 'Notes' | 'Detail',
+  containerName: 'Notes' | 'Details',
   removeFromMain: boolean,
 ): { mainTokens: MarkdownToken[]; extractedTokens: MarkdownToken[] } {
   const openType = `container_${containerName}_open`;
@@ -306,10 +320,10 @@ md.use(container, 'Notes', {
   },
 });
 
-// Register the ::: Detail container for book-mode content (hidden in presentation)
+// Register the ::: Details container for book-mode content (hidden in presentation)
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- markdown-it-container typing mismatch
-md.use(container, 'Detail', {
-  validate: (params: string) => params.trim() === 'Detail',
+md.use(container, 'Details', {
+  validate: (params: string) => params.trim() === 'Details',
   render: (tokens: { nesting: number }[], idx: number) => {
     const token = tokens[idx];
     if (token && token.nesting === 1) {
@@ -334,7 +348,7 @@ export function parse(markdown: string): SlideData[] {
     .map((section) => {
       const attrs = parseSectionAttrs(section.href);
       const { mainTokens: withoutNotesTokens, extractedTokens: noteTokens } = extractContainerTokens(section.tokens, 'Notes', true);
-      const { mainTokens: contentTokens, extractedTokens: detailTokens } = extractContainerTokens(withoutNotesTokens, 'Detail', false);
+      const { mainTokens: contentTokens, extractedTokens: detailTokens } = extractContainerTokens(withoutNotesTokens, 'Details', false);
       const { tokens: normalizedContentTokens, partialCount } = normalizePartialMarkers(contentTokens, attrs.classes);
       const renderedContent = md.renderer.render(normalizedContentTokens, md.options, {}).trim();
       const { html: htmlWithoutStyles, css } = extractStyleBlocks(renderedContent);

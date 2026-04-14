@@ -225,7 +225,7 @@ export class Slide extends HTMLElement {
         isolation: isolate;
       }
 
-      /* ::: Detail blocks hidden in presentation mode */
+      /* ::: Details blocks hidden in presentation mode */
       .gs-details {
         display: none;
       }
