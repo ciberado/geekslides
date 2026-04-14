@@ -8,14 +8,23 @@ import type { ContentUpdatePayload } from '../../src/hmr/vite-plugin-geekslides-
 function createMockOptions(overrides: Partial<HotClientOptions> = {}): HotClientOptions {
   return {
     fetchMarkdown: vi.fn().mockResolvedValue('# Updated\n\n---\n\n## Slide 2'),
+    fetchStyles: vi.fn().mockResolvedValue('h1 { color: red; }'),
     fetchConfig: vi.fn().mockResolvedValue({ title: 'Updated' }),
     reloadSlides: vi.fn(),
+    applyStyles: vi.fn(),
     applyConfig: vi.fn(),
+    getCurrentConfig: vi.fn().mockReturnValue({
+      title: 'Original',
+      content: 'README.md',
+      plugins: { preprocessors: ['header'], processors: [] },
+      sync: { enabled: true, server: 'ws://localhost:1234', room: 'default' },
+      styles: ['css/local.css'],
+    }),
     getCurrentSlide: vi.fn().mockReturnValue(2),
     getCurrentPartial: vi.fn().mockReturnValue(1),
     goTo: vi.fn(),
     getSlideCount: vi.fn().mockReturnValue(5),
-    styleSheets: ['css/local.css'],
+    getStyleSheetPaths: vi.fn().mockReturnValue(['css/local.css']),
     ...overrides,
   };
 }
@@ -59,13 +68,25 @@ describe('hot-client', () => {
   describe('config update', () => {
     it('applies non-structural config changes', async () => {
       const options = createMockOptions({
-        fetchConfig: vi.fn().mockResolvedValue({ title: 'New Title' }),
+        fetchConfig: vi.fn().mockResolvedValue({
+          title: 'New Title',
+          content: 'README.md',
+          plugins: { preprocessors: ['header'], processors: [] },
+          sync: { enabled: true, server: 'ws://localhost:1234', room: 'default' },
+          styles: ['css/local.css'],
+        }),
       });
       const payload: ContentUpdatePayload = { file: 'config.json', type: 'config', timestamp: 1 };
 
       await handleContentUpdate(payload, options);
 
-      expect(options.applyConfig).toHaveBeenCalledWith({ title: 'New Title' });
+      expect(options.applyConfig).toHaveBeenCalledWith({
+        title: 'New Title',
+        content: 'README.md',
+        plugins: { preprocessors: ['header'], processors: [] },
+        sync: { enabled: true, server: 'ws://localhost:1234', room: 'default' },
+        styles: ['css/local.css'],
+      });
     });
 
     it('triggers full reload for structural changes', async () => {
@@ -77,7 +98,13 @@ describe('hot-client', () => {
       });
 
       const options = createMockOptions({
-        fetchConfig: vi.fn().mockResolvedValue({ plugins: ['new-plugin'] }),
+        fetchConfig: vi.fn().mockResolvedValue({
+          title: 'Original',
+          content: 'README.md',
+          plugins: { preprocessors: ['header'], processors: ['iframe'] },
+          sync: { enabled: true, server: 'ws://localhost:1234', room: 'default' },
+          styles: ['css/local.css'],
+        }),
       });
       const payload: ContentUpdatePayload = { file: 'config.json', type: 'config', timestamp: 1 };
 
@@ -89,20 +116,24 @@ describe('hot-client', () => {
   });
 
   describe('style update', () => {
-    it('cache-busts matching stylesheet link', async () => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'css/local.css';
-      document.head.appendChild(link);
-
+    it('re-fetches and reapplies matching author styles', async () => {
       const options = createMockOptions();
       const payload: ContentUpdatePayload = { file: 'css/local.css', type: 'style', timestamp: 12345 };
 
       await handleContentUpdate(payload, options);
 
-      expect(link.href).toContain('css/local.css?t=12345');
+      expect(options.fetchStyles).toHaveBeenCalled();
+      expect(options.applyStyles).toHaveBeenCalledWith('h1 { color: red; }');
+    });
 
-      document.head.removeChild(link);
+    it('ignores unrelated stylesheets', async () => {
+      const options = createMockOptions();
+      const payload: ContentUpdatePayload = { file: 'css/unrelated.css', type: 'style', timestamp: 12345 };
+
+      await handleContentUpdate(payload, options);
+
+      expect(options.fetchStyles).not.toHaveBeenCalled();
+      expect(options.applyStyles).not.toHaveBeenCalled();
     });
   });
 });

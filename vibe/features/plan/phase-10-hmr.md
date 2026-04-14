@@ -40,9 +40,8 @@ changes:
 - If `.json` (config): Re-fetch config, re-merge defaults, apply changes that don't
   require a full reload (title, styles). For structural changes (plugins, content URL),
   trigger a full reload.
-- If `.css`: Re-fetch the stylesheet. If it's an author stylesheet (in the config's
-  `styles` list), hot-swap it by updating the `<link>` element's `href` with a
-  cache-busting query parameter.
+- If `.css`: Re-fetch the author CSS bundle for the current deck and hot-apply it to
+  the slideshow without a full page reload.
 
 **Slide position preservation**: Before reloading content, save `currentSlide` and
 `currentPartial`. After `loadSlides()`, call `goTo(savedSlide, savedPartial)`. If the
@@ -62,10 +61,10 @@ The plugin is registered in the `plugins` array of the Vite config passed to
 - Slide position is preserved after content reload.
 - Position is clamped if slides were removed.
 
-**Manual verification protocol** (documented, not automated):
-- Edit `README.md` → content updates in browser, same slide visible.
-- Edit `config.json` title → title updates without full reload.
-- Edit `local.css` → styles update without full reload.
+**`e2e/hmr.spec.ts`**:
+- Editing `README.md` hot-reloads content in the browser and preserves slide position.
+- Editing `config.json` applies title changes without full reload.
+- Editing `local.css` hot-applies author styles without full reload.
 
 ## File List
 
@@ -76,17 +75,20 @@ packages/engine/src/hmr/
 
 packages/engine/tests/unit/
 └── hot-client.test.ts
+
+e2e/
+└── hmr.spec.ts
 ```
 
 ## Acceptance Criteria
 
-- [ ] Editing `README.md` hot-reloads content in the browser.
-- [ ] Current slide position is preserved after content reload.
-- [ ] Editing `local.css` hot-swaps styles without page reload.
-- [ ] Editing `config.json` applies non-structural changes without full reload.
-- [ ] Non-content files (TypeScript, etc.) use Vite's default HMR.
-- [ ] Position is clamped gracefully when slides are removed.
-- [ ] Unit tests pass.
+- [x] Editing `README.md` hot-reloads content in the browser.
+- [x] Current slide position is preserved after content reload.
+- [x] Editing `local.css` hot-swaps styles without page reload.
+- [x] Editing `config.json` applies non-structural changes without full reload.
+- [x] Non-content files (TypeScript, etc.) use Vite's default HMR.
+- [x] Position is clamped gracefully when slides are removed.
+- [x] Unit tests pass.
 
 ## Reference Docs
 

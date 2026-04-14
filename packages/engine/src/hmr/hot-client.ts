@@ -12,12 +12,18 @@ const HMR_EVENT = 'geekslides:content-update';
 export interface HotClientOptions {
   /** Function to re-fetch and return the raw markdown content. */
   fetchMarkdown: () => Promise<string>;
+  /** Function to re-fetch and return the combined author CSS text. */
+  fetchStyles?: () => Promise<string>;
   /** Function to re-fetch and return the parsed config object. */
   fetchConfig: () => Promise<Record<string, unknown>>;
   /** Function called with new markdown to re-parse and reload slides. */
   reloadSlides: (markdown: string) => void;
+  /** Function called with new CSS text to hot-apply styles. */
+  applyStyles?: (css: string) => void;
   /** Function called with new config to apply changes. */
-  applyConfig: (config: Record<string, unknown>) => void;
+  applyConfig: (config: Record<string, unknown>) => void | Promise<void>;
+  /** Returns the currently applied config object. */
+  getCurrentConfig: () => Record<string, unknown>;
   /** Returns the current slide index (0-based). */
   getCurrentSlide: () => number;
   /** Returns the current partial index (0-based). */
@@ -26,8 +32,8 @@ export interface HotClientOptions {
   goTo: (slide: number, partial: number) => void;
   /** Returns the total number of slides after reload. */
   getSlideCount: () => number;
-  /** List of author stylesheets from config (relative paths). */
-  styleSheets: string[];
+  /** Returns the currently tracked author stylesheet paths. */
+  getStyleSheetPaths: () => string[];
 }
 
 /**
@@ -45,10 +51,10 @@ export async function handleContentUpdate(
       await handleMarkdownUpdate(options);
       break;
     case 'config':
-      await handleConfigUpdate(payload, options);
+      await handleConfigUpdate(options);
       break;
     case 'style':
-      handleStyleUpdate(payload, options);
+      await handleStyleUpdate(payload, options);
       break;
   }
 }
@@ -69,27 +75,49 @@ async function handleMarkdownUpdate(options: HotClientOptions): Promise<void> {
 }
 
 async function handleConfigUpdate(
-  payload: ContentUpdatePayload,
   options: HotClientOptions,
 ): Promise<void> {
+  const currentConfig = options.getCurrentConfig();
   const config = await options.fetchConfig();
 
   // Structural changes that require full reload
   const structuralKeys = ['plugins', 'content', 'sync'];
-  const isStructural = structuralKeys.some((key) => key in config);
+  const isStructural = structuralKeys.some(
+    (key) => JSON.stringify(config[key]) !== JSON.stringify(currentConfig[key]),
+  );
 
   if (isStructural && typeof location !== 'undefined') {
     location.reload();
     return;
   }
 
-  options.applyConfig(config);
+  await options.applyConfig(config);
 }
 
-function handleStyleUpdate(
+function normalizePath(path: string): string {
+  return path.split('?')[0]?.replace(/\\/g, '/').replace(/^\/+/, '') ?? '';
+}
+
+async function handleStyleUpdate(
   payload: ContentUpdatePayload,
   options: HotClientOptions,
-): void {
+): Promise<void> {
+  const stylePaths = options.getStyleSheetPaths().map(normalizePath);
+  const payloadPath = normalizePath(payload.file);
+  const isTrackedStyle = stylePaths.some(
+    (stylePath) => stylePath.endsWith(payloadPath) || payloadPath.endsWith(stylePath),
+  );
+
+  if (!isTrackedStyle) {
+    return;
+  }
+
+  if (options.fetchStyles && options.applyStyles) {
+    const css = await options.fetchStyles();
+    options.applyStyles(css);
+    return;
+  }
+
   if (typeof document === 'undefined') return;
 
   // Find matching <link> element and cache-bust it
@@ -99,7 +127,7 @@ function handleStyleUpdate(
     const normalizedHref = href.split('?')[0] ?? '';
 
     if (
-      options.styleSheets.some((s) => normalizedHref.endsWith(s)) ||
+      stylePaths.some((s) => normalizePath(normalizedHref).endsWith(s)) ||
       normalizedHref.endsWith(payload.file)
     ) {
       link.href = `${normalizedHref}?t=${String(payload.timestamp)}`;

@@ -72,11 +72,14 @@
     }
 
     async function fetchConfig() {
-      return await loadConfig(configUrl);
+      return await loadConfig(`${configUrl}${configUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
     }
 
     async function fetchMarkdown(config) {
-      const res = await fetch(resolveUrl(config.content));
+      const contentUrl = resolveUrl(config.content);
+      const res = await fetch(`${contentUrl}${contentUrl.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+        cache: 'no-store',
+      });
       return await res.text();
     }
 
@@ -85,7 +88,11 @@
       const cssTexts = await Promise.all(
         styleUrls.map(async (url) => {
           try {
-            const res = await fetch(resolveUrl(url) + '?raw');
+            const resolvedUrl = resolveUrl(url);
+            const separator = resolvedUrl.includes('?') ? '&' : '?';
+            const res = await fetch(`${resolvedUrl}${separator}raw&t=${Date.now()}`, {
+              cache: 'no-store',
+            });
             return await res.text();
           } catch {
             console.warn(`Failed to load style: ${url}`);
@@ -94,6 +101,38 @@
         })
       );
       return cssTexts.join('\n');
+    }
+
+    function updateDocumentTitle(activeConfig) {
+      document.title = activeConfig?.title || 'GeekSlides v2';
+    }
+
+    function getTrackedStylePaths(activeConfig) {
+      const styleUrls = Array.isArray(activeConfig?.styles) ? activeConfig.styles : [];
+      return styleUrls.map((url) => resolveUrl(url));
+    }
+
+    function getHmrWatchFiles(activeConfig) {
+      const files = [configUrl, resolveUrl(activeConfig.content), ...getTrackedStylePaths(activeConfig)];
+      return [...new Set(files.map((file) => file.split('?')[0]))];
+    }
+
+    async function registerHmrFiles(activeConfig) {
+      if (!import.meta.hot) {
+        return;
+      }
+
+      try {
+        await fetch('/__geekslides_watch', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ files: getHmrWatchFiles(activeConfig) }),
+        });
+      } catch (error) {
+        console.warn('[hmr] Failed to register watch files:', error);
+      }
     }
 
     function applyPreprocessors(markdown, config) {
@@ -131,6 +170,8 @@
       let config = await fetchConfig();
       const markdown = await fetchMarkdown(config);
       let combinedCss = await fetchStyles(config);
+      updateDocumentTitle(config);
+      await registerHmrFiles(config);
 
       // Set <base> AFTER all fetch() calls
       if (configBase) {
@@ -288,6 +329,17 @@
           terminal.setOutput(msg);
         }
 
+        async function applyPresentationConfig(newConfig) {
+          config = newConfig;
+          updateDocumentTitle(newConfig);
+          slideshow.setAspectRatio(newConfig.aspectRatio);
+
+          const newCss = await fetchStyles(newConfig);
+          combinedCss = newCss;
+          slideshow.loadStyles(newCss);
+          await registerHmrFiles(newConfig);
+        }
+
         // Helper to reload deck from a new config URL
         async function reloadDeck(newConfigUrl) {
           showCmdOutput('Loading...');
@@ -304,17 +356,17 @@
             const newCss = await fetchStyles(newConfig);
 
             // Update global state
-            config = newConfig;
             combinedCss = newCss;
-            if (newCss) {
-              slideshow.loadStyles(newCss);
-            }
+            updateDocumentTitle(newConfig);
+            slideshow.loadStyles(newCss);
 
             // Parse and load slides
             const processedMd = applyPreprocessors(newMarkdown, newConfig);
             const newSlides = parse(processedMd);
             slideshow.loadSlides(newSlides);
+            config = newConfig;
             applyProcessors(slideshow, newConfig);
+            await registerHmrFiles(newConfig);
 
             slideshow.setAspectRatio(newConfig.aspectRatio);
 
@@ -433,19 +485,27 @@
               const md = await fetchMarkdown(config);
               return applyPreprocessors(md, config);
             },
+            fetchStyles: async () => fetchStyles(config),
             fetchConfig: fetchConfig,
             reloadSlides: (md) => {
               const newSlides = parse(md);
-              if (combinedCss) slideshow.loadStyles(combinedCss);
+              slideshow.loadStyles(combinedCss);
               slideshow.loadSlides(newSlides);
               applyProcessors(slideshow, config);
             },
-            applyConfig: () => location.reload(),
+            applyStyles: (css) => {
+              combinedCss = css;
+              slideshow.loadStyles(css);
+            },
+            applyConfig: async (nextConfig) => {
+              await applyPresentationConfig(nextConfig);
+            },
+            getCurrentConfig: () => config,
             getCurrentSlide: () => slideshow.currentSlide,
             getCurrentPartial: () => slideshow.currentPartial,
             goTo: (s, p) => slideshow.goTo(s, p),
             getSlideCount: () => slideshow.slideCount,
-            styleSheets: Array.isArray(config.styles) ? config.styles : [],
+            getStyleSheetPaths: () => getTrackedStylePaths(config),
           });
         }
       }

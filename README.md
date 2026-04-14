@@ -41,9 +41,20 @@ npm run dev
 - Touch and mobile gestures
 - Rich processors/components: iframe, chart, video, whiteboard
 - CSS/asset loading from deck config
-- HMR updates in dev workflow
+- HMR live preview for markdown, deck config, and author CSS in dev workflow
 - Print rendering primitives for slide export modes
 - Automated testing with Vitest and Playwright
+
+## Live Preview
+
+When running `npm run dev`, GeekSlides now hot-reloads the active deck without a full page refresh for the common authoring loop.
+
+- Editing a deck `README.md` updates slide content in place.
+- Current slide position is preserved after markdown reloads.
+- Editing `config.json` applies non-structural changes such as title and styles without a reload.
+- Editing deck CSS files listed in `styles` hot-applies the updated author styles.
+
+Structural config changes such as plugin, sync, or content-path changes still fall back to a full reload.
 
 ## How Deck Loading Works
 
