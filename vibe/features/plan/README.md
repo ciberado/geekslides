@@ -96,6 +96,6 @@ All decisions and specifications are in the sibling docs:
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 0–10 | Implemented | Core engine, parser, rendering, plugins, navigation, sync, rich components, speaker view, print, CLI, HMR |
-| 11 | In progress | Deployment docs and compose files are present; full deployment validation is pending |
+| 11 | In progress | Deployment assets are present; full Docker validation and root README Docker quick-start are still pending |
 | 12 | Implemented | Playwright E2E suite is in place and passing in local dev |
-| 13 | Planned | Terminal config commands (`load`, `room`) — allows runtime deck/room changes without URL reload |
+| 13 | Implemented | `load` and `room` runtime commands are implemented, documented, and explicitly covered by Playwright |

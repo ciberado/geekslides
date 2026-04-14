@@ -7,7 +7,7 @@ eliminating the need to restart or use URL parameters after initial load.
 
 ## Status
 
-**Not started** (new phase post-v2.0 planning)
+**Implemented** (runtime commands landed and explicit Playwright coverage is in place)
 
 ## Key Features
 
@@ -61,21 +61,21 @@ User types: `theme dark`
 
 ## Files Affected
 
-- [`index.html`](index.html "index.html"): register `load` and `room` commands, implement logic
-- [`packages/engine/src/core/CommandSystem.ts`](packages/engine/src/core/CommandSystem.ts "packages/engine/src/core/CommandSystem.ts"): may add command arg parsing helpers
-- [`packages/engine/src/components/Slideshow.ts`](packages/engine/src/components/Slideshow.ts "packages/engine/src/components/Slideshow.ts"): may add `loadStyles()` refresh or similar
-- E2E tests: add `load` and `room` command tests
+- [`index.html`](index.html "index.html"): `load` and `room` commands are registered and wired
+- [`README.md`](README.md "README.md"): runtime terminal usage docs include `load` and `room`
+- `e2e/commands.spec.ts`: explicit `load` and `room` command coverage
+- `e2e/fixtures/runtime-load-deck/`: fixture deck for runtime load validation
 
 ## Acceptance Criteria
 
-- ✅ `load <url>` fetches and renders a new deck
-- ✅ Images and styles in loaded deck resolve correctly relative to the config file
-- ✅ `room <name>` disconnects from old room and connects to new one
-- ✅ Sync state on the new room reflects the current slide
-- ✅ Command help text appears in `help` output
-- ✅ Tab-completion works for both commands
-- ✅ Commands degrade gracefully (e.g. `load` with invalid URL shows error)
-- ✅ Playwright E2E suite includes tests for both commands
+- [x] `load <url>` fetches and renders a new deck
+- [x] Images and styles in loaded deck resolve correctly relative to the config file
+- [x] `room <name>` disconnects from old room and connects to new one
+- [x] Sync state on the new room reflects the current slide
+- [x] Command help text appears in `help` output
+- [x] Tab-completion works for both commands
+- [x] Commands degrade gracefully (e.g. `load` with invalid URL shows error)
+- [x] Playwright E2E suite includes explicit tests for both commands
 
 ## Notes
 

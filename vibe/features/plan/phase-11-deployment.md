@@ -1,6 +1,6 @@
 # Phase 11: Deployment
 
-**Status**: In progress (implementation landed; deployment validation pending)
+**Status**: In progress (implementation landed; deployment validation and root README Docker quick-start are pending)
 **Depends on**: Phase 9 (build output for static serving, server package)
 **Unlocks**: Phase 12 (E2E tests can run against Docker setup)
 
@@ -100,6 +100,7 @@ docker/
 - [ ] `CONTENT_DIR` mount correctly serves external presentation content.
 - [ ] Setting `DOMAIN` and `ACME_EMAIL` to real values enables Let's Encrypt.
 - [ ] Images are minimal (Alpine-based, no unnecessary files).
+- [ ] Root `README.md` includes Docker deployment quick-start instructions.
 
 ## Reference Docs
 

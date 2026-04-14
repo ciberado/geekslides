@@ -35,10 +35,35 @@
     const viewMode = params.get('view'); // null = presentation, 'speaker' = speaker view
 
     // Load the default v2 sample deck unless a specific config is requested.
-    let configUrl = params.get('config') || 'decks/slides-cuatro-cosas-aws/config.json';
+    function normalizeConfigUrl(url) {
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        return url;
+      }
+      if (url.startsWith('/')) {
+        return url;
+      }
+      return `/${url.replace(/^\.\//, '')}`;
+    }
+
+    function getConfigBase(url) {
+      const lastSlash = url.lastIndexOf('/');
+      return lastSlash >= 0 ? url.substring(0, lastSlash + 1) : '/';
+    }
+
+    function updateDocumentBase(baseHref) {
+      let base = document.querySelector('base[data-geekslides-base]');
+      if (!base) {
+        base = document.createElement('base');
+        base.setAttribute('data-geekslides-base', '');
+        document.head.appendChild(base);
+      }
+      base.href = new URL(baseHref, window.location.origin).href;
+    }
+
+    let configUrl = normalizeConfigUrl(params.get('config') || 'decks/slides-cuatro-cosas-aws/config.json');
 
     // Resolve paths relative to config location (updated when config changes)
-    let configBase = configUrl.substring(0, configUrl.lastIndexOf('/') + 1);
+    let configBase = getConfigBase(configUrl);
     function resolveUrl(path) {
       if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
         return path;
@@ -109,9 +134,7 @@
 
       // Set <base> AFTER all fetch() calls
       if (configBase) {
-        const base = document.createElement('base');
-        base.href = window.location.origin + '/' + configBase;
-        document.head.appendChild(base);
+        updateDocumentBase(configBase);
       }
 
       const processedMarkdown = applyPreprocessors(markdown, config);
@@ -269,11 +292,13 @@
         async function reloadDeck(newConfigUrl) {
           showCmdOutput('Loading...');
           try {
-            const newConfig = await loadConfig(newConfigUrl);
+            const resolvedConfigUrl = normalizeConfigUrl(newConfigUrl);
+            const newConfig = await loadConfig(resolvedConfigUrl);
             
             // Update configUrl and configBase BEFORE calling fetchMarkdown/fetchStyles
-            configUrl = newConfigUrl;
-            configBase = newConfigUrl.substring(0, newConfigUrl.lastIndexOf('/') + 1);
+            configUrl = resolvedConfigUrl;
+            configBase = getConfigBase(resolvedConfigUrl);
+            updateDocumentBase(configBase);
             
             const newMarkdown = await fetchMarkdown(newConfig);
             const newCss = await fetchStyles(newConfig);
@@ -301,8 +326,8 @@
               sync.publishState(0, 0, 'present');
             }
 
-            showCmdOutput(`✓ Loaded: ${newConfigUrl}`);
-            console.log('[load] Switched to:', newConfigUrl);
+            showCmdOutput(`✓ Loaded: ${resolvedConfigUrl}`);
+            console.log('[load] Switched to:', resolvedConfigUrl);
           } catch (err) {
             showCmdOutput(`✗ Failed to load: ${err.message}`);
             console.error('[load] Error:', err);
