@@ -1,6 +1,6 @@
 # Phase 4: Navigation & Input
 
-**Status**: Implemented
+**Status**: Implemented — known bug (mobile long-press)
 **Depends on**: Phase 2 (slideshow to navigate)
 **Unlocks**: Phase 6 (rich components use commands), Phase 7 (speaker view navigation)
 
@@ -51,6 +51,8 @@ A minimal command-line prompt anchored at the bottom of the viewport.
 ### 4. TouchInput (`packages/engine/src/input/TouchInput.ts`)
 
 Same as before, except long-press (500ms) now opens the terminal instead of toggling toolbar.
+
+> **Bug**: The implementation calls `commandSystem.execute('toggle-toolbar')` on long-press, but `toggle-toolbar` is never registered as a command in `index.html`. Mobile long-press silently does nothing. Fix: either register a `toggle-toolbar` command or change the long-press handler to call `toggle-terminal` to open `<geek-terminal>`.
 
 ### 5. Tests
 

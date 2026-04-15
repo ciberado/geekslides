@@ -34,6 +34,13 @@ Single-stage build: `node:22-alpine` base. Copies workspace root and server
 server source. Exposes port 1234. Runs as `node` user. Entry point:
 `node packages/server/src/index.js`.
 
+> **Bug**: The current `CMD` in `docker/Dockerfile.server` points at
+> `packages/server/src/index.ts` (a TypeScript file). Node cannot execute `.ts`
+> files directly, so the server container will fail to start at runtime. Fix:
+> either add a `tsc` compile step in the Dockerfile and point CMD at the compiled
+> `.js` output, or add `tsx` as a production dependency and use
+> `CMD ["npx", "tsx", "packages/server/src/index.ts"]`.
+
 ### 3. Docker Compose (`docker/docker-compose.yml`)
 
 Three services:
@@ -93,11 +100,13 @@ docker/
 
 ## Acceptance Criteria
 
-- [ ] `docker compose up --build` starts all three services without errors.
+- [ ] `docker compose up --build` starts all three services without errors. *(Blocked by `Dockerfile.server` CMD bug)*
 - [ ] Presentation is accessible at `https://localhost` (self-signed cert).
 - [ ] WebSocket sync works through `wss://localhost/ws`.
 - [ ] Health checks pass for both services.
 - [ ] `CONTENT_DIR` mount correctly serves external presentation content.
+- [ ] `.dockerignore` file exists. *(Not yet created)*
+- [ ] Root `README.md` Docker quick-start section. *(Not yet written)*
 - [ ] Setting `DOMAIN` and `ACME_EMAIL` to real values enables Let's Encrypt.
 - [ ] Images are minimal (Alpine-based, no unnecessary files).
 - [ ] Root `README.md` includes Docker deployment quick-start instructions.
