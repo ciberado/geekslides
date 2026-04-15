@@ -7,7 +7,7 @@
 ## Goal
 
 Implement the `@geekslides/cli` package with four commands: `dev` (start Vite +
-yjs-server), `build` (production bundle), `pdf` (invoke WeasyPrint), and `create`
+yjs-server), `build` (production bundle), `pdf` (export through Playwright/Chromium), and `create`
 (scaffold a new presentation repo). Also port the image optimizer from v1's tool.
 
 At the end of this phase, `npx geekslides dev` starts a full development environment,
@@ -52,20 +52,23 @@ Options: `--outDir <path>` (default `dist/`), `--base <url>` (Vite base path).
 
 ### 4. `pdf` command (`packages/cli/src/commands/pdf.ts`)
 
-Generates PDF via WeasyPrint:
+Generates PDF via Playwright/Chromium:
 1. Loads config and markdown.
 2. Runs the engine's preprocessing pipeline (PluginManager).
 3. Parses markdown into `SlideData[]`.
 4. Calls `PrintRenderer.render()` with the specified template.
 5. Writes the HTML to a temp file.
-6. Invokes WeasyPrint as a child process: `weasyprint <input.html> <output.pdf>`.
-7. Cleans up the temp file.
+6. Launches Chromium through Playwright.
+7. Opens the temp HTML with `page.goto(file://...)`.
+8. Writes the primary PDF with `page.pdf()`.
+9. Unless the selected format is already `slides-details`, also writes a companion `-details.pdf`.
+10. Cleans up the temp file.
 
-Options: `--format <slides|slides-notes|book>` (default `slides`),
+Options: `--format <slides|slides-notes|slides-details|book>` (default `slides`),
 `--output <path>` (default based on format name), `--no-cleanup` (keep temp HTML).
 
-Error handling: If `weasyprint` is not found on PATH, prints a helpful message
-with install instructions for the user's platform.
+Error handling: If Chromium cannot be launched, prints a helpful message with the
+required Playwright browser install command.
 
 ### 5. `create` command (`packages/cli/src/commands/create.ts`)
 
@@ -91,7 +94,7 @@ production image optimization.
 `packages/cli/package.json`:
 - `"bin": { "geekslides": "./dist/index.cjs" }`.
 - Bundles a runnable Node entrypoint into `dist/index.cjs` and ships `app/` runtime assets.
-- Dependencies: `commander`, `vite`, `sharp`, `@geekslides/engine`, `@geekslides/server`.
+- Dependencies: `commander`, `vite`, `sharp`, `playwright`, `@geekslides/engine`, `@geekslides/server`.
 - Build script cleans `dist/`, emits declarations, and writes a bundled executable bin.
 
 ### 8. Tests
@@ -127,7 +130,7 @@ packages/cli/
 
 - [x] `npx geekslides dev` starts Vite + yjs-server and serves a presentation.
 - [ ] `npx geekslides build` produces a self-contained `dist/` directory.
-- [ ] `npx geekslides pdf --format slides-notes` generates a PDF (with WeasyPrint installed).
+- [ ] `npx geekslides pdf --format slides-notes` generates a PDF (with Chromium installed via Playwright).
 - [ ] `npx geekslides create --title "My Talk"` scaffolds a valid presentation repo.
 - [ ] Image optimizer processes images from a JSON manifest.
 - [ ] `--help` on all commands shows usage information.
@@ -136,5 +139,5 @@ packages/cli/
 ## Reference Docs
 
 - [toolchain.md](../toolchain.md) — npm workspace scripts, package dependency graph
-- [print.md](../print.md) — WeasyPrint invocation for PDF command
+- [print.md](../print.md) — Chromium/Playwright export path for the PDF command
 - [deployment-v2.md](../deployment-v2.md) — build output used by Docker

@@ -11,10 +11,47 @@ import {
   toBrowserServedPath,
 } from '../src/commands/dev.ts';
 import {
-  createTempHtmlPath,
+  buildDetailsPdfHtml,
   loadAuthorStyles,
   resolvePdfInputPath,
 } from '../src/commands/pdf.ts';
+import type { SlideData } from '@geekslides/engine/headless';
+
+const DETAILS_TEST_SLIDES: SlideData[] = [
+  {
+    id: 'intro',
+    html: '<h1>Intro</h1>',
+    notesHtml: undefined,
+    detailsHtml: undefined,
+    rawCss: undefined,
+    classes: [],
+    backgroundImage: undefined,
+    backgroundColor: undefined,
+    partialCount: 0,
+  },
+  {
+    id: 'middle',
+    html: '<h2>Middle</h2>',
+    notesHtml: undefined,
+    detailsHtml: '<p>Extra context</p>',
+    rawCss: undefined,
+    classes: [],
+    backgroundImage: undefined,
+    backgroundColor: undefined,
+    partialCount: 0,
+  },
+  {
+    id: 'end',
+    html: '<h1>End</h1>',
+    notesHtml: undefined,
+    detailsHtml: undefined,
+    rawCss: undefined,
+    classes: [],
+    backgroundImage: undefined,
+    backgroundColor: undefined,
+    partialCount: 0,
+  },
+];
 
 describe('cli', () => {
   it('exports version', () => {
@@ -62,11 +99,6 @@ describe('cli', () => {
     expect(resolvePdfInputPath('/tmp/talk.md', '/talks/aws-deck')).toBe('/tmp/talk.md');
   });
 
-  it('writes temporary pdf html next to the content file', () => {
-    expect(createTempHtmlPath('/talks/aws-deck/README.md', 12345))
-      .toBe('/talks/aws-deck/.geekslides-print-9ix.html');
-  });
-
   it('loads author styles from files listed in config', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'geekslides-cli-test-'));
 
@@ -81,5 +113,19 @@ describe('cli', () => {
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
+  });
+
+  it('keeps horizontal hero slides out of thumbnail sizing rules in details pdf html', () => {
+    const html = buildDetailsPdfHtml(
+      ['/tmp/slide-0.png', '/tmp/slide-1.png', '/tmp/slide-2.png'],
+      DETAILS_TEST_SLIDES,
+      'horizontal',
+    );
+
+    const heroPages = html.match(/class="page hero horizontal"/g) ?? [];
+    expect(heroPages).toHaveLength(2);
+    expect(html).toContain('.page.horizontal.no-details:not(.hero) .thumb { flex-shrink: 0; width: 140mm; }');
+    expect(html).toContain('.page.horizontal.has-details .thumb img { width: 140mm; height: 78.75mm; object-fit: contain; border: 1px solid #ccc; border-radius: 3px; }');
+    expect(html).not.toContain('.page.horizontal .thumb img { width: 140mm; height: 78.75mm; object-fit: contain; border: 1px solid #ccc; border-radius: 3px; }');
   });
 });

@@ -45,10 +45,11 @@ Separate route/tab:
 ### Print Rendering (Shadow DOM off)
 
 Print output is generated as flat HTML (no custom-element/shadow dependencies) by the print renderer.
-This supports WeasyPrint for three formats:
+This supports browser-backed PDF export for four formats:
 
 - slides
 - slides + notes
+- slides + details
 - book
 
 ## Command UI

@@ -1,10 +1,10 @@
-# Print & PDF Generation (WeasyPrint)
+# Print & PDF Generation (Playwright Chromium)
 
 ## Overview
 
-v2 replaces v1's Playwright-screenshot-to-PDFKit pipeline with **WeasyPrint**, which renders
-HTML/CSS directly to PDF. This produces higher quality output (vector text, proper page
-breaks) and supports three output formats.
+v2 renders a flat print HTML document and exports it to PDF through **Playwright using
+Chromium's `page.pdf()`**. This keeps output aligned with browser rendering, preserves vector
+text, and supports slide-oriented and reading-oriented layouts.
 
 ## Output Formats
 
@@ -12,7 +12,8 @@ breaks) and supports three output formats.
 |--------|-------------|----------|
 | **Slides PDF** | One slide per page, no notes | Sharing deck, printing handouts |
 | **Slides + Notes PDF** | Each page: slide on top, speaker notes below | Speaker reference |
-| **Book PDF** | Flowing document: slides with expanded notes as paragraphs | Reading material, course handout |
+| **Slides + Details PDF** | Each page pairs a slide thumbnail with the authored `::: Details` content | Reading handout, appendix, asynchronous review |
+| **Book PDF** | Flowing document: slides with expanded notes/details as paragraphs | Reading material, course handout |
 
 ## Architecture
 
@@ -49,36 +50,38 @@ config.json + README.md
                │
                ▼
 ┌──────────────────────────────┐
-│  WeasyPrint                  │
-│  (Python, invoked via CLI)   │
+│  Playwright / Chromium       │
+│  (headless browser)          │
 │                              │
-│  weasyprint input.html out.pdf│
+│  page.goto(file://...)       │
+│  page.pdf({...})             │
 └──────────────────────────────┘
                │
                ▼
           output.pdf
 ```
 
-## Why WeasyPrint over Playwright Screenshots (v1)
+## Why Chromium `page.pdf()` over Screenshot Pipelines
 
-| Aspect | v1 (Playwright → PDFKit) | v2 (WeasyPrint) |
+| Aspect | v1 (Playwright → PDFKit) | v2 (Playwright Chromium `page.pdf()`) |
 |--------|--------------------------|-----------------|
 | Text | Rasterized screenshots | Vector text (searchable, copyable) |
-| File size | Large (images) | Small (vector) |
-| Quality | Fixed resolution | Infinite zoom |
-| Page breaks | Screenshot-per-slide (implicit) | CSS `@page` rules (explicit control) |
+| File size | Large (images) | Small to moderate, depends on embedded assets |
+| Quality | Fixed resolution | Browser print engine, vector where possible |
+| Page breaks | Screenshot-per-slide (implicit) | CSS `@page` rules with browser print behavior |
 | Speaker notes | Not supported | Full support in templates |
+| Details handout | Not supported | Dedicated `slides-details` layout |
 | Book format | Not supported | Flowing document layout |
-| Custom CSS | Limited | Full CSS print support |
-| Code blocks | Rasterized | Syntax-highlighted text |
-| Dependencies | Playwright + Chromium (~400MB) | WeasyPrint (~50MB Python pkg) |
+| Custom CSS | Limited | Closest match to author-facing browser CSS |
+| Code blocks | Rasterized | Real text rendered by Chromium |
+| Dependencies | Playwright + Chromium (~400MB) | Playwright + Chromium (~400MB) |
 
 ## PrintRenderer
 
 The `PrintRenderer` takes parsed slides and produces a flat HTML document suitable for
-WeasyPrint. Key constraint: **no Shadow DOM, no Custom Elements, no JavaScript**.
+browser print export. Key constraint: **no Shadow DOM or Custom Elements in the print DOM**.
 
-`PrintRenderer` (in `packages/engine/src/print/PrintRenderer.ts`) accepts a `PrintOptions` object with: `template` (`'slides'`, `'slides-notes'`, or `'book'`), `title`, optional `theme` (CSS file path), `pageSize` (e.g. `'A4'`, `'Letter'`, `'16:9'`), and `orientation` (`'landscape'` or `'portrait'`).
+`PrintRenderer` (in `packages/engine/src/print/PrintRenderer.ts`) accepts a `PrintOptions` object that can include extra author CSS plus details-layout options for the `slides-details` export.
 
 The `render(slides, options)` method:
 
@@ -90,7 +93,9 @@ The `render(slides, options)` method:
 
    - **Slides + Notes**: Each slide gets a wrapper `<section class="gs-print-slide-with-notes">` containing the slide (same as above) plus an `<aside class="gs-print-notes">` with the speaker notes HTML.
 
-   - **Book**: Each slide becomes an `<article class="gs-book-chapter">` containing a `<figure class="gs-book-slide">` with the slide content, followed by a `<div class="gs-book-notes">` for the notes as flowing body text.
+       - **Slides + Details**: Each page contains a slide thumbnail plus rendered `::: Details` content, with horizontal or vertical layout variants.
+
+       - **Book**: Each slide becomes an `<article class="gs-book-chapter">` containing a `<figure class="gs-book-slide">` with the slide content, followed by flowing reading text.
 
 4. Returns the complete HTML by substituting `{{title}}`, `{{styles}}`, and `{{content}}` placeholders in the template. Titles are HTML-escaped (`&`, `<`, `>` entities).
 
@@ -108,11 +113,13 @@ The print stylesheet (`packages/engine/src/print/print.css`) defines three named
 
 ## HTML Templates
 
-Three minimal HTML templates live in `packages/engine/src/print/templates/`:
+Print templates live in `packages/engine/src/print/templates/` and are selected by the render format.
 
 - **slides.html**: A standard HTML5 document with `{{title}}` in the `<title>` tag, `{{styles}}` in a `<style>` block in the head, and `{{content}}` in the `<body class="gs-print gs-print-slides">`.
 
 - **slides-notes.html**: Same structure but with body class `gs-print gs-print-slides-notes`, title suffixed with " — Speaker Notes", and an `<h1>{{title}}</h1>` header before the content.
+
+- **slides-details.html**: Body class for the details handout layout, with page content that pairs each slide preview with rendered detail text.
 
 - **book.html**: Body class `gs-print gs-print-book`, with a cover page header `<h1>{{title}}</h1>` inside a `.gs-book-cover` wrapper before the content.
 
@@ -124,35 +131,37 @@ The `pdf` command (`packages/cli/src/commands/pdf.ts`) takes a config path, outp
 2. Parses and preprocesses the markdown using `SlideParser` and `PluginManager` with built-in plugins.
 3. Renders to flat HTML via `PrintRenderer` with the selected template and title from config.
 4. Writes the HTML to a temporary file in a system temp directory.
-5. Invokes `weasyprint <input.html> <output.pdf>` via `child_process.execFile`.
-6. Cleans up the temp directory.
+5. Launches Chromium through Playwright.
+6. Opens the generated HTML file with `page.goto(file://...)`.
+7. Calls `page.pdf()` with `preferCSSPageSize: true` and `printBackground: true`.
+8. Writes the requested primary PDF and, unless the primary format is already `slides-details`, writes a companion `-details.pdf`.
+9. Cleans up the temp HTML unless `--no-cleanup` is set.
 
 ### CLI Usage
 
 - `npx geekslides pdf --config config.json --format slides -o slides.pdf`
 - `npx geekslides pdf --config config.json --format slides-notes -o notes.pdf`
+- `npx geekslides pdf --config config.json --format slides-details -o details.pdf`
 - `npx geekslides pdf --config config.json --format book -o book.pdf`
 
-## WeasyPrint Installation
+## Browser Installation
 
-WeasyPrint is a Python package. It's required only for PDF generation, not for authoring or presenting.
+Chromium is required only for PDF generation, not for authoring or presenting.
 
-- **Docker/CI**: Install via `pip install weasyprint` in the Dockerfile.
-- **Local (pip)**: `pip install weasyprint`
-- **Local (macOS)**: `brew install weasyprint`
+- **Docker/CI**: Run `npx playwright install chromium` during image build or job setup.
+- **Local**: `npx playwright install chromium`
 
-## WeasyPrint Compatibility Notes
+## Browser Print Notes
 
 | CSS Feature | Support | Notes |
 |-------------|---------|-------|
-| Flexbox | Full | Used for slide centering |
-| Grid | Full | Available for slide layouts |
+| Flexbox | Full | Used for slide centering and notes/details layouts |
+| Grid | Good | Available for slide layouts |
 | CSS variables | Full | Custom properties work |
-| `@page` | Full | Size, margins, named pages |
-| `page-break-*` | Full | Control pagination |
-| `@bottom-center` | Full | Page numbers |
-| Shadow DOM | None | Why we use flat HTML for print |
-| JavaScript | None | Pure HTML/CSS rendering |
-| `background-image` | Full | But `--presentational-hints` flag may be needed |
-| Web fonts (`@font-face`) | Full | Loaded from URLs or local files |
-| `@media print` | Full | Respected by WeasyPrint |
+| `@page` | Good | Size and margins are respected by Chromium print |
+| `page-break-*` | Good | Use together with explicit page-sized wrappers |
+| Shadow DOM | None in print DOM | Why the renderer flattens slides for export |
+| JavaScript | Available before print | The CLI waits for the page to load before calling `page.pdf()` |
+| `background-image` | Full | `printBackground: true` is enabled |
+| Web fonts (`@font-face`) | Full | Loaded by Chromium if reachable from the temp HTML |
+| `@media print` | Full | Respected by Chromium print |

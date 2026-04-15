@@ -220,6 +220,32 @@ npx tsx packages/cli/src/index.ts dev --config /absolute/path/to/config.json
 
 This works for deck directories outside the repo as well. The CLI now serves its own packaged app shell and points the browser at the chosen deck config, including HMR for markdown, config, and author CSS.
 
+## CLI PDF Export
+
+The CLI can also render PDFs from a deck using the print renderer plus headless Chromium via Playwright.
+
+Inside this monorepo:
+
+```bash
+npx tsx packages/cli/src/index.ts pdf --config /absolute/path/to/config.json --format slides
+```
+
+With the packaged CLI installed:
+
+```bash
+npx geekslides pdf --config /absolute/path/to/config.json --format slides
+```
+
+The command produces the requested primary PDF and, unless the primary format is already `slides-details`, also writes a companion `-details.pdf` file. Supported primary formats are `slides`, `slides-notes`, `slides-details`, and `book`.
+
+On a fresh machine, install the browser once:
+
+```bash
+npx playwright install chromium
+```
+
+Use `--no-cleanup` to keep the generated temporary HTML for debugging, and `--details-layout horizontal|vertical` to control the details PDF layout.
+
 ## Documentation Map
 
 - [vibe/features/architecture-v2.md](vibe/features/architecture-v2.md)

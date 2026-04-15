@@ -5,7 +5,7 @@
 * Leveraging DOM components.
 * Cleaner and simpler architecture.
 * Feature parity, but simpler to mantain code.
-* Compatible with weasyprint for generating the pdf of the slides, the slides with speaker notes and a book with the slides and details.
+* Compatible with browser-native PDF generation via headless Chromium for slides, slides with speaker notes, slides with details, and book-style exports.
 * Simpler synchronization of the decks and whiteboards, based in realtime collaboration framework.
 * Livepreview of the changes in the browser with support basics for future VSCode extension.
 * Commands based on an active key opening a terminal-like prompt (`t`) instead of a mess of hotkeys. Navigation (arrows, space, etc.) stays as direct keystrokes — no prefix needed.
@@ -29,5 +29,5 @@
 - [Speaker Notes](speaker-notes.md) — separate view architecture, `<geek-speaker-view>` component, timer, v1 vs v2 comparison
 - [CSS Slide Scaling](css-scaling.md) — `transform: scale()` technique, v1 vs v2 improvements, 5 alternatives evaluated
 - [Testing Strategy](testing.md) — Vitest unit/integration, Playwright E2E, CI pipeline
-- [Print & PDF](print.md) — WeasyPrint, three output formats, PrintRenderer, CLI integration
+- [Print & PDF](print.md) — Playwright/Chromium PDF export, print templates, PrintRenderer, CLI integration
 - [Deployment](deployment-v2.md) — Docker Compose, Caddy, local dev, production checklist

@@ -2,18 +2,18 @@
 
 **Status**: Implemented
 **Depends on**: Phase 1 (SlideData), Phase 3 (plugin pipeline for preprocessing)
-**Unlocks**: Phase 9 (CLI `pdf` command invokes PrintRenderer)
+**Unlocks**: Phase 9 (CLI `pdf` command invokes PrintRenderer and exports via Chromium)
 
 ## Goal
 
 Implement the `PrintRenderer` that produces flat HTML (no Shadow DOM, no Custom
-Elements, no JavaScript) from `SlideData[]`, three HTML templates for different
-output formats, and `print.css` with `@page` rules. The PDF generation itself
-(invoking WeasyPrint) is part of Phase 9's CLI.
+Elements in the print DOM) from `SlideData[]`, template-specific layouts for the
+supported output formats, and print CSS with `@page` rules. The PDF generation itself
+(via Playwright/Chromium) is part of Phase 9's CLI.
 
 At the end of this phase, calling `PrintRenderer.render(slides, 'slides-notes')`
-produces a complete, self-contained HTML document that WeasyPrint can convert to
-a high-quality vector PDF.
+produces a complete, self-contained HTML document that the CLI can open in Chromium
+and export as a high-quality PDF.
 
 ## Deliverables
 
@@ -21,8 +21,8 @@ a high-quality vector PDF.
 
 Produces flat HTML documents from parsed slides.
 
-**Key constraint**: Output must contain zero Shadow DOM, zero Custom Elements, zero
-JavaScript. WeasyPrint is a pure HTML/CSS renderer.
+**Key constraint**: Output must contain zero Shadow DOM and zero Custom Elements in
+the print DOM so browser print rendering does not depend on runtime component behavior.
 
 **`render(slides: SlideData[], template: TemplateName, config: GeekSlidesConfig): string`**:
 1. Loads the HTML template for the specified format.
@@ -38,8 +38,7 @@ JavaScript. WeasyPrint is a pure HTML/CSS renderer.
 
 ### 2. Templates (`packages/engine/src/print/templates/`)
 
-Three HTML templates, each a complete `<!DOCTYPE html>` document with placeholder
-markers:
+HTML templates, each a complete `<!DOCTYPE html>` document with placeholder markers:
 
 **`slides.html`**: One slide per page. Each `<section class="gs-slide">` gets
 `page-break-after: always`. No speaker notes. Clean, minimal layout matching the
@@ -48,6 +47,9 @@ presentation aspect ratio.
 **`slides-notes.html`**: Each page has the slide in the top portion and speaker
 notes below in an `<aside>`. The slide area uses a fixed height (e.g. 60% of page)
 with the aspect ratio preserved. Notes fill the remaining space with smaller font.
+
+**`slides-details.html`**: Each page pairs a slide preview with rendered `::: Details`
+content. Supports horizontal and vertical layouts for the reading block.
 
 **`book.html`**: Flowing document layout. Slides appear as bordered figures with
 captions. Speaker notes are full paragraphs between slides. Suitable for reading
@@ -104,6 +106,6 @@ packages/engine/tests/unit/
 
 ## Reference Docs
 
-- [print.md](../print.md) — full PrintRenderer spec, template descriptions, WeasyPrint rationale
+- [print.md](../print.md) — full PrintRenderer spec, template descriptions, Chromium export notes
 - [components.md](../components.md) — dual rendering strategy (Shadow DOM off for print)
-- [decisions.md](../decisions.md) — D4 (dual rendering), D9 (WeasyPrint)
+- [decisions.md](../decisions.md) — D4 (dual rendering), D9 (PDF backend)

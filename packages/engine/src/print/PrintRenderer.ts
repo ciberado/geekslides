@@ -32,6 +32,11 @@ body {
   color: #222;
 }
 
+section.content {
+  position: relative;
+  isolation: isolate;
+}
+
 /* --- Detail blocks hidden (same as browser) --- */
 .gs-details {
   display: none;
@@ -155,7 +160,7 @@ const SLIDES_CSS = `
 }
 
 .gs-slide img {
-  max-height: 60mm;
+  max-width: 100%;
   width: auto;
 }
 
@@ -164,6 +169,16 @@ const SLIDES_CSS = `
   max-width: 100%;
   height: 80mm;
   width: auto;
+}
+
+.gs-slide:has(h1, h2) .block-image:first-of-type img,
+.gs-slide.coverbg .block-image:first-of-type img,
+.gs-slide.illustration .block-image:first-of-type img {
+  max-width: none;
+  max-height: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .gs-slide:last-child {

@@ -121,7 +121,7 @@ Use `@page { size: 1920px 1080px; }` with fixed-size sections and `page-break-af
 
 **Pros**: Perfect for PDF output.
 **Cons**: Only applies to print media, not screen. Used by v2's `print.css` for
-WeasyPrint output, but not for browser presentation. **Used alongside** `transform: scale()`
+browser-backed PDF export, but not for browser presentation. **Used alongside** `transform: scale()`
 for the print path only.
 
 ### Alternative 5: `<iframe>` Per Slide

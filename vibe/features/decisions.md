@@ -7,12 +7,12 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D1 | Build tool | **Vite** | Fast HMR, native ESM, minimal config, dominant ecosystem choice for vanilla TS |
 | D2 | UI framework | **None (vanilla TS)** | Feature parity with v1, no framework overhead, full control |
 | D3 | DOM component model | **Web Components (Custom Elements + Shadow DOM)** | Native encapsulation, standard API, no build-time compilation |
-| D4 | Shadow DOM + print | **Dual rendering** | Shadow DOM in browser; flattened light DOM template for WeasyPrint |
+| D4 | Shadow DOM + print | **Dual rendering** | Shadow DOM in browser; flattened light DOM template for browser-backed print/PDF export |
 | D5 | Realtime sync | **Yjs (CRDT)** | Proven conflict-free sync, auto-merge, works for slides + whiteboard |
 | D6 | Yjs transport | **y-websocket** | Built-in provider, lightweight dedicated WS server |
 | D7 | Yjs shared data | **Y.Map for session state** | Sync slide position, partial, mode. Not collaborative editing |
 | D8 | Broker | **Drop Aedes, use y-websocket server** | Yjs server replaces custom MQTT broker entirely |
-| D9 | PDF generation | **WeasyPrint (3 outputs)** | Slides PDF, slides+notes PDF, book PDF from HTML/CSS templates |
+| D9 | PDF generation | **Playwright Chromium `page.pdf()`** | Browser-faithful PDF export from print HTML/CSS templates, including slides-details companion output |
 | D10 | Command system | **Direct keys for navigation, `t` opens terminal prompt for everything else** | Navigation must be zero-friction (arrows/space during a live talk); all other commands typed into a terminal-like prompt opened by pressing `t` — discoverable via `help`, with tab-completion and history |
 | D11 | Plugin architecture | **Simple function-based callbacks** | Preprocessors: `(md) => md`. Processors: `(el) => void`. Registered via config |
 | D12 | Slide-scoped styles | **Compile-time selector scoping** | Extract `<style>` blocks, rewrite selectors to slide container scope |

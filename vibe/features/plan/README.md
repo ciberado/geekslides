@@ -1,7 +1,7 @@
 # v2 Implementation Plan
 
 Complete rewrite of geekslides from JavaScript/Parcel to TypeScript/Vite with Web Components,
-Yjs sync, WeasyPrint PDF, and a terminal-style command workflow (`t`).
+Yjs sync, browser-backed PDF export, and a terminal-style command workflow (`t`).
 
 ## Phase Dependency Graph
 
@@ -88,7 +88,7 @@ All decisions and specifications are in the sibling docs:
 - [speaker-notes.md](../speaker-notes.md) — separate speaker view
 - [css-scaling.md](../css-scaling.md) — transform:scale() technique
 - [testing.md](../testing.md) — Vitest + Playwright strategy
-- [print.md](../print.md) — WeasyPrint, 3 output formats
+- [print.md](../print.md) — browser-backed PDF export, print templates, CLI integration
 - [deployment-v2.md](../deployment-v2.md) — Docker, Caddy
 
 ## Current Implementation Status

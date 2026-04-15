@@ -4,7 +4,7 @@
 
 geekslides v2 is a complete TypeScript rewrite of the markdown-based presentation engine.
 Presentations are authored as standalone repos (`README.md` + `config.json`), rendered in the
-browser as interactive slide decks with real-time synchronization, and exported to PDF via WeasyPrint.
+browser as interactive slide decks with real-time synchronization, and exported to PDF via headless Chromium through Playwright.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -57,10 +57,11 @@ browser as interactive slide decks with real-time synchronization, and exported 
 ┌─────────────────────────────────────────────────────────────┐
 │                    PDF Export                                │
 │                                                             │
-│  @geekslides/engine          WeasyPrint                     │
+│  @geekslides/engine          Playwright / Chromium          │
 │  ├── render to flat HTML ──> ├── slides.pdf                 │
 │  │   (no Shadow DOM!)        ├── slides-notes.pdf           │
-│  └── print templates         └── book.pdf                   │
+│  └── print templates         ├── slides-details.pdf         │
+│                               └── book.pdf                  │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -138,7 +139,7 @@ geekslides/
 │       │   ├── commands/
 │       │   │   ├── dev.ts        # vite dev server wrapper
 │       │   │   ├── build.ts      # production build
-│       │   │   ├── pdf.ts        # weasyprint invocation
+│       │   │   ├── pdf.ts        # Playwright/Chromium PDF export
 │       │   │   └── create.ts     # scaffold new presentation
 │       │   └── imageoptimizer.ts # sharp-based optimizer (from v1 tool)
 │       └── tests/
@@ -283,7 +284,7 @@ Presenter Browser                      Audience Browser
 | Input | Scattered hotkeys | Direct navigation + terminal prompt (`t`) |
 | Plugins | Hardcoded preprocessor array | Function-based plugin registry |
 | Per-slide CSS | Not supported | `<style>` blocks with compile-time scoping |
-| PDF export | Playwright screenshots → PDFKit | WeasyPrint HTML → PDF (3 formats) |
+| PDF export | Playwright screenshots → PDFKit | Playwright Chromium `page.pdf()` from print HTML (4 formats / companion details PDF) |
 | Testing | Jest (unit only, limited) | Vitest (unit/integration) + Playwright (E2E) |
 | Monorepo | Loose dirs | npm workspaces (`@geekslides/*`) |
 | Live reload | Manual `location.reload()` on MQTT | Vite HMR preserving slide position |

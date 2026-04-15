@@ -82,7 +82,16 @@ async function fetchStyles(config) {
         const res = await fetch(`${resolvedUrl}${separator}raw&t=${Date.now()}`, {
           cache: 'no-store',
         });
-        return await res.text();
+        let text = await res.text();
+        // Vite wraps ?raw CSS as a JS module: export default "..."
+        // with a sourcemap comment. Strip both to get actual CSS.
+        text = text.replace(/\/\/# sourceMappingURL=.*$/gm, '').trim();
+        if (text.startsWith('export default "')) {
+          try {
+            text = JSON.parse(text.slice('export default '.length).replace(/;\s*$/, ''));
+          } catch { /* not a JS module, use as-is */ }
+        }
+        return text;
       } catch {
         console.warn(`Failed to load style: ${url}`);
         return '';
