@@ -25,40 +25,44 @@ config.json + README.md
 │  @geekslides/engine          │
 │  SlideParser.parse()         │
 │  PluginManager.preprocess()  │
-│  PluginManager.process()     │
+│                              │
+│  Output: SlideData[]         │
+│  (partialCount, detailsHtml, │
+│   notesHtml per slide)       │
 └──────────────┬───────────────┘
-               │
-               ▼
-        SlideData[]
                │
                ▼
 ┌──────────────────────────────┐
-│  PrintRenderer               │
+│  Ephemeral Vite server       │
+│  + Playwright / Chromium     │
 │                              │
-│  Input: SlideData[]          │
-│  Template: slides.html |     │
-│           slides-notes.html |│
-│           book.html          │
-│                              │
-│  Output: flat HTML string    │
-│  (no Shadow DOM, no Custom   │
-│   Elements, no JavaScript)   │
+│  Screenshot each slide at    │
+│  1920×1080 → PNG files in    │
+│  OS temp dir                 │
 └──────────────┬───────────────┘
                │
                ▼
-        Flat HTML + CSS
+┌──────────────────────────────┐
+│  Assembly HTML builder       │
+│  (per format, in pdf.ts)     │
+│                              │
+│  Embeds PNG file:// URLs,    │
+│  details/notes HTML, and     │
+│  format-specific CSS         │
+└──────────────┬───────────────┘
                │
                ▼
 ┌──────────────────────────────┐
 │  Playwright / Chromium       │
-│  (headless browser)          │
 │                              │
-│  page.goto(file://...)       │
-│  page.pdf({...})             │
+│  page.goto(file://assemble)  │
+│  page.pdf({ preferCSSPageSize│
+│    printBackground: true })  │
 └──────────────────────────────┘
                │
                ▼
           output.pdf
+          (+ companion -details.pdf)
 ```
 
 ## Why Chromium `page.pdf()` over Screenshot Pipelines
@@ -128,21 +132,38 @@ Print templates live in `packages/engine/src/print/templates/` and are selected 
 The `pdf` command (`packages/cli/src/commands/pdf.ts`) takes a config path, output format, and output PDF path. It:
 
 1. Loads `config.json` and the referenced markdown file.
-2. Parses and preprocesses the markdown using `SlideParser` and `PluginManager` with built-in plugins.
-3. Renders to flat HTML via `PrintRenderer` with the selected template and title from config.
-4. Writes the HTML to a temporary file in a system temp directory.
-5. Launches Chromium through Playwright.
-6. Opens the generated HTML file with `page.goto(file://...)`.
-7. Calls `page.pdf()` with `preferCSSPageSize: true` and `printBackground: true`.
-8. Writes the requested primary PDF and, unless the primary format is already `slides-details`, writes a companion `-details.pdf`.
-9. Cleans up the temp HTML unless `--no-cleanup` is set.
+2. Parses the markdown using `SlideParser` to get `SlideData[]` (notes, details, partial counts).
+3. Launches Chromium through Playwright and starts an ephemeral Vite dev server for the deck.
+4. Screenshots each slide at 1920×1080 with all partials revealed, saving PNGs to an OS temp directory (`mkdtemp`).
+5. Builds a format-specific assembly HTML document in `pdf.ts` that references the screenshot PNGs and includes layout CSS:
+   - **slides**: one full-bleed image per 16:9 landscape page
+   - **slides-notes**: slide thumbnail + notes text on A4 portrait
+   - **slides-details**: slide thumbnail + details text on A4 landscape (horizontal) or A4 portrait (vertical). First and last slides without details are rendered as **hero pages** — the screenshot fills the full page.
+   - **book**: flowing A4 document with slide thumbnails and inline notes
+6. Opens the assembly HTML in Chromium and calls `page.pdf()` with `preferCSSPageSize: true` and `printBackground: true`.
+7. Writes the requested primary PDF and, unless the primary format is already `slides-details`, also writes a companion `-details.pdf`.
+8. Cleans up the OS temp directory (screenshots + assembly HTML) unless `--no-cleanup` is set.
+
+> **Note**: `PrintRenderer` (`packages/engine/src/print/PrintRenderer.ts`) is a separate module used by the browser's print view, not by the CLI PDF pipeline. The CLI builds its own assembly HTML directly from screenshot PNGs.
 
 ### CLI Usage
 
-- `npx geekslides pdf --config config.json --format slides -o slides.pdf`
-- `npx geekslides pdf --config config.json --format slides-notes -o notes.pdf`
-- `npx geekslides pdf --config config.json --format slides-details -o details.pdf`
-- `npx geekslides pdf --config config.json --format book -o book.pdf`
+```bash
+# Single format (also writes a companion -details.pdf automatically)
+npx geekslides pdf --config config.json --format slides --output slides.pdf
+npx geekslides pdf --config config.json --format slides-notes --output notes.pdf
+npx geekslides pdf --config config.json --format slides-details --output details.pdf
+npx geekslides pdf --config config.json --format book --output book.pdf
+
+# All formats in one pass (reuses the same screenshots)
+npx geekslides pdf --config config.json --all --output my-talk.pdf
+
+# Keep temp screenshots and assembly HTML for debugging
+npx geekslides pdf --config config.json --format slides --no-cleanup
+
+# Choose details layout (default: horizontal)
+npx geekslides pdf --config config.json --format slides-details --details-layout vertical
+```
 
 ## Browser Installation
 

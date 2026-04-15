@@ -244,7 +244,7 @@ On a fresh machine, install the browser once:
 npx playwright install chromium
 ```
 
-Use `--no-cleanup` to keep the generated temporary HTML for debugging, and `--details-layout horizontal|vertical` to control the details PDF layout.
+Use `--no-cleanup` to keep the temporary screenshots and assembly HTML for debugging, `--details-layout horizontal|vertical` to control the details PDF layout, and `--all` to produce all formats in a single pass reusing the same screenshots.
 
 ## Documentation Map
 
