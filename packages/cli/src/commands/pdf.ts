@@ -294,39 +294,150 @@ body { font-family: system-ui, -apple-system, sans-serif; font-size: 9pt; line-h
 
 /* ---------- PDF assembly: book ----------------------------------------- */
 
+/** Extract the first heading element from rendered slide HTML. */
+function extractHeadingFromHtml(html: string): { level: number; innerHtml: string } | null {
+  const m = /<h([1-6])[^>]*>([\s\S]*?)<\/h\1>/i.exec(html);
+  if (!m) return null;
+  return { level: parseInt(m[1] ?? '1', 10), innerHtml: m[2] ?? '' };
+}
+
+/** Resolve a potentially relative image src to a file:// URL using the deck directory. */
+function resolveImageToFileUrl(src: string, deckDir: string): string {
+  if (/^https?:\/\//i.test(src) || src.startsWith('file://')) return src;
+  if (src.startsWith('/')) return pathToFileURL(src).href;
+  return pathToFileURL(join(deckDir, src)).href;
+}
+
+/**
+ * Find the first image for a slide's book page.
+ * Priority: inline <img> in slide.html → backgroundImage field → null.
+ * Only used when the slide has details (separator/title-only pages stay clean).
+ */
+function extractFirstBookImage(slide: SlideData, deckDir: string): string | null {
+  const inlineMatch = /<img[^>]+src="([^"]+)"/i.exec(slide.html);
+  if (inlineMatch?.[1]) return resolveImageToFileUrl(inlineMatch[1], deckDir);
+  if (slide.backgroundImage) return resolveImageToFileUrl(slide.backgroundImage, deckDir);
+  return null;
+}
+
 function buildBookPdfHtml(
-  screenshotPaths: string[],
   slides: readonly SlideData[],
   title: string,
+  deckDir: string,
+  imageWidthPct: number,
 ): string {
-  const pages = slides.map((slide, i) => {
-    const imgSrc = pathToFileURL(screenshotPaths[i]).href;
-    const isChapter = slide.html.trimStart().startsWith('<h1');
-    const chapterClass = isChapter ? ' book-chapter' : '';
-    const notes = slide.notesHtml
-      ? `<div class="book-notes">${slide.notesHtml}</div>`
-      : '';
-    return `<section class="book-slide${chapterClass}"><div class="thumb"><img src="${imgSrc}"></div>${notes}</section>`;
-  }).join('\n');
+  const imgWidthCss = `${imageWidthPct}%`;
+  const sections: string[] = [];
+  let firstH1Seen = false;
 
-  return `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>
-@page { size: A4; margin: 0; }
+  for (const slide of slides) {
+    const hasDetails = Boolean(slide.detailsHtml);
+    const heading = extractHeadingFromHtml(slide.html);
+    const level = heading?.level ?? 4;
+
+    if (level === 1) {
+      const pageBreakClass = firstH1Seen ? ' page-break' : '';
+      firstH1Seen = true;
+      const imageUrl = hasDetails ? extractFirstBookImage(slide, deckDir) : null;
+      const imgHtml = imageUrl ? `<figure class="book-img"><img src="${imageUrl}" alt=""></figure>` : '';
+      const detailsContent = hasDetails ? `<div class="book-details">${imgHtml}${slide.detailsHtml}</div>` : '';
+      sections.push(
+        `<section class="book-section level-1${pageBreakClass}">` +
+        `<h1 class="book-h1">${heading?.innerHtml ?? ''}</h1>` +
+        detailsContent +
+        `</section>`,
+      );
+    } else if (level === 2) {
+      if (!hasDetails) {
+        sections.push(
+          `<section class="book-section level-2 separator">` +
+          `<h2 class="book-h2">${heading?.innerHtml ?? ''}</h2>` +
+          `</section>`,
+        );
+      } else {
+        const imageUrl = extractFirstBookImage(slide, deckDir);
+        const imgHtml = imageUrl ? `<figure class="book-img"><img src="${imageUrl}" alt=""></figure>` : '';
+        sections.push(
+          `<section class="book-section level-2">` +
+          `<h2 class="book-h2">${heading?.innerHtml ?? ''}</h2>` +
+          `<div class="book-details">${imgHtml}${slide.detailsHtml}</div>` +
+          `</section>`,
+        );
+      }
+    } else {
+      // h3 or deeper (or no heading at all)
+      if (!hasDetails) continue;
+      const imageUrl = extractFirstBookImage(slide, deckDir);
+      const imgHtml = imageUrl ? `<figure class="book-img"><img src="${imageUrl}" alt=""></figure>` : '';
+      const headingHtml = heading ? `<h3 class="book-h3">${heading.innerHtml}</h3>` : '';
+      sections.push(
+        `<section class="book-section level-3">` +
+        headingHtml +
+        `<div class="book-details">${imgHtml}${slide.detailsHtml}</div>` +
+        `</section>`,
+      );
+    }
+  }
+
+  const css = `
+@page { size: A4; margin: 20mm 20mm 25mm; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: system-ui, -apple-system, sans-serif; font-size: 11pt; line-height: 1.5; color: #222;
-  background: #f5f5f5; }
-h1.book-title { font-size: 24pt; padding: 25mm 25mm 1rem; }
-.book-slide { page-break-inside: avoid; padding: 8mm 25mm; }
-.book-chapter { page-break-before: always; }
-.book-chapter:first-of-type { page-break-before: auto; }
-.thumb img { width: 100%; height: auto; margin-bottom: 0.5rem; }
-.book-notes { line-height: 1.7; }
-.book-notes ul, .book-notes ol { padding-left: 1.5em; margin: 0.3em 0; }
-.book-notes li { margin-bottom: 0.15em; }
-.book-notes ul ul, .book-notes ol ol, .book-notes ul ol, .book-notes ol ul { padding-left: 1.5em; margin: 0.1em 0; }
-.book-notes p { margin: 0 0 0.4em; }
-.book-notes code { font-family: ui-monospace, monospace; font-size: 0.85em; background: #e8e8e8; padding: 0.1em 0.3em; border-radius: 3px; }
-.book-notes strong { font-weight: 600; }
-</style></head><body><h1 class="book-title">${escapeHtml(title)}</h1>${pages}</body></html>`;
+html, body { width: 100%; }
+body { font-family: Georgia, 'Times New Roman', serif; font-size: 11pt; line-height: 1.65; color: #1a1a1a; }
+
+/* Deck title masthead */
+.book-masthead { font-size: 9pt; font-family: system-ui, -apple-system, sans-serif;
+  font-variant: small-caps; letter-spacing: 0.08em; color: #888; margin-bottom: 2em;
+  padding-bottom: 0.5em; border-bottom: 1px solid #ddd; }
+
+/* Chapter openers (h1 slides) */
+.book-section.level-1 { margin-bottom: 1.5em; }
+.book-section.level-1.page-break { page-break-before: always; }
+.book-h1 { font-size: 22pt; font-weight: 700; color: #1a3e6e;
+  border-bottom: 2px solid #1a3e6e; padding-bottom: 0.3em; margin-bottom: 0.8em; }
+
+/* Section separators (h2 without details) */
+.book-section.level-2.separator { margin: 1.8em 0 1em; }
+.book-section.level-2.separator .book-h2 { font-size: 15pt; font-weight: 600; color: #555;
+  border-bottom: 1px solid #ccc; padding-bottom: 0.25em; }
+
+/* Section entries (h2 with details) */
+.book-section.level-2:not(.separator) { margin-bottom: 1.2em; }
+.book-section.level-2:not(.separator) .book-h2 { font-size: 15pt; font-weight: 700;
+  color: #1a3e6e; margin-bottom: 0.5em; }
+
+/* Content subsections (h3) */
+.book-section.level-3 { margin-bottom: 1.2em; }
+.book-h3 { font-size: 13pt; font-weight: 600; color: #2b2b2b; margin-bottom: 0.4em; }
+
+/* Details body */
+.book-details { overflow: hidden; }
+.book-details p { margin-bottom: 0.5em; }
+.book-details p:last-child { margin-bottom: 0; }
+.book-details ul, .book-details ol { margin: 0.3em 0 0.5em 1.4em; }
+.book-details li { margin-bottom: 0.2em; }
+.book-details ul ul, .book-details ol ol,
+.book-details ul ol, .book-details ol ul { margin: 0.1em 0 0.1em 1.4em; }
+.book-details code { font-family: 'Courier New', monospace; font-size: 0.88em;
+  background: #f0f0f0; padding: 0.1em 0.3em; border-radius: 2px; }
+.book-details pre { background: #f5f5f5; padding: 0.8em 1em; border-radius: 4px;
+  margin: 0.5em 0; font-size: 0.85em; overflow: hidden; }
+.book-details pre code { background: none; padding: 0; }
+.book-details strong { font-weight: 700; }
+.book-details a { color: #1a5faa; }
+.book-details h1, .book-details h2, .book-details h3,
+.book-details h4, .book-details h5, .book-details h6 {
+  font-size: 11pt; font-weight: 600; margin: 0.6em 0 0.3em; }
+
+/* Floated slide image */
+.book-img { float: right; margin: 0 0 1em 1.5em; width: ${imgWidthCss}; clear: right; }
+.book-img img { width: 100%; height: auto; border-radius: 3px; border: 1px solid #ddd; }`;
+
+  return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><style>${css}
+</style></head><body>
+<p class="book-masthead">${escapeHtml(title)}</p>
+${sections.join('\n')}
+</body></html>`;
 }
 
 /* ---------- generate a PDF from assembled HTML ------------------------- */
@@ -379,6 +490,8 @@ async function generatePdf(
   outputPath: string,
   detailsLayout: DetailsLayout,
   browser: Browser,
+  deckDir = '',
+  bookImageWidth = 25,
 ): Promise<boolean> {
   let html: string;
   let viewport: { width: number; height: number } | undefined;
@@ -402,8 +515,8 @@ async function generatePdf(
       viewport = { width: mmToPx(170), height: mmToPx(257) }; // A4, 20mm margin
       break;
     case 'book':
-      html = buildBookPdfHtml(screenshotPaths, slides, title);
-      viewport = { width: mmToPx(210), height: mmToPx(297) }; // A4, 0 margin
+      html = buildBookPdfHtml(slides, title, deckDir, bookImageWidth);
+      viewport = { width: mmToPx(170), height: mmToPx(252) }; // A4 portrait, 20mm/25mm margin
       break;
   }
 
@@ -422,6 +535,7 @@ export function registerPdfCommand(program: Command): void {
     .option('--content <path>', 'Markdown content file')
     .option('--config <path>', 'Config file path', 'config.json')
     .option('--details-layout <layout>', 'Details layout for single run: horizontal or vertical', 'horizontal')
+    .option('--book-image-width <percent>', 'Width of floated images in book format (0 to disable)', '25')
     .option('--no-cleanup', 'Keep temporary files')
     .action(async (opts: {
       format: string;
@@ -430,6 +544,7 @@ export function registerPdfCommand(program: Command): void {
       content?: string;
       config: string;
       detailsLayout: string;
+      bookImageWidth: string;
       cleanup: boolean;
     }) => {
       if (!opts.all) {
@@ -504,6 +619,8 @@ export function registerPdfCommand(program: Command): void {
         const screenshotPaths = await captureSlideScreenshots(url, slides, tmpDir, browser);
         console.log(`  Captured ${String(screenshotPaths.length)} slides`);
 
+        const bookImageWidth = Math.max(0, parseInt(opts.bookImageWidth, 10) || 25);
+
         if (opts.all) {
           // --- All formats, screenshots reused ---
           const base = opts.output?.replace(/\.pdf$/i, '') ?? join('.tmp', 'slides');
@@ -511,7 +628,7 @@ export function registerPdfCommand(program: Command): void {
           await generatePdf(slides, 'slides-notes',   config.title, screenshotPaths, tmpDir, `${base}-notes.pdf`,             'horizontal', browser);
           await generatePdf(slides, 'slides-details', config.title, screenshotPaths, tmpDir, `${base}-details-landscape.pdf`, 'horizontal', browser);
           await generatePdf(slides, 'slides-details', config.title, screenshotPaths, tmpDir, `${base}-details-vertical.pdf`,  'vertical',   browser);
-          await generatePdf(slides, 'book',           config.title, screenshotPaths, tmpDir, `${base}-book.pdf`,              'horizontal', browser);
+          await generatePdf(slides, 'book',           config.title, screenshotPaths, tmpDir, `${base}-book.pdf`,              'horizontal', browser, configDir, bookImageWidth);
         } else {
           const format = opts.format as TemplateName;
           const detailsLayout = opts.detailsLayout as DetailsLayout;
@@ -519,7 +636,7 @@ export function registerPdfCommand(program: Command): void {
           // --- Primary PDF ---
           const primaryOutput = opts.output ?? join('.tmp', `${format}.pdf`);
           const primaryOk = await generatePdf(
-            slides, format, config.title, screenshotPaths, tmpDir, primaryOutput, detailsLayout, browser,
+            slides, format, config.title, screenshotPaths, tmpDir, primaryOutput, detailsLayout, browser, configDir, bookImageWidth,
           );
           if (!primaryOk) return;
 
