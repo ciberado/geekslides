@@ -2,64 +2,63 @@
 
 ## Overview
 
-v2 simplifies deployment to two Docker services behind Caddy, replacing v1's three-listener
-MQTT broker with a single y-websocket server.
+v2 ships as a **single Docker image** combining the SPA, the y-websocket sync server, and Caddy
+into one container. No orchestration or compose file is required for simple deployments.
 
 ## Docker Architecture
 
 ```
-┌──────────────────────────────────────────────────┐
-│                  Docker Compose                   │
-│                                                  │
-│  ┌────────────────────────────────────────────┐  │
-│  │              caddy (reverse proxy)          │  │
-│  │                                            │  │
-│  │  :443 (HTTPS)                              │  │
-│  │  ┌──────────────────────────────────────┐  │  │
-│  │  │ /*        → slides:5173 (static)     │  │  │
-│  │  │ /ws       → yjs-server:1234 (ws)     │  │  │
-│  │  └──────────────────────────────────────┘  │  │
-│  └────────────────────────────────────────────┘  │
-│                    │              │               │
-│        ┌───────────┘              └─────────┐    │
-│        ▼                                    ▼    │
-│  ┌──────────────┐                ┌──────────────┐│
-│  │    slides     │                │  yjs-server  ││
-│  │              │                │              ││
-│  │  Caddy       │                │  Node.js     ││
-│  │  (static     │                │  y-websocket ││
-│  │   files)     │                │  :1234       ││
-│  └──────────────┘                └──────────────┘│
-└──────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────┐
+│            Single Container                  │
+│                                             │
+│  ┌─────────────────────────────────────┐    │
+│  │           Caddy (PID 1)              │    │
+│  │                                     │    │
+│  │  :443 (HTTPS)                       │    │
+│  │  /deck/*  → /srv/content (files)    │    │
+│  │  /ws*     → localhost:1234 (ws)     │    │
+│  │  /*       → /srv/slides (SPA)       │    │
+│  └─────────────────────────────────────┘    │
+│                     │                        │
+│                     ▼                        │
+│  ┌─────────────────────────────────────┐    │
+│  │    Node.js y-websocket (bg)          │    │
+│  │    listening on 127.0.0.1:1234       │    │
+│  └─────────────────────────────────────┘    │
+└─────────────────────────────────────────────┘
 ```
+
+Caddy runs as PID 1 and handles SIGTERM. The yjs-server is started as a background process
+by `docker/entrypoint.sh` before `exec caddy`.
 
 ## Docker Files
 
+### Dockerfile (3-stage)
+
+- **Stage 1 (`app-builder`)**: `node:22-alpine`. Installs all workspace deps, runs
+  `npm run build:app --workspace=@geekslides/cli` to produce the SPA bundle in
+  `packages/cli/dist/app`.
+- **Stage 2 (`server-builder`)**: `node:22-alpine`. Installs only server deps, runs
+  `npm run build --workspace=@geekslides/server` to produce `packages/server/dist/index.cjs`
+  (esbuild CJS bundle, no node_modules at runtime).
+- **Stage 3 (runtime)**: `node:22-alpine` + `caddy` via `apk`. Copies SPA to `/srv/slides`,
+  server bundle to `/app/index.cjs`, and the Caddyfile. `entrypoint.sh` starts Node then
+  exec-replaces itself with Caddy.
+
 ### docker-compose.yml
 
-The `docker/docker-compose.yml` defines three services:
-
-- **slides**: Builds from the root Dockerfile, restarts unless stopped. Mounts the `CONTENT_DIR` (defaults to `.`) as read-only at `/srv/content`.
-
-- **yjs-server**: Builds from Dockerfile.server, restarts unless stopped. Environment variables `PORT=1234` and `HOST=0.0.0.0`. Optionally mounts a `yjs-data` volume for persistence.
-
-- **caddy**: Uses the `caddy:2-alpine` image, restarts unless stopped. Maps ports 80 and 443. Mounts the Caddyfile as read-only, plus `caddy-data` and `caddy-config` volumes. Takes `DOMAIN` from the environment (defaults to `localhost`). Depends on both slides and yjs-server.
-
-Two named volumes are defined: `caddy-data` and `caddy-config`.
-
-### Dockerfile (slides — multi-stage)
-
-Stage 1 (builder): Uses `node:22-alpine`. Copies workspace package.json files for engine and CLI, runs `npm ci` for those workspaces, copies the source files, tsconfig, and vite config, then runs the engine build.
-
-Stage 2 (serve): Uses `caddy:2-alpine`. Copies the built dist from the builder into `/srv/slides`, copies a Caddyfile for static serving, exposes port 5173.
-
-### Dockerfile.server (yjs-server)
-
-Uses `node:22-alpine`. Copies the workspace root and server package.json, runs `npm ci --workspace=@geekslides/server --omit=dev`, copies the server source. Exposes port 1234, runs as the `node` user, and starts with `node packages/server/src/index.js`.
+Defines a single `geekslides` service. Mounts `CONTENT_DIR` (defaults to `.`) at
+`/srv/content:ro` for the presentation, plus `caddy-data` and `caddy-config` named volumes
+for TLS cert persistence.
 
 ### Caddyfile
 
-The `docker/Caddyfile` listens on the configured domain (or localhost). It reverse-proxies `/*` to `slides:5173` for static files, and `/ws` to `yjs-server:1234` for WebSocket connections. TLS is configured via the `ACME_EMAIL` variable — setting it to `internal` generates self-signed certs for development.
+Listens on `{$DOMAIN}` (default `localhost`). Routes:
+- `/deck/*` — strips prefix, serves files directly from `/srv/content`
+- `/ws*` — WebSocket proxy to `localhost:1234` with correct `Upgrade`/`Connection` headers
+- `/*` — SPA shell from `/srv/slides` with `index.html` fallback
+
+TLS configured via `{$ACME_EMAIL}` — `internal` generates self-signed certs for development.
 
 ## Environment Variables
 
@@ -67,8 +66,8 @@ The `docker/Caddyfile` listens on the configured domain (or localhost). It rever
 |----------|---------|-------------|
 | `DOMAIN` | `localhost` | Domain for Caddy HTTPS cert |
 | `ACME_EMAIL` | `internal` | Email for Let's Encrypt. `internal` = self-signed |
-| `CONTENT_DIR` | `.` | Host path to presentation content |
-| `PORT` | `1234` | yjs-server WebSocket port |
+| `CONTENT_DIR` | `.` | Host path to presentation content (optional — see below) |
+| `PORT` | `1234` | y-websocket server port (internal, not exposed) |
 
 ## Local Development
 
@@ -90,17 +89,48 @@ In a separate terminal, navigate to a presentation repo and run `npx geekslides 
 
 ### Development with Docker
 
-From the `docker/` directory, run `CONTENT_DIR=~/presentations/my-talk docker compose up --build`. Access at `https://localhost` (self-signed cert).
+From the repo root:
+
+```sh
+CONTENT_DIR=~/presentations/my-talk docker compose -f docker/docker-compose.yml up --build
+```
+
+Access at `https://localhost` (self-signed cert). The container serves the SPA, the deck
+content at `/deck/*`, and the sync server at `/ws*`.
 
 ## Production Deployment
 
 ### Quick Deploy
 
-On a server with Docker: clone the repo, `cd` into `docker/`, set `DOMAIN` and `ACME_EMAIL` environment variables, and run `docker compose up -d --build`.
+On a server with Docker:
 
-### With External Presentation Content
+```sh
+DOMAIN=slides.example.com \
+ACME_EMAIL=you@example.com \
+CONTENT_DIR=/path/to/my-talk \
+docker compose -f docker/docker-compose.yml up -d --build
+```
 
-Mount a specific presentation via `CONTENT_DIR=/path/to/presentation docker compose up -d`.
+First run will obtain a Let's Encrypt certificate automatically.
+
+### Without a Local Deck (Remote Presentations)
+
+`CONTENT_DIR` is optional. If omitted, `/srv/content` is empty and `/deck/config.json` will
+404. The app still loads — use the `?config=` query parameter or the `load` terminal command
+to point it at a remote deck URL:
+
+```
+https://yourserver/?config=https://example.com/my-talk/config.json
+```
+
+Or at runtime press `t` and run:
+
+```
+load https://example.com/my-talk/config.json
+```
+
+Relative asset paths in `config.json` (`content`, `styles`, `images/`) resolve against the
+config URL's base, so remote decks work end-to-end as long as the host sends CORS headers.
 
 ### Azure Static Website (Alternative)
 
@@ -110,13 +140,14 @@ For static deployments without real-time sync: run `npm run build`, then upload 
 
 | Aspect | v1 | v2 |
 |--------|----|----|
-| Services | 3 (slides + broker + Caddy) | 2 (slides + yjs-server + Caddy) |
-| Broker | Aedes (TCP 1883 + WS 8883 + WSS 8443) | y-websocket (single WS port) |
-| Ports exposed | 3 | 1 (443, Caddy handles routing) |
-| Config | Complex Caddyfile with MQTT proxy | Simple reverse proxy |
+| Containers | 3 (slides + broker + Caddy) | 1 (all-in-one) |
+| Broker | Aedes (TCP 1883 + WS 8883 + WSS 8443) | y-websocket (localhost:1234) |
+| Ports exposed | 3 | 2 (80 redirect, 443 HTTPS) |
+| Config | Complex multi-service Compose + Caddyfile | Single Dockerfile + single Caddyfile |
 | Auth | Username/password per MQTT room | Room token via y-websocket URL params |
 | SSL Termination | Caddy + broker self-signed WS | Caddy only |
 | Static files | Parcel build → Caddy | Vite build → Caddy |
+| Remote decks | Not supported | Supported via `?config=<url>` or `load` command |
 
 ## Health Checks
 

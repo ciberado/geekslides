@@ -50,7 +50,7 @@ function updateDocumentBase(baseHref) {
   base.href = new URL(baseHref, window.location.origin).href;
 }
 
-let configUrl = normalizeConfigUrl(params.get('config') || 'decks/slides-cuatro-cosas-aws/config.json');
+let configUrl = normalizeConfigUrl(params.get('config') || '/deck/config.json');
 let configBase = getConfigBase(configUrl);
 
 function resolveUrl(path) {
@@ -196,7 +196,7 @@ try {
     }
 
     const syncConfig = config.sync || {};
-    const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
+    const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
     const room = params.get('room') || syncConfig.room || 'default';
 
     const sync = new SyncManager();
@@ -293,7 +293,7 @@ try {
     if (syncEnabled) {
       try {
         sync = new SyncManager();
-        const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
+        const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
         const room = params.get('room') || syncConfig.room || 'default';
         sync.bind(slideshow);
         sync.connect(wsUrl, room);
@@ -378,7 +378,7 @@ try {
         showCmdOutput('Connecting...');
         sync.disconnect();
         await new Promise((resolvePromise) => setTimeout(resolvePromise, 100));
-        const wsUrl = config.sync?.server || `ws://${location.hostname}:1234`;
+        const wsUrl = config.sync?.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
         sync.connect(wsUrl, roomName);
         sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
         showCmdOutput(`✓ Room changed: ${roomName}`);

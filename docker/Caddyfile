@@ -1,16 +1,25 @@
 {$DOMAIN:localhost} {
 	tls {$ACME_EMAIL:internal}
 
-	# WebSocket sync — proxy to yjs-server
-	handle /ws {
-		reverse_proxy yjs-server:1234 {
+	# Deck content — served directly from mounted volume
+	handle /deck/* {
+		uri strip_prefix /deck
+		root * /srv/content
+		file_server
+	}
+
+	# WebSocket sync — local yjs-server
+	handle /ws* {
+		reverse_proxy localhost:1234 {
 			header_up Upgrade {http.request.header.Upgrade}
 			header_up Connection {http.request.header.Connection}
 		}
 	}
 
-	# Static slides — proxy to slides container
+	# SPA shell
 	handle {
-		reverse_proxy slides:5173
+		root * /srv/slides
+		file_server
+		try_files {path} /index.html
 	}
 }

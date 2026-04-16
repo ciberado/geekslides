@@ -1,7 +1,15 @@
 :5173
 
-root * /srv/slides
-file_server
+# Deck content (config.json, markdown, images, CSS) — served from mounted volume
+handle /deck/* {
+	uri strip_prefix /deck
+	root * /srv/content
+	file_server
+}
 
-# Fallback to index.html for SPA routing
-try_files {path} /index.html
+# SPA fallback for app shell
+handle {
+	root * /srv/slides
+	file_server
+	try_files {path} /index.html
+}

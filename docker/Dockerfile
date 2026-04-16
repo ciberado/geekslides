@@ -1,9 +1,8 @@
-# ----- Stage 1: Build -----
-FROM node:22-alpine AS builder
+# ----- Stage 1: Build SPA -----
+FROM node:22-alpine AS app-builder
 
 WORKDIR /app
 
-# Copy workspace root and package files for dependency resolution
 COPY package.json package-lock.json* ./
 COPY packages/engine/package.json packages/engine/
 COPY packages/cli/package.json packages/cli/
@@ -11,22 +10,46 @@ COPY packages/server/package.json packages/server/
 
 RUN npm ci --ignore-scripts
 
-# Copy source files
 COPY tsconfig.json vite.config.ts ./
 COPY packages/engine/ packages/engine/
 COPY packages/cli/ packages/cli/
 COPY index.html ./
 
-RUN npm run build --workspace=@geekslides/engine 2>/dev/null || \
-    npx vite build --outDir dist
+RUN npm run build:app --workspace=@geekslides/cli
 
-# ----- Stage 2: Serve -----
-FROM caddy:2-alpine
+# ----- Stage 2: Build yjs server -----
+FROM node:22-alpine AS server-builder
 
-COPY docker/Caddyfile.static /etc/caddy/Caddyfile
-COPY --from=builder /app/dist /srv/slides
+WORKDIR /app
 
-EXPOSE 5173
+COPY package.json package-lock.json* ./
+COPY packages/server/package.json packages/server/
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget -q --spider http://localhost:5173/ || exit 1
+RUN npm ci --workspace=@geekslides/server --ignore-scripts
+
+COPY packages/server/ packages/server/
+
+RUN npm run build --workspace=@geekslides/server
+
+# ----- Stage 3: Runtime (Node + Caddy) -----
+FROM node:22-alpine
+
+RUN apk add --no-cache caddy
+
+WORKDIR /app
+
+COPY --from=app-builder /app/packages/cli/dist/app /srv/slides
+COPY --from=server-builder /app/packages/server/dist/index.cjs ./index.cjs
+COPY docker/Caddyfile /etc/caddy/Caddyfile
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+EXPOSE 80 443
+
+ENV PORT=1234
+ENV HOST=127.0.0.1
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO /dev/null http://localhost:2019/ || exit 1
+
+ENTRYPOINT ["/entrypoint.sh"]

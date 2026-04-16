@@ -58,25 +58,33 @@ Structural config changes such as plugin, sync, or content-path changes still fa
 
 ## How Deck Loading Works
 
-By default the app loads `decks/slides-cuatro-cosas-aws/config.json`.
+By default the app loads `/deck/config.json` from the server (the mounted `CONTENT_DIR` in Docker,
+or a local path in dev mode).
 
 You can choose a deck in two ways.
 
 ### 1) URL Parameters (initial load)
 
-- `config=<path>`: choose deck config file
+- `config=<path-or-url>`: choose deck config file (local path or full HTTPS URL)
 - `view=speaker`: open speaker view
 - `room=<name>`: join a sync room
 
-Example:
+Examples:
 
-- http://localhost:5173/?config=decks/slides-cuatro-cosas-aws/config.json&room=my-talk
+```
+# Local deck (dev)
+http://localhost:5173/?config=decks/slides-cuatro-cosas-aws/config.json
+
+# Remote deck (any deployment)
+https://yourserver/?config=https://example.com/my-talk/config.json
+```
 
 ### 2) Terminal Commands (runtime switch)
 
 Press `t` during presentation and use commands like:
 
 - `load decks/slides-cuatro-cosas-aws/config.json`
+- `load https://example.com/my-talk/config.json`
 - `room my-talk`
 
 This lets you switch deck and room without retyping URLs.
