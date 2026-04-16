@@ -82,11 +82,13 @@ Syncs whiteboard drawing data. Each element in the array is a stroke object with
 
 - **Session state observer**: Watches the Y.Map for changes. When a remote transaction arrives (ignoring local ones), reads `slide`, `partial`, and `mode` from the map and applies them to the slideshow via `goTo()` and `mode` setter. Sets `#isRemoteUpdate` to `true` during application to prevent the local change from being re-published.
 
-- **Whiteboard observer**: Watches the Y.Array for added items from remote transactions. For each new stroke, dispatches a `geek:whiteboard:remote-stroke` CustomEvent with the stroke data.
+- **Whiteboard observer**: Watches the Y.Array for added items from remote transactions. For each new stroke, dispatches a `geek:whiteboard:remote-stroke` CustomEvent with the stroke data. The `<geek-whiteboard>` component listens for this event and renders each remote stroke via `drawRemoteStroke()`. `WhiteboardSync` is activated in `main.js` alongside sync setup, completing the bidirectional pipeline: local draw → event → `addStroke()` → Y.Array → remote observer → event → `drawRemoteStroke()`.
 
 **`publishState(slide, partial, mode)`**: Called by local navigation handlers. If `#isRemoteUpdate` is true, returns immediately (preventing echo). Otherwise wraps updates in a `doc.transact()` call, setting the `slide`, `partial`, `mode`, `presenterId` (current client ID), and `presenterActive` keys on the Y.Map.
 
 **`addStroke(stroke)`**: Pushes a whiteboard stroke object to the shared Y.Array.
+
+**`getStrokes()`**: Returns all existing strokes from the Y.Array as a plain array. Used by late-joining clients to replay whiteboard state that was drawn before they connected.
 
 **`clearStrokes(slideIndex)`**: Within a transaction, iterates the Y.Array in reverse and deletes all strokes matching the given slide index.
 

@@ -6,6 +6,7 @@ import {
   KeyBindings,
   TouchInput,
   SyncManager,
+  WhiteboardSync,
   iframeProcessor,
   chartProcessor,
   videoProcessor,
@@ -428,13 +429,52 @@ try {
     commands.register({ name: 'speaker', label: 'Open speaker view', execute: () => {
       window.open(`${location.pathname}?view=speaker&config=${configUrl}`, '_blank');
     }, category: 'view' });
-    commands.register({ name: 'whiteboard', label: 'Toggle whiteboard', execute: () => {
-      let whiteboard = document.querySelector('geek-whiteboard');
-      if (!whiteboard) {
-        whiteboard = document.createElement('geek-whiteboard');
-        slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(whiteboard);
+    // --- Whiteboard setup ---
+    const whiteboard = document.createElement('geek-whiteboard');
+    slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(whiteboard);
+    whiteboard.slideIndex = slideshow.currentSlide;
+
+    // Update whiteboard slide index on navigation
+    slideshow.addEventListener('geek:navigate', (e) => {
+      whiteboard.slideIndex = e.detail.slide;
+    });
+
+    // Auto-activate whiteboard on pointer drag over the slideshow
+    const gsContainer = slideshow.shadowRoot?.querySelector('.gs-container');
+    if (gsContainer) {
+      let pointerStartedOnSlide = false;
+      gsContainer.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0) return;
+        if (e.composedPath().some((el) => el.tagName === 'GEEK-WHITEBOARD')) return;
+        pointerStartedOnSlide = true;
+      });
+      gsContainer.addEventListener('pointermove', (e) => {
+        if (!pointerStartedOnSlide) return;
+        if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
+        if (!whiteboard.isVisible) {
+          whiteboard.setActive(true);
+        }
+      });
+      gsContainer.addEventListener('pointerup', () => { pointerStartedOnSlide = false; });
+    }
+
+    // Activate WhiteboardSync to bridge local strokes to SyncManager
+    if (sync) {
+      const wbSync = new WhiteboardSync(sync);
+      wbSync.activate();
+
+      // Replay existing strokes from the Y.Array (late-joining clients)
+      for (const stroke of sync.getStrokes()) {
+        whiteboard.drawRemoteStroke(stroke);
       }
+    }
+
+    commands.register({ name: 'whiteboard', label: 'Toggle whiteboard', execute: () => {
       whiteboard.toggle();
+    }, category: 'built-in' });
+
+    commands.register({ name: 'whiteboard-clear', label: 'Clear whiteboard on current slide', execute: () => {
+      whiteboard.clear();
     }, category: 'built-in' });
 
     if (sync) {

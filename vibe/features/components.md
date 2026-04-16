@@ -13,7 +13,7 @@ and orchestration from the root slideshow element.
 | `<geek-slideshow>` | Root controller for slide state, navigation, scaling, and mode |
 | `<geek-slide>` | One rendered slide with scoped styles and partial reveal support |
 | `<geek-terminal>` | Terminal-like command prompt opened with `t` |
-| `<geek-whiteboard>` | Canvas overlay for drawing and sync-ready stroke events |
+| `<geek-whiteboard>` | Per-slide canvas overlay for drawing, auto-activated on pen/mouse drag, synced via Yjs |
 | `<geek-chart>` | Table-to-chart rendering component |
 | `<geek-video>` | Video wrapper with partial-driven timestamp seeking |
 | `<geek-speaker-view>` | Separate speaker UI for current/next slide, notes, and controls |
@@ -26,12 +26,33 @@ and orchestration from the root slideshow element.
 │   ├── slide HTML (from markdown)
 │   ├── scoped style injection
 │   └── optional rich elements (<geek-chart>, <geek-video>)
-├── <geek-whiteboard> (overlay, hidden by default)
+├── <geek-whiteboard> (overlay, per-slide canvas, auto-shown on draw)
 └── <geek-terminal> (overlay prompt, hidden by default)
 
 Separate route/tab:
 <geek-speaker-view>
 ```
+
+## Whiteboard Behavior
+
+`<geek-whiteboard>` manages one canvas per slide. Key behaviors:
+
+- **Per-slide persistence**: Each slide has its own stroke buffer. Navigating away and
+  back restores previous drawings. Internally the component saves/restores an
+  `ImageData` snapshot plus the stroke list keyed by slide index.
+- **Auto-activation**: The whiteboard listens for `pointerdown` events on the slideshow
+  container. When a drag is detected (mouse button held or pen contact), the whiteboard
+  automatically becomes visible and captures the stroke. No manual `whiteboard` command
+  is required, though the command still works as a toggle for explicit control.
+- **Sync**: Local strokes are dispatched as `geek:whiteboard:stroke` events. The
+  `WhiteboardSync` bridge forwards them to `SyncManager.addStroke()`. Remote strokes
+  arrive as `geek:whiteboard:remote-stroke` events and are rendered via
+  `drawRemoteStroke()`. The whiteboard component listens for both event directions.
+- **Late-join replay**: When a new client joins the room, existing strokes are read
+  from the Yjs Y.Array via `SyncManager.getStrokes()` and replayed through
+  `drawRemoteStroke()` so late joiners see the full whiteboard state.
+- **Slide index**: The `slideIndex` property is set by the parent whenever navigation
+  occurs, ensuring strokes are tagged to the correct slide.
 
 ## Rendering Strategy
 

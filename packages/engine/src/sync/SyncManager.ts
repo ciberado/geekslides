@@ -90,6 +90,17 @@ export class SyncManager {
   }
 
   /**
+   * Return all existing whiteboard strokes (for late-joining clients).
+   */
+  getStrokes(): WhiteboardStroke[] {
+    const result: WhiteboardStroke[] = [];
+    for (let i = 0; i < this.#whiteboardStrokes.length; i++) {
+      result.push(this.#whiteboardStrokes.get(i) as WhiteboardStroke);
+    }
+    return result;
+  }
+
+  /**
    * Add a whiteboard stroke to the shared array.
    */
   addStroke(stroke: WhiteboardStroke): void {

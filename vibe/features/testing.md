@@ -125,7 +125,25 @@ Tests in `e2e/sync.spec.ts`:
 Tests in `e2e/whiteboard.spec.ts`:
 
 - **Toggle whiteboard** — opens terminal (`t`), runs `whiteboard`, asserts `<geek-whiteboard>` becomes visible.
-- **Draw strokes** — performs mouse drag on the canvas, verifies the stroke was drawn.
+- **Auto-activate on draw** — performs mouse drag directly on a slide, verifies the whiteboard canvas becomes visible automatically.
+- **Draw strokes** — performs mouse drag on the canvas, verifies the stroke was drawn (canvas pixel check).
+- **Per-slide persistence** — draws on slide 1, navigates to slide 2, navigates back, verifies slide 1 drawings remain.
+- **Stroke dispatches correct slideIndex** — draws on slide 2, inspects the dispatched event detail to confirm `slideIndex` matches.
+
+### Whiteboard Unit Tests
+
+Tests in `packages/engine/tests/unit/Whiteboard.test.ts`:
+
+- **Per-slide save/restore** — calls `saveSlide()`/`restoreSlide()`, verifies `ImageData` is cached and re-drawn.
+- **slideIndex setter** — asserts dispatched stroke events carry the correct slide index.
+- **Auto-show on setActive(true)** — confirms canvas display changes from `none` to `block`.
+- **Remote stroke rendering** — calls `drawRemoteStroke()`, verifies context draw calls.
+
+Tests in `packages/engine/tests/unit/SyncManager.test.ts` (whiteboard-related):
+
+- **addStroke pushes to Y.Array** — verifies stroke is stored in the shared array.
+- **getStrokes returns all existing strokes** — adds two strokes, confirms both are returned.
+- **getStrokes returns strokes from remote doc sync** — simulates a late-join by applying a remote Y.Doc update, confirms strokes are readable.
 
 ## CI Integration
 

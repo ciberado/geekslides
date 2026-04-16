@@ -129,4 +129,54 @@ describe('SyncManager', () => {
     const strokes = sm.doc.getArray('whiteboardStrokes');
     expect(strokes.length).toBe(1);
   });
+
+  it('getStrokes returns all existing strokes', () => {
+    const sm = new SyncManager(new EventTarget());
+    const stroke1 = {
+      id: 'stroke-1',
+      slideIndex: 0,
+      points: [[0.1, 0.2], [0.3, 0.4]] as [number, number][],
+      color: '#ff0000',
+      width: 3,
+      clientId: 'test',
+    };
+    const stroke2 = {
+      id: 'stroke-2',
+      slideIndex: 1,
+      points: [[0.5, 0.6]] as [number, number][],
+      color: '#00ff00',
+      width: 2,
+      clientId: 'test',
+    };
+
+    sm.addStroke(stroke1);
+    sm.addStroke(stroke2);
+
+    const result = sm.getStrokes();
+    expect(result).toHaveLength(2);
+    expect(result[0]?.id).toBe('stroke-1');
+    expect(result[1]?.id).toBe('stroke-2');
+  });
+
+  it('getStrokes returns strokes from remote doc sync', () => {
+    const sm = new SyncManager(new EventTarget());
+    const remoteDoc = new Y.Doc();
+    const remoteStrokes = remoteDoc.getArray('whiteboardStrokes');
+    remoteStrokes.push([{
+      id: 'remote-1',
+      slideIndex: 2,
+      points: [[0.1, 0.2]],
+      color: '#0000ff',
+      width: 4,
+      clientId: 'remote',
+    }]);
+
+    // Simulate late-join sync
+    Y.applyUpdate(sm.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    const result = sm.getStrokes();
+    expect(result).toHaveLength(1);
+    expect(result[0]?.id).toBe('remote-1');
+    expect(result[0]?.slideIndex).toBe(2);
+  });
 });

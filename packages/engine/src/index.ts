@@ -52,6 +52,7 @@ export type { TemplateName, PrintOptions } from './print/PrintRenderer.ts';
 // Phase 5: Sync
 export { SyncManager } from './sync/SyncManager.ts';
 export type { SyncTarget } from './sync/SyncManager.ts';
+export { WhiteboardSync } from './sync/WhiteboardSync.ts';
 export type { WhiteboardStroke } from './sync/types.ts';
 
 // Register custom elements

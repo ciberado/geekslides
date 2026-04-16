@@ -3,9 +3,19 @@
  *
  * Canvas overlay for freehand drawing, synced via Yjs.
  * Coordinates normalized to 0–1 for resolution independence.
+ *
+ * Features:
+ * - Per-slide persistence: each slide keeps its own ImageData snapshot.
+ * - Auto-activation: becomes visible on first pointer drag.
+ * - Remote stroke rendering: listens for geek:whiteboard:remote-stroke events.
  */
 
 import type { WhiteboardStroke } from '../sync/types.ts';
+
+interface SlideSnapshot {
+  imageData: ImageData;
+  strokes: WhiteboardStroke[];
+}
 
 export class Whiteboard extends HTMLElement {
   #canvas: HTMLCanvasElement | null = null;
@@ -16,6 +26,9 @@ export class Whiteboard extends HTMLElement {
   #lineWidth = 3;
   #visible = false;
   #strokeIdCounter = 0;
+  #slideIndex = 0;
+  #slideSnapshots = new Map<number, SlideSnapshot>();
+  #onRemoteStroke: ((e: Event) => void) | null = null;
 
   constructor() {
     super();
@@ -25,10 +38,30 @@ export class Whiteboard extends HTMLElement {
   connectedCallback(): void {
     this.#render();
     this.#setupListeners();
+    this.#listenForRemoteStrokes();
   }
 
   disconnectedCallback(): void {
     this.#removeListeners();
+    this.#stopListeningForRemoteStrokes();
+  }
+
+  /**
+   * Current slide index for tagging strokes.
+   */
+  get slideIndex(): number {
+    return this.#slideIndex;
+  }
+
+  set slideIndex(value: number) {
+    if (value === this.#slideIndex) return;
+    this.saveSlide();
+    this.#slideIndex = value;
+    this.restoreSlide();
+  }
+
+  get isVisible(): boolean {
+    return this.#visible;
   }
 
   /**
@@ -42,12 +75,23 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
-   * Clear all strokes from the canvas.
+   * Show the whiteboard (auto-activate).
+   */
+  setActive(active: boolean): void {
+    this.#visible = active;
+    if (this.#canvas) {
+      this.#canvas.style.display = active ? 'block' : 'none';
+    }
+  }
+
+  /**
+   * Clear all strokes from the canvas and the current slide snapshot.
    */
   clear(): void {
     if (this.#ctx && this.#canvas) {
       this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
     }
+    this.#slideSnapshots.delete(this.#slideIndex);
   }
 
   /**
@@ -65,9 +109,67 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
-   * Draw a remote stroke on the canvas.
+   * Save current canvas state for the active slide.
+   */
+  saveSlide(): void {
+    if (!this.#ctx || !this.#canvas) return;
+    const imageData = this.#ctx.getImageData(0, 0, this.#canvas.width, this.#canvas.height);
+    const existing = this.#slideSnapshots.get(this.#slideIndex);
+    this.#slideSnapshots.set(this.#slideIndex, {
+      imageData,
+      strokes: existing?.strokes ?? [],
+    });
+  }
+
+  /**
+   * Restore canvas state for the active slide.
+   */
+  restoreSlide(): void {
+    if (!this.#ctx || !this.#canvas) return;
+    this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
+    const snapshot = this.#slideSnapshots.get(this.#slideIndex);
+    if (snapshot) {
+      this.#ctx.putImageData(snapshot.imageData, 0, 0);
+    }
+  }
+
+  /**
+   * Draw a remote stroke on the canvas (only if it belongs to the current slide).
    */
   drawRemoteStroke(stroke: WhiteboardStroke): void {
+    if (stroke.slideIndex !== this.#slideIndex) {
+      // Store for later display when we navigate to that slide
+      this.#storeRemoteStroke(stroke);
+      return;
+    }
+
+    this.#drawStroke(stroke);
+
+    // Auto-show when receiving remote strokes
+    if (!this.#visible) {
+      this.setActive(true);
+    }
+  }
+
+  #storeRemoteStroke(stroke: WhiteboardStroke): void {
+    const snapshot = this.#slideSnapshots.get(stroke.slideIndex);
+    if (snapshot) {
+      snapshot.strokes.push(stroke);
+    } else {
+      const w = this.#canvas?.width ?? 1920;
+      const h = this.#canvas?.height ?? 1080;
+      // ImageData may not be available in test environments
+      const imageData = typeof ImageData !== 'undefined'
+        ? new ImageData(w, h)
+        : { data: new Uint8ClampedArray(w * h * 4), width: w, height: h } as ImageData;
+      this.#slideSnapshots.set(stroke.slideIndex, {
+        imageData,
+        strokes: [stroke],
+      });
+    }
+  }
+
+  #drawStroke(stroke: WhiteboardStroke): void {
     if (!this.#ctx || !this.#canvas) return;
 
     const ctx = this.#ctx;
@@ -130,7 +232,7 @@ export class Whiteboard extends HTMLElement {
     if (!this.#canvas) return;
 
     // Disable drawing on mobile to avoid conflict with navigation gestures
-    if (window.matchMedia('(max-width: 768px)').matches) return;
+    if (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) return;
 
     this.#canvas.addEventListener('pointerdown', this.#onPointerDown);
     this.#canvas.addEventListener('pointermove', this.#onPointerMove);
@@ -142,6 +244,21 @@ export class Whiteboard extends HTMLElement {
     this.#canvas.removeEventListener('pointerdown', this.#onPointerDown);
     this.#canvas.removeEventListener('pointermove', this.#onPointerMove);
     this.#canvas.removeEventListener('pointerup', this.#onPointerUp);
+  }
+
+  #listenForRemoteStrokes(): void {
+    this.#onRemoteStroke = (e: Event) => {
+      const stroke = (e as CustomEvent<WhiteboardStroke>).detail;
+      this.drawRemoteStroke(stroke);
+    };
+    document.addEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
+  }
+
+  #stopListeningForRemoteStrokes(): void {
+    if (this.#onRemoteStroke) {
+      document.removeEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
+      this.#onRemoteStroke = null;
+    }
   }
 
   #normalize(clientX: number, clientY: number): [number, number] {
@@ -187,12 +304,18 @@ export class Whiteboard extends HTMLElement {
     if (this.#currentPoints.length > 1) {
       const stroke: WhiteboardStroke = {
         id: `stroke-${String(++this.#strokeIdCounter)}`,
-        slideIndex: 0, // Set by parent
+        slideIndex: this.#slideIndex,
         points: this.#currentPoints,
         color: this.#color,
         width: this.#lineWidth,
         clientId: '',
       };
+
+      // Store locally for per-slide persistence
+      const snapshot = this.#slideSnapshots.get(this.#slideIndex);
+      if (snapshot) {
+        snapshot.strokes.push(stroke);
+      }
 
       this.dispatchEvent(new CustomEvent('geek:whiteboard:stroke', {
         bubbles: true,
