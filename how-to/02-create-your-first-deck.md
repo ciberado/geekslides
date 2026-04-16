@@ -49,7 +49,7 @@ The configuration file tells GeekSlides how to load and render your deck:
 | `plugins.preprocessors` | Markdown transforms applied before parsing |
 | `plugins.processors` | Slide transforms applied after parsing |
 
-> **Tip:** The `header` preprocessor converts `## Title` headings into proper slide markers automatically, so you can write natural Markdown without worrying about the slide separator syntax.
+> **Tip:** The `header` preprocessor converts any Markdown heading (`#`, `##`, `###`, …) into a slide marker automatically, so you can write natural Markdown without worrying about the slide separator syntax. Headings inside `:::` container blocks (Notes, Details) are left untouched.
 
 ### README.md — Your slides
 

@@ -21,12 +21,50 @@ describe('header-preprocessor', () => {
     expect(result).toContain('[](.slide#second)');
   });
 
-  it('does not affect # (h1) or ### (h3) headings', () => {
-    const md = '# H1 Title\n\n### H3 Title';
+  it('inserts separator above # (h1) headings', () => {
+    const md = '# Main Title\n\nSome content';
+    const result = headerPreprocessor(md, DEFAULT_CONFIG);
+    const lines = result.split('\n');
+
+    expect(lines[0]).toBe('[](.slide#main-title)');
+    expect(lines[1]).toBe('');
+    expect(lines[2]).toBe('# Main Title');
+  });
+
+  it('inserts separator above ### (h3) headings', () => {
+    const md = '### Sub Slide\n\nSome content';
+    const result = headerPreprocessor(md, DEFAULT_CONFIG);
+    const lines = result.split('\n');
+
+    expect(lines[0]).toBe('[](.slide#sub-slide)');
+    expect(lines[1]).toBe('');
+    expect(lines[2]).toBe('### Sub Slide');
+  });
+
+  it('handles all heading levels', () => {
+    const md = '# H1 Title\n\n## H2 Title\n\n### H3 Title';
     const result = headerPreprocessor(md, DEFAULT_CONFIG);
 
-    expect(result).not.toContain('[](.slide');
-    expect(result).toBe(md);
+    expect(result).toContain('[](.slide#h1-title)');
+    expect(result).toContain('[](.slide#h2-title)');
+    expect(result).toContain('[](.slide#h3-title)');
+  });
+
+  it('does not affect headings inside ::: container blocks', () => {
+    const md = '::: Notes\n## Hidden Heading\n:::\n\n## Visible Heading';
+    const result = headerPreprocessor(md, DEFAULT_CONFIG);
+
+    expect(result).not.toContain('[](.slide#hidden-heading)');
+    expect(result).toContain('[](.slide#visible-heading)');
+  });
+
+  it('handles nested ::: blocks correctly', () => {
+    const md = '::: Notes\n# Title Inside\n::: Details\n## Also Inside\n:::\n:::\n\n### Outside';
+    const result = headerPreprocessor(md, DEFAULT_CONFIG);
+
+    expect(result).not.toContain('[](.slide#title-inside)');
+    expect(result).not.toContain('[](.slide#also-inside)');
+    expect(result).toContain('[](.slide#outside)');
   });
 
   it('generates clean anchors from special characters', () => {
@@ -34,6 +72,15 @@ describe('header-preprocessor', () => {
     const result = headerPreprocessor(md, DEFAULT_CONFIG);
 
     expect(result).toContain('[](.slide#hello-world-2024)');
+  });
+
+  it('skips heading when an explicit marker already precedes it', () => {
+    const md = '[](.coverbg#hero)\n\n### My Slide\n\nContent';
+    const result = headerPreprocessor(md, DEFAULT_CONFIG);
+
+    expect(result).not.toContain('[](.slide#my-slide)');
+    expect(result).toContain('[](.coverbg#hero)');
+    expect(result).toContain('### My Slide');
   });
 
   it('handles empty heading', () => {

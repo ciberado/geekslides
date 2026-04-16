@@ -186,14 +186,20 @@ Embed live web pages inside slides:
 
 ## Structuring a longer deck
 
-As your deck grows, keep it readable:
+With the `header` preprocessor enabled every heading (`#`, `##`, `###`, …) automatically starts a new slide — no manual `[]()` markers needed. Headings inside `:::` blocks (Notes, Details) are ignored. Use the three levels to give your deck visual hierarchy:
+
+| Heading | Role |
+|---------|------|
+| `#`     | Title / chapter slide |
+| `##`    | Section divider |
+| `###`   | Regular content slide |
+
+You can still place an explicit marker **before** a heading when you need extra classes (`.partial`, `.coverbg`, …):
 
 ```markdown
-[](#title)
 # Scaling on AWS
 ### A practical guide
 
-[](#agenda)
 ## Agenda
 - Storage
 - Compute
@@ -201,7 +207,7 @@ As your deck grows, keep it readable:
 
 <!-- ───────────── Section: Storage ───────────── -->
 
-[](.partial#s3)
+[](.partial)
 ## Amazon S3
 - Object storage for any workload
 - 99.999999999% durability
@@ -212,14 +218,13 @@ Open the S3 console and show the bucket list.
 Emphasize the eleven nines of durability.
 :::
 
-[](#s3-demo)
 ## S3 Demo
 
 ![S3 console](images/s3-console.png)
 
 <!-- ───────────── Section: Compute ───────────── -->
 
-[](.partial#compute)
+[](.partial)
 ## Auto Scaling Groups
 - Launch templates define instance config
 - Scaling policies react to CloudWatch alarms

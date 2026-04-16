@@ -1,8 +1,9 @@
 /**
  * GeekSlides v2 — Header preprocessor.
  *
- * Matches lines starting with `## ` and inserts an empty-link slide separator
- * above each one. Replicates v1's headerPreprocessor logic.
+ * Matches lines starting with `# `, `## `, `### `, etc. and inserts an
+ * empty-link slide separator above each one. Headings inside `::: …`
+ * container blocks (Notes, Details, …) are left untouched.
  */
 
 import type { Preprocessor } from '../types.ts';
@@ -20,16 +21,35 @@ function slugify(title: string): string {
 export const headerPreprocessor: Preprocessor = (markdown: string): string => {
   const lines = markdown.split('\n');
   const result: string[] = [];
+  let insideContainer = 0;
 
   for (const line of lines) {
-    if (/^## /.test(line)) {
-      const title = line.replace(/^## /, '').trim();
-      const anchor = slugify(title);
-      result.push(`[](.slide#${anchor})`);
-      result.push('');
+    // Track ::: container blocks (Notes, Details, …)
+    if (/^:::\s*\S/.test(line)) {
+      insideContainer++;
+    } else if (/^:::\s*$/.test(line)) {
+      insideContainer = Math.max(0, insideContainer - 1);
+    }
+
+    if (insideContainer === 0 && /^#{1,6} /.test(line)) {
+      // Skip if a slide marker already precedes this heading.
+      const lastNonBlank = findLastNonBlank(result);
+      if (lastNonBlank === undefined || !/^\[]\(/.test(lastNonBlank)) {
+        const title = line.replace(/^#{1,6} /, '').trim();
+        const anchor = slugify(title);
+        result.push(`[](.slide#${anchor})`);
+        result.push('');
+      }
     }
     result.push(line);
   }
 
   return result.join('\n');
 };
+
+function findLastNonBlank(lines: string[]): string | undefined {
+  for (let i = lines.length - 1; i >= 0; i--) {
+    if (lines[i]!.trim() !== '') return lines[i];
+  }
+  return undefined;
+}
