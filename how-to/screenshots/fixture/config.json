@@ -1,0 +1,10 @@
+{
+  "title": "How-To Screenshot Deck",
+  "content": "README.md",
+  "styles": ["local.css"],
+  "aspectRatio": "16/9",
+  "plugins": {
+    "preprocessors": ["header"],
+    "processors": []
+  }
+}
