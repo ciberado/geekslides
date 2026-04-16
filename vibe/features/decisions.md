@@ -21,7 +21,7 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D15 | Package naming | **@geekslides/*** | `@geekslides/engine`, `@geekslides/server`, `@geekslides/cli` |
 | D16 | Live preview | **Vite HMR + custom hot reload handler** | File watcher built-in, stays on current slide during reload |
 | D17 | Presentation format | **Same as v1** | `README.md` + `config.json`, GitHub-readable, backward compatible |
-| D18 | Docker topology | **2 services** | slides (Vite dev / Caddy prod) + yjs-server, Caddy reverse proxies both |
+| D18 | Docker topology | **Single image** | SPA + yjs-server + Caddy in one container. 3-stage Dockerfile: app-builder (Vite), server-builder (esbuild CJS), runtime (node:22-alpine + caddy via apk). entrypoint.sh starts Node in background then exec-replaces with Caddy (PID 1). Caddy serves `/deck/*` from mounted content volume, proxies `/ws*` to localhost:1234, serves SPA with index.html fallback. One `docker compose up -d` deploys everything. |
 | D19 | Speaker notes | **Separate browser tab/window (not CSS overlay)** | v1's CSS trick (absolute positioning at left:100%) caused scaling conflicts, no timer, no next-slide preview. Separate view via Yjs sync gives full speaker UI |
 | D20 | Mobile/smartphone | **Touch gestures + responsive toolbar** | Audience follows on phone: swipe/tap nav, always-visible toolbar on small screens, auto-sync with presenter |
 | D21 | Slide scaling | **`transform: scale()` + CSS custom property** | Proven technique (reveal.js, Impress.js), author at fixed resolution. v2 improves over v1 by using `--gs-scale-factor` + ResizeObserver instead of CSSOM mutation |
