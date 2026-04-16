@@ -218,3 +218,167 @@ function httpRequest(
     req.end();
   });
 }
+
+describe('plugin proxy', () => {
+  it('rejects requests without url parameter', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      throw new Error('Unable to resolve server address');
+    }
+
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+
+    try {
+      const res = await httpRequest(`${baseUrl}/api/plugin-proxy`);
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('Missing required');
+    } finally {
+      await new Promise<void>((resolve) => { server.close(() => resolve()); });
+    }
+  });
+
+  it('rejects non-.js URLs', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      throw new Error('Unable to resolve server address');
+    }
+
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/plugin-proxy?url=${encodeURIComponent('http://example.com/style.css')}`,
+      );
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('Only .js files');
+    } finally {
+      await new Promise<void>((resolve) => { server.close(() => resolve()); });
+    }
+  });
+
+  it('rejects invalid URLs', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      throw new Error('Unable to resolve server address');
+    }
+
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/plugin-proxy?url=${encodeURIComponent('not-a-url')}`,
+      );
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('Invalid URL');
+    } finally {
+      await new Promise<void>((resolve) => { server.close(() => resolve()); });
+    }
+  });
+
+  it('proxies a valid .js URL and returns JavaScript', async () => {
+    // Start a tiny HTTP server to serve a fake plugin
+    const pluginSource = 'export default function(md) { return md.toUpperCase(); }';
+    const pluginServer = http.createServer((req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/javascript' });
+      res.end(pluginSource);
+    });
+    pluginServer.listen(0, '127.0.0.1');
+    if (!pluginServer.listening) {
+      await once(pluginServer, 'listening');
+    }
+    const pluginAddress = pluginServer.address();
+    if (!pluginAddress || typeof pluginAddress === 'string') {
+      pluginServer.close();
+      throw new Error('Unable to resolve plugin server address');
+    }
+    const pluginUrl = `http://127.0.0.1:${String(pluginAddress.port)}/emoji.js`;
+
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      pluginServer.close();
+      throw new Error('Unable to resolve server address');
+    }
+
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/plugin-proxy?url=${encodeURIComponent(pluginUrl)}`,
+      );
+      expect(res.status).toBe(200);
+      expect(res.body).toBe(pluginSource);
+    } finally {
+      await new Promise<void>((resolve) => { server.close(() => resolve()); });
+      await new Promise<void>((resolve) => { pluginServer.close(() => resolve()); });
+    }
+  });
+
+  it('returns 502 when remote server is unreachable', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      throw new Error('Unable to resolve server address');
+    }
+
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+
+    try {
+      // Use a port that should be closed
+      const res = await httpRequest(
+        `${baseUrl}/api/plugin-proxy?url=${encodeURIComponent('http://127.0.0.1:19999/plugin.js')}`,
+      );
+      expect(res.status).toBe(502);
+      expect(res.body).toContain('Failed to fetch remote plugin');
+    } finally {
+      await new Promise<void>((resolve) => { server.close(() => resolve()); });
+    }
+  });
+
+  it('rejects POST requests', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    if (!address || typeof address === 'string') {
+      server.close();
+      throw new Error('Unable to resolve server address');
+    }
+
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/plugin-proxy?url=${encodeURIComponent('http://example.com/plugin.js')}`,
+        { method: 'POST' },
+      );
+      expect(res.status).toBe(405);
+    } finally {
+      await new Promise<void>((resolve) => { server.close(() => resolve()); });
+    }
+  });
+});

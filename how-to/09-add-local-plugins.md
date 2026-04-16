@@ -1,10 +1,16 @@
 # Add Local Plugins
 
-You can ship plain JavaScript plugins alongside your deck files — no need to touch the engine source. Drop a `.js` file in your deck directory, reference it in `config.json` with a relative path, and it loads automatically.
+You can ship plain JavaScript plugins alongside your deck files — no need to touch the engine source. Drop a `.js` file in your deck directory, reference it in `config.json` with a relative path, and it loads automatically. You can also load plugins from **remote URLs** to share plugins across decks.
 
 ## How it works
 
-When GeekSlides sees a plugin name starting with `./` or `../` in `config.json`, it dynamically imports the file from your deck directory instead of looking up a built-in plugin. The file must export a **default function** matching the preprocessor or processor signature.
+GeekSlides recognises three plugin formats in `config.json`:
+
+| Format | Example | How it loads |
+|---|---|---|
+| Built-in name | `"header"` | Looked up in the engine's registry |
+| Relative path | `"./plugins/emoji.js"` | Dynamically imported from the deck directory |
+| Remote URL | `"https://cdn.example.com/plugins/emoji.js"` | Fetched through the server proxy, then imported |
 
 ```
 my-deck/
@@ -140,7 +146,7 @@ The `context` object passed to processors contains:
 | `config` | `object` | The deck's parsed `config.json` |
 | `slideshow` | `HTMLElement` | The `<geek-slideshow>` element |
 
-## Rules for local plugins
+## Rules for local and remote plugins
 
 | Rule | Why |
 |---|---|
@@ -149,9 +155,35 @@ The `context` object passed to processors contains:
 | Preprocessors must be pure | Same input, same output — keeps HMR predictable |
 | Processors must only touch their `slideElement` | Shadow DOM isolates slides; don't reach into siblings |
 | Keep plugins stateless | They re-run on every HMR reload |
-| Paths must start with `./` or `../` | Absolute paths and URLs are not supported |
+| Local paths must start with `./` or `../` | Absolute paths without scheme are not supported |
+| Remote URLs must end in `.js` | The proxy only accepts JavaScript files |
+| Remote URLs use `https:` in production | `http:` is allowed in dev mode only |
 
 > **Tip:** Start by copying a working example from this guide, then modify it. The `plugins/` directory name is a convention — you can use any relative path.
+
+## Use remote plugins
+
+To share plugins across multiple decks, host them on any HTTPS server and reference them by full URL:
+
+```json
+{
+  "plugins": {
+    "preprocessors": ["header", "https://plugins.example.com/emoji-preprocessor.js"],
+    "processors": ["iframe", "https://plugins.example.com/image-zoom-processor.js"]
+  }
+}
+```
+
+Remote plugins are fetched through the server's `/api/plugin-proxy` endpoint, which avoids CORS restrictions. The proxy:
+
+- Only fetches `.js` files
+- Enforces a 1 MB size limit
+- Caches responses for 5 minutes
+- Requires `https:` in production (`http:` allowed in dev mode)
+
+This means you can publish plugins to any static hosting (GitHub Pages, npm CDN, S3) and reference them from any deck without copying files.
+
+> **Tip:** For a team plugin repository, create a Git repo with your shared plugins and serve them via GitHub Pages or a CDN.
 
 ---
 

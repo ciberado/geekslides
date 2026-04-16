@@ -11,9 +11,11 @@ import { createServer as createHttpServer, type IncomingMessage, type Server } f
 import { WebSocketServer } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 import { handleContentApi } from './ContentApi.ts';
+import { handlePluginProxy } from './PluginProxy.ts';
 
 export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_UPLOAD_SIZE } from './ContentStore.ts';
 export { handleContentApi } from './ContentApi.ts';
+export { handlePluginProxy } from './PluginProxy.ts';
 
 export const SERVER_VERSION = '2.0.0-alpha.0';
 
@@ -45,7 +47,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
 
   const httpServer = createHttpServer((req, res) => {
     void (async () => {
-      const handled = await handleContentApi(req, res);
+      const handled = await handlePluginProxy(req, res) || await handleContentApi(req, res);
       if (!handled) {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');

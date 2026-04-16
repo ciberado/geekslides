@@ -14,6 +14,8 @@ import {
   buildManifest,
   getProxyBaseUrl,
   isLocalPluginPath,
+  isRemotePluginUrl,
+  importRemotePlugin,
   extractPreprocessor,
   extractProcessor,
 } from '@geekslides/engine';
@@ -145,7 +147,10 @@ async function applyPreprocessors(markdown, config) {
   let result = markdown;
   for (const name of ppNames) {
     let pp;
-    if (isLocalPluginPath(name)) {
+    if (isRemotePluginUrl(name)) {
+      const mod = await importRemotePlugin(name);
+      pp = extractPreprocessor(mod, name);
+    } else if (isLocalPluginPath(name)) {
       const url = resolveUrl(name);
       const mod = await import(/* @vite-ignore */ url);
       pp = extractPreprocessor(mod, name);
@@ -163,7 +168,10 @@ async function getActiveProcessors(config) {
   const processorNames = config.plugins.processors;
   const processors = [];
   for (const name of processorNames) {
-    if (isLocalPluginPath(name)) {
+    if (isRemotePluginUrl(name)) {
+      const mod = await importRemotePlugin(name);
+      processors.push(extractProcessor(mod, name));
+    } else if (isLocalPluginPath(name)) {
       const url = resolveUrl(name);
       const mod = await import(/* @vite-ignore */ url);
       processors.push(extractProcessor(mod, name));

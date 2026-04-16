@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { isLocalPluginPath, extractPreprocessor, extractProcessor } from '../../src/plugins/local-plugin.ts';
+import { isLocalPluginPath, isRemotePluginUrl, extractPreprocessor, extractProcessor } from '../../src/plugins/local-plugin.ts';
 
 describe('isLocalPluginPath', () => {
   it('returns true for ./ relative paths', () => {
@@ -21,6 +21,30 @@ describe('isLocalPluginPath', () => {
 
   it('returns false for URLs', () => {
     expect(isLocalPluginPath('https://cdn.example.com/plugin.js')).toBe(false);
+  });
+});
+
+describe('isRemotePluginUrl', () => {
+  it('returns true for https URLs', () => {
+    expect(isRemotePluginUrl('https://cdn.example.com/plugins/emoji.js')).toBe(true);
+  });
+
+  it('returns true for http URLs', () => {
+    expect(isRemotePluginUrl('http://localhost:3000/plugin.js')).toBe(true);
+  });
+
+  it('returns false for relative paths', () => {
+    expect(isRemotePluginUrl('./plugins/emoji.js')).toBe(false);
+    expect(isRemotePluginUrl('../shared/plugin.js')).toBe(false);
+  });
+
+  it('returns false for built-in names', () => {
+    expect(isRemotePluginUrl('header')).toBe(false);
+    expect(isRemotePluginUrl('iframe')).toBe(false);
+  });
+
+  it('returns false for absolute paths', () => {
+    expect(isRemotePluginUrl('/plugins/emoji.js')).toBe(false);
   });
 });
 

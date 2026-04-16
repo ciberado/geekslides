@@ -19,7 +19,7 @@ export { Slide } from './core/Slide.ts';
 // Phase 3: Plugin System
 export { PluginManager } from './plugins/PluginManager.ts';
 export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
-export { isLocalPluginPath, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
+export { isLocalPluginPath, isRemotePluginUrl, importRemotePlugin, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
 export { chartProcessor } from './plugins/builtins/chart-processor.ts';
