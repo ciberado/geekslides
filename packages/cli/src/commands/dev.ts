@@ -123,7 +123,12 @@ export function registerDevCommand(program: Command): void {
             allow: [APP_ROOT, deckDir],
           },
           ...(opts.sync
-            ? { proxy: { '/ws': { target: `ws://localhost:${String(wsPort)}`, ws: true } } }
+            ? {
+                proxy: {
+                  '/ws': { target: `ws://localhost:${String(wsPort)}`, ws: true },
+                  '/api': { target: `http://localhost:${String(wsPort)}` },
+                },
+              }
             : {}),
         },
         configFile: false,

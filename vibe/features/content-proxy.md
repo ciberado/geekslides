@@ -1,0 +1,165 @@
+# Content Proxy
+
+## Problem
+
+When the presenter loads a deck from their local filesystem or internal network, remote
+viewers/presenters connected via the sync server cannot access the same content. Their
+browsers try to fetch config.json, markdown, CSS, and images from the original URL — which
+is unreachable outside the presenter's local environment.
+
+## Solution
+
+The presenter's browser uploads the deck assets (config, markdown, CSS, and referenced
+images) to the server via HTTP. The server stores them in a temp directory scoped to the
+sync room. All clients — including the presenter — always load deck content from the server
+proxy endpoint instead of the original source.
+
+## Design Decisions
+
+### Conversation Record
+
+| Question | Answer | Rationale |
+|----------|--------|-----------|
+| What content to proxy? | **Deck assets only** (config, markdown, CSS, images) | External resources (CDN, iframes) stay as-is; only local assets need relaying |
+| Activation model? | **Always proxy** | Simplest — no runtime decisions, consistent behavior for all clients |
+| How does content reach the server? | **Presenter uploads via HTTP** | Browser pushes content on connect; no Docker mount needed for ad-hoc sharing |
+| HMR for remote viewers? | **No — snapshot only** | Remote viewers get content at upload time; presenter restarts to push updates |
+| Security scoping? | **Room-scoped** | Deck content is tied to the sync room; requires valid room membership to fetch |
+| Upload transport? | **HTTP REST** | `POST /api/rooms/:room/content` — simple multipart upload |
+| Storage backend? | **Temp filesystem** | Write to a temp directory on the server; cleaned up when room is destroyed |
+| Max deck size? | **200 MB** | Generous limit to accommodate image-heavy decks |
+| Image handling? | **Only referenced files** | Client scans markdown + CSS for image references, uploads only those |
+
+### Architecture Decision
+
+**D22 — Content proxy: always-proxy with HTTP upload to temp filesystem, room-scoped**
+
+The presenter's browser collects deck assets (config.json, markdown, stylesheets, and
+referenced images), uploads them to `POST /api/rooms/:room/content`, and all clients
+fetch deck content from `GET /api/rooms/:room/content/:path`. Content is stored in a
+server-side temp directory per room and cleaned up when the room expires.
+
+## Architecture
+
+```
+┌─────────────────────────┐
+│   Presenter Browser     │
+│                         │
+│  1. Load deck locally   │
+│  2. Scan for assets     │  POST /api/rooms/:room/content
+│  3. Upload bundle ──────┼──────────────────────┐
+│  4. Rewrite config URL  │                      │
+│     to server proxy     │                      ▼
+│                         │          ┌───────────────────────┐
+│                         │          │   GeekSlides Server   │
+│                         │          │                       │
+│  5. Fetch from proxy  ◄─┼──────────┤  /api/rooms/:room/   │
+│                         │          │    content/:path      │
+└─────────────────────────┘          │                       │
+                                     │  Temp dir per room:   │
+┌─────────────────────────┐          │  /tmp/gs-rooms/       │
+│   Audience Browser      │          │    <room>/            │
+│                         │          │      config.json      │
+│  6. Receive sync state  │          │      README.md        │
+│  7. Fetch from proxy  ◄─┼──────────┤      local.css        │
+│                         │          │      images/...       │
+└─────────────────────────┘          └───────────────────────┘
+```
+
+## API Design
+
+### Upload Deck Content
+
+```
+POST /api/rooms/:room/content
+Content-Type: multipart/form-data
+
+Fields:
+  files[]: (multiple) — deck files with relative paths preserved
+  manifest: JSON string — { files: ["config.json", "README.md", ...] }
+
+Response: 201 Created
+{
+  "room": "my-talk",
+  "files": ["config.json", "README.md", "local.css", "images/logo.png"],
+  "totalSize": 2456789
+}
+```
+
+### Fetch Deck Asset
+
+```
+GET /api/rooms/:room/content/:path
+    
+Response: 200 OK (file content with appropriate Content-Type)
+Response: 404 Not Found (if room or file doesn't exist)
+```
+
+### Size Limits
+
+- Max total upload: 200 MB
+- Individual file: no separate limit (bounded by total)
+- Enforced via `Content-Length` header check before reading body
+
+## Client-Side Flow
+
+### Presenter (Uploader)
+
+1. Load config.json from the original local/network URL
+2. Parse markdown content, scan for image references (`![](path)`, `bgurl(path)`)
+3. Scan CSS for `url(...)` references  
+4. Collect all referenced files into a manifest
+5. Upload via multipart POST to `/api/rooms/:room/content`
+6. Rewrite the `?config=` URL to point at `/api/rooms/:room/content/config.json`
+7. All subsequent fetches go through the server proxy
+
+### Audience (Consumer)
+
+1. Connect to sync room via Yjs
+2. Receive `contentProxy` field from shared Y.Map `sessionState`
+   - Contains the room name for proxied content
+3. Load deck from `/api/rooms/:room/content/config.json`
+4. All relative asset URLs resolve against the proxy base
+
+## Shared State Extension
+
+The Yjs `sessionState` Y.Map gains a new field:
+
+```
+sessionState.set('contentProxy', {
+  room: 'my-talk',
+  baseUrl: '/api/rooms/my-talk/content/'
+})
+```
+
+When a viewer sees `contentProxy` in the shared state, it loads the deck from that
+base URL instead of needing a local `?config=` parameter.
+
+## Implementation Plan
+
+### Phase 1: Server — Content Store + HTTP API
+- Add HTTP server alongside WebSocket server (share the same port via upgrade routing)
+- `POST /api/rooms/:room/content` — accept multipart upload, write to temp dir
+- `GET /api/rooms/:room/content/*` — serve files from temp dir
+- Room cleanup: delete temp dir when last client disconnects (or after TTL)
+- Size limit enforcement (200 MB)
+- Path traversal protection (reject `..` in file paths)
+
+### Phase 2: Client — Asset Scanner + Uploader  
+- `DeckUploader` class in `@geekslides/engine`:
+  - `scanAssets(config, markdown, css)` → list of relative paths
+  - `uploadDeck(room, files)` → POST multipart to server
+- Image reference scanner: parses markdown `![](path)` and `bgurl(path)` 
+- CSS reference scanner: parses `url(...)` in stylesheets
+
+### Phase 3: Client — Proxy-Aware Loading
+- Extend `main.js` to detect sync + upload flow
+- After upload, rewrite config URL to proxy endpoint
+- Publish `contentProxy` to Yjs `sessionState`
+- Audience clients read `contentProxy` and load from server
+- `<base>` tag update for relative URL resolution
+
+### Phase 4: Integration
+- Wire up Caddy reverse proxy for `/api/*` to Node server
+- Wire up Vite dev proxy for `/api/*`
+- E2E test: presenter uploads, audience loads from proxy

@@ -17,12 +17,13 @@ into one container. No orchestration or compose file is required for simple depl
 │  │  :443 (HTTPS)                       │    │
 │  │  /deck/*  → /srv/content (files)    │    │
 │  │  /ws*     → localhost:1234 (ws)     │    │
+│  │  /api/*   → localhost:1234 (http)   │    │
 │  │  /*       → /srv/slides (SPA)       │    │
 │  └─────────────────────────────────────┘    │
 │                     │                        │
 │                     ▼                        │
 │  ┌─────────────────────────────────────┐    │
-│  │    Node.js y-websocket (bg)          │    │
+│  │    Node.js y-websocket + API (bg)    │    │
 │  │    listening on 127.0.0.1:1234       │    │
 │  └─────────────────────────────────────┘    │
 └─────────────────────────────────────────────┘
@@ -56,6 +57,7 @@ for TLS cert persistence.
 Listens on `{$DOMAIN}` (default `localhost`). Routes:
 - `/deck/*` — strips prefix, serves files directly from `/srv/content`
 - `/ws*` — WebSocket proxy to `localhost:1234` with correct `Upgrade`/`Connection` headers
+- `/api/*` — HTTP proxy to `localhost:1234` for the content proxy API (deck upload/serving)
 - `/*` — SPA shell from `/srv/slides` with `index.html` fallback
 
 TLS configured via `{$ACME_EMAIL}` — `internal` generates self-signed certs for development.
@@ -132,6 +134,29 @@ load https://example.com/my-talk/config.json
 Relative asset paths in `config.json` (`content`, `styles`, `images/`) resolve against the
 config URL's base, so remote decks work end-to-end as long as the host sends CORS headers.
 
+### Content Proxy (Automatic Deck Sharing)
+
+When sync is enabled, the presenter's browser automatically uploads all deck assets
+(config, markdown, CSS, referenced images) to the server via `POST /api/rooms/:room/content`.
+The server stores them in a per-room temp directory. All audience clients in the same sync room
+receive the proxy URL via the Yjs shared state and load the deck from the server instead of
+needing direct access to the presenter's local files or network.
+
+This makes "serverless" deployments fully functional for remote audiences:
+
+```sh
+# Deploy server without any mounted content
+DOMAIN=slides.example.com ACME_EMAIL=you@example.com \
+  docker compose -f docker/docker-compose.yml up -d --build
+```
+
+The presenter opens the SPA, loads their local deck via `?config=` or the `load` command,
+and the content proxy uploads it automatically. Audience members visiting the same room URL
+receive the deck without needing access to the original source.
+
+Proxy content is room-scoped and ephemeral — it is cleaned up when the room is destroyed
+or the server restarts. Max upload size: 200 MB.
+
 ### Azure Static Website (Alternative)
 
 For static deployments without real-time sync: run `npm run build`, then upload the `packages/engine/dist` directory to an Azure Blob Storage `$web` container using `az storage blob upload-batch`.
@@ -147,7 +172,20 @@ For static deployments without real-time sync: run `npm run build`, then upload 
 | Auth | Username/password per MQTT room | Room token via y-websocket URL params |
 | SSL Termination | Caddy + broker self-signed WS | Caddy only |
 | Static files | Parcel build → Caddy | Vite build → Caddy |
-| Remote decks | Not supported | Supported via `?config=<url>` or `load` command |
+| Remote decks | Not supported | Supported via `?config=<url>`, `load` command, or automatic content proxy |
+
+## Content Proxy API
+
+The Node.js server exposes an HTTP API alongside the WebSocket sync:
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/rooms/:room/content` | `POST` | Upload deck assets (multipart/form-data, max 200 MB) |
+| `/api/rooms/:room/content/:path` | `GET` | Fetch a proxied deck file |
+
+Content is stored in per-room temp directories and cleaned up on server restart.
+Path traversal is blocked — `..` segments return 404. See [Content Proxy](content-proxy.md)
+for the full design.
 
 ## Health Checks
 

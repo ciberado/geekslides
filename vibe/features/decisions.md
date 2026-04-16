@@ -25,6 +25,7 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D19 | Speaker notes | **Separate browser tab/window (not CSS overlay)** | v1's CSS trick (absolute positioning at left:100%) caused scaling conflicts, no timer, no next-slide preview. Separate view via Yjs sync gives full speaker UI |
 | D20 | Mobile/smartphone | **Touch gestures + responsive toolbar** | Audience follows on phone: swipe/tap nav, always-visible toolbar on small screens, auto-sync with presenter |
 | D21 | Slide scaling | **`transform: scale()` + CSS custom property** | Proven technique (reveal.js, Impress.js), author at fixed resolution. v2 improves over v1 by using `--gs-scale-factor` + ResizeObserver instead of CSSOM mutation |
+| D22 | Content proxy | **Always-proxy with HTTP upload to temp filesystem, room-scoped** | Presenter uploads deck assets to server via HTTP; all clients load from server proxy. Scoped per sync room, stored in temp dir, cleaned up on disconnect. Enables remote viewers to access locally-sourced presentations |
 
 ## Detailed Documents
 
@@ -39,3 +40,4 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 - [Testing Strategy](testing.md)
 - [Print & PDF Generation](print.md)
 - [Deployment](deployment-v2.md)
+- [Content Proxy](content-proxy.md)

@@ -10,6 +10,9 @@ import {
   iframeProcessor,
   chartProcessor,
   videoProcessor,
+  uploadDeck,
+  buildManifest,
+  getProxyBaseUrl,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -290,6 +293,7 @@ try {
     const syncConfig = config.sync || {};
     const syncEnabled = syncConfig.enabled !== false;
     let sync = null;
+    let isContentUploader = false;
 
     if (syncEnabled) {
       try {
@@ -302,6 +306,30 @@ try {
         slideshow.addEventListener('geek:navigate', (e) => {
           sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
         });
+
+        // Content proxy: upload deck assets to server so remote viewers can access them
+        // Fire-and-forget — don't block the rest of initialization
+        void (async () => {
+          try {
+            const serverBaseUrl = `${location.protocol}//${location.host}`;
+            const manifest = buildManifest(configUrl, config, markdown, combinedCss);
+            await uploadDeck(serverBaseUrl, room, configBase, manifest);
+
+            isContentUploader = true;
+            // Publish proxy info so audience clients know where to find content
+            const proxyBase = getProxyBaseUrl(serverBaseUrl, room);
+            sync.doc.transact(() => {
+              sync.doc.getMap('sessionState').set('contentProxy', JSON.stringify({
+                room,
+                baseUrl: proxyBase,
+              }));
+            });
+
+            console.log('[content-proxy] Deck uploaded for room:', room);
+          } catch (err) {
+            console.warn('[content-proxy] Upload failed (remote viewers may not see content):', err.message);
+          }
+        })();
 
         console.log('[sync] Connected to', wsUrl, 'room:', room);
       } catch (err) {
@@ -363,6 +391,35 @@ try {
       } catch (err) {
         showCmdOutput(`✗ Failed to load: ${err.message}`);
         console.error('[load] Error:', err);
+      }
+    }
+
+    async function reloadDeckFromProxy(proxyBaseUrl) {
+      try {
+        const proxyConfigUrl = `${proxyBaseUrl}config.json`;
+        const newConfig = await loadConfig(proxyConfigUrl);
+
+        configUrl = proxyConfigUrl;
+        configBase = proxyBaseUrl;
+        updateDocumentBase(configBase);
+
+        const newMarkdown = await fetchMarkdown(newConfig);
+        const newCss = await fetchStyles(newConfig);
+
+        combinedCss = newCss;
+        updateDocumentTitle(newConfig);
+        slideshow.loadStyles(newCss);
+
+        const processedMd = applyPreprocessors(newMarkdown, newConfig);
+        const newSlides = parse(processedMd);
+        slideshow.loadSlides(newSlides);
+        config = newConfig;
+        applyProcessors(slideshow, newConfig);
+        slideshow.setAspectRatio(newConfig.aspectRatio);
+
+        console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
+      } catch (err) {
+        console.warn('[content-proxy] Failed to load from proxy:', err.message);
       }
     }
 
@@ -467,6 +524,34 @@ try {
       for (const stroke of sync.getStrokes()) {
         whiteboard.drawRemoteStroke(stroke);
       }
+
+      // Content proxy: watch for proxy info published by presenter
+      // Skip if this client is the uploader (presenter already has content loaded)
+      let proxyLoaded = false;
+      const checkContentProxy = () => {
+        if (proxyLoaded || isContentUploader) return;
+        const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
+        if (typeof proxyRaw !== 'string') return;
+
+        try {
+          const proxy = JSON.parse(proxyRaw);
+          if (proxy.baseUrl) {
+            proxyLoaded = true;
+            void reloadDeckFromProxy(proxy.baseUrl);
+          }
+        } catch {
+          // ignore invalid proxy data
+        }
+      };
+
+      sync.doc.getMap('sessionState').observe((event) => {
+        if (event.keysChanged.has('contentProxy')) {
+          checkContentProxy();
+        }
+      });
+
+      // Check immediately in case proxy was already set before we connected
+      checkContentProxy();
     }
 
     commands.register({ name: 'whiteboard', label: 'Toggle whiteboard', execute: () => {

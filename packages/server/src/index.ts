@@ -1,13 +1,19 @@
 /**
- * GeekSlides v2 — y-websocket sync server.
+ * GeekSlides v2 — y-websocket sync server + content proxy.
  *
  * Wraps y-websocket's setupWSConnection with room-based routing and auth.
+ * Also serves the content proxy HTTP API for room-scoped deck uploads.
  */
 
 // eslint-disable-next-line @typescript-eslint/triple-slash-reference
 /// <reference path="./types/y-websocket.d.ts" />
+import { createServer as createHttpServer, type IncomingMessage, type Server } from 'node:http';
 import { WebSocketServer } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
+import { handleContentApi } from './ContentApi.ts';
+
+export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_UPLOAD_SIZE } from './ContentStore.ts';
+export { handleContentApi } from './ContentApi.ts';
 
 export const SERVER_VERSION = '2.0.0-alpha.0';
 
@@ -21,32 +27,56 @@ const DEFAULT_OPTIONS: ServerOptions = {
   host: '0.0.0.0',
 };
 
-export function createServer(options: Partial<ServerOptions> = {}): WebSocketServer {
+function extractRoom(req: IncomingMessage): string | null {
+  const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+  const pathSegments = url.pathname.split('/').filter(Boolean);
+  return pathSegments[pathSegments.length - 1] || url.searchParams.get('room');
+}
+
+function checkAuth(req: IncomingMessage): boolean {
+  const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
+  const token = url.searchParams.get('token');
+  // Auth placeholder — extend in production
+  return token !== 'invalid';
+}
+
+export function createServer(options: Partial<ServerOptions> = {}): Server {
   const opts = { ...DEFAULT_OPTIONS, ...options };
 
-  const wss = new WebSocketServer({ port: opts.port, host: opts.host });
-
-  wss.on('connection', (ws, req) => {
-    const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
-    const pathSegments = url.pathname.split('/').filter(Boolean);
-    const room = pathSegments[pathSegments.length - 1] || url.searchParams.get('room');
-
-    if (!room) {
-      ws.close(4001, 'Missing room parameter');
-      return;
-    }
-
-    const token = url.searchParams.get('token');
-    // Auth placeholder — extend in production
-    if (token === 'invalid') {
-      ws.close(4003, 'Invalid token');
-      return;
-    }
-
-    setupWSConnection(ws, req, { docName: room });
+  const httpServer = createHttpServer((req, res) => {
+    void (async () => {
+      const handled = await handleContentApi(req, res);
+      if (!handled) {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Not found');
+      }
+    })();
   });
 
-  return wss;
+  const wss = new WebSocketServer({ noServer: true });
+
+  httpServer.on('upgrade', (req, socket, head) => {
+    const room = extractRoom(req);
+
+    if (!room) {
+      socket.write('HTTP/1.1 400 Bad Request\r\n\r\nMissing room parameter');
+      socket.destroy();
+      return;
+    }
+
+    if (!checkAuth(req)) {
+      socket.write('HTTP/1.1 403 Forbidden\r\n\r\nInvalid token');
+      socket.destroy();
+      return;
+    }
+
+    wss.handleUpgrade(req, socket, head, (ws) => {
+      setupWSConnection(ws, req, { docName: room });
+    });
+  });
+
+  httpServer.listen(opts.port, opts.host);
+  return httpServer;
 }
 
 // Start server when run directly
@@ -58,11 +88,11 @@ if (
 ) {
   const port = Number(process.env['PORT']) || DEFAULT_OPTIONS.port;
   const host = process.env['HOST'] ?? DEFAULT_OPTIONS.host;
-  const wss = createServer({ port, host });
-  console.log(`[geekslides] y-websocket server listening on ws://${host}:${String(port)}`);
+  const server = createServer({ port, host });
+  console.log(`[geekslides] server listening on http://${host}:${String(port)}`);
 
   process.on('SIGINT', () => {
-    wss.close();
+    server.close();
     process.exit(0);
   });
 }

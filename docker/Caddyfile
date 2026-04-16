@@ -16,6 +16,11 @@
 		}
 	}
 
+	# Content proxy API — local yjs-server
+	handle /api/* {
+		reverse_proxy localhost:1234
+	}
+
 	# SPA shell
 	handle {
 		root * /srv/slides

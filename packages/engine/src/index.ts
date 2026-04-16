@@ -54,6 +54,8 @@ export { SyncManager } from './sync/SyncManager.ts';
 export type { SyncTarget } from './sync/SyncManager.ts';
 export { WhiteboardSync } from './sync/WhiteboardSync.ts';
 export type { WhiteboardStroke } from './sync/types.ts';
+export { uploadDeck, buildManifest, scanMarkdownImages, scanCssUrls, getProxyBaseUrl } from './sync/DeckUploader.ts';
+export type { DeckManifest } from './sync/DeckUploader.ts';
 
 // Register custom elements
 function registerElements(): void {
