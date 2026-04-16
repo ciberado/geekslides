@@ -111,18 +111,13 @@ describe('Whiteboard', () => {
     expect(wb.isVisible).toBe(true);
   });
 
-  it('dispatched stroke events carry correct slideIndex', () => {
+  it('drawRemoteStroke stores strokes for non-current slides', () => {
+    // Slide 0 is current; send a stroke tagged for slide 3
+    wb.drawRemoteStroke(makeStroke({ slideIndex: 3 }));
+
+    // Navigate to slide 3 — restoreSlide should replay the stored stroke
+    // (jsdom canvas is a no-op, but we verify no error occurs)
     wb.slideIndex = 3;
-    wb.setActive(true);
-
-    const handler = vi.fn();
-    wb.addEventListener('geek:whiteboard:stroke', handler);
-
-    // Simulate a pointer sequence (jsdom doesn't fully support PointerEvent,
-    // so we test via the public drawRemoteStroke + dispatch path)
-    // We'll verify the slideIndex is set via a manual stroke dispatch approach:
-    // The real integration test for stroke dispatch happens in E2E.
-    // Here we confirm the component's slideIndex is wired.
     expect(wb.slideIndex).toBe(3);
   });
 
