@@ -594,7 +594,6 @@ try {
         fetchConfig,
         reloadSlides: (md) => {
           const newSlides = parse(md);
-          slideshow.loadStyles(combinedCss);
           slideshow.loadSlides(newSlides);
           applyProcessors(slideshow, config);
         },

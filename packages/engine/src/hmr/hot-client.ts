@@ -145,7 +145,8 @@ export function registerHotClient(
   hot: { on: (event: string, cb: (data: ContentUpdatePayload) => void) => void },
   options: HotClientOptions,
 ): void {
+  let pending: Promise<void> = Promise.resolve();
   hot.on(HMR_EVENT, (data: ContentUpdatePayload) => {
-    void handleContentUpdate(data, options);
+    pending = pending.then(() => handleContentUpdate(data, options));
   });
 }
