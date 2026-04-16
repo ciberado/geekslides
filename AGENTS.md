@@ -1,0 +1,65 @@
+# Project Guidelines
+
+## Overview
+
+GeekSlides v2 is a markdown-first presentation system built with TypeScript, Web Components, and real-time Yjs sync. Three npm workspace packages: `@geekslides/engine` (browser), `@geekslides/server` (Node.js), `@geekslides/cli` (Node.js). See `vibe/features/` for detailed architecture docs.
+
+## Code Style
+
+- **TypeScript 5.7**, strict mode with `noUncheckedIndexedAccess` and `exactOptionalPropertyTypes`
+- **ESLint 9** flat config with `typescript-eslint` strictTypeChecked preset
+- `@typescript-eslint/explicit-module-boundary-types`: error — all exported functions need explicit return types
+- `@typescript-eslint/no-explicit-any`: error — no `any`, use `unknown` and narrow
+- **ESM-only** (`"type": "module"` in package.json)
+- Target: ES2022, module resolution: bundler
+
+## Architecture
+
+```
+packages/
+  engine/   → Browser: markdown parsing, Web Components, plugins, sync client
+  server/   → Node.js: y-websocket server, content proxy API
+  cli/      → Node.js: `geekslides` binary (dev server, PDF export, image optimization)
+```
+
+- Web Components use Shadow DOM (`<geek-slideshow>`, `<geek-slide>`, `<geek-terminal>`, `<geek-whiteboard>`, `<geek-speaker-view>`)
+- Plugin system: preprocessors (string → string) and processors (HTMLElement → void)
+- Sync via Yjs CRDTs over y-websocket (room-based)
+- Print renders flat HTML (no Shadow DOM) for Playwright PDF export
+
+Key design docs: [architecture-v2.md](vibe/features/architecture-v2.md), [plugin-system.md](vibe/features/plugin-system.md), [sync.md](vibe/features/sync.md)
+
+## Build and Test
+
+```bash
+npm ci                  # Install all workspace dependencies
+npm run typecheck       # tsc --build (all packages)
+npm run lint            # ESLint check
+npm test                # Vitest unit + integration tests (80% coverage threshold)
+npm run test:e2e        # Playwright e2e (requires dev server: npm run dev)
+npm run dev             # Vite + yjs-server on 0.0.0.0
+npm run build           # Build all packages
+```
+
+## Testing Conventions
+
+- **Unit tests**: Vitest, pure logic — `packages/engine/tests/unit/`, `packages/server/tests/`
+- **Integration tests**: Vitest browser mode — `packages/engine/tests/integration/`
+- **E2E tests**: Playwright with Chromium/Firefox/WebKit — `e2e/`
+- New logic needs corresponding tests. Coverage thresholds: 80% branches/functions/lines/statements
+- E2E fixtures live in `e2e/fixtures/`
+
+## Conventions
+
+- **Slide markers** in README.md: empty links `[](#id)` or `[](.class#id,bgurl(img.jpg),bgcolor(#fff))`
+- **Speaker notes**: `::: Notes` container blocks in markdown
+- **Deck config**: `config.json` at deck root with `title`, `content`, `styles`, `aspectRatio`, `plugins`
+- **Commands**: registered via `commands.register({ name, label, execute, category })`, two input modes: NORMAL (hotkeys) and TERMINAL (prompt)
+- **Docker**: single-container with Caddy reverse proxy; 3-stage build (app-builder, server-builder, runtime)
+- **How-to guides**: numbered `how-to/NN-slug.md` files — use the `how-to-guide` skill when creating or updating
+
+## Documentation
+
+- `how-to/` — User-facing guides (install, create, present, deploy, export, style, plugins)
+- `vibe/features/` — Architecture decisions and feature design docs
+- Use the `pre-commit-checklist` skill before committing to ensure tests pass and docs stay current
