@@ -182,10 +182,16 @@ The Node.js server exposes an HTTP API alongside the WebSocket sync:
 |----------|--------|-------------|
 | `/api/rooms/:room/content` | `POST` | Upload deck assets (multipart/form-data, max 200 MB) |
 | `/api/rooms/:room/content/:path` | `GET` | Fetch a proxied deck file |
+| `/api/plugin-proxy?url=<encoded-url>` | `GET` | Proxy a remote JavaScript plugin file (`.js` only, max 1 MB) |
 
 Content is stored in per-room temp directories and cleaned up on server restart.
 Path traversal is blocked — `..` segments return 404. See [Content Proxy](content-proxy.md)
 for the full design.
+
+The plugin proxy fetches remote `.js` files on behalf of the browser to avoid CORS
+restrictions. It requires `https:` in production (`http:` allowed in dev mode),
+enforces a 1 MB size limit, and caches responses for 5 minutes. See
+[Plugin System](plugin-system.md) for details.
 
 ## Health Checks
 

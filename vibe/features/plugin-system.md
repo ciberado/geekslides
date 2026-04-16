@@ -61,16 +61,14 @@ A single processor function queries all `iframe[data-src]` elements in the slide
 
 ## Plugin Registration via Config
 
-Plugins are registered in `config.json` or programmatically:
+Plugins are registered in `config.json` using three resolution modes:
 
-### Via config.json
+### Built-in plugins (short names)
 
-The `plugins` field in `config.json` lists built-in plugin short names:
+The engine maintains a registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`) to their bundled plugin functions:
 
 ```json
 {
-  "title": "My Presentation",
-  "content": "README.md",
   "plugins": {
     "preprocessors": ["header"],
     "processors": ["chart", "video", "iframe"]
@@ -78,11 +76,73 @@ The `plugins` field in `config.json` lists built-in plugin short names:
 }
 ```
 
-All built-in plugins are available by short name. The engine maintains a `BUILTIN_PLUGINS` registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`) to their corresponding plugin objects.
+### Local plugins (relative paths)
 
-### Programmatic (custom plugins)
+Deck authors can ship plain `.js` files alongside their deck and reference them with relative paths starting with `./` or `../`:
 
-Plugins can also be registered programmatically by importing `PluginManager` from `@geekslides/engine` and calling `register()` with a plugin object. Custom plugins follow the same shape: a `name`, optional `preprocessors` array of `(md) => md` functions, and optional `processors` array of `(el) => void` functions. For example, a custom plugin could replace all `TODO` markers in markdown with a warning emoji, or add click-to-zoom handlers to images after rendering.
+```json
+{
+  "plugins": {
+    "preprocessors": ["header", "./plugins/emoji-preprocessor.js"],
+    "processors": ["iframe", "./plugins/image-zoom-processor.js"]
+  }
+}
+```
+
+Local plugins are detected by `isLocalPluginPath()` and loaded via dynamic `import()`. Each file must export a `default` function matching the preprocessor or processor signature. The `extractPreprocessor()` and `extractProcessor()` utility functions validate the module shape.
+
+### Remote plugins (full URLs)
+
+Plugins can be hosted on any HTTPS server and referenced by full URL:
+
+```json
+{
+  "plugins": {
+    "preprocessors": ["https://plugins.example.com/emoji-preprocessor.js"],
+    "processors": ["https://plugins.example.com/image-zoom-processor.js"]
+  }
+}
+```
+
+Remote plugins are detected by `isRemotePluginUrl()` and fetched through the server's `/api/plugin-proxy` endpoint to avoid CORS restrictions. The proxy fetches the `.js` file, and the browser creates a blob URL for dynamic import. See **Plugin Proxy** section below.
+
+### Resolution order
+
+When loading plugins, the app checks in this order:
+
+1. **Remote URL** — starts with `http://` or `https://` → fetch via plugin proxy
+2. **Local path** — starts with `./` or `../` → dynamic import from deck directory
+3. **Built-in name** — looked up in the `PREPROCESSORS`/`PROCESSORS` maps
+
+All three types can be mixed in the same `config.json` arrays. Order within each array determines execution sequence.
+
+### Programmatic (custom built-in plugins)
+
+Plugins can also be registered programmatically by importing `PluginManager` from `@geekslides/engine` and calling `register()` with a plugin object. Custom plugins follow the same shape: a `name`, optional `preprocessors` array of `(md) => md` functions, and optional `processors` array of `(el) => void` functions.
+
+## Plugin Loader Utilities
+
+Defined in `packages/engine/src/plugins/local-plugin.ts`:
+
+- **`isLocalPluginPath(name)`** — returns `true` for paths starting with `./` or `../`
+- **`isRemotePluginUrl(name)`** — returns `true` for `http://` or `https://` URLs
+- **`extractPreprocessor(mod, path)`** — validates that a dynamically imported module has a `default` function export, returns it typed as `Preprocessor`
+- **`extractProcessor(mod, path)`** — same validation for `Processor` type
+- **`importRemotePlugin(url)`** — fetches a remote plugin through `/api/plugin-proxy`, creates a blob URL, and dynamically imports it
+
+## Plugin Proxy
+
+The server exposes `GET /api/plugin-proxy?url=<encoded-url>` to fetch remote JavaScript plugin files on behalf of the browser.
+
+Security constraints:
+
+- Only `.js` files are accepted
+- Maximum response size: 1 MB
+- `https:` required in production; `http:` allowed in dev mode (`NODE_ENV !== 'production'`)
+- 10-second fetch timeout
+- Response cached for 5 minutes (`Cache-Control: public, max-age=300`)
+
+Implemented in `packages/server/src/PluginProxy.ts` and wired into the HTTP handler in `packages/server/src/index.ts`.
 
 ## Pipeline Execution Order
 

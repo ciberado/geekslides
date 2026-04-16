@@ -66,13 +66,33 @@ Tests for `PluginManager` (`packages/engine/tests/unit/PluginManager.test.ts`) v
 - Preprocessors run in sequence: registering an "upper" plugin (uppercases) then a "prefix" plugin (prepends text) produces the combined output in correct order.
 - Processors modify slide elements: a processor that sets `dataset.processed = 'true'` correctly modifies the passed element.
 
+### Local & Remote Plugin Utilities
+
+Tests for plugin loader utilities (`packages/engine/tests/unit/local-plugin.test.ts`) verify:
+
+- **`isLocalPluginPath`**: returns `true` for `./` and `../` paths, `false` for built-in names, absolute paths, and URLs.
+- **`isRemotePluginUrl`**: returns `true` for `http://` and `https://` URLs, `false` for relative paths, built-in names, and absolute paths.
+- **`extractPreprocessor`**: extracts a default function export, throws with a descriptive error when the default export is missing or not a function, includes the file path in the error message.
+- **`extractProcessor`**: same validation behaviour as `extractPreprocessor` for processor functions.
+
 ## Unit Tests (@geekslides/server)
 
-Tests for the server's room auth logic (`packages/server/tests/rooms.test.ts`) verify:
+Tests for the server (`packages/server/tests/server.test.ts`) verify:
 
 - A connection with a valid room name is accepted.
 - A connection without a room name is rejected with WebSocket close code 4001.
 - A connection with an invalid token (when auth is enabled) is rejected with close code 4003.
+- Content store files can be uploaded and retrieved, path traversal returns null.
+- Content is servable via HTTP API (upload/fetch round-trip).
+
+### Plugin Proxy
+
+- Requests without a `url` parameter return 400.
+- Non-`.js` URLs are rejected with 400.
+- Invalid URLs return 400.
+- A valid `.js` URL is proxied and returned with `application/javascript` content type.
+- Unreachable remote servers return 502.
+- POST requests are rejected with 405.
 
 ## Integration Tests (Vitest Browser Mode)
 
@@ -119,6 +139,22 @@ Tests in `e2e/commands.spec.ts`:
 Tests in `e2e/sync.spec.ts`:
 
 - **Two browsers sync** — opens two pages in the same browser, both connecting to a test room. The presenter navigates, and the audience page's active slide updates to match.
+
+### Local Plugins E2E
+
+Tests in `e2e/local-plugins.spec.ts`:
+
+- **Loads a deck with local plugins** — uses the `load` terminal command to switch to a fixture deck that references `./plugins/shout-preprocessor.js` and `./plugins/highlight-processor.js`. Verifies the preprocessor transforms markdown content ("hello" → "HELLO") and the processor adds a `data-highlighted` attribute to slide elements.
+- **Preprocessor transforms content** — confirms "hello world" becomes "HELLO world" in rendered slide text.
+- **Processor mutates DOM** — confirms `data-highlighted="true"` is set on the slide content element.
+
+### Remote Plugins E2E
+
+Tests in `e2e/remote-plugins.spec.ts`:
+
+- **Loads a remote plugin through the proxy** — starts a tiny HTTP server serving a JS plugin, verifies the proxy endpoint fetches it, then dynamically imports and executes the plugin function via blob URL.
+- **Proxy rejects non-.js URLs** — confirms a `.css` URL returns 400 with "Only .js files" error.
+- **Proxy rejects missing url parameter** — confirms a bare `/api/plugin-proxy` request returns 400.
 
 ### Whiteboard E2E
 

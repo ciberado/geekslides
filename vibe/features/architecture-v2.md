@@ -96,6 +96,7 @@ geekslides/
 │   │   │   ├── plugins/
 │   │   │   │   ├── PluginManager.ts      # register/execute pipeline
 │   │   │   │   ├── types.ts              # Preprocessor, Processor interfaces
+│   │   │   │   ├── local-plugin.ts       # local/remote plugin loader utilities
 │   │   │   │   ├── builtins/
 │   │   │   │   │   ├── header-preprocessor.ts
 │   │   │   │   │   ├── chart-processor.ts
@@ -127,10 +128,12 @@ geekslides/
 │   │   ├── package.json
 │   │   ├── src/
 │   │   │   ├── index.ts          # y-websocket server entry
-│   │   │   ├── rooms.ts          # room management + auth
-│   │   │   └── persistence.ts    # optional LevelDB persistence
+│   │   │   ├── ContentApi.ts     # content proxy HTTP API
+│   │   │   ├── ContentStore.ts   # room-scoped file storage
+│   │   │   ├── PluginProxy.ts    # remote plugin proxy endpoint
+│   │   │   └── types/
 │   │   └── tests/
-│   │       └── rooms.test.ts
+│   │       └── server.test.ts
 │   │
 │   └── cli/                      # @geekslides/cli
 │       ├── package.json
@@ -150,7 +153,9 @@ geekslides/
 │   ├── navigation.spec.ts
 │   ├── sync.spec.ts
 │   ├── whiteboard.spec.ts
-│   └── commands.spec.ts
+│   ├── commands.spec.ts
+│   ├── local-plugins.spec.ts
+│   └── remote-plugins.spec.ts
 │
 ├── docker/
 │   ├── Dockerfile                # multi-stage: build + Caddy
