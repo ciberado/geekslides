@@ -1,0 +1,10 @@
+{
+  "title": "Local Plugins Fixture",
+  "content": "README.md",
+  "styles": [],
+  "aspectRatio": "16/9",
+  "plugins": {
+    "preprocessors": ["./plugins/shout-preprocessor.js"],
+    "processors": ["./plugins/highlight-processor.js"]
+  }
+}

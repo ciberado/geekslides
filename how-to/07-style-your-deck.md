@@ -208,4 +208,4 @@ The result: base engine styles → allysum theme → local overrides → hero sl
 
 ---
 
-Next: Back to the [How-To index →](README.md)
+Next: [Write a Custom Plugin →](08-write-a-custom-plugin.md)

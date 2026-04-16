@@ -13,6 +13,9 @@ import {
   uploadDeck,
   buildManifest,
   getProxyBaseUrl,
+  isLocalPluginPath,
+  extractPreprocessor,
+  extractProcessor,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -137,11 +140,18 @@ async function registerHmrFiles(activeConfig) {
   }
 }
 
-function applyPreprocessors(markdown, config) {
+async function applyPreprocessors(markdown, config) {
   const ppNames = config.plugins.preprocessors;
   let result = markdown;
   for (const name of ppNames) {
-    const pp = PREPROCESSORS[name];
+    let pp;
+    if (isLocalPluginPath(name)) {
+      const url = resolveUrl(name);
+      const mod = await import(/* @vite-ignore */ url);
+      pp = extractPreprocessor(mod, name);
+    } else {
+      pp = PREPROCESSORS[name];
+    }
     if (pp) {
       result = pp(result);
     }
@@ -149,13 +159,24 @@ function applyPreprocessors(markdown, config) {
   return result;
 }
 
-function getActiveProcessors(config) {
+async function getActiveProcessors(config) {
   const processorNames = config.plugins.processors;
-  return processorNames.map((name) => PROCESSORS[name]).filter(Boolean);
+  const processors = [];
+  for (const name of processorNames) {
+    if (isLocalPluginPath(name)) {
+      const url = resolveUrl(name);
+      const mod = await import(/* @vite-ignore */ url);
+      processors.push(extractProcessor(mod, name));
+    } else {
+      const proc = PROCESSORS[name];
+      if (proc) processors.push(proc);
+    }
+  }
+  return processors;
 }
 
-function applyProcessors(slideshow, config) {
-  const activeProcessors = getActiveProcessors(config);
+async function applyProcessors(slideshow, config) {
+  const activeProcessors = await getActiveProcessors(config);
   if (activeProcessors.length === 0) {
     return;
   }
@@ -183,13 +204,13 @@ try {
     updateDocumentBase(configBase);
   }
 
-  const processedMarkdown = applyPreprocessors(markdown, config);
+  const processedMarkdown = await applyPreprocessors(markdown, config);
   const slides = parse(processedMarkdown);
 
   if (viewMode === 'speaker') {
     document.body.innerHTML = '<geek-speaker-view id="speaker"></geek-speaker-view>';
     const speaker = document.getElementById('speaker');
-    const activeProcessors = getActiveProcessors(config);
+    const activeProcessors = await getActiveProcessors(config);
     speaker.setAspectRatio(config.aspectRatio);
     if (combinedCss) {
       speaker.loadStyles(combinedCss);
@@ -287,7 +308,7 @@ try {
       slideshow.loadStyles(combinedCss);
     }
     slideshow.loadSlides(slides);
-    applyProcessors(slideshow, config);
+    await applyProcessors(slideshow, config);
     slideshow.setAspectRatio(config.aspectRatio);
 
     const syncConfig = config.sync || {};
@@ -372,11 +393,11 @@ try {
         updateDocumentTitle(newConfig);
         slideshow.loadStyles(newCss);
 
-        const processedMd = applyPreprocessors(newMarkdown, newConfig);
+        const processedMd = await applyPreprocessors(newMarkdown, newConfig);
         const newSlides = parse(processedMd);
         slideshow.loadSlides(newSlides);
         config = newConfig;
-        applyProcessors(slideshow, newConfig);
+        await applyProcessors(slideshow, newConfig);
         await registerHmrFiles(newConfig);
 
         slideshow.setAspectRatio(newConfig.aspectRatio);
@@ -410,11 +431,11 @@ try {
         updateDocumentTitle(newConfig);
         slideshow.loadStyles(newCss);
 
-        const processedMd = applyPreprocessors(newMarkdown, newConfig);
+        const processedMd = await applyPreprocessors(newMarkdown, newConfig);
         const newSlides = parse(processedMd);
         slideshow.loadSlides(newSlides);
         config = newConfig;
-        applyProcessors(slideshow, newConfig);
+        await applyProcessors(slideshow, newConfig);
         slideshow.setAspectRatio(newConfig.aspectRatio);
 
         console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
@@ -588,14 +609,14 @@ try {
       registerHotClient(import.meta.hot, {
         fetchMarkdown: async () => {
           const md = await fetchMarkdown(config);
-          return applyPreprocessors(md, config);
+          return await applyPreprocessors(md, config);
         },
         fetchStyles: async () => fetchStyles(config),
         fetchConfig,
-        reloadSlides: (md) => {
+        reloadSlides: async (md) => {
           const newSlides = parse(md);
           slideshow.loadSlides(newSlides);
-          applyProcessors(slideshow, config);
+          await applyProcessors(slideshow, config);
         },
         applyStyles: (css) => {
           combinedCss = css;

@@ -11,6 +11,8 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Deploy the Server](05-deploy-the-server.md) | Run GeekSlides in production with Docker, HTTPS, and sync |
 | [Export to PDF](06-export-to-pdf.md) | Generate slides, handouts, and book-format PDFs |
 | [Style Your Deck](07-style-your-deck.md) | Understand the CSS layers: base, theme, and per-slide styles |
+| [Write a Custom Plugin](08-write-a-custom-plugin.md) | Build a preprocessor and a processor with practical examples |
+| [Add Local Plugins](09-add-local-plugins.md) | Ship plain JS plugins alongside your deck — no engine changes needed |
 
 ## Screenshots
 
