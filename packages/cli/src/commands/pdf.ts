@@ -100,7 +100,7 @@ async function captureSlideScreenshots(
   // Wait for slides to load
   await page.waitForFunction(() => {
     const ss = document.querySelector('geek-slideshow');
-    return ss && (ss as Record<string, unknown>).slideCount! > 0;
+    return ss && Number((ss as unknown as Record<string, unknown>)['slideCount']) > 0;
   }, { timeout: 15_000 });
 
   // Wait for all stylesheets (including @import Google Fonts) and fonts to finish loading
@@ -110,8 +110,8 @@ async function captureSlideScreenshots(
       .map((el) => {
         if (el instanceof HTMLLinkElement && !el.sheet) {
           return new Promise<void>((resolve) => {
-            el.addEventListener('load', () => resolve(), { once: true });
-            el.addEventListener('error', () => resolve(), { once: true });
+            el.addEventListener('load', () => { resolve(); }, { once: true });
+            el.addEventListener('error', () => { resolve(); }, { once: true });
           });
         }
         return Promise.resolve();
@@ -131,13 +131,13 @@ async function captureSlideScreenshots(
 
   const paths: string[] = [];
 
-  for (let i = 0; i < slides.length; i++) {
-    const partialCount = slides[i].partialCount;
+  for (const [i, slide] of slides.entries()) {
+    const partialCount = slide.partialCount;
 
     // Navigate to slide and reveal all partials
     await page.evaluate(
       ({ idx, pc }: { idx: number; pc: number }) => {
-        const ss = document.querySelector('geek-slideshow') as any;
+        const ss = document.querySelector('geek-slideshow') as HTMLElement & { goTo(idx: number, pc: number): void };
         ss.goTo(idx, pc);
       },
       { idx: i, pc: partialCount },
@@ -146,17 +146,17 @@ async function captureSlideScreenshots(
     // Wait for all images in the active slide to finish loading
     await page.evaluate(async () => {
       const ss = document.querySelector('geek-slideshow');
-      const slideEls = ss?.shadowRoot?.querySelectorAll('geek-slide') ?? [];
+      const slideEls = Array.from(ss?.shadowRoot?.querySelectorAll('geek-slide') ?? []);
       for (const slide of slideEls) {
         if (!slide.hasAttribute('active')) continue;
-        const imgs = slide.shadowRoot?.querySelectorAll('img') ?? [];
+        const imgs = Array.from(slide.shadowRoot?.querySelectorAll('img') ?? []);
         await Promise.all(
-          Array.from(imgs).map((img) =>
+          imgs.map((img) =>
             img.complete
               ? Promise.resolve()
               : new Promise<void>((resolve) => {
-                  img.addEventListener('load', () => resolve(), { once: true });
-                  img.addEventListener('error', () => resolve(), { once: true });
+                  img.addEventListener('load', () => { resolve(); }, { once: true });
+                  img.addEventListener('error', () => { resolve(); }, { once: true });
                 }),
           ),
         );
@@ -203,13 +203,14 @@ export function buildDetailsPdfHtml(
   const isHorizontal = layout === 'horizontal';
   const lastIdx = slides.length - 1;
   const pages = slides.map((slide, i) => {
-    const imgSrc = pathToFileURL(screenshotPaths[i]).href;
+    const screenshotPath = screenshotPaths[i] ?? '';
+    const imgSrc = pathToFileURL(screenshotPath).href;
     const hasDetails = Boolean(slide.detailsHtml);
     const isHero = !hasDetails && (i === 0 || i === lastIdx);
     const detailsClass = isHero ? 'hero' : (hasDetails ? 'has-details' : 'no-details');
     const layoutClass = isHorizontal ? 'horizontal' : 'vertical';
     const details = hasDetails
-      ? `<div class="details"><div class="details-inner">${slide.detailsHtml}</div></div>`
+      ? `<div class="details"><div class="details-inner">${slide.detailsHtml ?? ''}</div></div>`
       : '';
     return `<div class="page ${detailsClass} ${layoutClass}"><div class="thumb"><img src="${imgSrc}"></div>${details}</div>`;
   }).join('\n');
@@ -274,7 +275,8 @@ function buildNotesPdfHtml(
   slides: readonly SlideData[],
 ): string {
   const pages = slides.map((slide, i) => {
-    const imgSrc = pathToFileURL(screenshotPaths[i]).href;
+    const screenshotPath = screenshotPaths[i] ?? '';
+    const imgSrc = pathToFileURL(screenshotPath).href;
     const notes = slide.notesHtml
       ? `<aside class="notes">${slide.notesHtml}</aside>`
       : '';
@@ -326,7 +328,7 @@ function buildBookPdfHtml(
   deckDir: string,
   imageWidthPct: number,
 ): string {
-  const imgWidthCss = `${imageWidthPct}%`;
+  const imgWidthCss = `${String(imageWidthPct)}%`;
   const sections: string[] = [];
   let firstH1Seen = false;
 
@@ -340,7 +342,7 @@ function buildBookPdfHtml(
       firstH1Seen = true;
       const imageUrl = hasDetails ? extractFirstBookImage(slide, deckDir) : null;
       const imgHtml = imageUrl ? `<figure class="book-img"><img src="${imageUrl}" alt=""></figure>` : '';
-      const detailsContent = hasDetails ? `<div class="book-details">${imgHtml}${slide.detailsHtml}</div>` : '';
+      const detailsContent = hasDetails ? `<div class="book-details">${imgHtml}${slide.detailsHtml ?? ''}</div>` : '';
       sections.push(
         `<section class="book-section level-1${pageBreakClass}">` +
         `<h1 class="book-h1">${heading?.innerHtml ?? ''}</h1>` +
@@ -360,7 +362,7 @@ function buildBookPdfHtml(
         sections.push(
           `<section class="book-section level-2">` +
           `<h2 class="book-h2">${heading?.innerHtml ?? ''}</h2>` +
-          `<div class="book-details">${imgHtml}${slide.detailsHtml}</div>` +
+          `<div class="book-details">${imgHtml}${slide.detailsHtml ?? ''}</div>` +
           `</section>`,
         );
       }
@@ -373,7 +375,7 @@ function buildBookPdfHtml(
       sections.push(
         `<section class="book-section level-3">` +
         headingHtml +
-        `<div class="book-details">${imgHtml}${slide.detailsHtml}</div>` +
+        `<div class="book-details">${imgHtml}${slide.detailsHtml ?? ''}</div>` +
         `</section>`,
       );
     }

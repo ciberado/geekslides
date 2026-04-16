@@ -609,7 +609,7 @@ function renderSlideWithDetails(slide: SlideData, index: number, layout: Details
   const layoutClass = `gs-layout-${layout}`;
   const slideSection = `<div class="gs-details-slide"><section ${attrs}>${css}${slide.html}</section></div>`;
   const detailsSection = hasDetails
-    ? `<div class="gs-details-content"><div class="gs-details-content-inner">${slide.detailsHtml}</div></div>`
+    ? `<div class="gs-details-content"><div class="gs-details-content-inner">${slide.detailsHtml ?? ''}</div></div>`
     : '';
   return `<div class="gs-details-page ${detailsClass} ${layoutClass}">${slideSection}${detailsSection}</div>`;
 }

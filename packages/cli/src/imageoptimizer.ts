@@ -8,7 +8,7 @@
  * and re-encoded as progressive JPEG. All other file types are copied as-is.
  */
 
-import { copyFile, mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, readdir, readFile } from 'node:fs/promises';
 import { extname, join } from 'node:path';
 import sharp from 'sharp';
 
@@ -71,7 +71,7 @@ export async function optimizeImages(
   await Promise.all(
     entries
       .filter((e) => e.sanitizedFileName)
-      .map((e) => optimizeImage(e.sanitizedFileName!, inputDirectory, outputDirectory)),
+      .map((e) => optimizeImage(e.sanitizedFileName ?? '', inputDirectory, outputDirectory)),
   );
 }
 
