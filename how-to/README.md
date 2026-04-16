@@ -10,6 +10,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Present Like a Pro](04-present-like-a-pro.md) | Master navigation, terminal commands, speaker view, and mobile |
 | [Deploy the Server](05-deploy-the-server.md) | Run GeekSlides in production with Docker, HTTPS, and sync |
 | [Export to PDF](06-export-to-pdf.md) | Generate slides, handouts, and book-format PDFs |
+| [Style Your Deck](07-style-your-deck.md) | Understand the CSS layers: base, theme, and per-slide styles |
 
 ## Screenshots
 
