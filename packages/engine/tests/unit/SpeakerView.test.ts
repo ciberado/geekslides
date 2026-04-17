@@ -222,4 +222,19 @@ describe('SpeakerView', () => {
 
     document.body.removeChild(el);
   });
+
+  it('renders a wall clock element', () => {
+    const el = document.createElement('geek-speaker-view') as SpeakerView;
+    document.body.appendChild(el);
+
+    el.loadSlides(makeSlides(1));
+
+    const shadow = el.shadowRoot!;
+    const wallClock = shadow.querySelector('.wall-clock');
+    expect(wallClock).not.toBeNull();
+    // Should show a time string (HH:MM format)
+    expect(wallClock!.textContent).toMatch(/\d{1,2}:\d{2}/);
+
+    document.body.removeChild(el);
+  });
 });

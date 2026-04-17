@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { parse } from '../../src/core/SlideParser.ts';
 
 describe('SlideParser', () => {
@@ -203,5 +203,22 @@ Content 2
     const slides = parse(md);
     expect(slides[0]!.id).toMatch(/^slide-\d+$/);
     expect(slides[1]!.id).toBe('id2');
+  });
+
+  it('warns about duplicate slide IDs', () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const md = `[](#dup)
+
+First slide
+
+[](#dup)
+
+Second slide
+`;
+    parse(md);
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('Duplicate slide ID: "dup"'),
+    );
+    warnSpy.mockRestore();
   });
 });

@@ -137,4 +137,31 @@ describe('Terminal', () => {
     vi.advanceTimersByTime(1200);
     expect(terminal.isOpen).toBe(false); // Auto-dismissed
   });
+
+  it('help does not auto-dismiss', () => {
+    terminal.open();
+
+    const input = terminal.shadowRoot?.querySelector('input');
+    if (input) {
+      input.value = 'help';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+    }
+
+    vi.advanceTimersByTime(1200);
+    expect(terminal.isOpen).toBe(true); // help should stay open
+  });
+
+  it('does not have a built-in goto handler', () => {
+    terminal.open();
+
+    const input = terminal.shadowRoot?.querySelector('input');
+    const output = terminal.shadowRoot?.querySelector('.output');
+    if (input) {
+      input.value = 'goto 1';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+      // Without a registered 'goto' command, it should be unknown
+      expect(output?.innerHTML).toContain('unknown command');
+    }
+  });
 });

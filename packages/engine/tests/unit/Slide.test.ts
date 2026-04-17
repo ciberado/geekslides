@@ -38,4 +38,14 @@ describe('Slide', () => {
 
     document.body.removeChild(el);
   });
+
+  it('sets ARIA attributes when connected', () => {
+    const el = document.createElement('geek-slide') as Slide;
+    document.body.appendChild(el);
+
+    expect(el.getAttribute('role')).toBe('group');
+    expect(el.getAttribute('aria-roledescription')).toBe('slide');
+
+    document.body.removeChild(el);
+  });
 });

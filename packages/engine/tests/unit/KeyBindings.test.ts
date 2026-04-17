@@ -89,4 +89,12 @@ describe('KeyBindings', () => {
     // Second call should be ignored (input target)
     expect(spy).toHaveBeenCalledTimes(1);
   });
+
+  it('? key triggers shortcuts toggle callback', () => {
+    const toggleSpy = vi.fn();
+    kb.onShortcutsToggle(toggleSpy);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '?' }));
+    expect(toggleSpy).toHaveBeenCalledOnce();
+  });
 });
