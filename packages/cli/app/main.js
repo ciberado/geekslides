@@ -35,6 +35,12 @@ const params = new URLSearchParams(window.location.search);
 const viewMode = params.get('view');
 
 function normalizeConfigUrl(url) {
+  // Transform GitHub repo URLs to raw.githubusercontent.com
+  const ghMatch = url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?\/?$/);
+  if (ghMatch) {
+    const [, owner, repo, branch = 'main'] = ghMatch;
+    return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/config.json`;
+  }
   if (url.startsWith('http://') || url.startsWith('https://')) {
     return url;
   }
