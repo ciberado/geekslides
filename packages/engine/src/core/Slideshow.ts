@@ -28,6 +28,8 @@ export class Slideshow extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.setAttribute('role', 'region');
+    this.setAttribute('aria-roledescription', 'slide deck');
     this.#render();
     this.#setupResizeObserver();
   }
@@ -222,6 +224,8 @@ export class Slideshow extends HTMLElement {
     const slideEl = this.#slideElements[index];
     if (!slideEl) return;
 
+    const total = this.#slides.length;
+
     // Update all slides: set prev/active classes for scroll transition
     for (let i = 0; i < this.#slideElements.length; i++) {
       const el = this.#slideElements[i];
@@ -229,6 +233,7 @@ export class Slideshow extends HTMLElement {
 
       el.removeAttribute('active');
       el.classList.remove('gs-prev');
+      el.setAttribute('aria-hidden', 'true');
 
       if (i < index) {
         el.classList.add('gs-prev');
@@ -236,10 +241,13 @@ export class Slideshow extends HTMLElement {
     }
 
     slideEl.setAttribute('active', '');
+    slideEl.removeAttribute('aria-hidden');
+    slideEl.setAttribute('aria-label', `Slide ${String(index + 1)} of ${String(total)}`);
     slideEl.revealPartial(this.#currentPartial);
   }
 
   #dispatchNavigate(): void {
+    this.#updateProgress();
     this.dispatchEvent(new CustomEvent('geek:navigate', {
       bubbles: true,
       detail: {
@@ -249,6 +257,27 @@ export class Slideshow extends HTMLElement {
         mode: this.#mode,
       },
     }));
+  }
+
+  #updateProgress(): void {
+    const shadow = this.shadowRoot;
+    if (!shadow) return;
+
+    const bar = shadow.querySelector<HTMLElement>('.gs-progress-bar');
+    const counter = shadow.querySelector<HTMLElement>('.gs-progress-counter');
+    const wrapper = shadow.querySelector<HTMLElement>('.gs-progress');
+    const ariaLive = shadow.querySelector<HTMLElement>('.gs-aria-live');
+    if (!bar || !counter || !wrapper) return;
+
+    const total = this.#slides.length;
+    const pct = total > 0 ? ((this.#currentSlide + 1) / total) * 100 : 0;
+    bar.style.width = `${String(pct)}%`;
+    counter.textContent = `${String(this.#currentSlide + 1)} / ${String(total)}`;
+    wrapper.style.display = this.#mode === 'overview' ? 'none' : '';
+
+    if (ariaLive) {
+      ariaLive.textContent = `Slide ${String(this.#currentSlide + 1)} of ${String(total)}`;
+    }
   }
 
   #setupResizeObserver(): void {
@@ -300,11 +329,176 @@ export class Slideshow extends HTMLElement {
         position: relative;
         overflow: hidden;
       }
+
+      .gs-progress {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        pointer-events: none;
+      }
+
+      .gs-progress-bar {
+        height: 3px;
+        background: var(--gs-progress-color, rgba(74, 158, 255, 0.7));
+        transition: width 0.3s ease;
+        width: 0%;
+      }
+
+      .gs-progress-counter {
+        position: absolute;
+        bottom: 8px;
+        right: 12px;
+        font-family: system-ui, sans-serif;
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.5);
+        text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
+        user-select: none;
+      }
+
+      .gs-aria-live {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+      }
+
+      .gs-shortcuts-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 200;
+        background: rgba(0, 0, 0, 0.85);
+        backdrop-filter: blur(6px);
+        justify-content: center;
+        align-items: center;
+        font-family: system-ui, sans-serif;
+        color: #e5eefb;
+      }
+
+      .gs-shortcuts-overlay[open] {
+        display: flex;
+      }
+
+      .gs-shortcuts-panel {
+        max-width: 540px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 2rem;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.95);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
+      }
+
+      .gs-shortcuts-panel h2 {
+        margin: 0 0 1.2rem;
+        font-size: 1.1rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #7dd3fc;
+      }
+
+      .gs-shortcuts-panel dl {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.4rem 1.2rem;
+        margin: 0 0 1.4rem;
+        font-size: 0.95rem;
+      }
+
+      .gs-shortcuts-panel dt {
+        font-family: 'Cascadia Code', 'Fira Code', monospace;
+        color: #8be9fd;
+        text-align: right;
+      }
+
+      .gs-shortcuts-panel dd {
+        margin: 0;
+        color: #cbd5e1;
+      }
+
+      .gs-shortcuts-hint {
+        margin-top: 1rem;
+        text-align: center;
+        font-size: 0.8rem;
+        color: #64748b;
+      }
     `;
 
     const container = document.createElement('div');
     container.classList.add('gs-container');
 
-    shadow.replaceChildren(style, container);
+    const progress = document.createElement('div');
+    progress.classList.add('gs-progress');
+
+    const progressBar = document.createElement('div');
+    progressBar.classList.add('gs-progress-bar');
+
+    const progressCounter = document.createElement('div');
+    progressCounter.classList.add('gs-progress-counter');
+
+    progress.appendChild(progressBar);
+    progress.appendChild(progressCounter);
+
+    const ariaLive = document.createElement('div');
+    ariaLive.classList.add('gs-aria-live');
+    ariaLive.setAttribute('role', 'status');
+    ariaLive.setAttribute('aria-live', 'polite');
+    ariaLive.setAttribute('aria-atomic', 'true');
+
+    const shortcutsOverlay = document.createElement('div');
+    shortcutsOverlay.classList.add('gs-shortcuts-overlay');
+    shortcutsOverlay.innerHTML = `
+      <div class="gs-shortcuts-panel">
+        <h2>Keyboard Shortcuts</h2>
+        <dl>
+          <dt>→ ↓ Space</dt><dd>Next slide / partial</dd>
+          <dt>← ↑</dt><dd>Previous slide / partial</dd>
+          <dt>Home</dt><dd>First slide</dd>
+          <dt>End</dt><dd>Last slide</dd>
+          <dt>t</dt><dd>Open command terminal</dd>
+          <dt>?</dt><dd>Toggle this help</dd>
+        </dl>
+        <h2>Terminal Commands</h2>
+        <dl>
+          <dt>help</dt><dd>List all commands</dd>
+          <dt>go &lt;n&gt;</dt><dd>Jump to slide n</dd>
+          <dt>load &lt;url&gt;</dt><dd>Load a different deck</dd>
+          <dt>room &lt;name&gt;</dt><dd>Switch sync room</dd>
+          <dt>speaker</dt><dd>Open speaker view</dd>
+          <dt>overview</dt><dd>Toggle overview mode</dd>
+          <dt>fullscreen</dt><dd>Toggle fullscreen</dd>
+          <dt>whiteboard</dt><dd>Toggle whiteboard</dd>
+        </dl>
+        <div class="gs-shortcuts-hint">Press <strong>?</strong> or <strong>Esc</strong> to close</div>
+      </div>
+    `;
+    shortcutsOverlay.addEventListener('click', (e) => {
+      if (e.target === shortcutsOverlay) this.toggleShortcutsOverlay();
+    });
+    shortcutsOverlay.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Escape') this.toggleShortcutsOverlay();
+    });
+
+    shadow.replaceChildren(style, container, progress, ariaLive, shortcutsOverlay);
+  }
+
+  /**
+   * Toggle the keyboard shortcuts overlay.
+   */
+  toggleShortcutsOverlay(): void {
+    const overlay = this.shadowRoot?.querySelector('.gs-shortcuts-overlay');
+    if (!overlay) return;
+    if (overlay.hasAttribute('open')) {
+      overlay.removeAttribute('open');
+    } else {
+      overlay.setAttribute('open', '');
+    }
   }
 }

@@ -79,8 +79,9 @@ of the viewport. It provides:
   "Unknown command: foo")
 - **Help**: the `help` command lists all registered commands grouped by category
 - **History**: up/down arrows navigate through previously executed commands (session only)
-- **Auto-dismiss**: the terminal closes after executing a command (1s delay to show output)
-  or immediately on Escape
+- **Auto-dismiss**: the terminal closes after executing a command (1.2s delay to show output)
+  or immediately on Escape. The `help` command skips auto-dismiss so the user has time to
+  read the full command listing.
 
 The terminal dispatches `geek:terminal:close` when dismissed so `KeyBindings` returns
 to NORMAL mode.
@@ -107,23 +108,27 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `Home` | `go-first` | Jump to first slide |
 | `End` | `go-last` | Jump to last slide |
 | `t` | *(open terminal)* | Opens the command terminal |
+| `?` | *(toggle shortcuts)* | Shows/hides keyboard shortcuts overlay |
 
 ## Terminal Commands
 
 | Command | Description |
 |---------|-------------|
 | `help` | List all available commands |
-| `speaker` | Toggle speaker notes view |
+| `go <n>` | Jump to slide number n |
+| `goto <n>` | Alias for `go` |
+| `go-first` | Jump to the first slide |
+| `go-last` | Jump to the last slide |
+| `load <url>` | Load a different deck by config URL |
+| `room <name>` | Switch sync room |
+| `speaker` | Open speaker view in new tab |
 | `overview` | Toggle overview mode |
-| `whiteboard` | Toggle whiteboard overlay |
-| `clear` | Clear whiteboard strokes |
 | `fullscreen` | Toggle fullscreen mode |
-| `sync` | Toggle Yjs sync |
-| `follow` | Toggle follow/lead mode |
-| `toolbar` | Toggle toolbar visibility |
-| `goto <n>` | Jump to slide number n |
-| `emit` | Emit current state to sync |
-| `theme <name>` | Switch CSS theme at runtime |
+| `whiteboard` | Toggle whiteboard overlay |
+| `whiteboard-clear` | Clear whiteboard strokes on current slide |
+| `sync-follow` | Toggle follow/lead mode |
+| `sync-disconnect` | Disconnect from sync |
+| `toggle-toolbar` | Toggle toolbar (placeholder) |
 
 Plugin-provided commands are automatically registered and appear in `help` output.
 

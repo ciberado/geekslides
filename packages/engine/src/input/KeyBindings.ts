@@ -27,6 +27,7 @@ export class KeyBindings {
   #mode: KeyMode = 'normal';
   #target: EventTarget;
   #onTerminalOpen: (() => void) | null = null;
+  #onShortcutsToggle: (() => void) | null = null;
 
   constructor(commandSystem: CommandSystem, target: EventTarget = document) {
     this.#commandSystem = commandSystem;
@@ -55,6 +56,13 @@ export class KeyBindings {
   }
 
   /**
+   * Set callback for when shortcuts overlay should toggle.
+   */
+  onShortcutsToggle(callback: () => void): void {
+    this.#onShortcutsToggle = callback;
+  }
+
+  /**
    * Notify that terminal has closed — return to normal mode.
    */
   closeTerminal(): void {
@@ -80,6 +88,13 @@ export class KeyBindings {
       if (tag === 'input' || tag === 'textarea' || tag === 'select') {
         return;
       }
+    }
+
+    // Check for shortcuts overlay toggle
+    if (event.key === '?') {
+      event.preventDefault();
+      this.#onShortcutsToggle?.();
+      return;
     }
 
     // Check for terminal activation

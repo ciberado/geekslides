@@ -7,9 +7,31 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
+
+    .gs-loading {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: #1a1a2e;
+      z-index: 9999;
+      transition: opacity 0.3s ease;
+    }
+    .gs-loading.gs-hidden { opacity: 0; pointer-events: none; }
+    .gs-loading-spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #4a9eff;
+      border-radius: 50%;
+      animation: gs-spin 0.8s linear infinite;
+    }
+    @keyframes gs-spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body>
+  <div class="gs-loading" id="gs-loading"><div class="gs-loading-spinner"></div></div>
   <script type="module">
     import {
       loadConfig, parse, headerPreprocessor,
@@ -197,6 +219,14 @@
       }
     }
 
+    function dismissLoading() {
+      const el = document.getElementById('gs-loading');
+      if (el) {
+        el.classList.add('gs-hidden');
+        setTimeout(() => el.remove(), 300);
+      }
+    }
+
     try {
       let config = await fetchConfig();
       const markdown = await fetchMarkdown(config);
@@ -214,7 +244,7 @@
 
       // ---- SPEAKER VIEW ----
       if (viewMode === 'speaker') {
-        document.body.innerHTML = '<geek-speaker-view id="speaker"></geek-speaker-view>';
+        document.body.innerHTML = '<div class="gs-loading" id="gs-loading"><div class="gs-loading-spinner"></div></div><geek-speaker-view id="speaker"></geek-speaker-view>';
         const speaker = document.getElementById('speaker');
         const activeProcessors = await getActiveProcessors(config);
         speaker.setAspectRatio(config.aspectRatio);
@@ -222,6 +252,7 @@
           speaker.loadStyles(combinedCss);
         }
         speaker.loadSlides(slides);
+        dismissLoading();
         if (activeProcessors.length > 0) {
           speaker.loadProcessors(activeProcessors, config);
         }
@@ -314,13 +345,14 @@
 
       // ---- PRESENTATION VIEW ----
       } else {
-        document.body.innerHTML = '<geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
+        document.body.innerHTML = '<div class="gs-loading" id="gs-loading"><div class="gs-loading-spinner"></div></div><geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
         const slideshow = document.getElementById('slideshow');
 
         if (combinedCss) {
           slideshow.loadStyles(combinedCss);
         }
         slideshow.loadSlides(slides);
+        dismissLoading();
 
         // Apply post-processors to each slide's shadow DOM content
         await applyProcessors(slideshow, config);
@@ -373,6 +405,28 @@
           } catch (err) {
             console.warn('[sync] Failed to connect:', err.message);
           }
+        }
+
+        // --- Sync status indicator ---
+        if (sync) {
+          const syncDot = document.createElement('div');
+          syncDot.style.cssText = 'position:fixed;top:12px;right:12px;z-index:50;width:10px;height:10px;border-radius:50%;background:#888;transition:background 0.3s;pointer-events:none;';
+          syncDot.title = 'Sync status';
+          document.body.appendChild(syncDot);
+
+          document.addEventListener('geek:sync:state', (e) => {
+            const { connected, following } = e.detail || {};
+            if (!connected) {
+              syncDot.style.background = '#888';
+              syncDot.title = 'Sync: disconnected';
+            } else if (following) {
+              syncDot.style.background = '#4ade80';
+              syncDot.title = 'Sync: connected, following';
+            } else {
+              syncDot.style.background = '#fb923c';
+              syncDot.title = 'Sync: connected, independent';
+            }
+          });
         }
 
         // --- Command System & Terminal ---
@@ -502,7 +556,18 @@
         commands.register({ name: 'go-last', label: 'Go to last slide', execute: () => slideshow.goTo(slideshow.slideCount - 1), category: 'navigation' });
         commands.register({ name: 'go', label: 'Go to slide N (usage: go 5)', execute: (args) => {
           const n = parseInt(args?.[0], 10);
-          if (!isNaN(n) && n >= 1 && n <= slideshow.slideCount) slideshow.goTo(n - 1);
+          if (isNaN(n)) {
+            showCmdOutput('✗ Usage: go <slide-number>');
+            return;
+          }
+          if (n < 1 || n > slideshow.slideCount) {
+            showCmdOutput(`✗ Slide ${n} out of range (1–${slideshow.slideCount})`);
+            return;
+          }
+          slideshow.goTo(n - 1);
+        }, category: 'navigation' });
+        commands.register({ name: 'goto', label: 'Alias for go (usage: goto 5)', execute: (args) => {
+          commands.execute('go', args);
         }, category: 'navigation' });
         commands.register({ name: 'load', label: 'Load a different deck (usage: load config.json)', execute: (args) => {
           const deckUrl = args?.[0];
@@ -604,6 +669,10 @@
           whiteboard.clear();
         }, category: 'built-in' });
 
+        commands.register({ name: 'toggle-toolbar', label: 'Toggle toolbar (placeholder)', execute: () => {
+          console.log('[toolbar] Not yet implemented');
+        }, category: 'built-in' });
+
         // Sync-related commands
         if (sync) {
           commands.register({ name: 'sync-follow', label: 'Toggle follow presenter', execute: () => {
@@ -621,6 +690,7 @@
         // Key bindings
         const keys = new KeyBindings(commands);
         keys.onTerminalOpen(() => terminal.open());
+        keys.onShortcutsToggle(() => slideshow.toggleShortcutsOverlay());
         keys.activate();
 
         // Touch input (mobile gestures)

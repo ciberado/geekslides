@@ -72,9 +72,10 @@ export function registerBuildCommand(program: Command): void {
       for (const stylePath of config.styles) {
         const src = resolve(configDir, stylePath);
         if (existsSync(src)) {
-          await mkdir(dirname(join(outDir, stylePath)), { recursive: true });
-          await copyFile(src, join(outDir, basename(stylePath)));
-          console.log(`  Copied ${basename(stylePath)}`);
+          const dest = join(outDir, stylePath);
+          await mkdir(dirname(dest), { recursive: true });
+          await copyFile(src, dest);
+          console.log(`  Copied ${stylePath}`);
         }
       }
 

@@ -130,9 +130,12 @@ async function captureSlideScreenshots(
   });
 
   const paths: string[] = [];
+  const total = slides.length;
 
   for (const [i, slide] of slides.entries()) {
     const partialCount = slide.partialCount;
+
+    process.stdout.write(`  Capturing slide ${String(i + 1)}/${String(total)}...\r`);
 
     // Navigate to slide and reveal all partials
     await page.evaluate(
@@ -168,6 +171,8 @@ async function captureSlideScreenshots(
     await page.screenshot({ path: imgPath, type: 'png' });
     paths.push(imgPath);
   }
+
+  console.log(`  Captured ${String(total)} slides.`);
 
   await page.close();
   return paths;

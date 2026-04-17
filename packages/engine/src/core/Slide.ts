@@ -22,6 +22,8 @@ export class Slide extends HTMLElement {
   }
 
   connectedCallback(): void {
+    this.setAttribute('role', 'group');
+    this.setAttribute('aria-roledescription', 'slide');
     this.#render();
   }
 

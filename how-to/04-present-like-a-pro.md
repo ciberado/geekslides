@@ -15,8 +15,13 @@ These keys work at all times, no prefix needed:
 | `Page Up` | Previous slide |
 | `Home` | Jump to first slide |
 | `End` | Jump to last slide |
+| `?` | Show keyboard shortcuts overlay |
 
 That's the minimum. Arrow keys and Space will get you through any talk.
+
+## Progress indicator
+
+A thin progress bar at the bottom edge and a slide counter (e.g. `3 / 15`) in the bottom-right corner track your position. Both are hidden in overview mode.
 
 ## The terminal
 
@@ -112,6 +117,16 @@ Sync lets your audience see exactly what you see, in real time. It uses Yjs (a C
    ```
 
 3. Share the URL with your audience. Everyone who opens the same `room` parameter sees the same slide state.
+
+### Sync status indicator
+
+A small dot in the top-right corner shows sync state at a glance:
+
+| Color | Meaning |
+|---|---|
+| Green | Connected and following the presenter |
+| Orange | Connected but browsing independently |
+| Grey | Disconnected |
 
 ### How sync works
 

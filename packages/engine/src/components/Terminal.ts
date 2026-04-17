@@ -201,6 +201,9 @@ export class Terminal extends HTMLElement {
     this.#input.placeholder = 'type a command (help for list)';
     this.#input.autocomplete = 'off';
     this.#input.spellcheck = false;
+    this.#input.setAttribute('role', 'combobox');
+    this.#input.setAttribute('aria-label', 'Command input');
+    this.#input.setAttribute('aria-autocomplete', 'list');
     this.#input.addEventListener('keydown', this.#onInputKeydown);
 
     promptRow.appendChild(promptChar);
@@ -265,20 +268,7 @@ export class Terminal extends HTMLElement {
     if (cmdName === 'help') {
       this.#showHelp();
       input.value = '';
-      return;
-    }
-
-    // Built-in: goto <n>
-    if (cmdName === 'goto' && args.length > 0) {
-      const n = Number(args[0]);
-      if (!isNaN(n)) {
-        this.#commandSystem.execute('go-to-slide');
-        output.innerHTML = `<span class="success">→ slide ${String(n)}</span>`;
-      } else {
-        output.innerHTML = `<span class="error">goto: expected a number</span>`;
-      }
-      input.value = '';
-      this.#autoDismiss();
+      // Don't auto-dismiss — help output needs time to read
       return;
     }
 
@@ -327,7 +317,6 @@ export class Terminal extends HTMLElement {
     // Add built-in commands
     html += `<div class="category">built-in</div>`;
     html += `  <span class="cmd-name">help</span>  <span class="cmd-label">— show this list</span>\n`;
-    html += `  <span class="cmd-name">goto &lt;n&gt;</span>  <span class="cmd-label">— jump to slide n</span>\n`;
 
     output.innerHTML = html;
   }
@@ -345,7 +334,6 @@ export class Terminal extends HTMLElement {
 
     // Also match built-in commands
     if ('help'.startsWith(partial)) matches.push('help');
-    if ('goto'.startsWith(partial)) matches.push('goto');
 
     if (matches.length === 1) {
       input.value = matches[0] ?? '';

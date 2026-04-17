@@ -48,6 +48,9 @@ Phase 6: Rich Components (chart, video, whiteboard)
                            │
                            ▼
                     Phase 14: CLI Docker Image
+                           │
+                           ▼
+                    Phase 15: UX Enhancements
 ```
 
 ## Phase Summary
