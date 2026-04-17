@@ -33,6 +33,12 @@ export class Terminal extends HTMLElement {
    */
   setCommandSystem(commandSystem: CommandSystem): void {
     this.#commandSystem = commandSystem;
+    commandSystem.register({
+      name: 'help',
+      label: 'Show available commands',
+      category: 'terminal',
+      execute: () => { this.#showHelp(); },
+    });
   }
 
   /**
@@ -264,20 +270,17 @@ export class Terminal extends HTMLElement {
     const cmdName = parts[0] ?? '';
     const args = parts.slice(1);
 
-    // Built-in: help
-    if (cmdName === 'help') {
-      this.#showHelp();
-      input.value = '';
-      // Don't auto-dismiss — help output needs time to read
-      return;
-    }
-
     // Look up command
     const cmd = this.#commandSystem.all().find((c) => c.name === cmdName);
     if (cmd) {
       // Clear output before executing, so we know if the command sets it
       output.innerHTML = '';
       cmd.execute(args);
+      // Help output needs time to read — don't auto-dismiss
+      if (cmdName === 'help') {
+        input.value = '';
+        return;
+      }
       // Only print default message if output wasn't set by the command
       if (!output.innerHTML) {
         output.innerHTML = `<span class="success">${cmdName}: done</span>`;
@@ -314,10 +317,6 @@ export class Terminal extends HTMLElement {
       }
     }
 
-    // Add built-in commands
-    html += `<div class="category">built-in</div>`;
-    html += `  <span class="cmd-name">help</span>  <span class="cmd-label">— show this list</span>\n`;
-
     output.innerHTML = html;
   }
 
@@ -331,9 +330,6 @@ export class Terminal extends HTMLElement {
     const matches = this.#commandSystem.all()
       .filter((c) => c.name.startsWith(partial))
       .map((c) => c.name);
-
-    // Also match built-in commands
-    if ('help'.startsWith(partial)) matches.push('help');
 
     if (matches.length === 1) {
       input.value = matches[0] ?? '';
