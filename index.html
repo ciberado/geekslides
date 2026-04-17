@@ -373,6 +373,13 @@
             sync.bind(slideshow);
             sync.connect(wsUrl, room);
 
+            // Ensure room is reflected in the URL for sharing
+            if (!params.has('room')) {
+              const url = new URL(window.location.href);
+              url.searchParams.set('room', room);
+              window.history.replaceState(null, '', url.toString());
+            }
+
             // Publish state on navigation
             slideshow.addEventListener('geek:navigate', (e) => {
               sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
@@ -542,6 +549,10 @@
             const wsUrl = config.sync?.server || `ws://${location.hostname}:1234`;
             sync.connect(wsUrl, roomName);
             sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+            // Update URL so the room can be shared
+            const url = new URL(window.location.href);
+            url.searchParams.set('room', roomName);
+            window.history.replaceState(null, '', url.toString());
             showCmdOutput(`✓ Room changed: ${roomName}`);
             console.log('[room] Switched to:', roomName);
           } catch (err) {

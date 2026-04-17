@@ -343,7 +343,7 @@ export function parse(markdown: string): SlideData[] {
   const tokens = md.parse(markdown, {});
   const sections = splitOnSeparators(tokens);
 
-  return sections
+  const slides = sections
     .filter((s) => s.tokens.length > 0 || s.href.length > 0)
     .map((section) => {
       const attrs = parseSectionAttrs(section.href);
@@ -373,6 +373,17 @@ export function parse(markdown: string): SlideData[] {
         partialCount,
       };
     });
+
+  // Warn about duplicate slide IDs
+  const seenIds = new Set<string>();
+  for (const slide of slides) {
+    if (seenIds.has(slide.id)) {
+      console.warn(`[geekslides] Duplicate slide ID: "${slide.id}". This may cause CSS scoping or navigation issues.`);
+    }
+    seenIds.add(slide.id);
+  }
+
+  return slides;
 }
 
 export type { MarkdownIt };

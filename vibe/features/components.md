@@ -60,6 +60,8 @@ Separate route/tab:
 
 - `geek-slideshow` owns viewport layout and scaling (`transform: scale()` with contain behavior).
 - Each `geek-slide` hosts content in Shadow DOM and keeps transitions isolated.
+- In overview mode (`mode="overview"`), the container switches to a CSS grid showing
+  all slide thumbnails. Clicking a thumbnail navigates to that slide and exits overview.
 - External deck CSS is injected per slide and adapted for shadow context (`body` selectors rewritten to `:host`).
 - Font `@import` rules are hoisted to document head to ensure consistent font loading.
 
@@ -78,9 +80,25 @@ This supports browser-backed PDF export for four formats:
 The command workflow is terminal-based:
 
 - Press `t` to open `<geek-terminal>`.
-- Type command (`help`, `goto 8`, `speaker`, `whiteboard`, `sync`, `follow`, `emit`).
+- Type command (`help`, `go 8`, `speaker`, `whiteboard`, `overview`, `fullscreen`).
 - Press Enter to execute; Esc closes the terminal.
+- `help` output stays visible until manually dismissed (no auto-dismiss).
+- Press `?` for a keyboard shortcuts overlay.
 - Navigation keys remain direct and always available in normal mode.
+
+## Accessibility
+
+- `<geek-slideshow>`: `role="region"`, `aria-roledescription="slide deck"`
+- `<geek-slide>`: `role="group"`, `aria-roledescription="slide"`, `aria-label="Slide N of M"`,
+  `aria-hidden` on inactive slides
+- `<geek-terminal>` input: `role="combobox"`, `aria-label="Command input"`
+- `aria-live="polite"` region announces slide changes to screen readers
+
+## Progress Indicator
+
+The slideshow shadow DOM includes a thin progress bar at the bottom edge and a
+slide counter (`N / M`) in the bottom-right corner. Both update on every
+`geek:navigate` event and are hidden in overview mode.
 
 ## Smartphone Support
 

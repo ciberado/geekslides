@@ -154,16 +154,76 @@ out of range.
 
 ---
 
+### 12. Speaker view wall clock
+
+**Problem**: Presenters need to know the current time, not just elapsed time.
+
+**Implementation**: Add a wall-clock display (HH:MM) next to the elapsed timer
+in the speaker view controls bar. Updated every 10 seconds via `setInterval`.
+
+**File**: `packages/engine/src/components/SpeakerView.ts`
+
+---
+
+### 13. Docker wrapper `--version` support
+
+**Problem**: `geekslides --version` passes through to the container but the
+wrapper doesn't explicitly handle it, making behavior non-obvious.
+
+**Fix**: Add an explicit `--version|-V` case in the generated wrapper script.
+
+**File**: `docker/cli-entrypoint.sh`
+
+---
+
+### 14. Room name in URL
+
+**Problem**: The sync room is not reflected in the browser URL. Users who share
+their URL won't include room info.
+
+**Fix**: On initial sync connect and on `room <name>` command, update the URL
+via `history.replaceState()` to include `?room=<name>`.
+
+**File**: `index.html`
+
+---
+
+### 15. Overview mode grid layout
+
+**Problem**: The `overview` command toggled a mode attribute but no CSS existed
+to display all slides in a grid.
+
+**Implementation**: Add CSS for `:host([mode="overview"])` that overrides the
+container to a scrollable CSS grid. Each slide thumbnail shows as an
+aspect-ratio card. Clicking a slide exits overview and navigates to it.
+Active slide highlighted with a blue border.
+
+**File**: `packages/engine/src/core/Slideshow.ts`
+
+---
+
+### 16. Slide ID duplicate detection
+
+**Problem**: Duplicate `[](#id)` markers silently break CSS scoping and
+navigation.
+
+**Fix**: After parsing, check for duplicate slide IDs and emit
+`console.warn()` for each duplicate.
+
+**File**: `packages/engine/src/core/SlideParser.ts`
+
+---
+
 ## Testing
 
-- **Unit tests**: Terminal auto-dismiss behavior, `go` command error cases.
-- **Integration tests**: Slide counter renders, ARIA attributes present.
+- **Unit tests**: Terminal auto-dismiss behavior, `go` command error cases,
+  duplicate ID detection warning.
+- **Integration tests**: Slide counter renders, ARIA attributes present,
+  overview mode grid.
 - **E2E tests**: Keyboard `?` overlay opens/closes, progress bar visible,
   sync indicator color changes on connect/disconnect.
 
 ## Non-goals
 
 - Full toolbar implementation (future phase).
-- Overview mode grid layout (separate design task).
-- Speaker view slide counter (separate task, similar pattern).
 - Touch zone ratio change (needs user testing data first).

@@ -33,6 +33,12 @@ cd my-first-deck
 
 This scaffolds `config.json`, `README.md`, `css/local.css`, and an `images/` directory inside the current folder.
 
+## Check the version
+
+```bash
+geekslides --version
+```
+
 ## Start the dev server
 
 ```bash

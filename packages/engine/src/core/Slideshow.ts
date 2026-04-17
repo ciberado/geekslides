@@ -55,8 +55,48 @@ export class Slideshow extends HTMLElement {
   }
 
   set mode(value: SlideshowMode) {
+    const prevMode = this.#mode;
     this.#mode = value;
     this.setAttribute('mode', value);
+
+    if (value === 'overview') {
+      // In overview mode, make all slides visible and clickable
+      for (let i = 0; i < this.#slideElements.length; i++) {
+        const el = this.#slideElements[i];
+        if (!el) continue;
+        el.classList.remove('gs-prev');
+        el.dataset.slideIndex = String(i);
+      }
+      this.#setupOverviewClickHandlers();
+    } else if (prevMode === 'overview') {
+      // Returning from overview — re-activate current slide
+      this.#removeOverviewClickHandlers();
+      this.#activateSlide(this.#currentSlide);
+      this.#rescale();
+    }
+
+    this.#updateProgress();
+  }
+
+  #overviewClickHandler = (e: Event): void => {
+    const target = (e.currentTarget as HTMLElement);
+    const idx = Number(target.dataset.slideIndex);
+    if (!isNaN(idx)) {
+      this.mode = 'present';
+      this.goTo(idx);
+    }
+  };
+
+  #setupOverviewClickHandlers(): void {
+    for (const el of this.#slideElements) {
+      el.addEventListener('click', this.#overviewClickHandler);
+    }
+  }
+
+  #removeOverviewClickHandlers(): void {
+    for (const el of this.#slideElements) {
+      el.removeEventListener('click', this.#overviewClickHandler);
+    }
   }
 
   /**
@@ -328,6 +368,44 @@ export class Slideshow extends HTMLElement {
         transform-origin: top left;
         position: relative;
         overflow: hidden;
+      }
+
+      :host([mode="overview"]) {
+        overflow: auto;
+      }
+
+      :host([mode="overview"]) .gs-container {
+        transform: none !important;
+        width: 100% !important;
+        height: auto !important;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+        gap: 12px;
+        padding: 16px;
+        box-sizing: border-box;
+      }
+
+      :host([mode="overview"]) .gs-container geek-slide {
+        position: relative !important;
+        top: auto !important;
+        left: auto !important;
+        transform: none !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        aspect-ratio: 16 / 9;
+        border-radius: 8px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: border-color 0.2s ease;
+      }
+
+      :host([mode="overview"]) .gs-container geek-slide[active] {
+        border-color: rgba(74, 158, 255, 0.8);
+      }
+
+      :host([mode="overview"]) .gs-container geek-slide:hover {
+        border-color: rgba(74, 158, 255, 0.5);
       }
 
       .gs-progress {

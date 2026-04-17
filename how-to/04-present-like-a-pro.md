@@ -38,6 +38,7 @@ Press `t` to open the command terminal — a text prompt at the bottom of the sc
 | `go-first` | Jump to the first slide |
 | `go-last` | Jump to the last slide |
 | `fullscreen` | Toggle fullscreen mode |
+| `overview` | Toggle overview mode (slide grid) |
 | `speaker` | Open/toggle speaker view |
 | `whiteboard` | Toggle the drawing canvas |
 | `clear` | Clear whiteboard strokes on current slide |
@@ -63,6 +64,8 @@ The speaker view shows:
 - **Left pane**: Your speaker notes (scrollable, full Markdown rendering)
 - **Right pane**: Current slide on top, next slide preview below
 - **Timer**: Elapsed time since the presentation started (top-right corner)
+- **Clock**: Current wall-clock time next to the timer
+- **Slide counter**: Current position (e.g. `5 / 12`)
 - **Font controls**: `A-` / `A+` buttons to adjust notes font size on the fly
 
 ![Speaker view layout with notes, current slide, and timer](screenshots/speaker-view-layout.png)
@@ -144,6 +147,10 @@ This means your audience only needs the server URL — they don't need to be on 
 ## Fullscreen
 
 Press `F11` or type `fullscreen` in the terminal. The slide fills the entire screen with proper aspect-ratio scaling.
+
+## Overview mode
+
+Type `overview` in the terminal (or swipe up on mobile) to see all slides in a scrollable grid. Click any thumbnail to jump to that slide and return to presentation mode. The current slide is highlighted with a blue border.
 
 ## Presentation checklist
 

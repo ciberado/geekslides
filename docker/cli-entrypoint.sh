@@ -81,6 +81,9 @@ case "\${1:-}" in
     shift
     exec docker run \${DOCKER_ARGS} "\${IMAGE}" dev --port "\${PORT}" --host 0.0.0.0 "\$@"
     ;;
+  --version|-V)
+    exec docker run \${DOCKER_ARGS} "\${IMAGE}" --version
+    ;;
   *)
     exec docker run \${DOCKER_ARGS} "\${IMAGE}" "\$@"
     ;;

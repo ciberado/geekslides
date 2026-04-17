@@ -83,7 +83,7 @@ A dedicated Web Component that renders the full speaker interface.
 
 - **Left pane**: speaker notes in a dedicated card with its own scroll container.
 - **Right pane**: current slide preview above next slide preview.
-- **Bottom row**: timer, slide counter, and navigation controls.
+- **Bottom row**: elapsed timer, wall clock (HH:MM), slide counter, and navigation controls.
 
 The main notes/preview split and the current/next preview split are both draggable in desktop layouts. The notes card header also includes `A-` and `A+` controls to adjust notes font size without affecting slide previews.
 

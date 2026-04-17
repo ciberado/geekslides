@@ -262,6 +262,14 @@ const SPEAKER_STYLES = `
     min-width: 8ch;
   }
 
+  .wall-clock {
+    font-size: 1rem;
+    font-variant-numeric: tabular-nums;
+    font-family: monospace;
+    color: #94a3b8;
+    min-width: 5ch;
+  }
+
   .counter {
     font-size: 1.1rem;
     color: #cbd5e1;
@@ -359,6 +367,8 @@ export class SpeakerView extends HTMLElement {
   #currentStage: HTMLElement | null = null;
   #nextStage: HTMLElement | null = null;
   #counterEl: HTMLElement | null = null;
+  #wallClockEl: HTMLElement | null = null;
+  #wallClockInterval: ReturnType<typeof setInterval> | null = null;
 
   constructor() {
     super();
@@ -383,6 +393,10 @@ export class SpeakerView extends HTMLElement {
     this.#resizeObserver = null;
     this.#fontImportsEl?.remove();
     this.#fontImportsEl = null;
+    if (this.#wallClockInterval !== null) {
+      clearInterval(this.#wallClockInterval);
+      this.#wallClockInterval = null;
+    }
   }
 
   get currentIndex(): number {
@@ -859,6 +873,16 @@ export class SpeakerView extends HTMLElement {
     this.#timerDisplay.className = 'timer';
     this.#timerDisplay.textContent = '00:00:00';
 
+    this.#wallClockEl = document.createElement('span');
+    this.#wallClockEl.className = 'wall-clock';
+    const updateClock = (): void => {
+      if (this.#wallClockEl) {
+        this.#wallClockEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+    };
+    updateClock();
+    this.#wallClockInterval = setInterval(updateClock, 10_000);
+
     const pauseBtn = document.createElement('button');
     pauseBtn.textContent = 'Pause';
     pauseBtn.addEventListener('click', () => {
@@ -905,7 +929,7 @@ export class SpeakerView extends HTMLElement {
     prevBtn.className = 'speaker-prev';
     nextBtn.className = 'speaker-next';
 
-    controls.append(this.#timerDisplay, pauseBtn, resetBtn, prevBtn, nextBtn, this.#counterEl);
+    controls.append(this.#timerDisplay, this.#wallClockEl, pauseBtn, resetBtn, prevBtn, nextBtn, this.#counterEl);
 
     shadow.replaceChildren(style, this.#mainLayout, controls);
   }
