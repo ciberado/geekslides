@@ -13,6 +13,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Style Your Deck](07-style-your-deck.md) | Understand the CSS layers: base, theme, and per-slide styles |
 | [Write a Custom Plugin](08-write-a-custom-plugin.md) | Build a preprocessor and a processor with practical examples |
 | [Add Local Plugins](09-add-local-plugins.md) | Ship plain JS plugins alongside your deck or load them from remote URLs |
+| [Use the Docker CLI](10-use-the-docker-cli.md) | Run GeekSlides commands via Docker without installing Node.js |
 
 ## Screenshots
 

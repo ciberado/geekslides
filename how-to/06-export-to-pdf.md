@@ -11,6 +11,8 @@ npm ci
 npx playwright install chromium
 ```
 
+> **Tip:** With Docker, use the `:chromium` tag — Chromium is pre-installed. See [Use the Docker CLI](10-use-the-docker-cli.md).
+
 ## Basic export
 
 ```bash

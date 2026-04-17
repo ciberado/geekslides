@@ -42,6 +42,12 @@ Phase 6: Rich Components (chart, video, whiteboard)
                    └───────┬───────┘
                            ▼
                     Phase 12: E2E Tests & Polish
+                           │
+                           ▼
+                    Phase 13: Terminal Config
+                           │
+                           ▼
+                    Phase 14: CLI Docker Image
 ```
 
 ## Phase Summary
@@ -62,6 +68,7 @@ Phase 6: Rich Components (chart, video, whiteboard)
 | [11](phase-11-deployment.md) | Deployment | 9 | Docker, Compose, Caddyfile, env config | ~5 |
 | [12](phase-12-e2e.md) | E2E Tests & Polish | all | Playwright suites, CI, demo migration | ~8 |
 | [13](phase-13-terminal-config.md) | Terminal Config | 2, 5, 9 | `load <url>`, `room <name>` terminal commands | ~4 |
+| [14](phase-14-cli-docker.md) | CLI Docker Image | 9, 11 | Dockerfile.cli, wrapper script, how-to guide | ~5 |
 
 ## Principles
 

@@ -161,6 +161,23 @@ or the server restarts. Max upload size: 200 MB.
 
 For static deployments without real-time sync: run `npm run build`, then upload the `packages/engine/dist` directory to an Azure Blob Storage `$web` container using `az storage blob upload-batch`.
 
+## CLI Docker Image
+
+The CLI is also available as a standalone Docker image for authoring presentations without
+installing Node.js locally. Two tags are published:
+
+- `ciberado/geekslides-cli:latest` — Alpine-based, all commands except PDF export (~200 MB)
+- `ciberado/geekslides-cli:chromium` — Debian-based with Playwright + Chromium for PDF export (~800 MB)
+
+Running the image with no arguments prints a wrapper script:
+
+```sh
+docker run --rm ciberado/geekslides-cli > geekslides && chmod +x geekslides
+./geekslides dev   # starts dev server on port 3000, mounts $PWD
+```
+
+See [CLI Docker Image](cli-docker-image.md) for the full design.
+
 ## Comparison with v1 Deployment
 
 | Aspect | v1 | v2 |

@@ -1,0 +1,149 @@
+# ----- Stage 1: Build workspace -----
+FROM node:22-alpine AS builder
+
+WORKDIR /build
+
+COPY package.json package-lock.json* ./
+COPY packages/engine/package.json packages/engine/
+COPY packages/cli/package.json packages/cli/
+COPY packages/server/package.json packages/server/
+
+RUN npm ci --ignore-scripts
+
+COPY tsconfig.json vite.config.ts index.html ./
+COPY packages/engine/ packages/engine/
+COPY packages/cli/ packages/cli/
+COPY packages/server/ packages/server/
+
+# Engine exports raw TS source (resolved by esbuild/Vite at build time).
+# Build server (esbuild → CJS), then CLI binary (esbuild → CJS) and app shell (Vite).
+RUN npm run build -w @geekslides/server && \
+    npm run build -w @geekslides/cli && \
+    npm run build:app -w @geekslides/cli
+
+# ----- Stage 2: Runtime dependencies (slim) -----
+FROM node:22-alpine AS slim-deps
+
+WORKDIR /deps
+
+# Install only the externals that esbuild did not bundle
+RUN npm init -y > /dev/null 2>&1 && \
+    npm install --save vite@^6 sharp@^0.33 --ignore-scripts
+
+# ----- Stage 3: Runtime dependencies (chromium) -----
+FROM node:22-bookworm-slim AS chromium-deps
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      curl \
+      ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# Node.js is needed for npm — install from NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y --no-install-recommends nodejs && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /deps
+
+RUN npm init -y > /dev/null 2>&1 && \
+    npm install --save vite@^6 sharp@^0.33 playwright@^1.49
+
+# Install Chromium browser for Playwright
+RUN npx playwright install --with-deps chromium
+
+# ----- Target: slim (no Chromium) -----
+FROM node:22-alpine AS slim
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# CLI binary
+COPY --from=builder /build/packages/cli/dist/index.cjs ./packages/cli/dist/index.cjs
+
+# CLI app shell (needed by Vite for dev/build commands)
+COPY --from=builder /build/packages/cli/app ./packages/cli/app
+COPY --from=builder /build/packages/cli/package.json ./packages/cli/package.json
+
+# Engine source (Vite resolves TS source at dev time via package.json exports)
+COPY --from=builder /build/packages/engine ./packages/engine
+
+# Server package (imported at runtime by CLI)
+COPY --from=builder /build/packages/server/package.json ./packages/server/package.json
+COPY --from=builder /build/packages/server/dist ./packages/server/dist
+
+# Workspace root (needed for module resolution)
+COPY --from=builder /build/package.json ./package.json
+
+# Runtime dependencies (vite, sharp)
+COPY --from=slim-deps /deps/node_modules ./node_modules
+
+# Entrypoint
+COPY docker/cli-entrypoint.sh /cli-entrypoint.sh
+RUN chmod +x /cli-entrypoint.sh
+
+ENV GEEKSLIDES_IMAGE=ciberado/geekslides-cli:latest
+ENV GEEKSLIDES_PORT=3000
+
+WORKDIR /deck
+
+ENTRYPOINT ["/cli-entrypoint.sh"]
+
+# ----- Target: chromium (with Playwright + Chromium) -----
+FROM node:22-bookworm-slim AS chromium
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+      libnss3 \
+      libatk1.0-0 \
+      libatk-bridge2.0-0 \
+      libcups2 \
+      libdrm2 \
+      libxkbcommon0 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxrandr2 \
+      libgbm1 \
+      libpango-1.0-0 \
+      libcairo2 \
+      libasound2 \
+      libxshmfence1 \
+      libglib2.0-0 \
+      fonts-liberation \
+      fonts-noto-color-emoji && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# CLI binary
+COPY --from=builder /build/packages/cli/dist/index.cjs ./packages/cli/dist/index.cjs
+
+# CLI app shell
+COPY --from=builder /build/packages/cli/app ./packages/cli/app
+COPY --from=builder /build/packages/cli/package.json ./packages/cli/package.json
+
+# Engine source
+COPY --from=builder /build/packages/engine ./packages/engine
+
+# Server package
+COPY --from=builder /build/packages/server/package.json ./packages/server/package.json
+COPY --from=builder /build/packages/server/dist ./packages/server/dist
+
+# Workspace root
+COPY --from=builder /build/package.json ./package.json
+
+# Runtime dependencies (vite, sharp, playwright + chromium)
+COPY --from=chromium-deps /deps/node_modules ./node_modules
+COPY --from=chromium-deps /root/.cache/ms-playwright /root/.cache/ms-playwright
+
+# Entrypoint
+COPY docker/cli-entrypoint.sh /cli-entrypoint.sh
+RUN chmod +x /cli-entrypoint.sh
+
+ENV GEEKSLIDES_IMAGE=ciberado/geekslides-cli:chromium
+ENV GEEKSLIDES_PORT=3000
+
+WORKDIR /deck
+
+ENTRYPOINT ["/cli-entrypoint.sh"]

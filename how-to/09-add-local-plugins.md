@@ -187,4 +187,4 @@ This means you can publish plugins to any static hosting (GitHub Pages, npm CDN,
 
 ---
 
-← Previous: [Write a Custom Plugin](08-write-a-custom-plugin.md) | Back to [index →](README.md)
+← Previous: [Write a Custom Plugin](08-write-a-custom-plugin.md) | Next: [Use the Docker CLI →](10-use-the-docker-cli.md)

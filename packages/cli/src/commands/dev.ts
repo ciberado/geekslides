@@ -90,11 +90,12 @@ export function registerDevCommand(program: Command): void {
     .command('dev')
     .description('Start development server')
     .option('--port <n>', 'Vite dev server port', '5173')
+    .option('--host <addr>', 'Bind address (use 0.0.0.0 for Docker)')
     .option('--ws-port <n>', 'y-websocket server port', '1234')
     .option('--no-sync', 'Disable y-websocket server')
     .option('--open', 'Open browser automatically')
     .option('--config <path>', 'Config file path', 'config.json')
-    .action(async (opts: { port: string; wsPort: string; sync: boolean; open: boolean; config: string }) => {
+    .action(async (opts: { port: string; host?: string; wsPort: string; sync: boolean; open: boolean; config: string }) => {
       const port = Number(opts.port);
       const wsPort = Number(opts.wsPort);
       const deckConfigPath = resolveDeckConfigPath(opts.config);
@@ -118,6 +119,7 @@ export function registerDevCommand(program: Command): void {
         plugins: [geekSlidesHmr()],
         server: {
           port,
+          ...(opts.host ? { host: opts.host } : {}),
           open: opts.open ? `${openTarget.pathname}${openTarget.search}` : false,
           fs: {
             allow: [APP_ROOT, deckDir],

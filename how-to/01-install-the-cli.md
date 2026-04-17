@@ -2,6 +2,8 @@
 
 GeekSlides is a Node.js application distributed as an npm workspace. This guide walks you through installation and verifying the setup.
 
+> **Tip:** If you prefer Docker over a local Node.js install, see [Use the Docker CLI](10-use-the-docker-cli.md) instead.
+
 ## Prerequisites
 
 - **Node.js 22** or later ([download](https://nodejs.org/))
