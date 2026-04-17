@@ -6,6 +6,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { storeRoomContent, getRoomFile, MAX_UPLOAD_SIZE } from './ContentStore.ts';
+import { parseMultipart } from './multipart.ts';
 
 const MIME_TYPES: Record<string, string> = {
   '.json': 'application/json',
@@ -45,116 +46,6 @@ function sendJson(res: ServerResponse, status: number, data: unknown): void {
 
 function sendError(res: ServerResponse, status: number, message: string): void {
   sendJson(res, status, { error: message });
-}
-
-/**
- * Parse a multipart/form-data body and extract files.
- *
- * Expects fields named `files` with filename metadata.
- * Accepts an optional `manifest` JSON field.
- */
-async function parseMultipart(
-  req: IncomingMessage,
-): Promise<{ files: Array<{ path: string; data: Buffer }>; manifest?: { files: string[] } }> {
-  const contentType = req.headers['content-type'] ?? '';
-  const boundaryMatch = /boundary=([^\s;]+)/.exec(contentType);
-  if (!boundaryMatch) {
-    throw new Error('Missing multipart boundary');
-  }
-
-  const boundary = boundaryMatch[1] ?? '';
-  const body = await readBody(req);
-  const parts = splitMultipartBody(body, boundary);
-
-  const files: Array<{ path: string; data: Buffer }> = [];
-  let manifest: { files: string[] } | null = null;
-
-  for (const part of parts) {
-    const headerEnd = part.indexOf('\r\n\r\n');
-    if (headerEnd === -1) {
-      continue;
-    }
-
-    const headerBuf = part.subarray(0, headerEnd);
-    const headers = headerBuf.toString('utf-8');
-    const data = part.subarray(headerEnd + 4);
-
-    const nameMatch = /name="([^"]*)"/.exec(headers);
-    const filenameMatch = /filename="([^"]*)"/.exec(headers);
-
-    if (nameMatch?.[1] === 'manifest' && !filenameMatch) {
-      try {
-        manifest = JSON.parse(data.toString('utf-8')) as { files: string[] };
-      } catch {
-        throw new Error('Invalid manifest JSON');
-      }
-      continue;
-    }
-
-    if (filenameMatch?.[1]) {
-      files.push({ path: filenameMatch[1], data });
-    }
-  }
-
-  return manifest ? { files, manifest } : { files };
-}
-
-function readBody(req: IncomingMessage): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    let totalLength = 0;
-
-    req.on('data', (chunk: Buffer) => {
-      totalLength += chunk.length;
-      if (totalLength > MAX_UPLOAD_SIZE + 1024 * 1024) {
-        // Allow some overhead for multipart headers
-        req.destroy();
-        reject(new Error('Request body too large'));
-        return;
-      }
-      chunks.push(chunk);
-    });
-
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
-}
-
-function splitMultipartBody(body: Buffer, boundary: string): Buffer[] {
-  const delimiter = Buffer.from(`--${boundary}`);
-  const parts: Buffer[] = [];
-
-  let start = 0;
-  while (true) {
-    const pos = body.indexOf(delimiter, start);
-    if (pos === -1) {
-      break;
-    }
-
-    if (start > 0) {
-      // Trim trailing \r\n from previous part
-      let end = pos;
-      if (body[end - 1] === 0x0a && body[end - 2] === 0x0d) {
-        end -= 2;
-      }
-      const part = body.subarray(start, end);
-      if (part.length > 0) {
-        parts.push(part);
-      }
-    }
-
-    start = pos + delimiter.length;
-    // Check for closing boundary --boundary--
-    if (body[start] === 0x2d && body[start + 1] === 0x2d) {
-      break;
-    }
-    // Skip \r\n after boundary
-    if (body[start] === 0x0d && body[start + 1] === 0x0a) {
-      start += 2;
-    }
-  }
-
-  return parts;
 }
 
 /** Route pattern: /api/rooms/:room/content[/:path] */
@@ -217,7 +108,7 @@ async function handleUpload(req: IncomingMessage, res: ServerResponse, room: str
     return true;
   }
 
-  const { files } = await parseMultipart(req);
+  const { files } = await parseMultipart(req, MAX_UPLOAD_SIZE + 1024 * 1024);
 
   if (files.length === 0) {
     sendError(res, 400, 'No files uploaded');
