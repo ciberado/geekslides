@@ -23,7 +23,7 @@
     }
   },
   "scripts": {
-    "build": "vite build",
+    "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

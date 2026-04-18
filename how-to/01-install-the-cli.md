@@ -26,7 +26,7 @@ cd geekslides
 npm ci
 ```
 
-`npm ci` installs exact versions from the lockfile and links the three workspace packages:
+`npm ci` installs exact versions from the lockfile, links the three workspace packages, and **automatically builds all packages** (via the `prepare` script):
 
 | Package | Role |
 |---|---|
@@ -36,10 +36,9 @@ npm ci
 
 ## Verify the installation
 
-Build all packages and run the test suite:
+Run the test suite to confirm everything works:
 
 ```bash
-npm run build
 npm test
 ```
 
