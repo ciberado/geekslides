@@ -39,6 +39,8 @@ npm test                # Vitest unit + integration tests (80% coverage threshol
 npm run test:e2e        # Playwright e2e (requires dev server: npm run dev)
 npm run dev             # Vite + yjs-server on 0.0.0.0
 npm run build           # Build all packages
+npm run docker:build    # Build all Docker images (main, server, cli, cli:chromium)
+npm run docker:push     # Push all Docker images to Docker Hub
 ```
 
 ## Testing Conventions

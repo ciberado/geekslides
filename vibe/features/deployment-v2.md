@@ -62,6 +62,23 @@ Listens on `{$DOMAIN}` (default `localhost`). Routes:
 
 TLS configured via `{$ACME_EMAIL}` — `internal` generates self-signed certs for development.
 
+### npm Docker Scripts
+
+Root `package.json` provides convenience scripts for building and pushing all images:
+
+| Script | Image | Description |
+|--------|-------|-------------|
+| `docker:build` | (all) | Builds all four images sequentially |
+| `docker:build:main` | `ciberado/geekslides:latest` | Full-stack: SPA + yjs server + Caddy |
+| `docker:build:server` | `ciberado/geekslides-server:latest` | Standalone yjs-server only |
+| `docker:build:cli` | `ciberado/geekslides-cli:latest` | CLI slim (Alpine, ~200 MB) |
+| `docker:build:cli:chromium` | `ciberado/geekslides-cli:chromium` | CLI with Chromium (~800 MB) |
+| `docker:push` | (all) | Pushes all four images to Docker Hub |
+| `docker:push:main` | `ciberado/geekslides:latest` | |
+| `docker:push:server` | `ciberado/geekslides-server:latest` | |
+| `docker:push:cli` | `ciberado/geekslides-cli:latest` | |
+| `docker:push:cli:chromium` | `ciberado/geekslides-cli:chromium` | |
+
 ## Environment Variables
 
 | Variable | Default | Description |
