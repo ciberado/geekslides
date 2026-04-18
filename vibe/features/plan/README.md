@@ -115,3 +115,10 @@ All decisions and specifications are in the sibling docs:
 | 11 | In progress | Deployment assets are present; full Docker validation and root README Docker quick-start are still pending |
 | 12 | Implemented | Playwright E2E suite is in place and passing in local dev |
 | 13 | Implemented | `load` and `room` runtime commands are implemented, documented, and explicitly covered by Playwright |
+| 14 | Implemented | CLI Docker image with Chromium, wrapper script, how-to guide |
+| 15 | Implemented | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid |
+| 16 | Implemented | Toolbar, mermaid processor, touch zone tuning |
+
+## Future Improvements
+
+- **Upgrade `y-websocket` to v3.x** — v3 drops the deprecated Level ecosystem (`y-leveldb`, `levelup`, `level-js`, etc.), eliminating ~9 `npm ci` deprecation warnings. However, v3 removes the server-side `setupWSConnection` API that `@geekslides/server` relies on (`y-websocket/bin/utils`). Migration requires rewriting the server's WebSocket handler to use the Yjs primitives directly (or adopting a separate server package like `@hocuspocus/server`).
