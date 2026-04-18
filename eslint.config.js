@@ -40,6 +40,7 @@ export default tseslint.config(
       '**/*.test.ts',
       '**/*.test.js',
       '**/.gitkeep',
+      'packages/cli/bin/',
     ],
   },
 );
