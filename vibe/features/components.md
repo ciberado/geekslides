@@ -104,8 +104,8 @@ slide counter (`N / M`) in the bottom-right corner. Both update on every
 
 Mobile follow mode is supported in browser:
 
-- Swipe/tap navigation through `TouchInput`
-- Long press opens terminal
+- Swipe/tap navigation through `TouchInput` (25/50/25 tap zone split: prev / dead zone / next)
+- Long press toggles the floating toolbar (prev, next, overview, fullscreen, whiteboard, speaker)
 - Room sync keeps audience clients following presenter state
 
 The mobile model is interaction-first (touch + sync), not a reduced desktop clone.

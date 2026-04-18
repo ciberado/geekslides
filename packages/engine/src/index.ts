@@ -24,6 +24,7 @@ export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
 export { chartProcessor } from './plugins/builtins/chart-processor.ts';
 export { videoProcessor } from './plugins/builtins/video-processor.ts';
+export { mermaidProcessor } from './plugins/builtins/mermaid-processor.ts';
 
 // Phase 6: Rich Components
 import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';
@@ -43,6 +44,7 @@ export { CommandSystem } from './input/CommandSystem.ts';
 export type { Command } from './input/CommandSystem.ts';
 export { KeyBindings } from './input/KeyBindings.ts';
 export { TouchInput } from './input/TouchInput.ts';
+export type { TouchInputOptions } from './input/TouchInput.ts';
 import { Terminal as TerminalImpl } from './components/Terminal.ts';
 export { Terminal } from './components/Terminal.ts';
 

@@ -59,13 +59,21 @@ Lazy-loads iframes by converting `data-src` to `src` only when the slide becomes
 
 A single processor function queries all `iframe[data-src]` elements in the slide. It sets up a `MutationObserver` on the slide element watching for changes to the `active` attribute. When the slide becomes active, each iframe's `data-src` value is copied to `src` (only once — it checks that `src` isn't already set).
 
+### mermaid-processor
+
+Renders Mermaid diagram code blocks into SVG diagrams at runtime.
+
+A single processor function finds `<pre><code class="language-mermaid">` elements in the slide, extracts the text content as a Mermaid definition, dynamically imports the `mermaid` library (lazy — only loaded on first use), calls `mermaid.render()` to produce SVG, and replaces the `<pre>` with a `<div class="gs-mermaid">` containing the rendered SVG. The mermaid library is initialized with the `dark` theme. Render errors are caught and logged as `console.warn`, and the original `<pre>` element gains a `gs-mermaid-error` CSS class.
+
+Users opt in via `config.json`: `"processors": ["iframe", "mermaid"]`.
+
 ## Plugin Registration via Config
 
 Plugins are registered in `config.json` using three resolution modes:
 
 ### Built-in plugins (short names)
 
-The engine maintains a registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`) to their bundled plugin functions:
+The engine maintains a registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`, `'mermaid'`) to their bundled plugin functions:
 
 ```json
 {
@@ -183,7 +191,8 @@ SlideData[] (HTML sections)
 │  1. chart-processor             │
 │  2. video-processor             │
 │  3. iframe-processor            │
-│  4. ...custom processors        │
+│  4. mermaid-processor            │
+│  5. ...custom processors        │
 └─────────────────────────────────┘
     │
     ▼

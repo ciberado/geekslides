@@ -51,6 +51,10 @@ Phase 6: Rich Components (chart, video, whiteboard)
                            │
                            ▼
                     Phase 15: UX Enhancements
+                           │
+                           ▼
+                    Phase 16: Toolbar, Mermaid
+                             & Touch Tuning
 ```
 
 ## Phase Summary
@@ -72,6 +76,8 @@ Phase 6: Rich Components (chart, video, whiteboard)
 | [12](phase-12-e2e.md) | E2E Tests & Polish | all | Playwright suites, CI, demo migration | ~8 |
 | [13](phase-13-terminal-config.md) | Terminal Config | 2, 5, 9 | `load <url>`, `room <name>` terminal commands | ~4 |
 | [14](phase-14-cli-docker.md) | CLI Docker Image | 9, 11 | Dockerfile.cli, wrapper script, how-to guide | ~5 |
+| [15](phase-15-ux-enhancements.md) | UX Enhancements | 14 | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid | ~10 |
+| [16](phase-16-toolbar-mermaid-touch.md) | Toolbar, Mermaid & Touch | 15 | Toolbar component, mermaid processor, touch zone tuning, lint fixes | ~7 |
 
 ## Principles
 

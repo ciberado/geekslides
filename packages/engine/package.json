@@ -30,6 +30,7 @@
     "chart.js": "^4.4.0",
     "markdown-it": "^14.1.0",
     "markdown-it-container": "^4.0.0",
+    "mermaid": "^11.14.0",
     "y-websocket": "^2.0.0",
     "yjs": "^13.6.0"
   },

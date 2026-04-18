@@ -49,7 +49,8 @@ export const headerPreprocessor: Preprocessor = (markdown: string): string => {
 
 function findLastNonBlank(lines: string[]): string | undefined {
   for (let i = lines.length - 1; i >= 0; i--) {
-    if (lines[i]!.trim() !== '') return lines[i];
+    const line = lines[i];
+    if (line !== undefined && line.trim() !== '') return line;
   }
   return undefined;
 }

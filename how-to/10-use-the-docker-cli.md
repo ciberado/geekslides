@@ -152,4 +152,4 @@ cat $(which geekslides)
 
 ---
 
-← Previous: [Add Local Plugins](09-add-local-plugins.md) | Back to [index →](README.md)
+← Previous: [Add Local Plugins](09-add-local-plugins.md) | Next: [Add Mermaid Diagrams →](11-add-mermaid-diagrams.md)

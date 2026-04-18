@@ -9,6 +9,11 @@ import type { CommandSystem } from './CommandSystem.ts';
 const SWIPE_THRESHOLD_X = 50;
 const SWIPE_THRESHOLD_Y = 80;
 const LONG_PRESS_MS = 500;
+const DEFAULT_TAP_ZONE_RATIO = 0.25;
+
+export interface TouchInputOptions {
+  readonly tapZoneRatio?: number;
+}
 
 export class TouchInput {
   #commandSystem: CommandSystem;
@@ -17,10 +22,12 @@ export class TouchInput {
   #startY = 0;
   #startTime = 0;
   #longPressTimer: ReturnType<typeof setTimeout> | null = null;
+  #tapZoneRatio: number;
 
-  constructor(commandSystem: CommandSystem, target: HTMLElement) {
+  constructor(commandSystem: CommandSystem, target: HTMLElement, options?: TouchInputOptions) {
     this.#commandSystem = commandSystem;
     this.#target = target;
+    this.#tapZoneRatio = options?.tapZoneRatio ?? DEFAULT_TAP_ZONE_RATIO;
   }
 
   /**
@@ -83,11 +90,12 @@ export class TouchInput {
       const viewportWidth = this.#target.clientWidth;
       const tapX = touch.clientX;
 
-      if (tapX > viewportWidth * 0.33) {
-        this.#commandSystem.execute('next');
-      } else {
+      if (tapX < viewportWidth * this.#tapZoneRatio) {
         this.#commandSystem.execute('prev');
+      } else if (tapX > viewportWidth * (1 - this.#tapZoneRatio)) {
+        this.#commandSystem.execute('next');
       }
+      // Centre dead zone — no command fired
     }
   };
 

@@ -507,6 +507,64 @@ export class Slideshow extends HTMLElement {
         font-size: 0.8rem;
         color: #64748b;
       }
+
+      .gs-toolbar {
+        display: none;
+        position: fixed;
+        bottom: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 150;
+        background: rgba(15, 23, 42, 0.85);
+        backdrop-filter: blur(8px);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+        border-radius: 12px;
+        padding: 6px 10px;
+        gap: 4px;
+        align-items: center;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        font-family: system-ui, sans-serif;
+      }
+
+      .gs-toolbar[open] {
+        display: flex;
+      }
+
+      :host([mode="overview"]) .gs-toolbar {
+        display: none !important;
+      }
+
+      .gs-toolbar button {
+        background: transparent;
+        border: none;
+        color: #cbd5e1;
+        font-size: 1.2rem;
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s ease, color 0.15s ease;
+        padding: 0;
+      }
+
+      .gs-toolbar button:hover {
+        background: rgba(148, 163, 184, 0.2);
+        color: #e5eefb;
+      }
+
+      .gs-toolbar button:active {
+        background: rgba(148, 163, 184, 0.35);
+      }
+
+      .gs-toolbar .gs-toolbar-sep {
+        width: 1px;
+        height: 24px;
+        background: rgba(148, 163, 184, 0.2);
+        margin: 0 2px;
+      }
     `;
 
     const container = document.createElement('div');
@@ -564,7 +622,41 @@ export class Slideshow extends HTMLElement {
       if (e.key === 'Escape') this.toggleShortcutsOverlay();
     });
 
-    shadow.replaceChildren(style, container, progress, ariaLive, shortcutsOverlay);
+    const toolbar = document.createElement('div');
+    toolbar.classList.add('gs-toolbar');
+    toolbar.setAttribute('role', 'toolbar');
+    toolbar.setAttribute('aria-label', 'Presentation controls');
+
+    const toolbarButtons: Array<{ label: string; icon: string; command: string }> = [
+      { label: 'Previous slide', icon: '\u25C0', command: 'prev' },
+      { label: 'Next slide', icon: '\u25B6', command: 'next' },
+      { label: 'Overview', icon: '\u229E', command: 'overview' },
+      { label: 'Fullscreen', icon: '\u26F6', command: 'fullscreen' },
+      { label: 'Whiteboard', icon: '\u270E', command: 'whiteboard' },
+      { label: 'Speaker view', icon: '\uD83C\uDFA4', command: 'speaker' },
+    ];
+
+    for (const btn of toolbarButtons) {
+      if (btn.command === 'overview') {
+        const sep = document.createElement('div');
+        sep.classList.add('gs-toolbar-sep');
+        toolbar.appendChild(sep);
+      }
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.setAttribute('aria-label', btn.label);
+      button.dataset.command = btn.command;
+      button.textContent = btn.icon;
+      button.addEventListener('click', () => {
+        this.dispatchEvent(new CustomEvent('geek:toolbar:command', {
+          bubbles: true,
+          detail: { command: btn.command },
+        }));
+      });
+      toolbar.appendChild(button);
+    }
+
+    shadow.replaceChildren(style, container, progress, ariaLive, shortcutsOverlay, toolbar);
   }
 
   /**
@@ -577,6 +669,19 @@ export class Slideshow extends HTMLElement {
       overlay.removeAttribute('open');
     } else {
       overlay.setAttribute('open', '');
+    }
+  }
+
+  /**
+   * Toggle the presentation toolbar.
+   */
+  toggleToolbar(): void {
+    const toolbar = this.shadowRoot?.querySelector('.gs-toolbar');
+    if (!toolbar) return;
+    if (toolbar.hasAttribute('open')) {
+      toolbar.removeAttribute('open');
+    } else {
+      toolbar.setAttribute('open', '');
     }
   }
 }

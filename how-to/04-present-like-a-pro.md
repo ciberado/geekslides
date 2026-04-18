@@ -97,11 +97,28 @@ GeekSlides works on phones and tablets:
 |---|---|
 | Swipe left | Next slide |
 | Swipe right | Previous slide |
-| Tap right half | Next |
-| Tap left half | Previous |
-| Long press | Open terminal |
+| Swipe up | Toggle overview mode |
+| Tap right edge (25%) | Next |
+| Tap left edge (25%) | Previous |
+| Tap centre (50%) | No action (dead zone) |
+| Long press (500 ms) | Toggle toolbar |
 
-The toolbar stays visible on screens narrower than 768px. Full sync support means your audience can follow along on their phones.
+The left and right tap zones each cover 25% of the screen width, leaving a 50% centre dead zone to prevent accidental navigation.
+
+## The toolbar
+
+The toolbar is a floating bar with quick-access buttons for common commands. It is hidden by default and designed primarily for touch/mobile use.
+
+| Button | Command |
+|---|---|
+| ◀ | Previous slide |
+| ▶ | Next slide |
+| ⊞ | Toggle overview |
+| ⛶ | Toggle fullscreen |
+| ✎ | Toggle whiteboard |
+| 🎤 | Open speaker view |
+
+**Open the toolbar** by long-pressing on a touchscreen, or by typing `toggle-toolbar` in the terminal. Tap any button to trigger the command. The toolbar auto-hides in overview mode.
 
 ## Real-time sync
 

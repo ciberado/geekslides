@@ -128,7 +128,7 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `whiteboard-clear` | Clear whiteboard strokes on current slide |
 | `sync-follow` | Toggle follow/lead mode |
 | `sync-disconnect` | Disconnect from sync |
-| `toggle-toolbar` | Toggle toolbar (placeholder) |
+| `toggle-toolbar` | Toggle the presentation toolbar |
 
 Plugin-provided commands are automatically registered and appear in `help` output.
 
@@ -138,4 +138,11 @@ On touch devices, the terminal is opened via long-press gesture. The terminal pr
 uses a larger font size and touch-friendly hit targets. The `help` command output is
 scrollable. Auto-dismiss behavior is the same as desktop.
 
-The toolbar (always visible on screens < 768px) includes a button to open the terminal.
+Touch tap zones use a 25/50/25 split: the left 25% of the screen is "previous",
+the right 25% is "next", and the centre 50% is a dead zone that ignores taps
+to prevent accidental navigation. The ratio is configurable via the `tapZoneRatio`
+constructor option on `TouchInput`.
+
+Long-press (500 ms) toggles the toolbar — a floating translucent bar with buttons
+for prev, next, overview, fullscreen, whiteboard, and speaker view. The toolbar is
+hidden by default and auto-hides in overview mode.

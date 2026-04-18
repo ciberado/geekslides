@@ -14,6 +14,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Write a Custom Plugin](08-write-a-custom-plugin.md) | Build a preprocessor and a processor with practical examples |
 | [Add Local Plugins](09-add-local-plugins.md) | Ship plain JS plugins alongside your deck or load them from remote URLs |
 | [Use the Docker CLI](10-use-the-docker-cli.md) | Run GeekSlides commands via Docker without installing Node.js |
+| [Add Mermaid Diagrams](11-add-mermaid-diagrams.md) | Render flowcharts and sequence diagrams in slides with fenced code blocks |
 
 ## Screenshots
 
