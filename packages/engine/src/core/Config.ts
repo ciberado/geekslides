@@ -66,7 +66,25 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     throw new Error(`Failed to load config from ${url}: ${String(response.status)} ${response.statusText}`);
   }
 
-  const raw: unknown = await response.json();
+  const contentType = response.headers.get('content-type') ?? '';
+  const text = await response.text();
+
+  if (contentType.includes('text/html') || text.trimStart().startsWith('<!')) {
+    throw new Error(
+      `Expected JSON but received HTML from ${url}\n\n` +
+      'This usually means the server could not find the config file and returned\n' +
+      'the fallback page instead. Check that the file exists and the path is correct.',
+    );
+  }
+
+  let raw: unknown;
+  try {
+    raw = JSON.parse(text);
+  } catch {
+    throw new Error(
+      `Config is not valid JSON (${url}):\n${text.slice(0, 200)}`,
+    );
+  }
 
   if (typeof raw !== 'object' || raw === null) {
     throw new Error('Config must be a JSON object');

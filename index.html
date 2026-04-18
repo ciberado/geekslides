@@ -750,7 +750,14 @@
       }
 
     } catch (err) {
-      document.body.innerHTML = `<pre style="padding: 2rem; color: #c00;">${err.stack || err}</pre>`;
+      const configLink = `<a href="${configUrl}" target="_blank" style="color: #c00;">${configUrl}</a>`;
+      const message = (err.stack || String(err)).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      document.body.innerHTML =
+        `<div style="padding: 2rem; font-family: system-ui, sans-serif;">` +
+        `<h2 style="color: #c00; margin: 0 0 1rem;">Failed to load presentation</h2>` +
+        `<pre style="color: #c00; white-space: pre-wrap; margin: 0 0 1.5rem;">${message}</pre>` +
+        `<p>Config URL: ${configLink}</p>` +
+        `</div>`;
     }
   </script>
 </body>
