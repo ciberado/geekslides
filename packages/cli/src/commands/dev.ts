@@ -57,7 +57,7 @@ export function toBrowserServedPath(filePath: string, appRoot: string = APP_ROOT
     return `/${normalizePathForUrl(relativePath)}`;
   }
 
-  return `/@fs/${normalizePathForUrl(absolutePath)}`;
+  return `/@fs${normalizePathForUrl(absolutePath)}`;
 }
 
 export function resolveCliAppRoot(): string {

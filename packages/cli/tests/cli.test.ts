@@ -73,15 +73,40 @@ describe('cli', () => {
 
   it('maps external deck configs to /@fs browser paths', () => {
     expect(toBrowserServedPath('/tmp/demo-talk/config.json', '/workspaces/geekslides'))
-      .toBe('/@fs//tmp/demo-talk/config.json');
+      .toBe('/@fs/tmp/demo-talk/config.json');
+  });
+
+  it('never produces double slashes in /@fs paths', () => {
+    // Linux-style absolute paths
+    expect(toBrowserServedPath('/home/user/talks/config.json', '/workspaces/geekslides'))
+      .toBe('/@fs/home/user/talks/config.json');
+    expect(toBrowserServedPath('/home/user/talks/config.json', '/workspaces/geekslides'))
+      .toMatch(/^\/@fs\/[^/]/);
+
+    // Root-level paths
+    expect(toBrowserServedPath('/config.json', '/workspaces/geekslides'))
+      .toBe('/@fs/config.json');
+  });
+
+  it('/@fs paths are valid Vite serve URLs (start with /@fs/ followed by non-slash)', () => {
+    const paths = [
+      '/tmp/demo-talk/config.json',
+      '/home/javi/projects/my-talk/config.json',
+      '/opt/talks/config.json',
+    ];
+    for (const p of paths) {
+      const result = toBrowserServedPath(p, '/workspaces/geekslides');
+      expect(result).toMatch(/^\/@fs\/[^/]/);
+      expect(result).not.toContain('//');
+    }
   });
 
   it('builds presentation and speaker urls for a chosen deck config', () => {
-    expect(buildDeckDevUrl('http://localhost:5173', '/@fs//tmp/demo-talk/config.json'))
-      .toBe('http://localhost:5173/?config=%2F%40fs%2F%2Ftmp%2Fdemo-talk%2Fconfig.json');
+    expect(buildDeckDevUrl('http://localhost:5173', '/@fs/tmp/demo-talk/config.json'))
+      .toBe('http://localhost:5173/?config=%2F%40fs%2Ftmp%2Fdemo-talk%2Fconfig.json');
 
-    expect(buildDeckDevUrl('http://localhost:5173', '/@fs//tmp/demo-talk/config.json', true))
-      .toBe('http://localhost:5173/?config=%2F%40fs%2F%2Ftmp%2Fdemo-talk%2Fconfig.json&view=speaker');
+    expect(buildDeckDevUrl('http://localhost:5173', '/@fs/tmp/demo-talk/config.json', true))
+      .toBe('http://localhost:5173/?config=%2F%40fs%2Ftmp%2Fdemo-talk%2Fconfig.json&view=speaker');
   });
 
   it('redirects root html requests to the configured deck when no config is present', () => {
