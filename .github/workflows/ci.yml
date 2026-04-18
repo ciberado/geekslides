@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, feat/next-version]
+    branches: [feat/next-version]
   pull_request:
-    branches: [main]
+    branches: [feat/next-version]
 
 jobs:
   test:
@@ -26,10 +26,10 @@ jobs:
         run: npm ci
 
       - name: Typecheck
-        run: npx tsc --build
+        run: npm run typecheck
 
       - name: Lint
-        run: npx eslint packages/
+        run: npm run lint
 
       - name: Unit & Integration tests
         run: npx vitest run --coverage
@@ -46,8 +46,7 @@ jobs:
         run: npx playwright install --with-deps chromium firefox webkit
 
       - name: E2E tests
-        run: npx playwright test
-        working-directory: e2e
+        run: npx playwright test --config=e2e/playwright.config.ts
 
       - name: Upload Playwright report
         if: failure()
