@@ -36,14 +36,14 @@ function toPublicFilePath(filePath: string, root: string): string {
     return normalizePath(relativePath);
   }
 
-  return `/@fs/${normalizePath(absolutePath)}`;
+  return `/@fs${normalizePath(absolutePath)}`;
 }
 
 function toWatchedFilePath(filePath: string, root: string): string | null {
   const normalized = filePath.split('?')[0] ?? '';
 
-  if (normalized.startsWith('/@fs/')) {
-    return normalized.slice('/@fs/'.length);
+  if (normalized.startsWith('/@fs')) {
+    return normalized.slice('/@fs'.length);
   }
 
   const relativePath = normalized.replace(/^\/+/, '');
