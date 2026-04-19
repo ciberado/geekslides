@@ -21,6 +21,7 @@ export class SyncManager {
   readonly doc: Y.Doc;
   readonly #sessionState: Y.Map<unknown>;
   readonly #whiteboardStrokes: Y.Array<unknown>;
+  readonly #liveStrokes: Y.Map<unknown>;
   #provider: WebsocketProvider | null = null;
   #currentRoom: string | null = null;
   #target: SyncTarget | null = null;
@@ -33,6 +34,7 @@ export class SyncManager {
     this.doc = new Y.Doc();
     this.#sessionState = this.doc.getMap('sessionState');
     this.#whiteboardStrokes = this.doc.getArray('whiteboardStrokes');
+    this.#liveStrokes = this.doc.getMap('liveStrokes');
     this.#clientId = Math.random().toString(36).slice(2, 10);
     this.#eventTarget = eventTarget;
 
@@ -105,6 +107,21 @@ export class SyncManager {
    */
   addStroke(stroke: WhiteboardStroke): void {
     this.#whiteboardStrokes.push([stroke]);
+  }
+
+  /**
+   * Update the in-progress (live) stroke for this client.
+   * Remote observers will see incremental drawing progress.
+   */
+  updateLiveStroke(stroke: WhiteboardStroke): void {
+    this.#liveStrokes.set(this.#clientId, stroke);
+  }
+
+  /**
+   * Clear the live stroke for this client (called on finalization).
+   */
+  clearLiveStroke(): void {
+    this.#liveStrokes.delete(this.#clientId);
   }
 
   /**
@@ -194,6 +211,21 @@ export class SyncManager {
             detail: stroke,
           }));
         }
+      }
+    });
+
+    // Observe live (in-progress) stroke updates
+    this.#liveStrokes.observe((event) => {
+      if (event.transaction.local) return;
+
+      for (const [clientId, change] of event.changes.keys) {
+        if (change.action === 'delete') continue;
+        const stroke = this.#liveStrokes.get(clientId);
+        if (!stroke) continue;
+        this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke-progress', {
+          bubbles: true,
+          detail: stroke,
+        }));
       }
     });
   }

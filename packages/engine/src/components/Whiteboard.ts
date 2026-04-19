@@ -29,9 +29,15 @@ export class Whiteboard extends HTMLElement {
   #slideIndex = 0;
   #slideSnapshots = new Map<number, SlideSnapshot>();
   #onRemoteStroke: ((e: Event) => void) | null = null;
+  #onRemoteProgress: ((e: Event) => void) | null = null;
   /** Timer for coalescing rapid pen lift/contact cycles into one stroke. */
   #coalesceTimer: ReturnType<typeof setTimeout> | null = null;
+  /** Timer for emitting stroke progress to remote viewers. */
+  #progressTimer: ReturnType<typeof setInterval> | null = null;
+  /** Tracks how many points of each remote live stroke we have already drawn. */
+  #liveStrokesRendered = new Map<string, number>();
   static readonly COALESCE_MS = 80;
+  static readonly PROGRESS_MS = 100;
 
   constructor() {
     super();
@@ -48,6 +54,7 @@ export class Whiteboard extends HTMLElement {
     this.#removeListeners();
     this.#stopListeningForRemoteStrokes();
     this.#cancelCoalesce();
+    this.#stopProgress();
     this.#finalizeStroke();
   }
 
@@ -155,9 +162,39 @@ export class Whiteboard extends HTMLElement {
       return;
     }
 
+    // If we already drew this stroke incrementally via live progress, only
+    // render remaining points (if any) and clean up.
+    const renderedCount = this.#liveStrokesRendered.get(stroke.clientId);
+    if (renderedCount !== undefined) {
+      this.#liveStrokesRendered.delete(stroke.clientId);
+      if (renderedCount < stroke.points.length) {
+        this.#drawStrokeSegment(stroke, renderedCount);
+      }
+      // Auto-show already handled by live progress
+      return;
+    }
+
     this.#drawStroke(stroke);
 
     // Auto-show when receiving remote strokes
+    if (!this.#visible) {
+      this.setActive(true);
+    }
+  }
+
+  /**
+   * Draw an in-progress remote stroke incrementally (only new points).
+   */
+  drawLiveStroke(stroke: WhiteboardStroke): void {
+    if (stroke.slideIndex !== this.#slideIndex) return;
+
+    const alreadyDrawn = this.#liveStrokesRendered.get(stroke.clientId) ?? 0;
+    if (stroke.points.length <= alreadyDrawn) return;
+
+    this.#drawStrokeSegment(stroke, alreadyDrawn);
+    this.#liveStrokesRendered.set(stroke.clientId, stroke.points.length);
+
+    // Auto-show when receiving live strokes
     if (!this.#visible) {
       this.setActive(true);
     }
@@ -183,6 +220,15 @@ export class Whiteboard extends HTMLElement {
 
   #drawStroke(stroke: WhiteboardStroke): void {
     if (!this.#ctx || !this.#canvas) return;
+    this.#drawStrokeSegment(stroke, 0);
+  }
+
+  /**
+   * Draw a segment of a stroke starting from `fromIndex`.
+   * Used both for full strokes (fromIndex=0) and incremental live updates.
+   */
+  #drawStrokeSegment(stroke: WhiteboardStroke, fromIndex: number): void {
+    if (!this.#ctx || !this.#canvas) return;
 
     const ctx = this.#ctx;
     const w = this.#canvas.width;
@@ -194,12 +240,16 @@ export class Whiteboard extends HTMLElement {
     ctx.lineJoin = 'round';
     ctx.beginPath();
 
-    for (let i = 0; i < stroke.points.length; i++) {
+    // When continuing from a previous segment, moveTo the last drawn point
+    // so the connecting line is seamless.
+    const startIdx = fromIndex > 0 ? fromIndex - 1 : 0;
+
+    for (let i = startIdx; i < stroke.points.length; i++) {
       const point = stroke.points[i];
       if (!point) continue;
       const x = point[0] * w;
       const y = point[1] * h;
-      if (i === 0) {
+      if (i === startIdx) {
         ctx.moveTo(x, y);
       } else {
         ctx.lineTo(x, y);
@@ -282,13 +332,22 @@ export class Whiteboard extends HTMLElement {
       const stroke = (e as CustomEvent<WhiteboardStroke>).detail;
       this.drawRemoteStroke(stroke);
     };
+    this.#onRemoteProgress = (e: Event) => {
+      const stroke = (e as CustomEvent<WhiteboardStroke>).detail;
+      this.drawLiveStroke(stroke);
+    };
     document.addEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
+    document.addEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
   }
 
   #stopListeningForRemoteStrokes(): void {
     if (this.#onRemoteStroke) {
       document.removeEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
       this.#onRemoteStroke = null;
+    }
+    if (this.#onRemoteProgress) {
+      document.removeEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
+      this.#onRemoteProgress = null;
     }
   }
 
@@ -316,6 +375,34 @@ export class Whiteboard extends HTMLElement {
     }
   }
 
+  #startProgress(): void {
+    if (this.#progressTimer !== null) return;
+    this.#progressTimer = setInterval(() => { this.#emitProgress(); }, Whiteboard.PROGRESS_MS);
+  }
+
+  #stopProgress(): void {
+    if (this.#progressTimer !== null) {
+      clearInterval(this.#progressTimer);
+      this.#progressTimer = null;
+    }
+  }
+
+  #emitProgress(): void {
+    if (this.#currentPoints.length < 2) return;
+    this.dispatchEvent(new CustomEvent('geek:whiteboard:stroke-progress', {
+      bubbles: true,
+      composed: true,
+      detail: {
+        id: `stroke-${String(this.#strokeIdCounter + 1)}`,
+        slideIndex: this.#slideIndex,
+        points: this.#currentPoints.slice(),
+        color: this.#color,
+        width: this.#lineWidth,
+        clientId: '',
+      } satisfies WhiteboardStroke,
+    }));
+  }
+
   #onPointerDown = (e: PointerEvent): void => {
     const point = this.#normalize(e.clientX, e.clientY);
 
@@ -338,6 +425,7 @@ export class Whiteboard extends HTMLElement {
     // Start a new stroke
     this.#isDrawing = true;
     this.#currentPoints = [point];
+    this.#startProgress();
 
     if (this.#ctx) {
       this.#ctx.strokeStyle = this.#color;
@@ -374,6 +462,8 @@ export class Whiteboard extends HTMLElement {
   };
 
   #finalizeStroke(): void {
+    this.#stopProgress();
+
     if (this.#currentPoints.length > 1) {
       const stroke: WhiteboardStroke = {
         id: `stroke-${String(++this.#strokeIdCounter)}`,

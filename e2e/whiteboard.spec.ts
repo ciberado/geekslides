@@ -435,4 +435,93 @@ test.describe('Whiteboard', () => {
 
     await context.close();
   });
+
+  test('live stroke progress appears on remote before stroke is finalized', async ({ browser }) => {
+    const context = await browser.newContext();
+    const page1 = await context.newPage();
+    const page2 = await context.newPage();
+    const room = uniqueRoom('wb-live');
+    const url = `http://localhost:5173/?room=${room}`;
+
+    await page1.goto(url);
+    await page2.goto(url);
+
+    for (const p of [page1, page2]) {
+      await p.waitForFunction(() => {
+        const ss = document.getElementById('slideshow') as any;
+        return ss?.slideCount > 0;
+      });
+    }
+
+    // Wait for sync connection + content proxy reload
+    await page1.waitForTimeout(1500);
+
+    // Activate whiteboard via command on page1
+    await page1.keyboard.press('t');
+    await page1.waitForTimeout(200);
+    await page1.keyboard.type('whiteboard');
+    await page1.keyboard.press('Enter');
+    await page1.waitForTimeout(300);
+    await page1.keyboard.press('Escape');
+    await page1.waitForTimeout(200);
+
+    const canvasBounds = await page1.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(canvasBounds).toBeTruthy();
+
+    // Start drawing on page1 — press down and move, but do NOT release
+    const cx = canvasBounds!.x + canvasBounds!.width * 0.3;
+    const cy = canvasBounds!.y + canvasBounds!.height * 0.3;
+    await page1.mouse.move(cx, cy);
+    await page1.mouse.down();
+    await page1.mouse.move(cx + 150, cy + 100, { steps: 15 });
+
+    // Wait for at least two progress intervals (100ms each) + sync propagation
+    await page2.waitForTimeout(800);
+
+    // Continue drawing more to trigger additional progress emissions
+    await page1.mouse.move(cx + 250, cy + 150, { steps: 10 });
+    await page2.waitForTimeout(500);
+
+    // Check page2 for pixels WHILE the stroke is still in-progress
+    const midDrawPixels = await page2.evaluate(() => {
+      const canvas = document.getElementById('slideshow')
+        ?.shadowRoot?.querySelector('geek-whiteboard')
+        ?.shadowRoot?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!canvas) return 0;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return 0;
+      const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let c = 0; for (let i = 3; i < d.length; i += 4) if (d[i]! > 0) c++;
+      return c;
+    });
+
+    // Now finish the stroke
+    await page1.mouse.up();
+    await page2.waitForTimeout(1000);
+
+    const finalPixels = await page2.evaluate(() => {
+      const canvas = document.getElementById('slideshow')
+        ?.shadowRoot?.querySelector('geek-whiteboard')
+        ?.shadowRoot?.querySelector('canvas') as HTMLCanvasElement | null;
+      if (!canvas) return 0;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return 0;
+      const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      let c = 0; for (let i = 3; i < d.length; i += 4) if (d[i]! > 0) c++;
+      return c;
+    });
+
+    // Mid-draw should already have some pixels (progressive sync)
+    expect(midDrawPixels).toBeGreaterThan(0);
+    // Final should have at least as many
+    expect(finalPixels).toBeGreaterThanOrEqual(midDrawPixels);
+
+    await context.close();
+  });
 });

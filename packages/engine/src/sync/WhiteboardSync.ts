@@ -21,6 +21,7 @@ export class WhiteboardSync {
    */
   activate(): void {
     this.#eventTarget.addEventListener('geek:whiteboard:stroke', this.#onLocalStroke);
+    this.#eventTarget.addEventListener('geek:whiteboard:stroke-progress', this.#onLocalProgress);
   }
 
   /**
@@ -28,10 +29,17 @@ export class WhiteboardSync {
    */
   deactivate(): void {
     this.#eventTarget.removeEventListener('geek:whiteboard:stroke', this.#onLocalStroke);
+    this.#eventTarget.removeEventListener('geek:whiteboard:stroke-progress', this.#onLocalProgress);
   }
 
   #onLocalStroke = (e: Event): void => {
     const event = e as CustomEvent<WhiteboardStroke>;
+    this.#syncManager.clearLiveStroke();
     this.#syncManager.addStroke(event.detail);
+  };
+
+  #onLocalProgress = (e: Event): void => {
+    const event = e as CustomEvent<WhiteboardStroke>;
+    this.#syncManager.updateLiveStroke(event.detail);
   };
 }

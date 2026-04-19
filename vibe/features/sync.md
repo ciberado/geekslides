@@ -29,8 +29,10 @@ the state converges without custom conflict handling.
 │  ├─ Y.Doc                 │      │  ├─ Y.Doc                 │
 │  │  ├─ sessionState       │      │  │  ├─ sessionState       │
 │  │  │   (Y.Map)           │◄────►│  │  │   (Y.Map)           │
-│  │  └─ whiteboardStrokes  │      │  │  └─ whiteboardStrokes  │
-│  │      (Y.Array)         │      │  │      (Y.Array)         │
+│  │  ├─ whiteboardStrokes  │      │  │  ├─ whiteboardStrokes  │
+│  │  │   (Y.Array)         │      │  │  │   (Y.Array)         │
+│  │  └─ liveStrokes        │      │  │  └─ liveStrokes        │
+│  │      (Y.Map)           │      │  │      (Y.Map)           │
 │  │                        │      │  │                        │
 │  └─ WebsocketProvider ────┼──┐   │  └─ WebsocketProvider ────┤
 │                           │  │   │                           │
@@ -63,7 +65,7 @@ Syncs the presentation state across all connected clients. The map contains five
 
 ### `whiteboardStrokes` (Y.Array)
 
-Syncs whiteboard drawing data. Each element in the array is a stroke object with:
+Syncs completed whiteboard strokes. Each element in the array is a stroke object with:
 
 - **`id`** (string) — unique stroke identifier.
 - **`slideIndex`** (number) — which slide the stroke belongs to.
@@ -72,17 +74,26 @@ Syncs whiteboard drawing data. Each element in the array is a stroke object with
 - **`width`** (number) — line width in pixels.
 - **`clientId`** (string) — the client that drew the stroke.
 
+### `liveStrokes` (Y.Map)
+
+Syncs in-progress strokes for real-time progressive rendering. Keys are SyncManager
+client IDs; values are stroke objects (same shape as above) containing the cumulative
+points drawn so far. Updated every 100 ms during drawing. Cleared when the stroke
+is finalized and moved to `whiteboardStrokes`.
+
 ## SyncManager Implementation
 
 `SyncManager` is the bridge between the local slideshow and the Yjs shared document.
 
-**Constructor**: Creates a new `Y.Doc` and obtains references to the `sessionState` Y.Map (`doc.getMap('sessionState')`) and `whiteboardStrokes` Y.Array (`doc.getArray('whiteboardStrokes')`). Stores a reference to the `GeekSlideshow` element. A private `#isRemoteUpdate` flag prevents echo loops.
+**Constructor**: Creates a new `Y.Doc` and obtains references to the `sessionState` Y.Map (`doc.getMap('sessionState')`), `whiteboardStrokes` Y.Array (`doc.getArray('whiteboardStrokes')`), and `liveStrokes` Y.Map (`doc.getMap('liveStrokes')`). Stores a reference to the `GeekSlideshow` element. A private `#isRemoteUpdate` flag prevents echo loops.
 
 **`connect(serverUrl, room)`**: Creates a `WebsocketProvider` connecting to the given server URL and room name. Listens for `status` events and dispatches `geek:sync:state` CustomEvents when connection status changes.
 
 - **Session state observer**: Watches the Y.Map for changes. When a remote transaction arrives (ignoring local ones), reads `slide`, `partial`, and `mode` from the map and applies them to the slideshow via `goTo()` and `mode` setter. Sets `#isRemoteUpdate` to `true` during application to prevent the local change from being re-published.
 
 - **Whiteboard observer**: Watches the Y.Array for added items from remote transactions. For each new stroke, dispatches a `geek:whiteboard:remote-stroke` CustomEvent with the stroke data. The `<geek-whiteboard>` component listens for this event and renders each remote stroke via `drawRemoteStroke()`. `WhiteboardSync` is activated in `main.js` alongside sync setup, completing the bidirectional pipeline: local draw → event → `addStroke()` → Y.Array → remote observer → event → `drawRemoteStroke()`.
+
+- **Live stroke observer**: Watches the `liveStrokes` Y.Map for remote updates. When a key is added or updated, dispatches a `geek:whiteboard:remote-stroke-progress` CustomEvent. The whiteboard renders only the new points since the last update via `drawLiveStroke()`, providing real-time progressive rendering. On finalization, `WhiteboardSync` clears the live entry and pushes the completed stroke to the Y.Array; `drawRemoteStroke()` skips re-drawing points already rendered by the live path.
 
 **`publishState(slide, partial, mode)`**: Called by local navigation handlers. If `#isRemoteUpdate` is true, returns immediately (preventing echo). Otherwise wraps updates in a `doc.transact()` call, setting the `slide`, `partial`, `mode`, `presenterId` (current client ID), and `presenterActive` keys on the Y.Map.
 

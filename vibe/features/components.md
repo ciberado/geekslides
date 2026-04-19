@@ -58,6 +58,15 @@ Separate route/tab:
   them to `SyncManager.addStroke()`. Remote strokes arrive as
   `geek:whiteboard:remote-stroke` events and are rendered via `drawRemoteStroke()`.
   The whiteboard component listens for both event directions.
+- **Progressive sync**: During a long continuous stroke, the component emits
+  `geek:whiteboard:stroke-progress` events every `PROGRESS_MS` (100 ms) containing
+  the cumulative points so far. `WhiteboardSync` bridges these to
+  `SyncManager.updateLiveStroke()`, which writes to a shared Yjs Y.Map (`liveStrokes`).
+  Remote clients render only the new points since the last update via `drawLiveStroke()`,
+  so the stroke appears in real-time rather than only after the pen lifts. On
+  finalization, the live entry is cleared and the completed stroke is added to the
+  Y.Array as usual; `drawRemoteStroke()` skips re-drawing points already rendered
+  by the live path.
 - **Late-join replay**: When a new client joins the room, existing strokes are read
   from the Yjs Y.Array via `SyncManager.getStrokes()` and replayed through
   `drawRemoteStroke()` so late joiners see the full whiteboard state.
