@@ -226,6 +226,7 @@ export class Whiteboard extends HTMLElement {
         height: 100%;
         display: none;
         pointer-events: auto;
+        touch-action: none;
         cursor: crosshair;
       }
     `;
@@ -247,6 +248,11 @@ export class Whiteboard extends HTMLElement {
     this.#canvas.addEventListener('pointerdown', this.#onPointerDown);
     this.#canvas.addEventListener('pointermove', this.#onPointerMove);
     this.#canvas.addEventListener('pointerup', this.#onPointerUp);
+
+    // Prevent touch events from bubbling to TouchInput (swipe navigation)
+    this.#canvas.addEventListener('touchstart', this.#stopTouchPropagation);
+    this.#canvas.addEventListener('touchmove', this.#stopTouchPropagation);
+    this.#canvas.addEventListener('touchend', this.#stopTouchPropagation);
   }
 
   #removeListeners(): void {
@@ -254,6 +260,9 @@ export class Whiteboard extends HTMLElement {
     this.#canvas.removeEventListener('pointerdown', this.#onPointerDown);
     this.#canvas.removeEventListener('pointermove', this.#onPointerMove);
     this.#canvas.removeEventListener('pointerup', this.#onPointerUp);
+    this.#canvas.removeEventListener('touchstart', this.#stopTouchPropagation);
+    this.#canvas.removeEventListener('touchmove', this.#stopTouchPropagation);
+    this.#canvas.removeEventListener('touchend', this.#stopTouchPropagation);
   }
 
   #listenForRemoteStrokes(): void {
@@ -279,6 +288,10 @@ export class Whiteboard extends HTMLElement {
       (clientY - rect.top) / rect.height,
     ];
   }
+
+  #stopTouchPropagation = (e: TouchEvent): void => {
+    e.stopPropagation();
+  };
 
   #onPointerDown = (e: PointerEvent): void => {
     this.#isDrawing = true;
