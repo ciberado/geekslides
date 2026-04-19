@@ -152,10 +152,19 @@ export class Slideshow extends HTMLElement {
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
-    // Clear existing slides (keep style)
+    // Clear existing slides but preserve non-slide children (e.g. <geek-whiteboard>)
     const container = shadow.querySelector('.gs-container');
     if (container) {
+      const preserve: Element[] = [];
+      for (const child of Array.from(container.children)) {
+        if (child.tagName !== 'GEEK-SLIDE') {
+          preserve.push(child);
+        }
+      }
       container.innerHTML = '';
+      for (const el of preserve) {
+        container.appendChild(el);
+      }
     }
 
     for (const slideData of slides) {

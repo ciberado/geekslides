@@ -623,6 +623,11 @@ try {
     const touch = new TouchInput(commands, slideshow);
     touch.activate();
 
+    // Toolbar button clicks → execute command
+    slideshow.addEventListener('geek:toolbar:command', (e) => {
+      commands.execute(e.detail.command);
+    });
+
     terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
 
     if (import.meta.hot) {

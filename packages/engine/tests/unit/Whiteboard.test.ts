@@ -1,7 +1,33 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Whiteboard } from '../../src/components/Whiteboard.ts';
 import type { WhiteboardStroke } from '../../src/sync/types.ts';
+
+// Mock canvas 2D context so pointer handlers don't bail out in jsdom
+const noop = (): void => { /* no-op */ };
+const fakeCtx = {
+  beginPath: noop,
+  moveTo: noop,
+  lineTo: noop,
+  stroke: noop,
+  clearRect: noop,
+  getImageData: (_sx: number, _sy: number, sw: number, sh: number) =>
+    ({ data: new Uint8ClampedArray(sw * sh * 4), width: sw, height: sh }),
+  putImageData: noop,
+  set strokeStyle(_v: string) { /* no-op */ },
+  set lineWidth(_v: number) { /* no-op */ },
+  set lineCap(_v: string) { /* no-op */ },
+  set lineJoin(_v: string) { /* no-op */ },
+};
+
+const origGetContext = HTMLCanvasElement.prototype.getContext;
+beforeEach(() => {
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
+  (HTMLCanvasElement.prototype as any).getContext = () => fakeCtx;
+});
+afterEach(() => {
+  HTMLCanvasElement.prototype.getContext = origGetContext;
+});
 
 // Register the custom element for jsdom
 if (!customElements.get('geek-whiteboard')) {
@@ -131,5 +157,63 @@ describe('Whiteboard', () => {
       detail: stroke,
     }));
     // No error means cleanup worked
+  });
+
+  it('beginStroke starts drawing state from external event', () => {
+    wb.setActive(true);
+    const canvas = wb.shadowRoot?.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+
+    // Simulate an external pointer event
+    const pointerEvent = new PointerEvent('pointerdown', {
+      clientX: 100,
+      clientY: 100,
+      pointerId: 1,
+      bubbles: true,
+    });
+
+    wb.beginStroke(pointerEvent);
+
+    // Verify drawing started by moving and ending — should dispatch stroke event
+    const strokeSpy = vi.fn();
+    wb.addEventListener('geek:whiteboard:stroke', strokeSpy);
+
+    canvas?.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: 150,
+      clientY: 150,
+      buttons: 1,
+      bubbles: true,
+    }));
+
+    canvas?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+
+    expect(strokeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('stroke event has composed: true to cross shadow DOM', () => {
+    wb.setActive(true);
+    const canvas = wb.shadowRoot?.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+
+    let eventComposed = false;
+    wb.addEventListener('geek:whiteboard:stroke', (e: Event) => {
+      eventComposed = e.composed;
+    });
+
+    // Simulate a full draw: pointerdown, pointermove, pointerup
+    canvas?.dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: 100,
+      clientY: 100,
+      bubbles: true,
+    }));
+    canvas?.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: 150,
+      clientY: 150,
+      buttons: 1,
+      bubbles: true,
+    }));
+    canvas?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+
+    expect(eventComposed).toBe(true);
   });
 });
