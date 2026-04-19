@@ -404,22 +404,46 @@ describe('Whiteboard', () => {
     expect(canvas.style.transition).toBe('none');
   });
 
-  it('slideIndex change hides canvas then fades in after TRANSITION_MS', () => {
+  it('slideIndex change hides canvas then fades in after TRANSITION_MS when slide has strokes', () => {
     wb.setActive(true);
     const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
     expect(canvas.style.opacity).toBe('1');
 
-    // Navigate to slide 1
+    // Draw on slide 0 so it has content
+    wb.drawRemoteStroke(makeStroke({ slideIndex: 0 }));
+
+    // Navigate to slide 1 (no strokes)
     wb.slideIndex = 1;
 
-    // Canvas should be hidden immediately (no transition)
+    // Canvas should be hidden (empty slide)
     expect(canvas.style.opacity).toBe('0');
-    expect(canvas.style.transition).toBe('none');
+    expect(canvas.style.visibility).toBe('hidden');
 
-    // After TRANSITION_MS the fade-in should trigger
+    // Navigate back to slide 0 (has strokes)
+    wb.slideIndex = 0;
+
+    // Canvas should be hidden immediately during transition
+    expect(canvas.style.opacity).toBe('0');
+
+    // After TRANSITION_MS the fade-in should trigger (slide has content)
     vi.advanceTimersByTime(Whiteboard.TRANSITION_MS + 10);
     expect(canvas.style.opacity).toBe('1');
     expect(canvas.style.visibility).toBe('visible');
+  });
+
+  it('slideIndex change keeps canvas hidden on empty slide', () => {
+    wb.setActive(true);
+    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+
+    // Navigate to slide 1 (no strokes)
+    wb.slideIndex = 1;
+
+    // Should stay hidden even after TRANSITION_MS
+    vi.advanceTimersByTime(Whiteboard.TRANSITION_MS + 10);
+    expect(canvas.style.opacity).toBe('0');
+    expect(canvas.style.visibility).toBe('hidden');
+    // But whiteboard is still logically active
+    expect(wb.isVisible).toBe(true);
   });
 
   it('slideIndex change does not fade in if whiteboard is inactive', () => {

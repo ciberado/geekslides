@@ -83,9 +83,15 @@ export class Whiteboard extends HTMLElement {
     this.#slideIndex = value;
     this.restoreSlide();
 
-    // Fade in after the slide transition completes
-    if (this.#visible) {
+    // Only fade in if the target slide has drawn content.
+    // Keeping the canvas hidden when empty avoids a GPU compositing
+    // layer that subtly tints the slide below.
+    if (this.#visible && this.#hasContent()) {
       this.#scheduleFadeIn();
+    } else if (this.#visible) {
+      // Canvas stays logically active but visually hidden until drawing starts
+      this.#hideCanvas();
+      this.#visible = true;  // preserve active state for auto-draw
     }
   }
 
@@ -125,6 +131,10 @@ export class Whiteboard extends HTMLElement {
    * Begin a stroke from an external pointer event (e.g. auto-activation drag).
    */
   beginStroke(e: PointerEvent): void {
+    // Ensure canvas is visible — it may be hidden on an empty slide.
+    if (this.#canvas && this.#canvas.style.opacity !== '1') {
+      this.#showCanvas();
+    }
     this.#onPointerDown(e);
   }
 
@@ -201,8 +211,21 @@ export class Whiteboard extends HTMLElement {
 
     this.#drawStroke(stroke);
 
+    // Track the stroke in the current slide snapshot
+    let snapshot = this.#slideSnapshots.get(this.#slideIndex);
+    if (!snapshot) {
+      const w = this.#canvas?.width ?? 1920;
+      const h = this.#canvas?.height ?? 1080;
+      const imageData = typeof ImageData !== 'undefined'
+        ? new ImageData(w, h)
+        : { data: new Uint8ClampedArray(w * h * 4), width: w, height: h } as ImageData;
+      snapshot = { imageData, strokes: [] };
+      this.#slideSnapshots.set(this.#slideIndex, snapshot);
+    }
+    snapshot.strokes.push(stroke);
+
     // Auto-show when receiving remote strokes
-    if (!this.#visible) {
+    if (!this.#visible || this.#canvas?.style.opacity !== '1') {
       this.setActive(true);
     }
   }
@@ -220,7 +243,7 @@ export class Whiteboard extends HTMLElement {
     this.#liveStrokesRendered.set(stroke.clientId, stroke.points.length);
 
     // Auto-show when receiving live strokes
-    if (!this.#visible) {
+    if (!this.#visible || this.#canvas?.style.opacity !== '1') {
       this.setActive(true);
     }
   }
@@ -411,6 +434,14 @@ export class Whiteboard extends HTMLElement {
       clearTimeout(this.#fadeTimer);
       this.#fadeTimer = null;
     }
+  }
+
+  /**
+   * True when the current slide has any recorded strokes.
+   */
+  #hasContent(): boolean {
+    const snapshot = this.#slideSnapshots.get(this.#slideIndex);
+    return snapshot !== undefined && snapshot.strokes.length > 0;
   }
 
   #normalize(clientX: number, clientY: number): [number, number] {
