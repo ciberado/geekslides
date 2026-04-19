@@ -13,7 +13,6 @@
 import type { WhiteboardStroke } from '../sync/types.ts';
 
 interface SlideSnapshot {
-  imageData: ImageData;
   strokes: WhiteboardStroke[];
 }
 
@@ -168,24 +167,26 @@ export class Whiteboard extends HTMLElement {
    * Save current canvas state for the active slide.
    */
   saveSlide(): void {
-    if (!this.#ctx || !this.#canvas) return;
-    const imageData = this.#ctx.getImageData(0, 0, this.#canvas.width, this.#canvas.height);
-    const existing = this.#slideSnapshots.get(this.#slideIndex);
-    this.#slideSnapshots.set(this.#slideIndex, {
-      imageData,
-      strokes: existing?.strokes ?? [],
-    });
+    // Strokes are already tracked incrementally in the snapshot.
+    // Ensure an entry exists so #hasContent() can check it.
+    if (!this.#slideSnapshots.has(this.#slideIndex)) {
+      this.#slideSnapshots.set(this.#slideIndex, { strokes: [] });
+    }
   }
 
   /**
-   * Restore canvas state for the active slide.
+   * Restore canvas state for the active slide by redrawing strokes.
+   * Avoids getImageData/putImageData which causes opaque-canvas
+   * tinting in Firefox due to alpha compositing issues.
    */
   restoreSlide(): void {
     if (!this.#ctx || !this.#canvas) return;
     this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
     const snapshot = this.#slideSnapshots.get(this.#slideIndex);
     if (snapshot) {
-      this.#ctx.putImageData(snapshot.imageData, 0, 0);
+      for (const stroke of snapshot.strokes) {
+        this.#drawStroke(stroke);
+      }
     }
   }
 
@@ -216,12 +217,7 @@ export class Whiteboard extends HTMLElement {
     // Track the stroke in the current slide snapshot
     let snapshot = this.#slideSnapshots.get(this.#slideIndex);
     if (!snapshot) {
-      const w = this.#canvas?.width ?? 1920;
-      const h = this.#canvas?.height ?? 1080;
-      const imageData = typeof ImageData !== 'undefined'
-        ? new ImageData(w, h)
-        : { data: new Uint8ClampedArray(w * h * 4), width: w, height: h } as ImageData;
-      snapshot = { imageData, strokes: [] };
+      snapshot = { strokes: [] };
       this.#slideSnapshots.set(this.#slideIndex, snapshot);
     }
     snapshot.strokes.push(stroke);
@@ -255,14 +251,7 @@ export class Whiteboard extends HTMLElement {
     if (snapshot) {
       snapshot.strokes.push(stroke);
     } else {
-      const w = this.#canvas?.width ?? 1920;
-      const h = this.#canvas?.height ?? 1080;
-      // ImageData may not be available in test environments
-      const imageData = typeof ImageData !== 'undefined'
-        ? new ImageData(w, h)
-        : { data: new Uint8ClampedArray(w * h * 4), width: w, height: h } as ImageData;
       this.#slideSnapshots.set(stroke.slideIndex, {
-        imageData,
         strokes: [stroke],
       });
     }
@@ -579,10 +568,12 @@ export class Whiteboard extends HTMLElement {
       };
 
       // Store locally for per-slide persistence
-      const snapshot = this.#slideSnapshots.get(this.#slideIndex);
-      if (snapshot) {
-        snapshot.strokes.push(stroke);
+      let snapshot = this.#slideSnapshots.get(this.#slideIndex);
+      if (!snapshot) {
+        snapshot = { strokes: [] };
+        this.#slideSnapshots.set(this.#slideIndex, snapshot);
       }
+      snapshot.strokes.push(stroke);
 
       this.dispatchEvent(new CustomEvent('geek:whiteboard:stroke', {
         bubbles: true,
