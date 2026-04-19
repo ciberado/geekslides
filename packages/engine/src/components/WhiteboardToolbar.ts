@@ -134,8 +134,8 @@ export class WhiteboardToolbar extends HTMLElement {
       }
 
       .collapse-btn {
-        width: 32px;
-        height: 28px;
+        width: 100%;
+        height: 36px;
         border: none;
         background: transparent;
         color: #ccc;
@@ -409,55 +409,52 @@ export class WhiteboardToolbar extends HTMLElement {
   // ── Drag support ──────────────────────────────────────────
 
   #dragMoved = false;
-  #onPointerMove: ((e: PointerEvent) => void) | null = null;
-  #onPointerUp: ((e: PointerEvent) => void) | null = null;
+  #dragHandle: HTMLElement | null = null;
+  #boundDragMove = (e: Event): void => { this.#onDragMove(e as PointerEvent); };
+  #boundDragEnd = (e: Event): void => { this.#endDrag(e as PointerEvent); };
+
+  /** Resolve the containing element's rect for clamping drag position. */
+  #getParentRect(): DOMRect {
+    const root = this.getRootNode();
+    const host = root instanceof ShadowRoot ? root.host as HTMLElement : null;
+    return host?.getBoundingClientRect() ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+  }
 
   #startDrag(e: PointerEvent): void {
     this.#dragMoved = false;
-    const host = this as HTMLElement;
-    const parent = host.offsetParent as HTMLElement | null;
-    if (!parent) return;
 
-    const hostRect = host.getBoundingClientRect();
+    const handle = e.currentTarget as HTMLElement;
+    handle.setPointerCapture(e.pointerId);
+    this.#dragHandle = handle;
+
+    const hostRect = this.getBoundingClientRect();
     this.#dragOffsetX = e.clientX - hostRect.left;
     this.#dragOffsetY = e.clientY - hostRect.top;
 
-    this.#onPointerMove = (ev: PointerEvent) => { this.#onDragMove(ev); };
-    this.#onPointerUp = (ev: PointerEvent) => { this.#endDrag(ev); };
-
-    // Listen on the parent (whiteboard shadow root host or document)
-    const listenTarget = parent.getRootNode() === document
-      ? document
-      : parent;
-    listenTarget.addEventListener('pointermove', this.#onPointerMove as EventListener);
-    listenTarget.addEventListener('pointerup', this.#onPointerUp as EventListener);
+    handle.addEventListener('pointermove', this.#boundDragMove);
+    handle.addEventListener('pointerup', this.#boundDragEnd);
+    handle.addEventListener('pointercancel', this.#boundDragEnd);
   }
 
   #onDragMove(e: PointerEvent): void {
     if (!this.#dragMoved) {
-      // Only start dragging after moving a few pixels (avoid accidental drags)
-      const host = this as HTMLElement;
-      const hostRect = host.getBoundingClientRect();
+      const hostRect = this.getBoundingClientRect();
       const dx = e.clientX - (hostRect.left + this.#dragOffsetX);
       const dy = e.clientY - (hostRect.top + this.#dragOffsetY);
-      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      if (Math.abs(dx) < 5 && Math.abs(dy) < 5) return;
       this.#dragMoved = true;
       this.#dragging = true;
       this.classList.add('dragging');
     }
 
-    const parent = (this as HTMLElement).offsetParent as HTMLElement | null;
-    if (!parent) return;
-    const parentRect = parent.getBoundingClientRect();
+    const parentRect = this.#getParentRect();
 
     let newLeft = e.clientX - parentRect.left - this.#dragOffsetX;
     let newTop = e.clientY - parentRect.top - this.#dragOffsetY;
 
     // Clamp inside parent
-    const hostW = this.offsetWidth;
-    const hostH = this.offsetHeight;
-    newLeft = Math.max(0, Math.min(newLeft, parentRect.width - hostW));
-    newTop = Math.max(0, Math.min(newTop, parentRect.height - hostH));
+    newLeft = Math.max(0, Math.min(newLeft, parentRect.width - this.offsetWidth));
+    newTop = Math.max(0, Math.min(newTop, parentRect.height - this.offsetHeight));
 
     this.style.right = 'auto';
     this.style.top = `${newTop}px`;
@@ -466,16 +463,12 @@ export class WhiteboardToolbar extends HTMLElement {
   }
 
   #endDrag(_e: PointerEvent): void {
-    const parent = (this as HTMLElement).offsetParent as HTMLElement | null;
-    const listenTarget = parent && parent.getRootNode() === document
-      ? document
-      : parent;
-    if (listenTarget) {
-      if (this.#onPointerMove) listenTarget.removeEventListener('pointermove', this.#onPointerMove as EventListener);
-      if (this.#onPointerUp) listenTarget.removeEventListener('pointerup', this.#onPointerUp as EventListener);
+    if (this.#dragHandle) {
+      this.#dragHandle.removeEventListener('pointermove', this.#boundDragMove);
+      this.#dragHandle.removeEventListener('pointerup', this.#boundDragEnd);
+      this.#dragHandle.removeEventListener('pointercancel', this.#boundDragEnd);
+      this.#dragHandle = null;
     }
-    this.#onPointerMove = null;
-    this.#onPointerUp = null;
 
     if (this.#dragMoved) {
       // Keep #dragging true briefly so the click handler ignores the click

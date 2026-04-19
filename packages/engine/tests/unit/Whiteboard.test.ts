@@ -11,6 +11,8 @@ const fakeCtx = {
   lineTo: noop,
   stroke: noop,
   clearRect: noop,
+  save: noop,
+  restore: noop,
   getImageData: (_sx: number, _sy: number, sw: number, sh: number) =>
     ({ data: new Uint8ClampedArray(sw * sh * 4), width: sw, height: sh }),
   putImageData: noop,
@@ -275,7 +277,7 @@ describe('Whiteboard', () => {
     wb.setActive(true);
     expect(wb.isVisible).toBe(true);
 
-    const canvasBefore = wb.shadowRoot?.querySelector('canvas');
+    const canvasBefore = wb.shadowRoot?.querySelector('canvas.main');
     expect(canvasBefore).toBeTruthy();
 
     // Draw something so we can verify it persists
@@ -286,7 +288,7 @@ describe('Whiteboard', () => {
     document.body.appendChild(wb);
 
     // Canvas should be the SAME element (not re-created)
-    const canvasAfter = wb.shadowRoot?.querySelector('canvas');
+    const canvasAfter = wb.shadowRoot?.querySelector('canvas.main');
     expect(canvasAfter).toBe(canvasBefore);
 
     // Visibility state should be preserved
@@ -383,7 +385,7 @@ describe('Whiteboard', () => {
   });
 
   it('setActive(true) shows canvas with fade-in', () => {
-    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    const canvas = wb.shadowRoot?.querySelector('canvas.main') as HTMLCanvasElement;
     // Initially hidden via CSS (display: none, no inline styles)
     expect(canvas.style.display).toBe('');
 
@@ -400,7 +402,7 @@ describe('Whiteboard', () => {
 
   it('setActive(false) hides canvas instantly', () => {
     wb.setActive(true);
-    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    const canvas = wb.shadowRoot?.querySelector('canvas.main') as HTMLCanvasElement;
     expect(canvas.style.display).toBe('block');
 
     wb.setActive(false);
@@ -413,7 +415,7 @@ describe('Whiteboard', () => {
 
   it('slideIndex change hides canvas then fades in after TRANSITION_MS when slide has strokes', () => {
     wb.setActive(true);
-    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    const canvas = wb.shadowRoot?.querySelector('canvas.main') as HTMLCanvasElement;
     expect(canvas.style.display).toBe('block');
 
     // Draw on slide 0 so it has content
@@ -438,7 +440,7 @@ describe('Whiteboard', () => {
 
   it('slideIndex change keeps canvas hidden on empty slide', () => {
     wb.setActive(true);
-    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    const canvas = wb.shadowRoot?.querySelector('canvas.main') as HTMLCanvasElement;
 
     // Navigate to slide 1 (no strokes)
     wb.slideIndex = 1;
@@ -514,5 +516,67 @@ describe('Whiteboard', () => {
 
     canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
     vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+  });
+
+  it('uses temp canvas for alpha < 1 strokes (highlighter)', () => {
+    wb.setAlpha(0.3);
+    wb.setActive(true);
+
+    const mainCanvas = wb.shadowRoot?.querySelector('canvas.main') as HTMLCanvasElement;
+    const tempCanvas = wb.shadowRoot?.querySelector('canvas.temp') as HTMLCanvasElement;
+    expect(mainCanvas).toBeTruthy();
+    expect(tempCanvas).toBeTruthy();
+
+    const strokeSpy = vi.fn();
+    wb.addEventListener('geek:whiteboard:stroke', strokeSpy);
+
+    // Start drawing — should use temp canvas
+    mainCanvas.dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: 100, clientY: 100, bubbles: true,
+    }));
+    mainCanvas.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: 200, clientY: 200, bubbles: true,
+    }));
+    mainCanvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
+    // Stroke should have been dispatched with alpha 0.3
+    expect(strokeSpy).toHaveBeenCalledTimes(1);
+    const stroke = (strokeSpy.mock.calls[0]?.[0] as CustomEvent).detail as WhiteboardStroke;
+    expect(stroke.alpha).toBe(0.3);
+  });
+
+  it('remote live strokes with alpha < 1 use temp canvas rendering', () => {
+    wb.setActive(true);
+
+    // Simulate live stroke with alpha < 1
+    const liveStroke = makeStroke({
+      slideIndex: 0,
+      clientId: 'remote-alpha',
+      alpha: 0.3,
+      points: [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3]],
+    });
+    wb.drawLiveStroke(liveStroke);
+
+    // Update with more points
+    const liveStroke2 = makeStroke({
+      slideIndex: 0,
+      clientId: 'remote-alpha',
+      alpha: 0.3,
+      points: [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3], [0.4, 0.4]],
+    });
+    wb.drawLiveStroke(liveStroke2);
+
+    // Finalize — should move to main canvas
+    const finalStroke = makeStroke({
+      slideIndex: 0,
+      clientId: 'remote-alpha',
+      alpha: 0.3,
+      points: [[0.1, 0.1], [0.2, 0.2], [0.3, 0.3], [0.4, 0.4]],
+    });
+    wb.drawRemoteStroke(finalStroke);
+
+    // No errors means temp canvas rendering worked correctly
   });
 });

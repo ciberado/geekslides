@@ -19,6 +19,8 @@ interface SlideSnapshot {
 export class Whiteboard extends HTMLElement {
   #canvas: HTMLCanvasElement | null = null;
   #ctx: CanvasRenderingContext2D | null = null;
+  #tempCanvas: HTMLCanvasElement | null = null;
+  #tempCtx: CanvasRenderingContext2D | null = null;
   #isDrawing = false;
   #currentPoints: [number, number][] = [];
   #color = '#ff0000';
@@ -26,6 +28,10 @@ export class Whiteboard extends HTMLElement {
   #compositeOp: GlobalCompositeOperation = 'source-over';
   #alpha = 1.0;
   #visible = false;
+  /** True when drawing on the temp canvas (alpha < 1 strokes). */
+  #usingTempCanvas = false;
+  /** Remote live strokes with alpha < 1, rendered on temp canvas. */
+  #remoteTempStrokes = new Map<string, WhiteboardStroke>();
   #strokeIdCounter = 0;
   #slideIndex = 0;
   #slideSnapshots = new Map<number, SlideSnapshot>();
@@ -148,6 +154,9 @@ export class Whiteboard extends HTMLElement {
     if (this.#ctx && this.#canvas) {
       this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
     }
+    if (this.#tempCtx && this.#tempCanvas) {
+      this.#tempCtx.clearRect(0, 0, this.#tempCanvas.width, this.#tempCanvas.height);
+    }
     this.#slideSnapshots.delete(this.#slideIndex);
   }
 
@@ -198,6 +207,9 @@ export class Whiteboard extends HTMLElement {
   restoreSlide(): void {
     if (!this.#ctx || !this.#canvas) return;
     this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
+    if (this.#tempCtx && this.#tempCanvas) {
+      this.#tempCtx.clearRect(0, 0, this.#tempCanvas.width, this.#tempCanvas.height);
+    }
     const snapshot = this.#slideSnapshots.get(this.#slideIndex);
     if (snapshot) {
       for (const stroke of snapshot.strokes) {
@@ -216,8 +228,22 @@ export class Whiteboard extends HTMLElement {
       return;
     }
 
-    // If we already drew this stroke incrementally via live progress, only
-    // render remaining points (if any) and clean up.
+    // If we drew this stroke incrementally via live progress, clean up.
+    // Remote alpha strokes were on the temp canvas — draw final on main.
+    if (this.#remoteTempStrokes.has(stroke.clientId)) {
+      this.#remoteTempStrokes.delete(stroke.clientId);
+      this.#drawStroke(stroke);
+      this.#refreshTempCanvas();
+
+      let sn = this.#slideSnapshots.get(this.#slideIndex);
+      if (!sn) {
+        sn = { strokes: [] };
+        this.#slideSnapshots.set(this.#slideIndex, sn);
+      }
+      sn.strokes.push(stroke);
+      return;
+    }
+
     const renderedCount = this.#liveStrokesRendered.get(stroke.clientId);
     if (renderedCount !== undefined) {
       this.#liveStrokesRendered.delete(stroke.clientId);
@@ -249,6 +275,17 @@ export class Whiteboard extends HTMLElement {
    */
   drawLiveStroke(stroke: WhiteboardStroke): void {
     if (stroke.slideIndex !== this.#slideIndex) return;
+
+    // Semi-transparent strokes must be drawn as full single paths on the
+    // temp canvas to avoid alpha compounding at segment overlaps.
+    if (stroke.alpha != null && stroke.alpha < 1) {
+      this.#remoteTempStrokes.set(stroke.clientId, stroke);
+      this.#refreshTempCanvas();
+      if (!this.#visible || this.#canvas?.style.display !== 'block') {
+        this.setActive(true);
+      }
+      return;
+    }
 
     const alreadyDrawn = this.#liveStrokesRendered.get(stroke.clientId) ?? 0;
     if (stroke.points.length <= alreadyDrawn) return;
@@ -282,15 +319,13 @@ export class Whiteboard extends HTMLElement {
    * Draw a segment of a stroke starting from `fromIndex`.
    * Used both for full strokes (fromIndex=0) and incremental live updates.
    */
-  #drawStrokeSegment(stroke: WhiteboardStroke, fromIndex: number): void {
-    if (!this.#ctx || !this.#canvas) return;
-
-    const ctx = this.#ctx;
+  #drawStrokeSegment(stroke: WhiteboardStroke, fromIndex: number, targetCtx?: CanvasRenderingContext2D): void {
+    const ctx = targetCtx ?? this.#ctx;
+    if (!ctx || !this.#canvas) return;
     const w = this.#canvas.width;
     const h = this.#canvas.height;
 
-    const prevComposite = ctx.globalCompositeOperation;
-    const prevAlpha = ctx.globalAlpha;
+    ctx.save();
     ctx.globalCompositeOperation = stroke.compositeOp ?? 'source-over';
     ctx.globalAlpha = stroke.alpha ?? 1.0;
     ctx.strokeStyle = stroke.color;
@@ -315,8 +350,7 @@ export class Whiteboard extends HTMLElement {
       }
     }
     ctx.stroke();
-    ctx.globalCompositeOperation = prevComposite;
-    ctx.globalAlpha = prevAlpha;
+    ctx.restore();
   }
 
   #render(): void {
@@ -339,21 +373,36 @@ export class Whiteboard extends HTMLElement {
         z-index: 100;
       }
       canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
         width: 100%;
         height: 100%;
         display: none;
-        pointer-events: auto;
         touch-action: none;
+      }
+      canvas.main {
+        pointer-events: auto;
         cursor: crosshair;
+      }
+      canvas.temp {
+        pointer-events: none;
       }
     `;
 
     this.#canvas = document.createElement('canvas');
+    this.#canvas.className = 'main';
     this.#canvas.width = 1920;
     this.#canvas.height = 1080;
     this.#ctx = this.#canvas.getContext('2d');
 
-    shadow.replaceChildren(style, this.#canvas);
+    this.#tempCanvas = document.createElement('canvas');
+    this.#tempCanvas.className = 'temp';
+    this.#tempCanvas.width = 1920;
+    this.#tempCanvas.height = 1080;
+    this.#tempCtx = this.#tempCanvas.getContext('2d');
+
+    shadow.replaceChildren(style, this.#canvas, this.#tempCanvas);
   }
 
   #setupListeners(): void {
@@ -417,11 +466,17 @@ export class Whiteboard extends HTMLElement {
     this.#cancelFade();
     // Make visible, start transparent, animate to opaque
     this.#canvas.style.display = 'block';
+    if (this.#tempCanvas) this.#tempCanvas.style.display = 'block';
     this.#canvas.style.opacity = '0';
     this.#canvas.style.transition = 'opacity 0.3s ease-in';
+    if (this.#tempCanvas) {
+      this.#tempCanvas.style.opacity = '0';
+      this.#tempCanvas.style.transition = 'opacity 0.3s ease-in';
+    }
     // Force layout so the transition triggers from opacity:0
     void this.#canvas.offsetHeight;
     this.#canvas.style.opacity = '1';
+    if (this.#tempCanvas) this.#tempCanvas.style.opacity = '1';
     // Clean up inline styles after animation to avoid a permanent
     // compositing layer that tints the slide below (Firefox).
     this.#fadeTimer = setTimeout(() => {
@@ -429,6 +484,10 @@ export class Whiteboard extends HTMLElement {
       if (this.#canvas) {
         this.#canvas.style.opacity = '';
         this.#canvas.style.transition = '';
+      }
+      if (this.#tempCanvas) {
+        this.#tempCanvas.style.opacity = '';
+        this.#tempCanvas.style.transition = '';
       }
     }, 350); // slightly longer than the 300ms transition
   }
@@ -439,6 +498,11 @@ export class Whiteboard extends HTMLElement {
     this.#canvas.style.display = 'none';
     this.#canvas.style.opacity = '';
     this.#canvas.style.transition = '';
+    if (this.#tempCanvas) {
+      this.#tempCanvas.style.display = 'none';
+      this.#tempCanvas.style.opacity = '';
+      this.#tempCanvas.style.transition = '';
+    }
   }
 
   #scheduleFadeIn(): void {
@@ -529,8 +593,9 @@ export class Whiteboard extends HTMLElement {
       this.#isDrawing = true;
       this.#currentPoints.push(point);
 
-      // Draw connecting line from the last point
-      if (this.#ctx && this.#canvas) {
+      if (this.#usingTempCanvas) {
+        this.#refreshTempCanvas();
+      } else if (this.#ctx && this.#canvas) {
         this.#ctx.lineTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
         this.#ctx.stroke();
         this.#ctx.beginPath();
@@ -542,9 +607,10 @@ export class Whiteboard extends HTMLElement {
     // Start a new stroke
     this.#isDrawing = true;
     this.#currentPoints = [point];
+    this.#usingTempCanvas = this.#alpha < 1;
     this.#startProgress();
 
-    if (this.#ctx) {
+    if (!this.#usingTempCanvas && this.#ctx) {
       this.#ctx.globalCompositeOperation = this.#compositeOp;
       this.#ctx.globalAlpha = this.#alpha;
       this.#ctx.strokeStyle = this.#color;
@@ -557,15 +623,19 @@ export class Whiteboard extends HTMLElement {
   };
 
   #onPointerMove = (e: PointerEvent): void => {
-    if (!this.#isDrawing || !this.#ctx || !this.#canvas) return;
+    if (!this.#isDrawing || !this.#canvas) return;
 
     const point = this.#normalize(e.clientX, e.clientY);
     this.#currentPoints.push(point);
 
-    this.#ctx.lineTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
-    this.#ctx.stroke();
-    this.#ctx.beginPath();
-    this.#ctx.moveTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
+    if (this.#usingTempCanvas) {
+      this.#refreshTempCanvas();
+    } else if (this.#ctx) {
+      this.#ctx.lineTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
+      this.#ctx.stroke();
+      this.#ctx.beginPath();
+      this.#ctx.moveTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
+    }
   };
 
   #onPointerUp = (): void => {
@@ -595,6 +665,11 @@ export class Whiteboard extends HTMLElement {
         alpha: this.#alpha,
       };
 
+      // If drawn on temp canvas, commit to main canvas
+      if (this.#usingTempCanvas) {
+        this.#drawStroke(stroke);
+      }
+
       // Store locally for per-slide persistence
       let snapshot = this.#slideSnapshots.get(this.#slideIndex);
       if (!snapshot) {
@@ -610,6 +685,37 @@ export class Whiteboard extends HTMLElement {
       }));
     }
 
+    this.#usingTempCanvas = false;
     this.#currentPoints = [];
+    this.#refreshTempCanvas();
   };
+
+  /**
+   * Redraw the temp canvas with all in-progress alpha strokes
+   * (local + remote live) as single paths to avoid alpha overlap.
+   */
+  #refreshTempCanvas(): void {
+    if (!this.#tempCtx || !this.#tempCanvas) return;
+    this.#tempCtx.clearRect(0, 0, this.#tempCanvas.width, this.#tempCanvas.height);
+
+    // Local in-progress stroke
+    if (this.#usingTempCanvas && this.#currentPoints.length > 1) {
+      const localStroke: WhiteboardStroke = {
+        id: '',
+        slideIndex: this.#slideIndex,
+        points: this.#currentPoints,
+        color: this.#color,
+        width: this.#lineWidth,
+        clientId: '',
+        compositeOp: this.#compositeOp,
+        alpha: this.#alpha,
+      };
+      this.#drawStrokeSegment(localStroke, 0, this.#tempCtx);
+    }
+
+    // Remote live strokes with alpha < 1
+    for (const stroke of this.#remoteTempStrokes.values()) {
+      this.#drawStrokeSegment(stroke, 0, this.#tempCtx);
+    }
+  }
 }
