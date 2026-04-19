@@ -36,8 +36,12 @@ export class Whiteboard extends HTMLElement {
   #progressTimer: ReturnType<typeof setInterval> | null = null;
   /** Tracks how many points of each remote live stroke we have already drawn. */
   #liveStrokesRendered = new Map<string, number>();
+  /** Timer for deferred fade-in after slide transition. */
+  #fadeTimer: ReturnType<typeof setTimeout> | null = null;
   static readonly COALESCE_MS = 80;
   static readonly PROGRESS_MS = 100;
+  /** Must match --gs-transition-duration (default 500ms). */
+  static readonly TRANSITION_MS = 500;
 
   constructor() {
     super();
@@ -55,6 +59,7 @@ export class Whiteboard extends HTMLElement {
     this.#stopListeningForRemoteStrokes();
     this.#cancelCoalesce();
     this.#stopProgress();
+    this.#cancelFade();
     this.#finalizeStroke();
   }
 
@@ -67,9 +72,21 @@ export class Whiteboard extends HTMLElement {
 
   set slideIndex(value: number) {
     if (value === this.#slideIndex) return;
+
+    // Hide canvas immediately during slide transition
+    if (this.#canvas && this.#visible) {
+      this.#canvas.style.transition = 'none';
+      this.#canvas.style.opacity = '0';
+    }
+
     this.saveSlide();
     this.#slideIndex = value;
     this.restoreSlide();
+
+    // Fade in after the slide transition completes
+    if (this.#visible) {
+      this.#scheduleFadeIn();
+    }
   }
 
   get isVisible(): boolean {
@@ -82,7 +99,11 @@ export class Whiteboard extends HTMLElement {
   toggle(): void {
     this.#visible = !this.#visible;
     if (this.#canvas) {
-      this.#canvas.style.display = this.#visible ? 'block' : 'none';
+      if (this.#visible) {
+        this.#showCanvas();
+      } else {
+        this.#hideCanvas();
+      }
     }
   }
 
@@ -92,7 +113,11 @@ export class Whiteboard extends HTMLElement {
   setActive(active: boolean): void {
     this.#visible = active;
     if (this.#canvas) {
-      this.#canvas.style.display = active ? 'block' : 'none';
+      if (active) {
+        this.#showCanvas();
+      } else {
+        this.#hideCanvas();
+      }
     }
   }
 
@@ -280,10 +305,12 @@ export class Whiteboard extends HTMLElement {
       canvas {
         width: 100%;
         height: 100%;
-        display: none;
         pointer-events: auto;
         touch-action: none;
         cursor: crosshair;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease-in;
       }
     `;
 
@@ -348,6 +375,41 @@ export class Whiteboard extends HTMLElement {
     if (this.#onRemoteProgress) {
       document.removeEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
       this.#onRemoteProgress = null;
+    }
+  }
+
+  #showCanvas(): void {
+    if (!this.#canvas) return;
+    this.#cancelFade();
+    this.#canvas.style.visibility = 'visible';
+    this.#canvas.style.transition = 'opacity 0.3s ease-in';
+    // Force layout so the transition triggers from the current opacity
+    void this.#canvas.offsetHeight;
+    this.#canvas.style.opacity = '1';
+  }
+
+  #hideCanvas(): void {
+    if (!this.#canvas) return;
+    this.#cancelFade();
+    this.#canvas.style.transition = 'none';
+    this.#canvas.style.opacity = '0';
+    this.#canvas.style.visibility = 'hidden';
+  }
+
+  #scheduleFadeIn(): void {
+    this.#cancelFade();
+    this.#fadeTimer = setTimeout(() => {
+      this.#fadeTimer = null;
+      if (this.#visible) {
+        this.#showCanvas();
+      }
+    }, Whiteboard.TRANSITION_MS);
+  }
+
+  #cancelFade(): void {
+    if (this.#fadeTimer !== null) {
+      clearTimeout(this.#fadeTimer);
+      this.#fadeTimer = null;
     }
   }
 
