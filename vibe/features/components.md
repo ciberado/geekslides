@@ -43,13 +43,21 @@ Separate route/tab:
 - **Auto-activation**: The host app listens for `pointerdown` + `pointermove` on the
   slideshow container. When a drag is detected (mouse button held or pen contact), the
   whiteboard is made visible via `setActive(true)` and drawing starts immediately via
-  `beginStroke(e)`, which captures the pointer on the canvas so subsequent move/up events
-  are routed directly to it. Text selection is suppressed during the drag. No manual
+  `beginStroke(e)`. Text selection is suppressed during the drag. No manual
   `whiteboard` command is required, though the command still works as a toggle.
-- **Sync**: Local strokes are dispatched as `geek:whiteboard:stroke` events. The
-  `WhiteboardSync` bridge forwards them to `SyncManager.addStroke()`. Remote strokes
-  arrive as `geek:whiteboard:remote-stroke` events and are rendered via
-  `drawRemoteStroke()`. The whiteboard component listens for both event directions.
+- **Pointer capture**: When `pointerdown` fires directly on the canvas, the pointer is
+  captured via `setPointerCapture()` to retain tracking even if the pointer drifts
+  slightly outside the canvas bounds.
+- **Stroke coalescing**: When a pen briefly loses contact (triggering `pointerup`), the
+  stroke is not immediately finalized. A short timer (`COALESCE_MS`, 80 ms) waits for
+  the pen to resume. If `pointerdown` fires within that window, the new segment is
+  connected to the existing stroke — filling gaps and producing a single synced stroke
+  instead of many fragments.
+- **Sync**: Local strokes are dispatched as `geek:whiteboard:stroke` events with
+  `composed: true` so they escape the shadow DOM. The `WhiteboardSync` bridge forwards
+  them to `SyncManager.addStroke()`. Remote strokes arrive as
+  `geek:whiteboard:remote-stroke` events and are rendered via `drawRemoteStroke()`.
+  The whiteboard component listens for both event directions.
 - **Late-join replay**: When a new client joins the room, existing strokes are read
   from the Yjs Y.Array via `SyncManager.getStrokes()` and replayed through
   `drawRemoteStroke()` so late joiners see the full whiteboard state.

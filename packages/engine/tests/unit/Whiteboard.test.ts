@@ -21,13 +21,6 @@ const fakeCtx = {
 };
 
 const origGetContext = HTMLCanvasElement.prototype.getContext;
-beforeEach(() => {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
-  (HTMLCanvasElement.prototype as any).getContext = () => fakeCtx;
-});
-afterEach(() => {
-  HTMLCanvasElement.prototype.getContext = origGetContext;
-});
 
 // Register the custom element for jsdom
 if (!customElements.get('geek-whiteboard')) {
@@ -50,8 +43,20 @@ describe('Whiteboard', () => {
   let wb: Whiteboard;
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return, @typescript-eslint/no-explicit-any
+    (HTMLCanvasElement.prototype as any).getContext = () => fakeCtx;
+    // jsdom lacks setPointerCapture/releasePointerCapture
+    HTMLCanvasElement.prototype.setPointerCapture ??= noop as (id: number) => void;
+    HTMLCanvasElement.prototype.releasePointerCapture ??= noop as (id: number) => void;
     wb = document.createElement('geek-whiteboard') as Whiteboard;
     document.body.appendChild(wb);
+  });
+
+  afterEach(() => {
+    if (wb.isConnected) document.body.removeChild(wb);
+    HTMLCanvasElement.prototype.getContext = origGetContext;
+    vi.useRealTimers();
   });
 
   it('starts hidden', () => {
@@ -187,6 +192,9 @@ describe('Whiteboard', () => {
 
     canvas?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
 
+    // Stroke is dispatched after coalesce timer expires
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
     expect(strokeSpy).toHaveBeenCalledTimes(1);
   });
 
@@ -214,6 +222,49 @@ describe('Whiteboard', () => {
     }));
     canvas?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
 
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
     expect(eventComposed).toBe(true);
+  });
+
+  it('coalesces rapid pen lift/contact into a single stroke', () => {
+    wb.setActive(true);
+    const canvas = wb.shadowRoot?.querySelector('canvas');
+    expect(canvas).toBeTruthy();
+
+    const strokeSpy = vi.fn();
+    wb.addEventListener('geek:whiteboard:stroke', strokeSpy);
+
+    // First pen contact
+    canvas?.dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: 100, clientY: 100, bubbles: true,
+    }));
+    canvas?.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: 120, clientY: 120, buttons: 1, bubbles: true,
+    }));
+    // Pen lifts briefly
+    canvas?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+
+    // Advance part of the coalesce window — should NOT finalize yet
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS / 2);
+    expect(strokeSpy).not.toHaveBeenCalled();
+
+    // Pen resumes contact
+    canvas?.dispatchEvent(new PointerEvent('pointerdown', {
+      clientX: 122, clientY: 122, bubbles: true,
+    }));
+    canvas?.dispatchEvent(new PointerEvent('pointermove', {
+      clientX: 150, clientY: 150, buttons: 1, bubbles: true,
+    }));
+    // Final lift
+    canvas?.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+
+    // Let coalesce timer expire
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
+    // Should produce exactly one stroke with all points
+    expect(strokeSpy).toHaveBeenCalledTimes(1);
+    const detail = (strokeSpy.mock.calls[0]?.[0] as CustomEvent).detail as WhiteboardStroke;
+    expect(detail.points.length).toBeGreaterThanOrEqual(4);
   });
 });

@@ -29,6 +29,9 @@ export class Whiteboard extends HTMLElement {
   #slideIndex = 0;
   #slideSnapshots = new Map<number, SlideSnapshot>();
   #onRemoteStroke: ((e: Event) => void) | null = null;
+  /** Timer for coalescing rapid pen lift/contact cycles into one stroke. */
+  #coalesceTimer: ReturnType<typeof setTimeout> | null = null;
+  static readonly COALESCE_MS = 80;
 
   constructor() {
     super();
@@ -44,6 +47,8 @@ export class Whiteboard extends HTMLElement {
   disconnectedCallback(): void {
     this.#removeListeners();
     this.#stopListeningForRemoteStrokes();
+    this.#cancelCoalesce();
+    this.#finalizeStroke();
   }
 
   /**
@@ -245,6 +250,10 @@ export class Whiteboard extends HTMLElement {
     this.#canvas.addEventListener('pointerdown', this.#onPointerDown);
     this.#canvas.addEventListener('pointermove', this.#onPointerMove);
     this.#canvas.addEventListener('pointerup', this.#onPointerUp);
+    this.#canvas.addEventListener('pointercancel', this.#onPointerUp);
+
+    // Capture pointer on canvas-originated events to retain tracking
+    this.#canvas.addEventListener('pointerdown', this.#capturePointer);
 
     // Prevent touch events from bubbling to TouchInput (swipe navigation)
     this.#canvas.addEventListener('touchstart', this.#stopTouchPropagation);
@@ -257,6 +266,8 @@ export class Whiteboard extends HTMLElement {
     this.#canvas.removeEventListener('pointerdown', this.#onPointerDown);
     this.#canvas.removeEventListener('pointermove', this.#onPointerMove);
     this.#canvas.removeEventListener('pointerup', this.#onPointerUp);
+    this.#canvas.removeEventListener('pointercancel', this.#onPointerUp);
+    this.#canvas.removeEventListener('pointerdown', this.#capturePointer);
     this.#canvas.removeEventListener('touchstart', this.#stopTouchPropagation);
     this.#canvas.removeEventListener('touchmove', this.#stopTouchPropagation);
     this.#canvas.removeEventListener('touchend', this.#stopTouchPropagation);
@@ -290,9 +301,39 @@ export class Whiteboard extends HTMLElement {
     e.stopPropagation();
   };
 
+  #capturePointer = (e: PointerEvent): void => {
+    this.#canvas?.setPointerCapture(e.pointerId);
+  };
+
+  #cancelCoalesce(): void {
+    if (this.#coalesceTimer !== null) {
+      clearTimeout(this.#coalesceTimer);
+      this.#coalesceTimer = null;
+    }
+  }
+
   #onPointerDown = (e: PointerEvent): void => {
+    const point = this.#normalize(e.clientX, e.clientY);
+
+    // If pen resumed contact within the coalesce window, continue the stroke
+    if (this.#coalesceTimer !== null) {
+      this.#cancelCoalesce();
+      this.#isDrawing = true;
+      this.#currentPoints.push(point);
+
+      // Draw connecting line from the last point
+      if (this.#ctx && this.#canvas) {
+        this.#ctx.lineTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
+        this.#ctx.stroke();
+        this.#ctx.beginPath();
+        this.#ctx.moveTo(point[0] * this.#canvas.width, point[1] * this.#canvas.height);
+      }
+      return;
+    }
+
+    // Start a new stroke
     this.#isDrawing = true;
-    this.#currentPoints = [this.#normalize(e.clientX, e.clientY)];
+    this.#currentPoints = [point];
 
     if (this.#ctx) {
       this.#ctx.strokeStyle = this.#color;
@@ -300,8 +341,7 @@ export class Whiteboard extends HTMLElement {
       this.#ctx.lineCap = 'round';
       this.#ctx.lineJoin = 'round';
       this.#ctx.beginPath();
-      const [x, y] = this.#normalize(e.clientX, e.clientY);
-      this.#ctx.moveTo(x * (this.#canvas?.width ?? 1920), y * (this.#canvas?.height ?? 1080));
+      this.#ctx.moveTo(point[0] * (this.#canvas?.width ?? 1920), point[1] * (this.#canvas?.height ?? 1080));
     }
   };
 
@@ -321,6 +361,15 @@ export class Whiteboard extends HTMLElement {
     if (!this.#isDrawing) return;
     this.#isDrawing = false;
 
+    // Delay finalization to coalesce rapid pen lift/contact cycles
+    this.#cancelCoalesce();
+    this.#coalesceTimer = setTimeout(() => {
+      this.#coalesceTimer = null;
+      this.#finalizeStroke();
+    }, Whiteboard.COALESCE_MS);
+  };
+
+  #finalizeStroke(): void {
     if (this.#currentPoints.length > 1) {
       const stroke: WhiteboardStroke = {
         id: `stroke-${String(++this.#strokeIdCounter)}`,
