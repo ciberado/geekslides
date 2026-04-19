@@ -139,6 +139,10 @@ export function registerDevCommand(program: Command): void {
 
       const server = await createServer(viteConfig);
 
+      // Eagerly watch the external deck directory so chokidar picks up
+      // content changes without waiting for the browser POST registration.
+      server.watcher.add(deckDir);
+
       server.middlewares.use((req, res, next) => {
         const redirectTarget = getDeckRedirectTarget(req.url ?? '/', browserConfigPath);
         if (!redirectTarget) {

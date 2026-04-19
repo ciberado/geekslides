@@ -18,8 +18,26 @@ import {
   resolveCliAppRoot,
 } from '../src/commands/dev.ts';
 import { dirname } from 'node:path';
+import { createServer as createNetServer } from 'node:net';
 
 const APP_ROOT = resolveCliAppRoot();
+
+/** Find a free port by briefly binding to port 0 and releasing it. */
+async function findFreePort(): Promise<number> {
+  return new Promise((resolve, reject) => {
+    const srv = createNetServer();
+    srv.listen(0, () => {
+      const addr = srv.address();
+      if (!addr || typeof addr === 'string') {
+        srv.close(() => { reject(new Error('Could not determine port')); });
+        return;
+      }
+      const { port } = addr;
+      srv.close(() => { resolve(port); });
+    });
+    srv.on('error', reject);
+  });
+}
 
 describe('external deck /@fs serving', () => {
   let tmpDir: string;
@@ -53,10 +71,13 @@ describe('external deck /@fs serving', () => {
     expect(browserConfigPath).not.toContain('//');
 
     // Start a real Vite dev server (same config as the CLI)
+    const port = await findFreePort();
     server = await createServer({
       plugins: [geekSlidesHmr()],
       server: {
-        port: 0, // random available port
+        host: '127.0.0.1',
+        port,
+        strictPort: true,
         fs: { allow: [APP_ROOT, deckDir] },
       },
       configFile: false,
@@ -65,11 +86,7 @@ describe('external deck /@fs serving', () => {
     });
     await server.listen();
 
-    const address = server.httpServer?.address();
-    if (!address || typeof address === 'string') {
-      throw new Error('Server did not start on a port');
-    }
-    const baseUrl = `http://localhost:${String(address.port)}`;
+    const baseUrl = `http://localhost:${String(port)}`;
 
     // Fetch config.json via the /@fs path
     const configResponse = await fetch(`${baseUrl}${browserConfigPath}`);
