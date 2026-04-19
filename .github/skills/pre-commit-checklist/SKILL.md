@@ -17,7 +17,13 @@ Run this checklist before every commit to ensure nothing is missed.
 
 Work through each step in order. Skip steps that clearly don't apply (e.g. no how-to changes needed for a typo fix).
 
-### 1. Run unit tests
+### 1. Run unit tests (if needed)
+
+Run tests **only when the changes haven't already been tested** in the current session. Skip if:
+- The user explicitly confirms tests already passed, OR
+- You ran tests earlier in this conversation and no code changed since then.
+
+Otherwise:
 
 ```bash
 npx vitest run
@@ -25,9 +31,9 @@ npx vitest run
 
 All tests must pass. If any fail, fix them before proceeding.
 
-### 2. Run e2e tests
+### 2. Run e2e tests (if needed)
 
-Only if changes touch runtime code (engine, server, CLI app, index.html):
+Only if changes touch runtime code (engine, server, CLI app, index.html) **and tests haven't already passed** in this session. Skip under the same conditions as step 1.
 
 ```bash
 npx playwright test --config=e2e/playwright.config.ts --reporter=line
