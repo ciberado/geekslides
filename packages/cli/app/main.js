@@ -539,6 +539,7 @@ try {
         if (e.button !== 0) return;
         if (e.composedPath().some((el) => el.tagName === 'GEEK-WHITEBOARD')) return;
         pointerStartedOnSlide = true;
+        e.preventDefault(); // prevent text selection during drag
       });
       gsContainer.addEventListener('pointermove', (e) => {
         if (!pointerStartedOnSlide) return;
@@ -549,9 +550,6 @@ try {
         }
       });
       gsContainer.addEventListener('pointerup', () => { pointerStartedOnSlide = false; });
-      gsContainer.addEventListener('selectstart', (e) => {
-        if (pointerStartedOnSlide) e.preventDefault();
-      });
     }
 
     // Activate WhiteboardSync to bridge local strokes to SyncManager
@@ -599,6 +597,10 @@ try {
 
     commands.register({ name: 'whiteboard-clear', label: 'Clear whiteboard on current slide', execute: () => {
       whiteboard.clear();
+    }, category: 'built-in' });
+
+    commands.register({ name: 'toggle-toolbar', label: 'Toggle toolbar', execute: () => {
+      slideshow.toggleToolbar();
     }, category: 'built-in' });
 
     if (sync) {

@@ -623,6 +623,7 @@
             if (e.button !== 0) return;
             if (e.composedPath().some((el) => el.tagName === 'GEEK-WHITEBOARD')) return;
             pointerStartedOnSlide = true;
+            e.preventDefault(); // prevent text selection during drag
           });
           gsContainer.addEventListener('pointermove', (e) => {
             if (!pointerStartedOnSlide) return;
@@ -633,9 +634,6 @@
             }
           });
           gsContainer.addEventListener('pointerup', () => { pointerStartedOnSlide = false; });
-          gsContainer.addEventListener('selectstart', (e) => {
-            if (pointerStartedOnSlide) e.preventDefault();
-          });
         }
 
         // Activate WhiteboardSync to bridge local strokes to SyncManager
