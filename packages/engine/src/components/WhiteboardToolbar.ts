@@ -23,10 +23,10 @@ export const TOOL_SETTINGS: Record<WhiteboardTool, ToolSettings> = {
 };
 
 export const PALETTE_COLORS: readonly string[] = [
-  '#000000', '#ffffff', '#ff0000', '#0066ff',
-  '#00aa00', '#ffcc00', '#ff6600', '#9933cc',
-  '#ff66aa', '#00cccc', '#8b4513', '#66ff00',
-  '#000080', '#800000', '#008080', '#888888',
+  '#000000', '#888888', '#8b4513', '#ffffff',
+  '#ff0000', '#800000', '#ff6600', '#ffcc00',
+  '#00aa00', '#66ff00', '#008080', '#00cccc',
+  '#000080', '#0066ff', '#9933cc', '#ff66aa',
 ] as const;
 
 export class WhiteboardToolbar extends HTMLElement {
@@ -35,6 +35,9 @@ export class WhiteboardToolbar extends HTMLElement {
   #tool: WhiteboardTool = 'pen';
   #color = '#ff0000';
   #confirmPending = false;
+  #dragging = false;
+  #dragOffsetX = 0;
+  #dragOffsetY = 0;
 
   constructor() {
     super();
@@ -110,6 +113,11 @@ export class WhiteboardToolbar extends HTMLElement {
         z-index: 110;
         pointer-events: auto;
         font-family: system-ui, sans-serif;
+        touch-action: none;
+        user-select: none;
+      }
+      :host(.dragging) {
+        cursor: grabbing;
       }
 
       .toolbar {
@@ -132,7 +140,7 @@ export class WhiteboardToolbar extends HTMLElement {
         background: transparent;
         color: #ccc;
         font-size: 16px;
-        cursor: pointer;
+        cursor: grab;
         border-radius: 4px;
         display: flex;
         align-items: center;
@@ -140,6 +148,7 @@ export class WhiteboardToolbar extends HTMLElement {
         padding: 0;
       }
       .collapse-btn:hover { background: rgba(255,255,255,0.15); }
+      :host(.dragging) .collapse-btn { cursor: grabbing; }
 
       .body { display: flex; flex-direction: column; gap: 4px; }
       .body.collapsed { display: none; }
@@ -207,22 +216,43 @@ export class WhiteboardToolbar extends HTMLElement {
         transition: background 0.15s;
       }
       .action-btn:hover { background: rgba(255,255,255,0.18); }
-      .action-btn.confirm { background: rgba(255,80,80,0.5); color: #fff; }
+      .action-btn.confirm {
+        width: auto;
+        min-width: 32px;
+        padding: 0 8px;
+        background: rgba(255,80,80,0.6);
+        color: #fff;
+        font-size: 11px;
+        animation: pulse-confirm 0.6s ease infinite alternate;
+      }
+      @keyframes pulse-confirm {
+        from { background: rgba(255,80,80,0.4); }
+        to   { background: rgba(255,80,80,0.7); }
+      }
     `;
 
     const toolbar = document.createElement('div');
     toolbar.className = 'toolbar';
 
-    // Collapse toggle
+    // Stop touch events from reaching the slideshow tap-zone handler
+    toolbar.addEventListener('touchstart', (e) => { e.stopPropagation(); }, { passive: true });
+    toolbar.addEventListener('touchend', (e) => { e.stopPropagation(); }, { passive: true });
+    toolbar.addEventListener('touchmove', (e) => { e.stopPropagation(); }, { passive: true });
+
+    // Collapse toggle / drag handle
     const collapseBtn = document.createElement('button');
     collapseBtn.className = 'collapse-btn';
     collapseBtn.setAttribute('data-action', 'toggle-collapse');
     collapseBtn.textContent = '≡';
-    collapseBtn.title = 'Toggle toolbar';
-    collapseBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+    collapseBtn.title = 'Drag to move · Click to collapse';
+    collapseBtn.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      this.#startDrag(e);
+    });
     collapseBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      this.toggleCollapse();
+      // Only toggle collapse if we didn't just finish a drag
+      if (!this.#dragging) this.toggleCollapse();
     });
     toolbar.appendChild(collapseBtn);
 
@@ -310,7 +340,7 @@ export class WhiteboardToolbar extends HTMLElement {
       } else {
         this.#confirmPending = true;
         clearBtn.classList.add('confirm');
-        clearBtn.textContent = '?';
+        clearBtn.textContent = 'Clear?';
         clearBtn.title = 'Click again to confirm clear';
         // Auto-cancel confirmation after 3 seconds
         setTimeout(() => {
@@ -374,5 +404,93 @@ export class WhiteboardToolbar extends HTMLElement {
       composed: true,
       detail: { color: this.#color },
     }));
+  }
+
+  // ── Drag support ──────────────────────────────────────────
+
+  #dragMoved = false;
+  #onPointerMove: ((e: PointerEvent) => void) | null = null;
+  #onPointerUp: ((e: PointerEvent) => void) | null = null;
+
+  #startDrag(e: PointerEvent): void {
+    this.#dragMoved = false;
+    const host = this as HTMLElement;
+    const parent = host.offsetParent as HTMLElement | null;
+    if (!parent) return;
+
+    const hostRect = host.getBoundingClientRect();
+    this.#dragOffsetX = e.clientX - hostRect.left;
+    this.#dragOffsetY = e.clientY - hostRect.top;
+
+    this.#onPointerMove = (ev: PointerEvent) => { this.#onDragMove(ev); };
+    this.#onPointerUp = (ev: PointerEvent) => { this.#endDrag(ev); };
+
+    // Listen on the parent (whiteboard shadow root host or document)
+    const listenTarget = parent.getRootNode() === document
+      ? document
+      : parent;
+    listenTarget.addEventListener('pointermove', this.#onPointerMove as EventListener);
+    listenTarget.addEventListener('pointerup', this.#onPointerUp as EventListener);
+  }
+
+  #onDragMove(e: PointerEvent): void {
+    if (!this.#dragMoved) {
+      // Only start dragging after moving a few pixels (avoid accidental drags)
+      const host = this as HTMLElement;
+      const hostRect = host.getBoundingClientRect();
+      const dx = e.clientX - (hostRect.left + this.#dragOffsetX);
+      const dy = e.clientY - (hostRect.top + this.#dragOffsetY);
+      if (Math.abs(dx) < 4 && Math.abs(dy) < 4) return;
+      this.#dragMoved = true;
+      this.#dragging = true;
+      this.classList.add('dragging');
+    }
+
+    const parent = (this as HTMLElement).offsetParent as HTMLElement | null;
+    if (!parent) return;
+    const parentRect = parent.getBoundingClientRect();
+
+    let newLeft = e.clientX - parentRect.left - this.#dragOffsetX;
+    let newTop = e.clientY - parentRect.top - this.#dragOffsetY;
+
+    // Clamp inside parent
+    const hostW = this.offsetWidth;
+    const hostH = this.offsetHeight;
+    newLeft = Math.max(0, Math.min(newLeft, parentRect.width - hostW));
+    newTop = Math.max(0, Math.min(newTop, parentRect.height - hostH));
+
+    this.style.right = 'auto';
+    this.style.top = `${newTop}px`;
+    this.style.left = `${newLeft}px`;
+    this.style.transform = 'none';
+  }
+
+  #endDrag(_e: PointerEvent): void {
+    const parent = (this as HTMLElement).offsetParent as HTMLElement | null;
+    const listenTarget = parent && parent.getRootNode() === document
+      ? document
+      : parent;
+    if (listenTarget) {
+      if (this.#onPointerMove) listenTarget.removeEventListener('pointermove', this.#onPointerMove as EventListener);
+      if (this.#onPointerUp) listenTarget.removeEventListener('pointerup', this.#onPointerUp as EventListener);
+    }
+    this.#onPointerMove = null;
+    this.#onPointerUp = null;
+
+    if (this.#dragMoved) {
+      // Keep #dragging true briefly so the click handler ignores the click
+      requestAnimationFrame(() => {
+        this.#dragging = false;
+        this.classList.remove('dragging');
+      });
+    }
+  }
+
+  /** Reset position to the default right-edge anchor. */
+  resetPosition(): void {
+    this.style.right = '';
+    this.style.top = '';
+    this.style.left = '';
+    this.style.transform = '';
   }
 }

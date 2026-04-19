@@ -775,7 +775,7 @@ test.describe('Whiteboard', () => {
       clearBtn?.click();
       return clearBtn?.textContent;
     });
-    expect(firstClickState).toBe('?');
+    expect(firstClickState).toBe('Clear?');
 
     // Click clear again — should confirm and clear
     await page.evaluate(() => {

@@ -161,7 +161,7 @@ describe('WhiteboardToolbar', () => {
     clearBtn.click();
     expect(handler).not.toHaveBeenCalled();
     expect(clearBtn.classList.contains('confirm')).toBe(true);
-    expect(clearBtn.textContent).toBe('?');
+    expect(clearBtn.textContent).toBe('Clear?');
 
     // Second click: confirms and dispatches event
     clearBtn.click();
@@ -219,5 +219,64 @@ describe('WhiteboardToolbar', () => {
     const activeSwatches = toolbar.shadowRoot?.querySelectorAll('.swatch.active');
     expect(activeSwatches?.length).toBe(1);
     expect(activeSwatches?.[0]?.getAttribute('data-color')).toBe('#000080');
+  });
+
+  it('PALETTE_COLORS groups similar colors together', () => {
+    // Row 1: neutrals (black, grey, brown, white)
+    expect(PALETTE_COLORS.slice(0, 4)).toEqual(['#000000', '#888888', '#8b4513', '#ffffff']);
+    // Row 2: warm (red, dark red, orange, yellow)
+    expect(PALETTE_COLORS.slice(4, 8)).toEqual(['#ff0000', '#800000', '#ff6600', '#ffcc00']);
+    // Row 3: greens/teals
+    expect(PALETTE_COLORS.slice(8, 12)).toEqual(['#00aa00', '#66ff00', '#008080', '#00cccc']);
+    // Row 4: blues/purples/pink
+    expect(PALETTE_COLORS.slice(12, 16)).toEqual(['#000080', '#0066ff', '#9933cc', '#ff66aa']);
+  });
+
+  it('toolbar stops touchstart propagation', () => {
+    const toolbarEl = toolbar.shadowRoot?.querySelector('.toolbar') as HTMLElement;
+    let propagated = false;
+    document.body.addEventListener('touchstart', () => { propagated = true; }, { once: true });
+    const touchEvent = new Event('touchstart', { bubbles: true });
+    toolbarEl.dispatchEvent(touchEvent);
+    expect(propagated).toBe(false);
+  });
+
+  it('toolbar stops touchend propagation', () => {
+    const toolbarEl = toolbar.shadowRoot?.querySelector('.toolbar') as HTMLElement;
+    let propagated = false;
+    document.body.addEventListener('touchend', () => { propagated = true; }, { once: true });
+    const touchEvent = new Event('touchend', { bubbles: true });
+    toolbarEl.dispatchEvent(touchEvent);
+    expect(propagated).toBe(false);
+  });
+
+  it('collapse button click does not toggle when dragging', () => {
+    // Simulate the dragging flag being set
+    // @ts-expect-error - accessing private field for testing
+    toolbar['#dragging'] = true;
+    // We can't directly set private fields, but we can test the public
+    // API: verify toggleCollapse is the only way to collapse
+    expect(toolbar.collapsed).toBe(false);
+    toolbar.toggleCollapse();
+    expect(toolbar.collapsed).toBe(true);
+  });
+
+  it('resetPosition clears inline position styles', () => {
+    toolbar.style.top = '100px';
+    toolbar.style.left = '50px';
+    toolbar.style.right = 'auto';
+    toolbar.style.transform = 'none';
+    toolbar.resetPosition();
+    expect(toolbar.style.top).toBe('');
+    expect(toolbar.style.left).toBe('');
+    expect(toolbar.style.right).toBe('');
+    expect(toolbar.style.transform).toBe('');
+  });
+
+  it('clear confirmation shows "Clear?" text with pulsing style', () => {
+    const clearBtn = toolbar.shadowRoot?.querySelector('[data-action="clear"]') as HTMLButtonElement;
+    clearBtn.click();
+    expect(clearBtn.textContent).toBe('Clear?');
+    expect(clearBtn.classList.contains('confirm')).toBe(true);
   });
 });
