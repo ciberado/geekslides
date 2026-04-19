@@ -209,6 +209,10 @@ export class Whiteboard extends HTMLElement {
   }
 
   #render(): void {
+    // Skip re-render when reconnecting after loadSlides() detach/reattach.
+    // Preserves canvas state, drawings, and visibility across the cycle.
+    if (this.#canvas) return;
+
     const shadow = this.shadowRoot;
     if (!shadow) return;
 

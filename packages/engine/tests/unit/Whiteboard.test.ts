@@ -267,4 +267,27 @@ describe('Whiteboard', () => {
     const detail = (strokeSpy.mock.calls[0]?.[0] as CustomEvent).detail as WhiteboardStroke;
     expect(detail.points.length).toBeGreaterThanOrEqual(4);
   });
+
+  it('preserves canvas and visibility across disconnect/reconnect cycle', () => {
+    // Simulate the loadSlides detach/reattach that happens during content proxy reload
+    wb.setActive(true);
+    expect(wb.isVisible).toBe(true);
+
+    const canvasBefore = wb.shadowRoot?.querySelector('canvas');
+    expect(canvasBefore).toBeTruthy();
+
+    // Draw something so we can verify it persists
+    wb.drawRemoteStroke(makeStroke({ slideIndex: 0 }));
+
+    // Detach and reattach (simulates loadSlides innerHTML='' + re-append)
+    document.body.removeChild(wb);
+    document.body.appendChild(wb);
+
+    // Canvas should be the SAME element (not re-created)
+    const canvasAfter = wb.shadowRoot?.querySelector('canvas');
+    expect(canvasAfter).toBe(canvasBefore);
+
+    // Visibility state should be preserved
+    expect(wb.isVisible).toBe(true);
+  });
 });
