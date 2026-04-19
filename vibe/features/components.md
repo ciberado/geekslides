@@ -40,10 +40,12 @@ Separate route/tab:
 - **Per-slide persistence**: Each slide has its own stroke buffer. Navigating away and
   back restores previous drawings. Internally the component saves/restores an
   `ImageData` snapshot plus the stroke list keyed by slide index.
-- **Auto-activation**: The whiteboard listens for `pointerdown` events on the slideshow
-  container. When a drag is detected (mouse button held or pen contact), the whiteboard
-  automatically becomes visible and captures the stroke. No manual `whiteboard` command
-  is required, though the command still works as a toggle for explicit control.
+- **Auto-activation**: The host app listens for `pointerdown` + `pointermove` on the
+  slideshow container. When a drag is detected (mouse button held or pen contact), the
+  whiteboard is made visible via `setActive(true)` and drawing starts immediately via
+  `beginStroke(e)`, which captures the pointer on the canvas so subsequent move/up events
+  are routed directly to it. Text selection is suppressed during the drag. No manual
+  `whiteboard` command is required, though the command still works as a toggle.
 - **Sync**: Local strokes are dispatched as `geek:whiteboard:stroke` events. The
   `WhiteboardSync` bridge forwards them to `SyncManager.addStroke()`. Remote strokes
   arrive as `geek:whiteboard:remote-stroke` events and are rendered via

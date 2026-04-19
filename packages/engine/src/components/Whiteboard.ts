@@ -85,6 +85,16 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
+   * Begin a stroke from an external pointer event (e.g. auto-activation drag).
+   * Captures the pointer so subsequent move/up events target the canvas.
+   */
+  beginStroke(e: PointerEvent): void {
+    if (!this.#canvas) return;
+    this.#canvas.setPointerCapture(e.pointerId);
+    this.#onPointerDown(e);
+  }
+
+  /**
    * Clear all strokes from the canvas and the current slide snapshot.
    */
   clear(): void {

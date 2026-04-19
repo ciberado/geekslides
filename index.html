@@ -629,9 +629,13 @@
             if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
             if (!whiteboard.isVisible) {
               whiteboard.setActive(true);
+              whiteboard.beginStroke(e);
             }
           });
           gsContainer.addEventListener('pointerup', () => { pointerStartedOnSlide = false; });
+          gsContainer.addEventListener('selectstart', (e) => {
+            if (pointerStartedOnSlide) e.preventDefault();
+          });
         }
 
         // Activate WhiteboardSync to bridge local strokes to SyncManager
