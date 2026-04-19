@@ -23,6 +23,8 @@ export class Whiteboard extends HTMLElement {
   #currentPoints: [number, number][] = [];
   #color = '#ff0000';
   #lineWidth = 3;
+  #compositeOp: GlobalCompositeOperation = 'source-over';
+  #alpha = 1.0;
   #visible = false;
   #strokeIdCounter = 0;
   #slideIndex = 0;
@@ -164,6 +166,20 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
+   * Set canvas composite operation (e.g. 'source-over', 'destination-out').
+   */
+  setCompositeOp(op: GlobalCompositeOperation): void {
+    this.#compositeOp = op;
+  }
+
+  /**
+   * Set canvas global alpha (0–1).
+   */
+  setAlpha(alpha: number): void {
+    this.#alpha = alpha;
+  }
+
+  /**
    * Save current canvas state for the active slide.
    */
   saveSlide(): void {
@@ -273,6 +289,10 @@ export class Whiteboard extends HTMLElement {
     const w = this.#canvas.width;
     const h = this.#canvas.height;
 
+    const prevComposite = ctx.globalCompositeOperation;
+    const prevAlpha = ctx.globalAlpha;
+    ctx.globalCompositeOperation = stroke.compositeOp ?? 'source-over';
+    ctx.globalAlpha = stroke.alpha ?? 1.0;
     ctx.strokeStyle = stroke.color;
     ctx.lineWidth = stroke.width;
     ctx.lineCap = 'round';
@@ -295,6 +315,8 @@ export class Whiteboard extends HTMLElement {
       }
     }
     ctx.stroke();
+    ctx.globalCompositeOperation = prevComposite;
+    ctx.globalAlpha = prevAlpha;
   }
 
   #render(): void {
@@ -492,6 +514,8 @@ export class Whiteboard extends HTMLElement {
         color: this.#color,
         width: this.#lineWidth,
         clientId: '',
+        compositeOp: this.#compositeOp,
+        alpha: this.#alpha,
       } satisfies WhiteboardStroke,
     }));
   }
@@ -521,6 +545,8 @@ export class Whiteboard extends HTMLElement {
     this.#startProgress();
 
     if (this.#ctx) {
+      this.#ctx.globalCompositeOperation = this.#compositeOp;
+      this.#ctx.globalAlpha = this.#alpha;
       this.#ctx.strokeStyle = this.#color;
       this.#ctx.lineWidth = this.#lineWidth;
       this.#ctx.lineCap = 'round';
@@ -565,6 +591,8 @@ export class Whiteboard extends HTMLElement {
         color: this.#color,
         width: this.#lineWidth,
         clientId: '',
+        compositeOp: this.#compositeOp,
+        alpha: this.#alpha,
       };
 
       // Store locally for per-slide persistence

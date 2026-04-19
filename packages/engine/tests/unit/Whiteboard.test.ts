@@ -18,6 +18,8 @@ const fakeCtx = {
   set lineWidth(_v: number) { /* no-op */ },
   set lineCap(_v: string) { /* no-op */ },
   set lineJoin(_v: string) { /* no-op */ },
+  globalCompositeOperation: 'source-over' as string,
+  globalAlpha: 1.0,
 };
 
 const origGetContext = HTMLCanvasElement.prototype.getContext;
@@ -456,5 +458,61 @@ describe('Whiteboard', () => {
     // Should remain hidden
     vi.advanceTimersByTime(Whiteboard.TRANSITION_MS + 10);
     expect(canvas.style.display).not.toBe('block');
+  });
+
+  it('setCompositeOp sets the composite operation', () => {
+    wb.setCompositeOp('destination-out');
+    // Draw a stroke and verify the composite op is included
+    const handler = vi.fn();
+    wb.addEventListener('geek:whiteboard:stroke', handler);
+    wb.setActive(true);
+
+    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 200, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    const stroke = (handler.mock.calls[0]?.[0] as CustomEvent).detail;
+    expect(stroke.compositeOp).toBe('destination-out');
+  });
+
+  it('setAlpha sets the global alpha', () => {
+    wb.setAlpha(0.3);
+    const handler = vi.fn();
+    wb.addEventListener('geek:whiteboard:stroke', handler);
+    wb.setActive(true);
+
+    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 200, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    const stroke = (handler.mock.calls[0]?.[0] as CustomEvent).detail;
+    expect(stroke.alpha).toBe(0.3);
+  });
+
+  it('finalized strokes include compositeOp and alpha in progress events', () => {
+    wb.setCompositeOp('destination-out');
+    wb.setAlpha(0.5);
+    const handler = vi.fn();
+    wb.addEventListener('geek:whiteboard:stroke-progress', handler);
+    wb.setActive(true);
+
+    const canvas = wb.shadowRoot?.querySelector('canvas') as HTMLCanvasElement;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 100, clientY: 100, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 200, clientY: 200, bubbles: true }));
+    vi.advanceTimersByTime(Whiteboard.PROGRESS_MS + 10);
+
+    expect(handler.mock.calls.length).toBeGreaterThanOrEqual(1);
+    const stroke = (handler.mock.calls[0]?.[0] as CustomEvent).detail;
+    expect(stroke.compositeOp).toBe('destination-out');
+    expect(stroke.alpha).toBe(0.5);
+
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
   });
 });

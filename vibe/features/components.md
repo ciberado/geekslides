@@ -73,6 +73,67 @@ Separate route/tab:
 - **Slide index**: The `slideIndex` property is set by the parent whenever navigation
   occurs, ensuring strokes are tagged to the correct slide.
 
+## Whiteboard Toolbar
+
+`<geek-whiteboard-toolbar>` is a collapsible vertical toolbar anchored to the right
+edge of the whiteboard. It provides drawing controls without leaving the canvas.
+
+### Layout
+
+```
+┌────────────────────────────────┐
+│                           [≡]  │ ← collapse toggle (always visible)
+│                          ┌───┐ │
+│                          │ P │ │ ← Pen (default tool)
+│                          │ H │ │ ← Highlighter (semi-transparent, wider)
+│                          │ E │ │ ← Eraser
+│                          ├───┤ │
+│       canvas             │4×4│ │ ← 16-color palette grid
+│                          │   │ │
+│                          ├───┤ │
+│                          │ ⊘ │ │ ← Hide whiteboard (current slide)
+│                          │ ✕ │ │ ← Clear current slide (with confirm)
+│                          └───┘ │
+└────────────────────────────────┘
+```
+
+### Tools
+
+| Tool | Behavior |
+|------|----------|
+| **Pen** | Default: `globalCompositeOperation = 'source-over'`, width 3, full opacity |
+| **Highlighter** | Semi-transparent (`globalAlpha = 0.3`), wider stroke (width 20) |
+| **Eraser** | `globalCompositeOperation = 'destination-out'`, width 20 |
+
+### Color Palette (4×4)
+
+16 colors arranged in a grid: black, white, red, blue, green, yellow, orange, purple,
+pink, cyan, brown, lime, navy, maroon, teal, grey.
+
+### Terminal Commands
+
+| Command | Description |
+|---------|-------------|
+| `wb-toolbar` | Toggle toolbar collapsed/expanded state |
+| `wb-hide` | Hide toolbar entirely (remove from DOM display) |
+| `wb-show` | Show toolbar (restore DOM display) |
+| `wb-pen` | Switch to pen tool |
+| `wb-highlighter` | Switch to highlighter tool |
+| `wb-eraser` | Switch to eraser tool |
+| `wb-color <name\|hex>` | Set drawing color |
+
+### Component Communication
+
+The toolbar dispatches custom events that the Whiteboard component listens for:
+
+- `geek:whiteboard:tool-change` — `{ tool: 'pen' | 'highlighter' | 'eraser' }`
+- `geek:whiteboard:color-change` — `{ color: string }`
+- `geek:whiteboard:clear-request` — triggers clear with confirmation
+- `geek:whiteboard:hide-request` — hides the whiteboard for the current slide
+
+The toolbar is created and managed by the host app (main.js), not by the
+Whiteboard component itself, keeping both components decoupled.
+
 ## Rendering Strategy
 
 ### Browser Rendering (Shadow DOM on)

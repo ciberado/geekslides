@@ -73,6 +73,8 @@ Syncs completed whiteboard strokes. Each element in the array is a stroke object
 - **`color`** (string) — CSS color value.
 - **`width`** (number) — line width in pixels.
 - **`clientId`** (string) — the client that drew the stroke.
+- **`compositeOp`** (string, optional) — canvas `globalCompositeOperation` (e.g. `'source-over'`, `'destination-out'` for eraser). Defaults to `'source-over'`.
+- **`alpha`** (number, optional) — canvas `globalAlpha` (e.g. `0.3` for highlighter). Defaults to `1.0`.
 
 ### `liveStrokes` (Y.Map)
 

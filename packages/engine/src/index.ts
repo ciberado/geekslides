@@ -30,9 +30,13 @@ export { mermaidProcessor } from './plugins/builtins/mermaid-processor.ts';
 import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';
 import { VideoSlide as VideoSlideImpl } from './components/VideoSlide.ts';
 import { Whiteboard as WhiteboardImpl } from './components/Whiteboard.ts';
+import { WhiteboardToolbar as WhiteboardToolbarImpl } from './components/WhiteboardToolbar.ts';
 export { ChartSlide } from './components/ChartSlide.ts';
 export { VideoSlide } from './components/VideoSlide.ts';
 export { Whiteboard } from './components/Whiteboard.ts';
+export { WhiteboardToolbar } from './components/WhiteboardToolbar.ts';
+export type { WhiteboardTool, ToolSettings } from './components/WhiteboardToolbar.ts';
+export { TOOL_SETTINGS, PALETTE_COLORS } from './components/WhiteboardToolbar.ts';
 
 // Phase 7: Speaker View
 import { SpeakerView as SpeakerViewImpl } from './components/SpeakerView.ts';
@@ -83,6 +87,9 @@ function registerElements(): void {
     }
     if (!customElements.get('geek-whiteboard')) {
       customElements.define('geek-whiteboard', WhiteboardImpl);
+    }
+    if (!customElements.get('geek-whiteboard-toolbar')) {
+      customElements.define('geek-whiteboard-toolbar', WhiteboardToolbarImpl);
     }
   }
 }

@@ -17,4 +17,8 @@ export interface WhiteboardStroke {
   readonly color: string;
   readonly width: number;
   readonly clientId: string;
+  /** Canvas composite operation (default: 'source-over'). */
+  readonly compositeOp?: GlobalCompositeOperation;
+  /** Canvas globalAlpha (default: 1.0). */
+  readonly alpha?: number;
 }

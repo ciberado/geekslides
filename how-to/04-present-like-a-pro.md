@@ -42,6 +42,10 @@ Press `t` to open the command terminal — a text prompt at the bottom of the sc
 | `speaker` | Open/toggle speaker view |
 | `whiteboard` | Toggle the drawing canvas |
 | `clear` | Clear whiteboard strokes on current slide |
+| `wb-pen` | Switch to pen tool |
+| `wb-highlighter` | Switch to highlighter tool |
+| `wb-eraser` | Switch to eraser tool |
+| `wb-color <hex>` | Set drawing colour |
 | `room myroom` | Join a sync room |
 | `sync-follow` | Follow the presenter's position |
 | `sync-disconnect` | Stop following |
@@ -83,7 +87,39 @@ Draw on any slide to annotate content live. Two ways to activate it:
 
 Each slide has its own canvas. Strokes persist when you navigate away and come back.
 
-Use the `clear` terminal command to erase all strokes on the current slide.
+### The toolbar
+
+When the whiteboard is active a collapsible toolbar appears on the right edge of the slide:
+
+- **Pen** — thin, fully opaque line (default)
+- **Highlighter** — wide, semi-transparent stroke for emphasis
+- **Eraser** — removes strokes under the cursor
+
+Below the tools you'll find a **4 × 4 colour palette** with 16 colours. Click any swatch to change the drawing colour.
+
+Action buttons at the bottom:
+
+| Button | Action |
+|---|---|
+| **Hide (⊘)** | Hide the whiteboard for the current slide |
+| **Clear (✕)** | Erase all strokes — double-click to confirm |
+
+Click the **≡** button at the top to collapse or expand the toolbar.
+
+### Terminal commands
+
+All toolbar actions are also available from the terminal:
+
+| Command | Action |
+|---|---|
+| `wb-toolbar` | Toggle toolbar collapsed / expanded |
+| `wb-hide` | Hide toolbar |
+| `wb-show` | Show toolbar |
+| `wb-pen` | Switch to pen |
+| `wb-highlighter` | Switch to highlighter |
+| `wb-eraser` | Switch to eraser |
+| `wb-color <hex>` | Set colour, e.g. `wb-color #ff0000` |
+| `clear` | Clear whiteboard strokes on current slide |
 
 ![Whiteboard annotations over a slide](screenshots/whiteboard.png)
 

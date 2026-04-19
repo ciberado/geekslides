@@ -11,13 +11,13 @@ v2 is fully testable with two complementary testing layers:
 
 ```
           ┌─────────┐
-          │   E2E   │   ~15 tests   Playwright
+          │   E2E   │   ~30 tests   Playwright
           │ (slow)  │   Full user flows in real browser
           ├─────────┤
           │ Integr. │   ~30 tests   Vitest (browser mode)
           │         │   Component interactions, DOM rendering
           ├─────────┤
-          │  Unit   │   ~80+ tests  Vitest (Node)
+          │  Unit   │   ~220+ tests Vitest (Node)
           │ (fast)  │   Pure logic: parsing, commands, plugins
           └─────────┘
 ```
@@ -165,6 +165,12 @@ Tests in `e2e/whiteboard.spec.ts`:
 - **Draw strokes** — performs mouse drag on the canvas, verifies the stroke was drawn (canvas pixel check).
 - **Per-slide persistence** — draws on slide 1, navigates to slide 2, navigates back, verifies slide 1 drawings remain.
 - **Stroke dispatches correct slideIndex** — draws on slide 2, inspects the dispatched event detail to confirm `slideIndex` matches.
+- **Toolbar presence** — verifies `<geek-whiteboard-toolbar>` has 3 tool buttons, 16 color swatches, and a collapse button.
+- **wb-toolbar command** — toggles collapsed/expanded state via terminal command.
+- **wb-hide / wb-show commands** — hides and restores toolbar visibility.
+- **Tool switching commands** — `wb-pen`, `wb-highlighter`, `wb-eraser` change the active tool.
+- **Color swatch click** — clicking a swatch in the palette changes the drawing color.
+- **Clear confirmation** — clear button requires double-click (first click enters confirmation, second confirms).
 
 ### Whiteboard Unit Tests
 
@@ -174,6 +180,23 @@ Tests in `packages/engine/tests/unit/Whiteboard.test.ts`:
 - **slideIndex setter** — asserts dispatched stroke events carry the correct slide index.
 - **Auto-show on setActive(true)** — confirms canvas display changes from `none` to `block`.
 - **Remote stroke rendering** — calls `drawRemoteStroke()`, verifies context draw calls.
+- **setCompositeOp** — verifies `globalCompositeOperation` is applied when drawing strokes.
+- **setAlpha** — verifies `globalAlpha` is applied when drawing strokes.
+- **Progress events include compositeOp/alpha** — confirms stroke progress events carry the current composite operation and alpha values.
+
+### WhiteboardToolbar Unit Tests
+
+Tests in `packages/engine/tests/unit/WhiteboardToolbar.test.ts`:
+
+- **Rendering** — verifies toolbar renders tool buttons, color swatches, collapse toggle, and action buttons in Shadow DOM.
+- **Tool buttons** — confirms clicking pen/highlighter/eraser buttons dispatches `geek:whiteboard:tool-change` events with correct tool names.
+- **Color swatches** — confirms clicking a color swatch dispatches `geek:whiteboard:color-change` with the hex color value.
+- **setTool / setColor** — programmatic API updates the active tool and color selection.
+- **Collapse toggle** — clicking the collapse button hides the toolbar body, clicking again restores it.
+- **Hide/show** — `hide()` and `show()` methods toggle the entire toolbar visibility.
+- **Clear confirmation** — first click enters confirmation state (button changes to "Sure?"), second click dispatches `geek:whiteboard:clear-request`, auto-cancels after 3 seconds.
+- **TOOL_SETTINGS** — verifies pen, highlighter, and eraser tool settings have correct width, compositeOp, and alpha values.
+- **PALETTE_COLORS** — confirms 16 colors are defined.
 
 Tests in `packages/engine/tests/unit/SyncManager.test.ts` (whiteboard-related):
 

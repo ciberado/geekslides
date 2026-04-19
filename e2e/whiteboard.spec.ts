@@ -524,4 +524,283 @@ test.describe('Whiteboard', () => {
 
     await context.close();
   });
+
+  test('toolbar is present and has tool buttons and color swatches', async ({ page }) => {
+    // Activate whiteboard
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Check toolbar exists inside whiteboard shadow DOM
+    const toolbarInfo = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar');
+      if (!toolbar) return null;
+      const shadow = toolbar.shadowRoot;
+      const toolBtns = shadow?.querySelectorAll('.tool-btn');
+      const swatches = shadow?.querySelectorAll('.swatch');
+      const collapseBtn = shadow?.querySelector('.collapse-btn');
+      return {
+        exists: true,
+        toolCount: toolBtns?.length ?? 0,
+        swatchCount: swatches?.length ?? 0,
+        hasCollapseBtn: !!collapseBtn,
+      };
+    });
+
+    expect(toolbarInfo).toBeTruthy();
+    expect(toolbarInfo?.toolCount).toBe(3);
+    expect(toolbarInfo?.swatchCount).toBe(16);
+    expect(toolbarInfo?.hasCollapseBtn).toBe(true);
+  });
+
+  test('wb-toolbar command toggles toolbar collapsed state', async ({ page }) => {
+    // Activate whiteboard first
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Collapse via command
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const collapsed = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.collapsed;
+    });
+    expect(collapsed).toBe(true);
+
+    // Expand via command again
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const expanded = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.collapsed;
+    });
+    expect(expanded).toBe(false);
+  });
+
+  test('wb-hide and wb-show commands control toolbar visibility', async ({ page }) => {
+    // Activate whiteboard
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Hide toolbar
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-hide');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const hidden = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.isHidden;
+    });
+    expect(hidden).toBe(true);
+
+    // Show toolbar
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-show');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const shown = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.isHidden;
+    });
+    expect(shown).toBe(false);
+  });
+
+  test('wb-pen, wb-highlighter, wb-eraser commands switch tools', async ({ page }) => {
+    // Activate whiteboard
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Switch to highlighter
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-highlighter');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const tool1 = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.tool;
+    });
+    expect(tool1).toBe('highlighter');
+
+    // Switch to eraser
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-eraser');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const tool2 = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.tool;
+    });
+    expect(tool2).toBe('eraser');
+
+    // Switch back to pen
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-pen');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const tool3 = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.tool;
+    });
+    expect(tool3).toBe('pen');
+  });
+
+  test('clicking toolbar color swatch changes drawing color', async ({ page }) => {
+    // Activate whiteboard
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Click the black swatch (first one)
+    await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar');
+      const swatch = toolbar?.shadowRoot?.querySelector('[data-color="#000000"]') as HTMLButtonElement;
+      swatch?.click();
+    });
+    await page.waitForTimeout(200);
+
+    const color = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.color;
+    });
+    expect(color).toBe('#000000');
+  });
+
+  test('toolbar clear button requires double-click confirmation', async ({ page }) => {
+    // Activate whiteboard and draw something
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Draw a stroke
+    const canvasBounds = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(canvasBounds).toBeTruthy();
+
+    await page.mouse.move(canvasBounds!.x + 100, canvasBounds!.y + 100);
+    await page.mouse.down();
+    await page.mouse.move(canvasBounds!.x + 300, canvasBounds!.y + 300, { steps: 5 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+
+    // Click clear once — should enter confirmation state
+    const firstClickState = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar');
+      const clearBtn = toolbar?.shadowRoot?.querySelector('[data-action="clear"]') as HTMLButtonElement;
+      clearBtn?.click();
+      return clearBtn?.textContent;
+    });
+    expect(firstClickState).toBe('?');
+
+    // Click clear again — should confirm and clear
+    await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar');
+      const clearBtn = toolbar?.shadowRoot?.querySelector('[data-action="clear"]') as HTMLButtonElement;
+      clearBtn?.click();
+    });
+    await page.waitForTimeout(200);
+
+    // Canvas should be empty
+    const isEmpty = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      if (!canvas) return true;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return true;
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i]! > 0) return false;
+      }
+      return true;
+    });
+    expect(isEmpty).toBe(true);
+  });
 });

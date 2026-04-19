@@ -41,6 +41,7 @@
       uploadDeck, buildManifest, getProxyBaseUrl,
       isLocalPluginPath, isRemotePluginUrl, importRemotePlugin,
       extractPreprocessor, extractProcessor,
+      TOOL_SETTINGS,
     } from '/packages/engine/src/index.ts';
     import { registerHotClient } from '/packages/engine/src/hmr/hot-client.ts';
 
@@ -610,6 +611,27 @@
         slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(whiteboard);
         whiteboard.slideIndex = slideshow.currentSlide;
 
+        // --- Whiteboard Toolbar ---
+        const wbToolbar = document.createElement('geek-whiteboard-toolbar');
+        whiteboard.shadowRoot?.appendChild(wbToolbar);
+
+        // Tool changes → update whiteboard drawing settings
+        wbToolbar.addEventListener('geek:whiteboard:tool-change', (e) => {
+          const { settings } = e.detail;
+          whiteboard.setCompositeOp(settings.compositeOp);
+          whiteboard.setWidth(settings.width);
+          whiteboard.setAlpha(settings.alpha);
+        });
+        wbToolbar.addEventListener('geek:whiteboard:color-change', (e) => {
+          whiteboard.setColor(e.detail.color);
+        });
+        wbToolbar.addEventListener('geek:whiteboard:hide-request', () => {
+          whiteboard.toggle();
+        });
+        wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
+          whiteboard.clear();
+        });
+
         // Update whiteboard slide index on navigation
         slideshow.addEventListener('geek:navigate', (e) => {
           whiteboard.slideIndex = e.detail.slide;
@@ -682,6 +704,40 @@
         commands.register({ name: 'whiteboard-clear', label: 'Clear whiteboard on current slide', execute: () => {
           whiteboard.clear();
         }, category: 'built-in' });
+
+        commands.register({ name: 'wb-toolbar', label: 'Toggle whiteboard toolbar', execute: () => {
+          wbToolbar.toggleCollapse();
+        }, category: 'whiteboard' });
+
+        commands.register({ name: 'wb-hide', label: 'Hide whiteboard toolbar', execute: () => {
+          wbToolbar.hide();
+        }, category: 'whiteboard' });
+
+        commands.register({ name: 'wb-show', label: 'Show whiteboard toolbar', execute: () => {
+          wbToolbar.show();
+        }, category: 'whiteboard' });
+
+        commands.register({ name: 'wb-pen', label: 'Switch to pen tool', execute: () => {
+          wbToolbar.setTool('pen');
+        }, category: 'whiteboard' });
+
+        commands.register({ name: 'wb-highlighter', label: 'Switch to highlighter tool', execute: () => {
+          wbToolbar.setTool('highlighter');
+        }, category: 'whiteboard' });
+
+        commands.register({ name: 'wb-eraser', label: 'Switch to eraser tool', execute: () => {
+          wbToolbar.setTool('eraser');
+        }, category: 'whiteboard' });
+
+        commands.register({ name: 'wb-color', label: 'Set drawing color (usage: wb-color #ff0000)', execute: (args) => {
+          const color = args?.[0];
+          if (!color) {
+            showCmdOutput('\u2717 Usage: wb-color <hex-color>');
+            return;
+          }
+          wbToolbar.setColor(color);
+          whiteboard.setColor(color);
+        }, category: 'whiteboard' });
 
         commands.register({ name: 'toggle-toolbar', label: 'Toggle toolbar', execute: () => {
           slideshow.toggleToolbar();

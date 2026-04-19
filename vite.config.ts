@@ -5,9 +5,9 @@ import { geekSlidesHmr } from './packages/engine/src/hmr/vite-plugin-geekslides-
 export default defineConfig({
   plugins: [geekSlidesHmr()],
   resolve: {
-    alias: {
-      '@geekslides/engine': resolve(__dirname, 'packages/engine/src/index.ts'),
-    },
+    alias: [
+      { find: /^@geekslides\/engine$/, replacement: resolve(__dirname, 'packages/engine/src/index.ts') },
+    ],
   },
   build: {
     lib: {

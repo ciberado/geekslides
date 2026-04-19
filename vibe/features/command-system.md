@@ -126,6 +126,13 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `fullscreen` | Toggle fullscreen mode |
 | `whiteboard` | Toggle whiteboard overlay |
 | `whiteboard-clear` | Clear whiteboard strokes on current slide |
+| `wb-toolbar` | Toggle whiteboard toolbar collapsed/expanded |
+| `wb-hide` | Hide whiteboard toolbar |
+| `wb-show` | Show whiteboard toolbar |
+| `wb-pen` | Switch to pen tool |
+| `wb-highlighter` | Switch to highlighter tool (semi-transparent, wider) |
+| `wb-eraser` | Switch to eraser tool |
+| `wb-color <hex>` | Set drawing color (e.g. `wb-color #ff0000`) |
 | `sync-follow` | Toggle follow/lead mode |
 | `sync-disconnect` | Disconnect from sync |
 | `toggle-toolbar` | Toggle the presentation toolbar |
