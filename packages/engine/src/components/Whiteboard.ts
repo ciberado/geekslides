@@ -75,8 +75,10 @@ export class Whiteboard extends HTMLElement {
 
     // Hide canvas immediately during slide transition
     if (this.#canvas && this.#visible) {
-      this.#canvas.style.transition = 'none';
-      this.#canvas.style.opacity = '0';
+      this.#cancelFade();
+      this.#canvas.style.display = 'none';
+      this.#canvas.style.opacity = '';
+      this.#canvas.style.transition = '';
     }
 
     this.saveSlide();
@@ -132,7 +134,7 @@ export class Whiteboard extends HTMLElement {
    */
   beginStroke(e: PointerEvent): void {
     // Ensure canvas is visible — it may be hidden on an empty slide.
-    if (this.#canvas && this.#canvas.style.opacity !== '1') {
+    if (this.#canvas && this.#canvas.style.display !== 'block') {
       this.#showCanvas();
     }
     this.#onPointerDown(e);
@@ -225,7 +227,7 @@ export class Whiteboard extends HTMLElement {
     snapshot.strokes.push(stroke);
 
     // Auto-show when receiving remote strokes
-    if (!this.#visible || this.#canvas?.style.opacity !== '1') {
+    if (!this.#visible || this.#canvas?.style.display !== 'block') {
       this.setActive(true);
     }
   }
@@ -243,7 +245,7 @@ export class Whiteboard extends HTMLElement {
     this.#liveStrokesRendered.set(stroke.clientId, stroke.points.length);
 
     // Auto-show when receiving live strokes
-    if (!this.#visible || this.#canvas?.style.opacity !== '1') {
+    if (!this.#visible || this.#canvas?.style.display !== 'block') {
       this.setActive(true);
     }
   }
@@ -328,12 +330,10 @@ export class Whiteboard extends HTMLElement {
       canvas {
         width: 100%;
         height: 100%;
+        display: none;
         pointer-events: auto;
         touch-action: none;
         cursor: crosshair;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.3s ease-in;
       }
     `;
 
@@ -404,19 +404,30 @@ export class Whiteboard extends HTMLElement {
   #showCanvas(): void {
     if (!this.#canvas) return;
     this.#cancelFade();
-    this.#canvas.style.visibility = 'visible';
+    // Make visible, start transparent, animate to opaque
+    this.#canvas.style.display = 'block';
+    this.#canvas.style.opacity = '0';
     this.#canvas.style.transition = 'opacity 0.3s ease-in';
-    // Force layout so the transition triggers from the current opacity
+    // Force layout so the transition triggers from opacity:0
     void this.#canvas.offsetHeight;
     this.#canvas.style.opacity = '1';
+    // Clean up inline styles after animation to avoid a permanent
+    // compositing layer that tints the slide below (Firefox).
+    this.#fadeTimer = setTimeout(() => {
+      this.#fadeTimer = null;
+      if (this.#canvas) {
+        this.#canvas.style.opacity = '';
+        this.#canvas.style.transition = '';
+      }
+    }, 350); // slightly longer than the 300ms transition
   }
 
   #hideCanvas(): void {
     if (!this.#canvas) return;
     this.#cancelFade();
-    this.#canvas.style.transition = 'none';
-    this.#canvas.style.opacity = '0';
-    this.#canvas.style.visibility = 'hidden';
+    this.#canvas.style.display = 'none';
+    this.#canvas.style.opacity = '';
+    this.#canvas.style.transition = '';
   }
 
   #scheduleFadeIn(): void {
