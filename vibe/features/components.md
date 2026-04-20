@@ -160,9 +160,10 @@ This supports browser-backed PDF export for four formats:
 The command workflow is terminal-based:
 
 - Press `t` to open `<geek-terminal>`.
-- Type command (`help`, `go 8`, `speaker`, `whiteboard`, `overview`, `fullscreen`).
+- Type command (`help`, `go 8`, `speaker`, `whiteboard`, `overview`, `fullscreen`, `share`).
 - Press Enter to execute; Esc closes the terminal.
 - `help` output stays visible until manually dismissed (no auto-dismiss).
+- `setOutput(message, isError?, { persist? })` displays command results. With `persist: true`, the terminal stays open (used by `share` to let the user copy the link). Otherwise, auto-dismisses after 1.2 s.
 - Press `?` for a keyboard shortcuts overlay.
 - Navigation keys remain direct and always available in normal mode.
 

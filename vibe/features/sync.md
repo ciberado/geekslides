@@ -160,7 +160,7 @@ Protected rooms enforce a presenter/viewer split. The presenter can navigate and
 
 ### Server Components
 
-**`RoomStore`** — In-memory `Map<room, { presenterToken, createdAt }>`. Tokens are 32 random bytes (hex-encoded). Validation uses `crypto.timingSafeEqual` to prevent timing attacks.
+**`RoomStore`** — In-memory `Map<room, { presenterToken, createdAt }>`. Tokens are 32 random bytes encoded as 64 hex characters. Validation uses `crypto.timingSafeEqual` to prevent timing attacks.
 
 **`RateLimiter`** — Sliding-window counter per IP. Default: 10 failed attempts per 60 seconds. Applied before auth processing. Returns HTTP 429 when exceeded.
 

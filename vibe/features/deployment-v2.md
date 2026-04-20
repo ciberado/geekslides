@@ -217,6 +217,9 @@ The Node.js server exposes an HTTP API alongside the WebSocket sync:
 | `/api/rooms/:room/content` | `POST` | Upload deck assets (multipart/form-data, max 200 MB) |
 | `/api/rooms/:room/content/:path` | `GET` | Fetch a proxied deck file |
 | `/api/plugin-proxy?url=<encoded-url>` | `GET` | Proxy a remote JavaScript plugin file (`.js` only, max 1 MB) |
+| `/api/rooms/:room/share` | `POST` | Create a protected room, returns `{ presenterToken }` |
+| `/api/rooms/:room/auth` | `POST` | Validate a presenter token, returns `{ role }` |
+| `/api/rooms/:room/role` | `GET` | Check if a room is protected, returns `{ protected }` |
 
 Content is stored in per-room temp directories and cleaned up on server restart.
 Path traversal is blocked — `..` segments return 404. See [Content Proxy](content-proxy.md)

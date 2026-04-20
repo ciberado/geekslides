@@ -135,6 +135,7 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `wb-color <hex>` | Set drawing color (e.g. `wb-color #ff0000`) |
 | `sync-follow` | Toggle follow/lead mode |
 | `sync-disconnect` | Disconnect from sync |
+| `share` | Create a read-only viewer link for the current room |
 | `toggle-toolbar` | Toggle the presentation toolbar |
 
 Plugin-provided commands are automatically registered and appear in `help` output.

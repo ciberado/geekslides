@@ -85,6 +85,29 @@ Tests for the server (`packages/server/tests/server.test.ts`) verify:
 - Content store files can be uploaded and retrieved, path traversal returns null.
 - Content is servable via HTTP API (upload/fetch round-trip).
 
+### Room Protection
+
+Tests in `packages/server/tests/room-store.test.ts`:
+
+- Token generation produces 64 hex characters from 32 random bytes.
+- Validation uses `crypto.timingSafeEqual` (constant-time comparison).
+- Protected rooms reject invalid tokens; unprotected rooms remain open.
+- Room deletion clears protection.
+
+Tests in `packages/server/tests/rate-limiter.test.ts`:
+
+- Sliding-window counter tracks failures per IP.
+- Exceeding threshold (10 attempts / 60 seconds) triggers rate limiting.
+- Window expiry resets the counter.
+- Cleanup timer removes stale entries.
+
+Tests in `packages/server/tests/room-auth.test.ts`:
+
+- REST API: `POST /share` creates protected room, `POST /auth` validates token, `GET /role` reports status.
+- WebSocket auth: presenter with valid token connects, viewer with `?readonly` connects, invalid token rejected.
+- Write filtering: Yjs update messages (type 0, sub-type 2) are silently dropped for viewers; presenters write normally.
+- Rate limiting integration: repeated failed auth attempts return 429.
+
 ### Plugin Proxy
 
 - Requests without a `url` parameter return 400.
@@ -133,6 +156,15 @@ Tests in `e2e/commands.spec.ts`:
 - **Open terminal with `t`** — asserts terminal prompt becomes visible.
 - **`help` lists available commands** — types `help`, presses Enter, verifies output panel is populated.
 - **Terminal command execution** — runs `speaker` or `goto <n>`, presses Enter, verifies expected mode/state change.
+
+### Read-Only Viewer E2E
+
+Tests in `e2e/readonly.spec.ts`:
+
+- **Viewer lockdown** — readonly viewer has no terminal, no keyboard navigation, no touch input; VIEW ONLY badge visible.
+- **Viewer follows presenter** — presenter navigates to slide 2; readonly viewer in the same room syncs automatically.
+- **Share command** — running `share` in the terminal creates a protected room; API confirms `{ protected: true }`.
+- **Sync dot** — readonly viewer shows green sync dot when connected.
 
 ### Sync E2E
 

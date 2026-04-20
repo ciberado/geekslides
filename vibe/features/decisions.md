@@ -26,6 +26,7 @@ Summary of all architectural decisions for the geekslides v2 rewrite.
 | D20 | Mobile/smartphone | **Touch gestures + responsive toolbar** | Audience follows on phone: swipe/tap nav, always-visible toolbar on small screens, auto-sync with presenter |
 | D21 | Slide scaling | **`transform: scale()` + CSS custom property** | Proven technique (reveal.js, Impress.js), author at fixed resolution. v2 improves over v1 by using `--gs-scale-factor` + ResizeObserver instead of CSSOM mutation |
 | D22 | Content proxy | **Always-proxy with HTTP upload to temp filesystem, room-scoped** | Presenter uploads deck assets to server via HTTP; all clients load from server proxy. Scoped per sync room, stored in temp dir, cleaned up on disconnect. Enables remote viewers to access locally-sourced presentations |
+| D23 | Read-only rooms | **Token-based presenter auth with server-side write filtering** | Presenter runs `share` to create a protected room with a 64-char hex token (32 random bytes, `timingSafeEqual` validation). Server drops Yjs update messages (type 0, sub-type 2) from viewer connections. Client lockdown removes terminal, key bindings, and touch input for `?readonly` URLs. Per-IP rate limiting (10 failures/60s) prevents brute-force. Unprotected rooms remain fully open for backward compat. |
 
 ## Detailed Documents
 

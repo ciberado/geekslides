@@ -127,13 +127,19 @@ geekslides/
 │   ├── server/                   # @geekslides/server
 │   │   ├── package.json
 │   │   ├── src/
-│   │   │   ├── index.ts          # y-websocket server entry
+│   │   │   ├── index.ts          # y-websocket server entry + WS auth/write filtering
 │   │   │   ├── ContentApi.ts     # content proxy HTTP API
 │   │   │   ├── ContentStore.ts   # room-scoped file storage
 │   │   │   ├── PluginProxy.ts    # remote plugin proxy endpoint
+│   │   │   ├── RoomStore.ts      # in-memory protected room + token storage
+│   │   │   ├── RoomApi.ts        # room share/auth/role HTTP endpoints
+│   │   │   ├── RateLimiter.ts    # per-IP sliding-window auth rate limiter
 │   │   │   └── types/
 │   │   └── tests/
-│   │       └── server.test.ts
+│   │       ├── server.test.ts
+│   │       ├── room-store.test.ts
+│   │       ├── room-auth.test.ts
+│   │       └── rate-limiter.test.ts
 │   │
 │   └── cli/                      # @geekslides/cli
 │       ├── package.json
