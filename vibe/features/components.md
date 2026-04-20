@@ -72,6 +72,12 @@ Separate route/tab:
   `drawRemoteStroke()` so late joiners see the full whiteboard state.
 - **Slide index**: The `slideIndex` property is set by the parent whenever navigation
   occurs, ensuring strokes are tagged to the correct slide.
+- **Readonly mode**: When the `readonly` attribute is set, the component disables all
+  local drawing: pointer/touch listeners are not registered, and `toggle()`,
+  `setActive()`, `beginStroke()`, and `clear()` become no-ops. Remote strokes are
+  still rendered and auto-show the canvas via the internal `#setActiveInternal()`
+  path, so view-only clients see the presenter's drawings without being able to
+  modify them.
 
 ## Whiteboard Toolbar
 

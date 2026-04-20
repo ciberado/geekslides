@@ -579,4 +579,66 @@ describe('Whiteboard', () => {
 
     // No errors means temp canvas rendering worked correctly
   });
+
+  it('readonly attribute prevents toggle, setActive, beginStroke, and clear', () => {
+    const rwb = document.createElement('geek-whiteboard') as Whiteboard;
+    rwb.setAttribute('readonly', '');
+    document.body.appendChild(rwb);
+
+    // toggle should be a no-op
+    expect(rwb.isVisible).toBe(false);
+    rwb.toggle();
+    expect(rwb.isVisible).toBe(false);
+
+    // setActive should be a no-op
+    rwb.setActive(true);
+    expect(rwb.isVisible).toBe(false);
+
+    // beginStroke should be a no-op (no error thrown)
+    const evt = new PointerEvent('pointerdown', { clientX: 100, clientY: 100 });
+    rwb.beginStroke(evt);
+
+    // clear should be a no-op (no error thrown)
+    rwb.clear();
+
+    document.body.removeChild(rwb);
+  });
+
+  it('readonly attribute prevents pointer listeners from being registered', () => {
+    const rwb = document.createElement('geek-whiteboard') as Whiteboard;
+    rwb.setAttribute('readonly', '');
+    document.body.appendChild(rwb);
+
+    const canvas = rwb.shadowRoot?.querySelector('canvas:not(.temp)') as HTMLCanvasElement;
+    expect(canvas).toBeTruthy();
+
+    // Fire pointer events — they should not start drawing
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 10, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 50, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+
+    // No stroke event should have been emitted
+    let strokeEmitted = false;
+    rwb.addEventListener('geek:whiteboard:stroke', () => { strokeEmitted = true; });
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 10, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 50, clientY: 50, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    expect(strokeEmitted).toBe(false);
+
+    document.body.removeChild(rwb);
+  });
+
+  it('readonly whiteboard still renders remote strokes', () => {
+    const rwb = document.createElement('geek-whiteboard') as Whiteboard;
+    rwb.setAttribute('readonly', '');
+    document.body.appendChild(rwb);
+
+    const stroke = makeStroke({ slideIndex: 0 });
+    rwb.drawRemoteStroke(stroke);
+
+    // Should auto-show for remote strokes even in readonly mode
+    expect(rwb.isVisible).toBe(true);
+
+    document.body.removeChild(rwb);
+  });
 });

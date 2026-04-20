@@ -112,6 +112,7 @@ export class Whiteboard extends HTMLElement {
    * Toggle whiteboard visibility.
    */
   toggle(): void {
+    if (this.hasAttribute('readonly')) return;
     this.#visible = !this.#visible;
     if (this.#canvas) {
       if (this.#visible) {
@@ -126,6 +127,12 @@ export class Whiteboard extends HTMLElement {
    * Show the whiteboard (auto-activate).
    */
   setActive(active: boolean): void {
+    if (this.hasAttribute('readonly')) return;
+    this.#setActiveInternal(active);
+  }
+
+  /** Internal activation — used by remote stroke auto-show (bypasses readonly). */
+  #setActiveInternal(active: boolean): void {
     this.#visible = active;
     if (this.#canvas) {
       if (active) {
@@ -140,6 +147,7 @@ export class Whiteboard extends HTMLElement {
    * Begin a stroke from an external pointer event (e.g. auto-activation drag).
    */
   beginStroke(e: PointerEvent): void {
+    if (this.hasAttribute('readonly')) return;
     // Ensure canvas is visible — it may be hidden on an empty slide.
     if (this.#canvas && this.#canvas.style.display !== 'block') {
       this.#showCanvas();
@@ -151,6 +159,7 @@ export class Whiteboard extends HTMLElement {
    * Clear all strokes from the canvas and the current slide snapshot.
    */
   clear(): void {
+    if (this.hasAttribute('readonly')) return;
     if (this.#ctx && this.#canvas) {
       this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
     }
@@ -280,7 +289,7 @@ export class Whiteboard extends HTMLElement {
 
     // Auto-show when receiving remote strokes
     if (!this.#visible || this.#canvas?.style.display !== 'block') {
-      this.setActive(true);
+      this.#setActiveInternal(true);
     }
   }
 
@@ -296,7 +305,7 @@ export class Whiteboard extends HTMLElement {
       this.#remoteTempStrokes.set(stroke.clientId, stroke);
       this.#refreshTempCanvas();
       if (!this.#visible || this.#canvas?.style.display !== 'block') {
-        this.setActive(true);
+        this.#setActiveInternal(true);
       }
       return;
     }
@@ -309,7 +318,7 @@ export class Whiteboard extends HTMLElement {
 
     // Auto-show when receiving live strokes
     if (!this.#visible || this.#canvas?.style.display !== 'block') {
-      this.setActive(true);
+      this.#setActiveInternal(true);
     }
   }
 
@@ -421,6 +430,8 @@ export class Whiteboard extends HTMLElement {
 
   #setupListeners(): void {
     if (!this.#canvas) return;
+    // In readonly mode, skip all pointer/touch listeners — canvas is view-only.
+    if (this.hasAttribute('readonly')) return;
 
     // Disable drawing on mobile to avoid conflict with navigation gestures
     if (typeof window !== 'undefined' && typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 768px)').matches) return;
