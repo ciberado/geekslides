@@ -87,6 +87,11 @@ Draw on any slide to annotate content live. Two ways to activate it:
 
 Each slide has its own canvas. Strokes persist when you navigate away and come back.
 
+> **Tip:** While the whiteboard is active the canvas sits on top of the slide, so links
+> and interactive elements underneath cannot be clicked. Use the **Hide (⊘)** button in
+> the toolbar (or the `whiteboard` toggle command) to dismiss the canvas and restore
+> click-through to the slide content.
+
 ### The toolbar
 
 When the whiteboard is active a collapsible toolbar appears on the right edge of the slide:

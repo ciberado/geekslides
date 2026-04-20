@@ -72,6 +72,13 @@ Separate route/tab:
   `drawRemoteStroke()` so late joiners see the full whiteboard state.
 - **Slide index**: The `slideIndex` property is set by the parent whenever navigation
   occurs, ensuring strokes are tagged to the correct slide.
+- **Canvas overlay & click-through**: While the whiteboard is active the canvas sits
+  above the slide content (`pointer-events: auto`, `z-index: 100`), so links, iframes,
+  and other interactive elements underneath cannot be clicked. The canvas stays
+  displayed even on empty slides to keep pointer events working for drawing. To
+  interact with slide content, hide the whiteboard first via the toolbar hide button
+  (`⊘`), the `whiteboard` toggle command, or the `wb-hide` command. Hiding sets
+  `display: none` on the canvas, fully restoring click-through.
 - **Readonly mode**: When the `readonly` attribute is set, the component disables all
   local drawing: pointer/touch listeners are not registered, and `toggle()`,
   `setActive()`, `beginStroke()`, and `clear()` become no-ops. Remote strokes are
