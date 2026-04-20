@@ -802,7 +802,7 @@ try {
             viewerUrl.searchParams.set('room', room);
             viewerUrl.searchParams.set('readonly', '');
             const viewerLink = viewerUrl.toString();
-            showCmdOutput(`✓ Share link: ${viewerLink}`);
+            terminal.setOutput(`✓ Share link: ${viewerLink}`, false, { persist: true });
             console.log('[share] Presenter token:', data.presenterToken);
             console.log('[share] Viewer URL:', viewerLink);
 

@@ -80,11 +80,19 @@ export class Terminal extends HTMLElement {
    * @param message The message to display (plain text or HTML)
    * @param isError Whether this is an error message (uses red color)
    */
-  setOutput(message: string, isError: boolean = false): void {
+  setOutput(message: string, isError: boolean = false, options?: { persist?: boolean }): void {
     if (!this.#output) return;
     const className = isError ? 'error' : 'success';
     this.#output.innerHTML = `<span class="${className}">${this.#escapeHtml(message)}</span>`;
-    this.#autoDismiss();
+    if (options?.persist) {
+      this.#clearDismissTimer();
+      // Re-open if already closed by auto-dismiss
+      if (this.style.display === 'none') {
+        this.style.display = 'block';
+      }
+    } else {
+      this.#autoDismiss();
+    }
   }
 
 
