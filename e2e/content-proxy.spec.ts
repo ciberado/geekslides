@@ -143,4 +143,51 @@ test.describe('Content Proxy', () => {
     const res = await request.get(url);
     expect(res.status()).toBe(404);
   });
+
+  test('presenter keeps its own deck when stale contentProxy exists in Yjs', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('stale-proxy');
+
+    // --- Tab A: load deck A and upload to content proxy ---
+    const tabA = await context.newPage();
+    await tabA.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+
+    await tabA.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as HTMLElement & { slideCount: number };
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Wait for the content proxy upload to complete and contentProxy to be set in Yjs
+    await tabA.waitForTimeout(3000);
+
+    const tabATitle = await tabA.evaluate(() => document.title);
+    expect(tabATitle).toBe('4 Cosicas Sobre Tus Servicios Favoritos');
+
+    // --- Tab B: load a DIFFERENT deck in the SAME room ---
+    // If the isContentUploader guard is missing, checkContentProxy() would pick up
+    // the stale contentProxy entry from tab A's upload and overwrite tab B's deck.
+    const tabB = await context.newPage();
+    const tabBLogs: string[] = [];
+    tabB.on('console', (msg) => tabBLogs.push(msg.text()));
+
+    await tabB.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${room}`);
+
+    await tabB.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as HTMLElement & { slideCount: number };
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Give enough time for checkContentProxy() to fire (if it were broken)
+    await tabB.waitForTimeout(2000);
+
+    // Tab B must retain its own deck title, NOT switch to tab A's deck
+    const tabBTitle = await tabB.evaluate(() => document.title);
+    expect(tabBTitle).toBe('HMR Fixture');
+
+    // Tab B should NOT have loaded from the content proxy
+    const proxyLoadLogs = tabBLogs.filter((l) => l.includes('[content-proxy] Loaded deck from proxy'));
+    expect(proxyLoadLogs).toHaveLength(0);
+
+    await context.close();
+  });
 });

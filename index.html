@@ -261,7 +261,7 @@
 
         // Sync with presentation tab via Yjs
         const syncConfig = config.sync || {};
-        const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
+        const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
         const room = params.get('room') || syncConfig.room || 'default';
 
         const sync = new SyncManager();
@@ -373,7 +373,7 @@
         if (syncEnabled) {
           try {
             sync = new SyncManager(document, { readonly: isReadonly });
-            const wsUrl = syncConfig.server || `ws://${location.hostname}:1234`;
+            const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
             const room = params.get('room') || syncConfig.room || 'default';
             const token = params.get('token') || undefined;
             sync.bind(slideshow);
@@ -662,7 +662,7 @@
             showCmdOutput('Connecting...');
             sync.disconnect();
             await new Promise(r => setTimeout(r, 100)); // brief delay
-            const wsUrl = config.sync?.server || `ws://${location.hostname}:1234`;
+            const wsUrl = config.sync?.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
             sync.connect(wsUrl, roomName);
             sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
             // Update URL so the room can be shared
