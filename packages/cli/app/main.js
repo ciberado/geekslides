@@ -683,7 +683,7 @@ try {
       gsContainer.addEventListener('pointermove', (e) => {
         if (!pointerStartedOnSlide) return;
         if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
-        if (!whiteboard.isVisible) {
+        if (!whiteboard.isVisible && !whiteboard.userDismissed) {
           whiteboard.setActive(true);
           whiteboard.beginStroke(e);
         }

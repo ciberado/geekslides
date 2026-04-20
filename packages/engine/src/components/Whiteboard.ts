@@ -28,6 +28,8 @@ export class Whiteboard extends HTMLElement {
   #compositeOp: GlobalCompositeOperation = 'source-over';
   #alpha = 1.0;
   #visible = false;
+  /** Set when the user explicitly hides the whiteboard; suppresses auto-activation. */
+  #userDismissed = false;
   /** True when drawing on the temp canvas (alpha < 1 strokes). */
   #usingTempCanvas = false;
   /** Remote live strokes with alpha < 1, rendered on temp canvas. */
@@ -117,11 +119,20 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
+   * True when the user explicitly dismissed the whiteboard.
+   * Auto-activation should check this and skip reactivation.
+   */
+  get userDismissed(): boolean {
+    return this.#userDismissed;
+  }
+
+  /**
    * Toggle whiteboard visibility.
    */
   toggle(): void {
     if (this.hasAttribute('readonly')) return;
     this.#visible = !this.#visible;
+    this.#userDismissed = !this.#visible;
     if (this.#canvas) {
       if (this.#visible) {
         this.#showCanvas();
@@ -136,6 +147,7 @@ export class Whiteboard extends HTMLElement {
    */
   setActive(active: boolean): void {
     if (this.hasAttribute('readonly')) return;
+    this.#userDismissed = !active;
     this.#setActiveInternal(active);
   }
 

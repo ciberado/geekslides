@@ -641,4 +641,31 @@ describe('Whiteboard', () => {
 
     document.body.removeChild(rwb);
   });
+
+  it('userDismissed is set when whiteboard is toggled off and cleared when toggled on', () => {
+    expect(wb.userDismissed).toBe(false);
+
+    // Activate then toggle off → userDismissed = true
+    wb.setActive(true);
+    expect(wb.userDismissed).toBe(false);
+    wb.toggle();
+    expect(wb.isVisible).toBe(false);
+    expect(wb.userDismissed).toBe(true);
+
+    // Toggle back on → userDismissed = false
+    wb.toggle();
+    expect(wb.isVisible).toBe(true);
+    expect(wb.userDismissed).toBe(false);
+  });
+
+  it('userDismissed is set by setActive(false) and cleared by setActive(true)', () => {
+    wb.setActive(true);
+    expect(wb.userDismissed).toBe(false);
+
+    wb.setActive(false);
+    expect(wb.userDismissed).toBe(true);
+
+    wb.setActive(true);
+    expect(wb.userDismissed).toBe(false);
+  });
 });
