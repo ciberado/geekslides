@@ -803,4 +803,145 @@ test.describe('Whiteboard', () => {
     });
     expect(isEmpty).toBe(true);
   });
+
+  test('remote strokes survive navigation after live-progress sync', async ({ browser }) => {
+    test.setTimeout(30000);
+    const context = await browser.newContext();
+    const presenter = await context.newPage();
+    const viewer = await context.newPage();
+    const room = uniqueRoom('wb-nav-live');
+    const presenterUrl = `http://localhost:5173/?room=${room}`;
+    const viewerUrl = `http://localhost:5173/?room=${room}&readonly`;
+
+    await presenter.goto(presenterUrl);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
+
+    // Wait for content proxy before opening viewer
+    await presenter.waitForTimeout(2000);
+
+    await viewer.goto(viewerUrl);
+    await viewer.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
+
+    // Wait for sync to be established
+    await viewer.waitForTimeout(3000);
+
+    // Helper: count non-transparent pixels on the viewer's whiteboard canvas
+    function viewerPixelCount(): Promise<number> {
+      return viewer.evaluate(() => {
+        const canvas = document.getElementById('slideshow')
+          ?.shadowRoot?.querySelector('geek-whiteboard')
+          ?.shadowRoot?.querySelector('canvas') as HTMLCanvasElement | null;
+        if (!canvas) return 0;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return 0;
+        const d = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        let c = 0;
+        for (let i = 3; i < d.length; i += 4) if (d[i]! > 0) c++;
+        return c;
+      });
+    }
+
+    // Helper: poll until viewer pixel count exceeds a threshold
+    async function waitForViewerPixels(minPixels: number, timeout = 5000): Promise<number> {
+      const start = Date.now();
+      let count = 0;
+      while (Date.now() - start < timeout) {
+        count = await viewerPixelCount();
+        if (count > minPixels) return count;
+        await viewer.waitForTimeout(200);
+      }
+      return count;
+    }
+
+    // Helper: navigate presenter and wait for viewer to follow
+    async function navigateAndWait(key: string, expectedSlide: number): Promise<void> {
+      await presenter.keyboard.press(key);
+      await presenter.waitForFunction(
+        (s: number) => (document.getElementById('slideshow') as any)?.currentSlide === s,
+        expectedSlide,
+        { timeout: 3000 },
+      );
+      await viewer.waitForFunction(
+        (s: number) => (document.getElementById('slideshow') as any)?.currentSlide === s,
+        expectedSlide,
+        { timeout: 10000 },
+      );
+      await viewer.waitForTimeout(300);
+    }
+
+    // Helper: draw a stroke on the presenter page
+    async function drawOnPresenter(xFrac: number, yFrac: number, dxFrac: number, dyFrac: number): Promise<void> {
+      const bounds = await presenter.evaluate(() => {
+        const ss = document.getElementById('slideshow');
+        const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+        const canvas = wb?.shadowRoot?.querySelector('canvas');
+        const rect = canvas?.getBoundingClientRect();
+        return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+      });
+      if (!bounds) throw new Error('Canvas bounds not found');
+      const sx = bounds.x + bounds.width * xFrac;
+      const sy = bounds.y + bounds.height * yFrac;
+      const ex = bounds.x + bounds.width * (xFrac + dxFrac);
+      const ey = bounds.y + bounds.height * (yFrac + dyFrac);
+      await presenter.mouse.move(sx, sy);
+      await presenter.mouse.down();
+      await presenter.mouse.move(ex, ey, { steps: 10 });
+      await presenter.mouse.up();
+    }
+
+    // Activate whiteboard on presenter
+    await presenter.keyboard.press('t');
+    await presenter.waitForTimeout(200);
+    await presenter.keyboard.type('whiteboard');
+    await presenter.keyboard.press('Enter');
+    await presenter.waitForTimeout(300);
+    await presenter.keyboard.press('Escape');
+    await presenter.waitForTimeout(200);
+
+    // Draw first stroke on slide 0 and wait for viewer to receive it
+    await drawOnPresenter(0.2, 0.2, 0.2, 0.2);
+    const afterFirstStroke = await waitForViewerPixels(0);
+    expect(afterFirstStroke).toBeGreaterThan(0);
+
+    // Wait for Yjs to finalize the stroke (sync round-trip)
+    await presenter.waitForTimeout(1500);
+
+    // Navigate to slide 1 and back to slide 0
+    await navigateAndWait('ArrowRight', 1);
+    await navigateAndWait('ArrowLeft', 0);
+
+    // Wait for canvas fade-in (500ms transition + buffer)
+    await viewer.waitForTimeout(800);
+
+    // First stroke should be restored from snapshot
+    const restoredFirst = await viewerPixelCount();
+    expect(restoredFirst).toBeGreaterThanOrEqual(afterFirstStroke * 0.9);
+
+    // Draw second stroke on slide 0 and wait for viewer
+    await drawOnPresenter(0.5, 0.5, 0.2, 0.2);
+    const afterSecondStroke = await waitForViewerPixels(restoredFirst);
+    expect(afterSecondStroke).toBeGreaterThan(restoredFirst);
+
+    // Wait for Yjs finalization
+    await presenter.waitForTimeout(1500);
+
+    // Navigate away and back once more
+    await navigateAndWait('ArrowRight', 1);
+    await navigateAndWait('ArrowLeft', 0);
+
+    // Wait for canvas fade-in
+    await viewer.waitForTimeout(800);
+
+    // After restoring, viewer must still show ALL strokes from slide 0
+    const afterRestore = await viewerPixelCount();
+    expect(afterRestore).toBeGreaterThanOrEqual(afterSecondStroke * 0.9);
+
+    await context.close();
+  });
 });

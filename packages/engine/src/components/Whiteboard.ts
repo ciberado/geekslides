@@ -210,6 +210,10 @@ export class Whiteboard extends HTMLElement {
     if (this.#tempCtx && this.#tempCanvas) {
       this.#tempCtx.clearRect(0, 0, this.#tempCanvas.width, this.#tempCanvas.height);
     }
+    // Canvas was wiped — any live-progress tracking from the previous slide
+    // is stale and must be reset so incoming strokes redraw fully.
+    this.#liveStrokesRendered.clear();
+    this.#remoteTempStrokes.clear();
     const snapshot = this.#slideSnapshots.get(this.#slideIndex);
     if (snapshot) {
       for (const stroke of snapshot.strokes) {
@@ -225,6 +229,9 @@ export class Whiteboard extends HTMLElement {
     if (stroke.slideIndex !== this.#slideIndex) {
       // Store for later display when we navigate to that slide
       this.#storeRemoteStroke(stroke);
+      // Clean up stale live-progress tracking for this client
+      this.#liveStrokesRendered.delete(stroke.clientId);
+      this.#remoteTempStrokes.delete(stroke.clientId);
       return;
     }
 
@@ -250,6 +257,13 @@ export class Whiteboard extends HTMLElement {
       if (renderedCount < stroke.points.length) {
         this.#drawStrokeSegment(stroke, renderedCount);
       }
+      // Store the finalized stroke so restoreSlide() can redraw it after navigation
+      let sn = this.#slideSnapshots.get(this.#slideIndex);
+      if (!sn) {
+        sn = { strokes: [] };
+        this.#slideSnapshots.set(this.#slideIndex, sn);
+      }
+      sn.strokes.push(stroke);
       // Auto-show already handled by live progress
       return;
     }
