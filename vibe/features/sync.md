@@ -89,7 +89,7 @@ is finalized and moved to `whiteboardStrokes`.
 
 **Constructor**: Creates a new `Y.Doc` and obtains references to the `sessionState` Y.Map (`doc.getMap('sessionState')`), `whiteboardStrokes` Y.Array (`doc.getArray('whiteboardStrokes')`), and `liveStrokes` Y.Map (`doc.getMap('liveStrokes')`). Stores a reference to the `GeekSlideshow` element. A private `#isRemoteUpdate` flag prevents echo loops.
 
-**`connect(serverUrl, room)`**: Creates a `WebsocketProvider` connecting to the given server URL and room name. BroadcastChannel is disabled (`disableBc: true`) to prevent stale Y.Doc state from leaking across browser tabs after a server restart. Listens for `status` events and dispatches `geek:sync:state` CustomEvents when connection status changes.
+**`connect(serverUrl, room)`**: Creates a `WebsocketProvider` connecting to the given server URL and room name. Listens for `status` events and dispatches `geek:sync:state` CustomEvents when connection status changes.
 
 - **Session state observer**: Watches the Y.Map for changes. When a remote transaction arrives (ignoring local ones), reads `slide`, `partial`, and `mode` from the map and applies them to the slideshow via `goTo()` and `mode` setter. Sets `#isRemoteUpdate` to `true` during application to prevent the local change from being re-published.
 

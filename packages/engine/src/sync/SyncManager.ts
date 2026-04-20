@@ -69,7 +69,7 @@ export class SyncManager {
       wsParams['token'] = options.token;
     }
 
-    this.#provider = new WebsocketProvider(serverUrl, room, this.doc, { params: wsParams, disableBc: true });
+    this.#provider = new WebsocketProvider(serverUrl, room, this.doc, { params: wsParams });
 
     this.#provider.on('status', (event: { status: string }) => {
       this.#eventTarget.dispatchEvent(new CustomEvent('geek:sync:state', {
