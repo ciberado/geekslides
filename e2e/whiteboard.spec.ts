@@ -944,4 +944,124 @@ test.describe('Whiteboard', () => {
 
     await context.close();
   });
+
+  test('readonly viewer cannot draw or toggle but sees remote strokes', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('wb-readonly');
+
+    // Presenter tab
+    const presenter = await context.newPage();
+    await presenter.goto(`http://localhost:5173/?room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as unknown as { slideCount: number } | null;
+      return ss !== null && ss.slideCount > 0;
+    });
+
+    // Wait for content proxy upload
+    await presenter.waitForTimeout(2000);
+
+    // Readonly viewer tab
+    const viewer = await context.newPage();
+    await viewer.goto(`http://localhost:5173/?room=${room}&readonly`);
+    await viewer.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as unknown as { slideCount: number } | null;
+      return ss !== null && ss.slideCount > 0;
+    });
+    await viewer.waitForTimeout(2000);
+
+    // --- Verify viewer has a readonly whiteboard ---
+    const viewerHasReadonlyWb = await viewer.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      return wb?.hasAttribute('readonly') === true;
+    });
+    expect(viewerHasReadonlyWb).toBe(true);
+
+    // --- Verify viewer whiteboard starts hidden ---
+    const viewerWbHidden = await viewer.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard') as HTMLElement & { isVisible: boolean } | null;
+      return wb?.isVisible === false;
+    });
+    expect(viewerWbHidden).toBe(true);
+
+    // --- Verify drag on viewer does NOT activate whiteboard ---
+    const viewerBox = await viewer.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const container = ss?.shadowRoot?.querySelector('.gs-container');
+      const rect = container?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(viewerBox).toBeTruthy();
+
+    const vx1 = viewerBox!.x + viewerBox!.width * 0.3;
+    const vy1 = viewerBox!.y + viewerBox!.height * 0.3;
+    const vx2 = viewerBox!.x + viewerBox!.width * 0.5;
+    const vy2 = viewerBox!.y + viewerBox!.height * 0.5;
+
+    await viewer.mouse.move(vx1, vy1);
+    await viewer.mouse.down();
+    await viewer.mouse.move(vx2, vy2, { steps: 5 });
+    await viewer.mouse.up();
+    await viewer.waitForTimeout(300);
+
+    const viewerStillHidden = await viewer.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard') as HTMLElement & { isVisible: boolean } | null;
+      return wb?.isVisible === false;
+    });
+    expect(viewerStillHidden).toBe(true);
+
+    // --- Presenter draws a stroke → viewer should auto-show it ---
+    // Activate whiteboard on presenter
+    await presenter.keyboard.press('t');
+    await presenter.waitForTimeout(200);
+    await presenter.keyboard.type('whiteboard');
+    await presenter.keyboard.press('Enter');
+    await presenter.waitForTimeout(300);
+    await presenter.keyboard.press('Escape');
+    await presenter.waitForTimeout(200);
+
+    // Draw on presenter canvas
+    const presenterCanvasBounds = await presenter.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(presenterCanvasBounds).toBeTruthy();
+
+    const px1 = presenterCanvasBounds!.x + presenterCanvasBounds!.width * 0.3;
+    const py1 = presenterCanvasBounds!.y + presenterCanvasBounds!.height * 0.3;
+    const px2 = presenterCanvasBounds!.x + presenterCanvasBounds!.width * 0.7;
+    const py2 = presenterCanvasBounds!.y + presenterCanvasBounds!.height * 0.7;
+
+    await presenter.mouse.move(px1, py1);
+    await presenter.mouse.down();
+    await presenter.mouse.move(px2, py2, { steps: 10 });
+    await presenter.mouse.up();
+
+    // Wait for Yjs sync to propagate the stroke
+    await viewer.waitForTimeout(2000);
+
+    // Viewer whiteboard should now be visible with rendered content
+    const viewerWbVisibleWithContent = await viewer.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard') as HTMLElement & { isVisible: boolean } | null;
+      if (!wb?.isVisible) return false;
+      const canvas = wb.shadowRoot?.querySelector('canvas');
+      if (!canvas) return false;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i]! > 0) return true;
+      }
+      return false;
+    });
+    expect(viewerWbVisibleWithContent).toBe(true);
+
+    await context.close();
+  });
 });
