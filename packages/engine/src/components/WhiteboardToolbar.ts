@@ -303,22 +303,6 @@ export class WhiteboardToolbar extends HTMLElement {
 
     body.appendChild(this.#createSeparator());
 
-    // Hide whiteboard button
-    const hideBtn = document.createElement('button');
-    hideBtn.className = 'action-btn';
-    hideBtn.setAttribute('data-action', 'hide');
-    hideBtn.textContent = '⊘';
-    hideBtn.title = 'Hide whiteboard';
-    hideBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
-    hideBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      this.dispatchEvent(new CustomEvent('geek:whiteboard:hide-request', {
-        bubbles: true,
-        composed: true,
-      }));
-    });
-    body.appendChild(hideBtn);
-
     // Clear slide button
     const clearBtn = document.createElement('button');
     clearBtn.className = 'action-btn';
@@ -411,7 +395,7 @@ export class WhiteboardToolbar extends HTMLElement {
   #dragMoved = false;
   #dragHandle: HTMLElement | null = null;
   #boundDragMove = (e: Event): void => { this.#onDragMove(e as PointerEvent); };
-  #boundDragEnd = (e: Event): void => { this.#endDrag(e as PointerEvent); };
+  #boundDragEnd = (): void => { this.#endDrag(); };
 
   /** Resolve the containing element's rect for clamping drag position. */
   #getParentRect(): DOMRect {
@@ -457,12 +441,12 @@ export class WhiteboardToolbar extends HTMLElement {
     newTop = Math.max(0, Math.min(newTop, parentRect.height - this.offsetHeight));
 
     this.style.right = 'auto';
-    this.style.top = `${newTop}px`;
-    this.style.left = `${newLeft}px`;
+    this.style.top = `${String(newTop)}px`;
+    this.style.left = `${String(newLeft)}px`;
     this.style.transform = 'none';
   }
 
-  #endDrag(_e: PointerEvent): void {
+  #endDrag(): void {
     if (this.#dragHandle) {
       this.#dragHandle.removeEventListener('pointermove', this.#boundDragMove);
       this.#dragHandle.removeEventListener('pointerup', this.#boundDragEnd);

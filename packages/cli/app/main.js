@@ -18,7 +18,6 @@ import {
   importRemotePlugin,
   extractPreprocessor,
   extractProcessor,
-  TOOL_SETTINGS,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -657,9 +656,6 @@ try {
     });
     wbToolbar.addEventListener('geek:whiteboard:color-change', (e) => {
       whiteboard.setColor(e.detail.color);
-    });
-    wbToolbar.addEventListener('geek:whiteboard:hide-request', () => {
-      whiteboard.toggle();
     });
     wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
       whiteboard.clear();

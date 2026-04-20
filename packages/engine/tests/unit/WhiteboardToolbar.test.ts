@@ -39,10 +39,8 @@ describe('WhiteboardToolbar', () => {
     expect(swatches?.length).toBe(16);
   });
 
-  it('renders hide and clear action buttons', () => {
-    const hideBtn = toolbar.shadowRoot?.querySelector('[data-action="hide"]');
+  it('renders clear action button', () => {
     const clearBtn = toolbar.shadowRoot?.querySelector('[data-action="clear"]');
-    expect(hideBtn).toBeTruthy();
     expect(clearBtn).toBeTruthy();
   });
 
@@ -139,16 +137,6 @@ describe('WhiteboardToolbar', () => {
     toolbar.show();
     expect(toolbar.style.display).toBe('');
     expect(toolbar.isHidden).toBe(false);
-  });
-
-  it('hide button dispatches hide-request event', () => {
-    const handler = vi.fn();
-    toolbar.addEventListener('geek:whiteboard:hide-request', handler);
-
-    const hideBtn = toolbar.shadowRoot?.querySelector('[data-action="hide"]') as HTMLButtonElement;
-    hideBtn.click();
-
-    expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it('clear button requires double-click for confirmation', () => {
