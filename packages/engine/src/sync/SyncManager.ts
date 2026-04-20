@@ -29,14 +29,16 @@ export class SyncManager {
   #followPresenter = true;
   #clientId: string;
   #eventTarget: EventTarget;
+  #readonly: boolean;
 
-  constructor(eventTarget: EventTarget = document) {
+  constructor(eventTarget: EventTarget = document, options?: { readonly?: boolean }) {
     this.doc = new Y.Doc();
     this.#sessionState = this.doc.getMap('sessionState');
     this.#whiteboardStrokes = this.doc.getArray('whiteboardStrokes');
     this.#liveStrokes = this.doc.getMap('liveStrokes');
     this.#clientId = Math.random().toString(36).slice(2, 10);
     this.#eventTarget = eventTarget;
+    this.#readonly = options?.readonly === true;
 
     this.#setupObservers();
   }
@@ -50,19 +52,33 @@ export class SyncManager {
 
   /**
    * Connect to a y-websocket server.
+   * In readonly mode, appends `readonly` query parameter to the connection URL.
    */
-  connect(serverUrl: string, room: string): void {
+  connect(serverUrl: string, room: string, options?: { token?: string }): void {
     if (this.#provider) {
       this.disconnect();
     }
 
     this.#currentRoom = room;
-    this.#provider = new WebsocketProvider(serverUrl, room, this.doc);
+
+    const wsParams: Record<string, string> = {};
+    if (this.#readonly) {
+      wsParams['readonly'] = '';
+    }
+    if (options?.token) {
+      wsParams['token'] = options.token;
+    }
+
+    this.#provider = new WebsocketProvider(serverUrl, room, this.doc, { params: wsParams });
 
     this.#provider.on('status', (event: { status: string }) => {
       this.#eventTarget.dispatchEvent(new CustomEvent('geek:sync:state', {
         bubbles: true,
-        detail: { connected: event.status === 'connected', following: this.#followPresenter },
+        detail: {
+          connected: event.status === 'connected',
+          following: this.#followPresenter,
+          readonly: this.#readonly,
+        },
       }));
     });
   }
@@ -78,8 +94,10 @@ export class SyncManager {
 
   /**
    * Publish local state to the shared document.
+   * No-op in readonly mode.
    */
   publishState(slide: number, partial: number, mode: string): void {
+    if (this.#readonly) return;
     if (this.#isRemoteUpdate) return;
 
     this.doc.transact(() => {
@@ -104,30 +122,38 @@ export class SyncManager {
 
   /**
    * Add a whiteboard stroke to the shared array.
+   * No-op in readonly mode.
    */
   addStroke(stroke: WhiteboardStroke): void {
+    if (this.#readonly) return;
     this.#whiteboardStrokes.push([stroke]);
   }
 
   /**
    * Update the in-progress (live) stroke for this client.
    * Remote observers will see incremental drawing progress.
+   * No-op in readonly mode.
    */
   updateLiveStroke(stroke: WhiteboardStroke): void {
+    if (this.#readonly) return;
     this.#liveStrokes.set(this.#clientId, stroke);
   }
 
   /**
    * Clear the live stroke for this client (called on finalization).
+   * No-op in readonly mode.
    */
   clearLiveStroke(): void {
+    if (this.#readonly) return;
     this.#liveStrokes.delete(this.#clientId);
   }
 
   /**
    * Clear whiteboard strokes for a specific slide.
+   * No-op in readonly mode.
    */
   clearStrokes(slideIndex: number): void {
+    if (this.#readonly) return;
     const arr = this.#whiteboardStrokes;
     for (let i = arr.length - 1; i >= 0; i--) {
       const item = arr.get(i) as WhiteboardStroke | undefined;
@@ -166,6 +192,10 @@ export class SyncManager {
 
   get isConnected(): boolean {
     return this.#provider !== null;
+  }
+
+  get isReadonly(): boolean {
+    return this.#readonly;
   }
 
   get currentRoom(): string | null {

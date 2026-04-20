@@ -142,3 +142,52 @@ The audience can optionally break sync to navigate independently:
 | Aedes broker auth (username/password) | y-websocket `authCallback(room, token)` |
 | MQTT topic `rooms/<room>/state/<key>` | Y.Map keys: `slide`, `partial`, `mode` |
 | MQTT QoS / retain | Yjs automatic state sync on connect |
+
+## Read-Only Rooms
+
+### Overview
+
+Protected rooms enforce a presenter/viewer split. The presenter can navigate and draw; viewers are passive mirrors.
+
+### URL Patterns
+
+| URL | Role | Behavior |
+|-----|------|----------|
+| `?room=name` (unprotected room) | peer | Full read+write — backward compatible |
+| `?room=name&token=secret` (protected room) | presenter | Full read+write with valid token |
+| `?room=name&readonly` | viewer | Read-only — no terminal, nav, or whiteboard |
+| `?room=name` (protected room, no token) | rejected | Server returns 403 |
+
+### Server Components
+
+**`RoomStore`** — In-memory `Map<room, { presenterToken, createdAt }>`. Tokens are 32 random bytes (hex-encoded). Validation uses `crypto.timingSafeEqual` to prevent timing attacks.
+
+**`RateLimiter`** — Sliding-window counter per IP. Default: 10 failed attempts per 60 seconds. Applied before auth processing. Returns HTTP 429 when exceeded.
+
+**`RoomApi`** — HTTP endpoints:
+- `POST /api/rooms/:room/share` → Creates a protected room, returns `{ presenterToken }`
+- `POST /api/rooms/:room/auth` → Validates a token, returns `{ role }`
+- `GET /api/rooms/:room/role` → Reports whether a room is protected
+
+**Write filtering** — After `setupWSConnection` registers its message handler on a viewer connection, the server replaces the `message` listeners with filtered versions that silently drop Yjs update messages (message type 0, sync sub-type 2). Sync step 1/2 and awareness messages pass through, so viewers still receive state.
+
+### Engine Changes
+
+**`SyncManager`** — Accepts an optional `{ readonly: true }` constructor option. When readonly:
+- `publishState()`, `addStroke()`, `updateLiveStroke()`, `clearLiveStroke()`, `clearStrokes()` are all no-ops
+- `connect()` passes `readonly` as a WebSocket query param
+- `isReadonly` getter exposes the flag
+
+**Client lockdown** — When `?readonly` is in the URL:
+- No `<geek-terminal>` element is created
+- No `CommandSystem`, `KeyBindings`, or `TouchInput` are activated
+- No whiteboard drawing (element is created with `readonly` attribute for replay only)
+- A `VIEW ONLY` badge and green sync dot are shown
+- Content proxy observer still works (viewer can load remote deck assets)
+
+### `share` Terminal Command
+
+1. `POST /api/rooms/:room/share` to create a protected room
+2. Displays the viewer URL with `&readonly` parameter
+3. Reconnects the presenter session with the token via `sync.connect(wsUrl, room, { token })`
+4. Updates the browser URL with `&token=` parameter

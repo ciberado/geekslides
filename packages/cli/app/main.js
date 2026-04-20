@@ -316,7 +316,10 @@ try {
       }
     });
   } else {
-    document.body.innerHTML = '<geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
+    const isReadonly = params.has('readonly');
+    document.body.innerHTML = isReadonly
+      ? '<geek-slideshow id="slideshow"></geek-slideshow>'
+      : '<geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
     const slideshow = document.getElementById('slideshow');
 
     if (combinedCss) {
@@ -333,11 +336,12 @@ try {
 
     if (syncEnabled) {
       try {
-        sync = new SyncManager();
+        sync = new SyncManager(document, { readonly: isReadonly });
         const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
         const room = params.get('room') || syncConfig.room || 'default';
+        const token = params.get('token') || undefined;
         sync.bind(slideshow);
-        sync.connect(wsUrl, room);
+        sync.connect(wsUrl, room, { token });
 
         slideshow.addEventListener('geek:navigate', (e) => {
           sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
@@ -373,6 +377,114 @@ try {
       }
     }
 
+    // --- Readonly viewer mode: receive-only, no interaction ---
+    if (isReadonly) {
+      // Sync status dot
+      if (sync) {
+        const syncDot = document.createElement('div');
+        syncDot.style.cssText = 'position:fixed;top:12px;right:12px;z-index:50;width:10px;height:10px;border-radius:50%;background:#888;transition:background 0.3s;pointer-events:none;';
+        syncDot.title = 'Sync status';
+        document.body.appendChild(syncDot);
+
+        document.addEventListener('geek:sync:state', (e) => {
+          const { connected } = e.detail || {};
+          syncDot.style.background = connected ? '#4ade80' : '#888';
+          syncDot.title = connected ? 'Sync: connected (view only)' : 'Sync: disconnected';
+        });
+
+        // Readonly badge
+        const badge = document.createElement('div');
+        badge.textContent = 'VIEW ONLY';
+        badge.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:50;padding:2px 12px;border-radius:4px;background:rgba(0,0,0,0.5);color:#aaa;font:500 11px/1.4 system-ui,sans-serif;letter-spacing:0.05em;pointer-events:none;opacity:0.8;';
+        document.body.appendChild(badge);
+
+        // Whiteboard replay (view-only: see presenter's strokes, no drawing)
+        const whiteboard = document.createElement('geek-whiteboard');
+        whiteboard.setAttribute('readonly', '');
+        slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(whiteboard);
+        whiteboard.slideIndex = slideshow.currentSlide;
+
+        slideshow.addEventListener('geek:navigate', (e) => {
+          whiteboard.slideIndex = e.detail.slide;
+        });
+
+        const wbSync = new WhiteboardSync(sync);
+        wbSync.activate();
+
+        for (const stroke of sync.getStrokes()) {
+          whiteboard.drawRemoteStroke(stroke);
+        }
+
+        // Content proxy observer
+        let proxyLoaded = false;
+
+        async function reloadDeckFromProxy(proxyBaseUrl) {
+          try {
+            const proxyConfigUrl = `${proxyBaseUrl}config.json`;
+            const newConfig = await loadConfig(proxyConfigUrl);
+
+            configUrl = proxyConfigUrl;
+            configBase = proxyBaseUrl;
+            updateDocumentBase(configBase);
+
+            const newMarkdown = await fetchMarkdown(newConfig);
+            const newCss = await fetchStyles(newConfig);
+
+            combinedCss = newCss;
+            updateDocumentTitle(newConfig);
+            slideshow.loadStyles(newCss);
+
+            const processedMd = await applyPreprocessors(newMarkdown, newConfig);
+            const newSlides = parse(processedMd);
+            slideshow.loadSlides(newSlides);
+            config = newConfig;
+            await applyProcessors(slideshow, newConfig);
+            slideshow.setAspectRatio(newConfig.aspectRatio);
+
+            // Restore sync position after reloading slides
+            const state = sync.doc.getMap('sessionState');
+            const slide = state.get('slide');
+            const partial = state.get('partial');
+            if (typeof slide === 'number') {
+              slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
+            }
+
+            console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
+          } catch (err) {
+            console.warn('[content-proxy] Failed to load from proxy:', err.message);
+          }
+        }
+
+        const checkContentProxy = () => {
+          if (proxyLoaded || isContentUploader) return;
+          const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
+          if (typeof proxyRaw !== 'string') return;
+
+          try {
+            const proxy = JSON.parse(proxyRaw);
+            if (proxy.baseUrl) {
+              proxyLoaded = true;
+              void reloadDeckFromProxy(proxy.baseUrl);
+            }
+          } catch {
+            // ignore invalid proxy data
+          }
+        };
+
+        sync.doc.getMap('sessionState').observe((event) => {
+          if (event.keysChanged.has('contentProxy')) {
+            checkContentProxy();
+          }
+        });
+
+        checkContentProxy();
+      }
+
+      // No terminal, no keyboard nav, no touch input, no whiteboard drawing
+      console.log('[readonly] View-only mode active');
+    } else {
+
+    // --- Interactive (presenter/peer) mode ---
     const commands = new CommandSystem();
     const terminal = document.querySelector('geek-terminal');
 
@@ -668,6 +780,47 @@ try {
         showCmdOutput('✓ Sync disconnected');
         console.log('[sync] Disconnected');
       }, category: 'sync' });
+      commands.register({ name: 'share', label: 'Create a viewer share link for this room', execute: () => {
+        const room = sync.currentRoom;
+        if (!room) {
+          showCmdOutput('✗ Not connected to a room');
+          return;
+        }
+        void (async () => {
+          try {
+            const serverBaseUrl = `${location.protocol}//${location.host}`;
+            const res = await fetch(`${serverBaseUrl}/api/rooms/${encodeURIComponent(room)}/share`, {
+              method: 'POST',
+            });
+            if (!res.ok) {
+              showCmdOutput(`✗ Failed to create share link: ${res.statusText}`);
+              return;
+            }
+            const data = await res.json();
+            const viewerUrl = new URL(window.location.href);
+            viewerUrl.searchParams.delete('token');
+            viewerUrl.searchParams.set('room', room);
+            viewerUrl.searchParams.set('readonly', '');
+            const viewerLink = viewerUrl.toString();
+            showCmdOutput(`✓ Share link: ${viewerLink}`);
+            console.log('[share] Presenter token:', data.presenterToken);
+            console.log('[share] Viewer URL:', viewerLink);
+
+            // Reconnect with presenter token so this session is authenticated
+            const wsUrl = config.sync?.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
+            sync.disconnect();
+            sync.connect(wsUrl, room, { token: data.presenterToken });
+            sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+
+            // Update browser URL to include the token
+            const presenterUrl = new URL(window.location.href);
+            presenterUrl.searchParams.set('token', data.presenterToken);
+            window.history.replaceState(null, '', presenterUrl.toString());
+          } catch (err) {
+            showCmdOutput(`✗ Share failed: ${err.message}`);
+          }
+        })();
+      }, category: 'sync' });
     }
 
     terminal.setCommandSystem(commands);
@@ -714,6 +867,7 @@ try {
         getStyleSheetPaths: () => getTrackedStylePaths(config),
       });
     }
+    } // end !isReadonly
   }
 } catch (err) {
   const configLink = `<a href="${configUrl}" target="_blank" style="color: #c00;">${configUrl}</a>`;

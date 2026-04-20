@@ -180,3 +180,116 @@ describe('SyncManager', () => {
     expect(result[0]?.slideIndex).toBe(2);
   });
 });
+
+describe('SyncManager readonly mode', () => {
+  it('isReadonly returns true when constructed with readonly option', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+    expect(sm.isReadonly).toBe(true);
+  });
+
+  it('isReadonly returns false by default', () => {
+    const sm = new SyncManager(new EventTarget());
+    expect(sm.isReadonly).toBe(false);
+  });
+
+  it('publishState is a no-op in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+
+    sm.publishState(5, 2, 'present');
+
+    const state = sm.doc.getMap('sessionState');
+    expect(state.get('slide')).toBeUndefined();
+    expect(state.get('partial')).toBeUndefined();
+    expect(state.get('mode')).toBeUndefined();
+  });
+
+  it('addStroke is a no-op in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+    const stroke = {
+      id: 'stroke-1',
+      slideIndex: 0,
+      points: [[0.1, 0.2]] as [number, number][],
+      color: '#ff0000',
+      width: 3,
+      clientId: 'test',
+    };
+
+    sm.addStroke(stroke);
+
+    const strokes = sm.doc.getArray('whiteboardStrokes');
+    expect(strokes.length).toBe(0);
+  });
+
+  it('updateLiveStroke is a no-op in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+    const stroke = {
+      id: 'stroke-1',
+      slideIndex: 0,
+      points: [[0.1, 0.2]] as [number, number][],
+      color: '#ff0000',
+      width: 3,
+      clientId: 'test',
+    };
+
+    sm.updateLiveStroke(stroke);
+
+    const liveStrokes = sm.doc.getMap('liveStrokes');
+    expect(liveStrokes.size).toBe(0);
+  });
+
+  it('clearStrokes is a no-op in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+
+    // Add a stroke via the underlying Y.Doc directly (simulating remote)
+    const remoteDoc = new Y.Doc();
+    remoteDoc.getArray('whiteboardStrokes').push([{
+      id: 'remote-1',
+      slideIndex: 0,
+      points: [[0.1, 0.2]],
+      color: '#ff0000',
+      width: 3,
+      clientId: 'remote',
+    }]);
+    Y.applyUpdate(sm.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    // Attempt to clear — should be no-op
+    sm.clearStrokes(0);
+
+    expect(sm.getStrokes()).toHaveLength(1);
+  });
+
+  it('still receives remote state changes in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+    const target = createMockTarget();
+    sm.bind(target);
+
+    // Simulate remote update
+    const remoteDoc = new Y.Doc();
+    remoteDoc.transact(() => {
+      remoteDoc.getMap('sessionState').set('slide', 8);
+      remoteDoc.getMap('sessionState').set('partial', 1);
+      remoteDoc.getMap('sessionState').set('mode', 'present');
+    });
+
+    Y.applyUpdate(sm.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    expect(target.goTo).toHaveBeenCalledWith(8, 1);
+  });
+
+  it('getStrokes still works in readonly mode (for whiteboard replay)', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+
+    const remoteDoc = new Y.Doc();
+    remoteDoc.getArray('whiteboardStrokes').push([{
+      id: 'remote-1',
+      slideIndex: 0,
+      points: [[0.1, 0.2]],
+      color: '#ff0000',
+      width: 3,
+      clientId: 'remote',
+    }]);
+    Y.applyUpdate(sm.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    expect(sm.getStrokes()).toHaveLength(1);
+  });
+});

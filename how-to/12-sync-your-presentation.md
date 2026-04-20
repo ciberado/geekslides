@@ -84,6 +84,42 @@ Everything the audience needs to stay in lockstep with the presenter:
 | **Presentation mode** | Present, speaker, or overview mode |
 | **Deck content** | Images, CSS, and config uploaded via the content proxy |
 
+## Read-only viewer mode
+
+Share a **view-only** link so your audience can watch but not control the presentation. Viewers see slides and whiteboard strokes in real time, but cannot navigate, open the terminal, or draw.
+
+### Create a share link
+
+1. Open the terminal (`t`)
+2. Type `share`
+
+GeekSlides protects the room with a presenter token and prints a viewer URL:
+
+```
+✓ Share link: http://localhost:5173/?config=my-talk/config.json&room=demo&readonly=
+```
+
+Send this URL to your audience. Anyone who opens it gets a locked-down, receive-only view.
+
+### What viewers see
+
+- The current slide, following the presenter in real time
+- Whiteboard strokes as the presenter draws
+- A **VIEW ONLY** badge and a green sync dot
+- No terminal, no keyboard shortcuts, no touch navigation
+
+### Security
+
+The `share` command does three things:
+
+1. Generates a cryptographic presenter token (64 hex characters) stored in memory on the server
+2. Reconnects your session with the token, so only you can write
+3. Returns a viewer URL that connects without a token — the server tags it as read-only
+
+The server enforces read-only mode at the WebSocket level: even if someone removes `&readonly` from the URL, they won't be able to write without a valid presenter token. Failed auth attempts are rate-limited (10 per minute per IP).
+
+> **Tip:** The presenter token is logged to the browser console. Save it if you need to re-authenticate after a page reload — add `&token=<your-token>` to the URL, or leave it out and you'll get a fresh `share` on the next session.
+
 ## Follow and unfollow
 
 By default, every viewer **follows the presenter** — when the presenter advances a slide, all viewers advance too.
