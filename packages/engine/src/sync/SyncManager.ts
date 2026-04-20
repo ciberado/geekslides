@@ -84,6 +84,18 @@ export class SyncManager {
   }
 
   /**
+   * Update the authentication token on the live connection.
+   * The new token is stored in the provider's URL params so that any future
+   * reconnection by y-websocket uses it automatically.  No disconnect/reconnect
+   * is performed — the existing WebSocket stays open.
+   */
+  updateConnectionToken(token: string): void {
+    if (this.#provider) {
+      this.#provider.params['token'] = token;
+    }
+  }
+
+  /**
    * Disconnect from the server and clean up.
    */
   disconnect(): void {

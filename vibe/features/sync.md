@@ -105,6 +105,8 @@ is finalized and moved to `whiteboardStrokes`.
 
 **`clearStrokes(slideIndex)`**: Within a transaction, iterates the Y.Array in reverse and deletes all strokes matching the given slide index.
 
+**`updateConnectionToken(token)`**: Stores the token in the live WebSocket provider's URL params so that any future reconnection by y-websocket uses it automatically. No disconnect/reconnect is performed — the existing connection stays open.
+
 **`disconnect()`**: Destroys the WebSocket provider and cleans up.
 
 ## y-websocket Server
@@ -189,5 +191,5 @@ Protected rooms enforce a presenter/viewer split. The presenter can navigate and
 
 1. `POST /api/rooms/:room/share` to create a protected room
 2. Displays the viewer URL with `&readonly` parameter
-3. Reconnects the presenter session with the token via `sync.connect(wsUrl, room, { token })`
+3. Stores the presenter token on the live connection via `sync.updateConnectionToken(token)` (avoids tearing down the WebSocket, which would produce reconnection errors)
 4. Updates the browser URL with `&token=` parameter

@@ -806,11 +806,8 @@ try {
             console.log('[share] Presenter token:', data.presenterToken);
             console.log('[share] Viewer URL:', viewerLink);
 
-            // Reconnect with presenter token so this session is authenticated
-            const wsUrl = config.sync?.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
-            sync.disconnect();
-            sync.connect(wsUrl, room, { token: data.presenterToken });
-            sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+            // Store the presenter token so future reconnections are authenticated
+            sync.updateConnectionToken(data.presenterToken);
 
             // Update browser URL to include the token
             const presenterUrl = new URL(window.location.href);
