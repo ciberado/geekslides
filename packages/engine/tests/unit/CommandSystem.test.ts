@@ -1,6 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
 import { CommandSystem } from '../../src/input/CommandSystem.ts';
 
+const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }));
+vi.mock('../../src/logging.ts', () => ({
+  createLogger: () => ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: warnMock,
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn(),
+  }),
+}));
+
 describe('CommandSystem', () => {
   it('registers and executes commands', () => {
     const cs = new CommandSystem();
@@ -14,12 +27,14 @@ describe('CommandSystem', () => {
 
   it('warns on unknown command', () => {
     const cs = new CommandSystem();
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { /* noop */ });
+    warnMock.mockClear();
 
     cs.execute('nonexistent');
 
-    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('nonexistent'));
-    warnSpy.mockRestore();
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.objectContaining({ name: 'nonexistent' }),
+      'unknown command',
+    );
   });
 
   it('searches by label and name (case-insensitive)', () => {

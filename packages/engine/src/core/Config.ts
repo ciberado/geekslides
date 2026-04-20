@@ -2,6 +2,10 @@
  * GeekSlides v2 — Typed configuration.
  */
 
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('config');
+
 export interface SyncConfig {
   readonly enabled: boolean;
   readonly server: string;
@@ -92,6 +96,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
 
   const obj = raw as Record<string, unknown>;
   assertNoLegacyFields(obj);
+  log.debug({ url }, 'config loaded');
 
   if (typeof obj['content'] !== 'string' || obj['content'].length === 0) {
     throw new Error("Config must include a non-empty 'content' field");

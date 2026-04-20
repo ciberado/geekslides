@@ -9,6 +9,9 @@
  */
 
 import type { Processor } from '../types.ts';
+import { createLogger } from '../../logging.ts';
+
+const log = createLogger('mermaid');
 
 let mermaidReady: Promise<typeof import('mermaid')['default']> | null = null;
 
@@ -48,7 +51,7 @@ export const mermaidProcessor: Processor = (slideElement: HTMLElement): void => 
         pre.replaceWith(container);
       })
       .catch((err: unknown) => {
-        console.warn('[mermaid] Failed to render diagram:', err);
+        log.warn({ err }, 'failed to render diagram');
         pre.classList.add('gs-mermaid-error');
       });
   }

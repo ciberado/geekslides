@@ -8,6 +8,9 @@
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
 import type { WhiteboardStroke } from './types.ts';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('sync');
 
 export interface SyncTarget {
   goTo(slide: number, partial?: number): void;
@@ -70,8 +73,10 @@ export class SyncManager {
     }
 
     this.#provider = new WebsocketProvider(serverUrl, room, this.doc, { params: wsParams });
+    log.info({ room, readonly: this.#readonly }, 'connecting to sync server');
 
     this.#provider.on('status', (event: { status: string }) => {
+      log.debug({ status: event.status, room }, 'sync connection status changed');
       this.#eventTarget.dispatchEvent(new CustomEvent('geek:sync:state', {
         bubbles: true,
         detail: {
@@ -99,6 +104,7 @@ export class SyncManager {
    * Disconnect from the server and clean up.
    */
   disconnect(): void {
+    log.info({ room: this.#currentRoom }, 'disconnecting from sync server');
     this.#provider?.destroy();
     this.#provider = null;
     this.#currentRoom = null;
@@ -112,6 +118,7 @@ export class SyncManager {
     if (this.#readonly) return;
     if (this.#isRemoteUpdate) return;
 
+    log.trace({ slide, partial, mode }, 'publishing state');
     this.doc.transact(() => {
       this.#sessionState.set('slide', slide);
       this.#sessionState.set('partial', partial);

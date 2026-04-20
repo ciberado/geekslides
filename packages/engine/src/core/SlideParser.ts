@@ -9,6 +9,9 @@
 /// <reference path="../types/markdown-it-container.d.ts" />
 import MarkdownIt from 'markdown-it';
 import container from 'markdown-it-container';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('parser');
 
 type MarkdownToken = ReturnType<MarkdownIt['parse']>[number];
 
@@ -378,10 +381,12 @@ export function parse(markdown: string): SlideData[] {
   const seenIds = new Set<string>();
   for (const slide of slides) {
     if (seenIds.has(slide.id)) {
-      console.warn(`[geekslides] Duplicate slide ID: "${slide.id}". This may cause CSS scoping or navigation issues.`);
+      log.warn({ id: slide.id }, 'duplicate slide ID — may cause CSS scoping or navigation issues');
     }
     seenIds.add(slide.id);
   }
+
+  log.debug({ slideCount: slides.length }, 'parsed slides');
 
   return slides;
 }

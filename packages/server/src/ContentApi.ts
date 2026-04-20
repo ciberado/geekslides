@@ -7,6 +7,9 @@
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { storeRoomContent, getRoomFile, MAX_UPLOAD_SIZE } from './ContentStore.ts';
 import { parseMultipart } from './multipart.ts';
+import { createLogger } from './logging.ts';
+
+const log = createLogger('content');
 
 const MIME_TYPES: Record<string, string> = {
   '.json': 'application/json',
@@ -116,6 +119,7 @@ async function handleUpload(req: IncomingMessage, res: ServerResponse, room: str
   }
 
   const content = await storeRoomContent(room, files);
+  log.info({ room, fileCount: content.files.length, totalSize: content.totalSize }, 'deck assets uploaded');
 
   sendJson(res, 201, {
     room: content.room,
@@ -130,6 +134,7 @@ async function handleFetch(res: ServerResponse, room: string, filePath: string):
   const data = await getRoomFile(room, filePath);
 
   if (!data) {
+    log.debug({ room, filePath }, 'content fetch — not found');
     sendError(res, 404, 'Not found');
     return true;
   }

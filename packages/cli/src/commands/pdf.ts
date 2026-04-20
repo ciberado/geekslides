@@ -35,6 +35,9 @@ import {
   buildNotesPdfHtml,
   buildBookPdfHtml,
 } from './pdf-templates.ts';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('pdf');
 
 // Re-export for backward compatibility (used by tests)
 export { buildDetailsPdfHtml } from './pdf-templates.ts';
@@ -249,6 +252,7 @@ export function registerPdfCommand(program: Command): void {
       let browser: Browser;
       try {
         browser = await chromium.launch();
+        log.debug('chromium launched');
       } catch (err: unknown) {
         const message = err instanceof Error ? err.message : String(err);
         console.error('Could not launch Chromium. Install Playwright browsers:');
@@ -266,6 +270,7 @@ export function registerPdfCommand(program: Command): void {
         const deckConfigPath = resolveDeckConfigPath(opts.config);
         const { server, url } = await startEphemeralServer(deckConfigPath);
         vite = server;
+        log.debug({ url }, 'ephemeral vite server started');
 
         console.log('  Capturing slide screenshots...');
         const screenshotPaths = await captureSlideScreenshots(url, slides, tmpDir, browser);

@@ -10,6 +10,9 @@ import { access } from 'node:fs/promises';
 import { dirname, isAbsolute, relative, resolve } from 'node:path';
 import { createServer, type InlineConfig } from 'vite';
 import { geekSlidesHmr } from '@geekslides/engine/hmr';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('dev');
 
 declare const __dirname: string | undefined;
 
@@ -111,6 +114,7 @@ export function registerDevCommand(program: Command): void {
       if (opts.sync) {
         const { createServer: createWsServer } = await import('@geekslides/server');
         createWsServer({ port: wsPort });
+        log.debug({ wsPort }, 'sync server started');
         console.log(`  Sync server running on ws://localhost:${String(wsPort)}`);
       }
 
@@ -156,6 +160,7 @@ export function registerDevCommand(program: Command): void {
       });
 
       await server.listen();
+      log.debug({ port, deckConfigPath, browserConfigPath }, 'vite dev server started');
 
       console.log(`  Deck config:   ${deckConfigPath}`);
       console.log(`  Presentation:  ${presentationUrl}`);

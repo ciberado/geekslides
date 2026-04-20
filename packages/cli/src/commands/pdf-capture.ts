@@ -9,6 +9,9 @@
 import { join } from 'node:path';
 import type { Browser } from 'playwright';
 import type { SlideData } from '@geekslides/engine/headless';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('pdf');
 
 export const DESIGN_WIDTH = 1920;
 export const DESIGN_HEIGHT = 1080;
@@ -95,6 +98,7 @@ export async function captureSlideScreenshots(
 
     const imgPath = join(tmpDir, `slide-${String(i).padStart(3, '0')}.png`);
     await page.screenshot({ path: imgPath, type: 'png' });
+    log.trace({ slide: i + 1, total }, 'slide captured');
     paths.push(imgPath);
   }
 

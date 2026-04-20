@@ -17,6 +17,10 @@ import { handlePluginProxy } from './PluginProxy.ts';
 import { RoomStore } from './RoomStore.ts';
 import { RateLimiter } from './RateLimiter.ts';
 import { createRoomApiHandler } from './RoomApi.ts';
+import { createLogger } from './logging.ts';
+
+const log = createLogger('ws');
+const httpLog = createLogger('http');
 
 export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_UPLOAD_SIZE } from './ContentStore.ts';
 export { handleContentApi } from './ContentApi.ts';
@@ -148,6 +152,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
         await handleRoomApi(req, res) ||
         await handleContentApi(req, res);
       if (!handled) {
+        httpLog.debug({ url: req.url, method: req.method }, 'unhandled request — 404');
         res.writeHead(404, { 'Content-Type': 'text/plain' });
         res.end('Not found');
       }
@@ -160,6 +165,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
     const room = extractRoom(req);
 
     if (!room) {
+      log.debug({ url: req.url }, 'ws upgrade rejected — missing room');
       socket.write('HTTP/1.1 400 Bad Request\r\n\r\nMissing room parameter');
       socket.destroy();
       return;
@@ -169,6 +175,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
 
     // Rate-limit check (before any auth work)
     if (rateLimiter.isLimited(clientIp)) {
+      log.warn({ clientIp, room }, 'ws upgrade rejected — rate limited');
       socket.write('HTTP/1.1 429 Too Many Requests\r\n\r\nRate limited');
       socket.destroy();
       return;
@@ -180,12 +187,14 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
     if (role === null) {
       // Protected room, bad/missing token, not readonly → reject
       rateLimiter.recordFailure(clientIp);
+      log.warn({ clientIp, room }, 'ws upgrade rejected — invalid token');
       socket.write('HTTP/1.1 403 Forbidden\r\n\r\nInvalid or missing presenter token');
       socket.destroy();
       return;
     }
 
     wss.handleUpgrade(req, socket, head, (ws) => {
+      log.info({ room, role, clientIp }, 'ws connection accepted');
       setupWSConnection(ws, req, { docName: room });
       if (role === 'viewer') {
         applyReadOnlyFilter(ws);
@@ -218,7 +227,7 @@ if (
   const port = Number(process.env['PORT']) || DEFAULT_OPTIONS.port;
   const host = process.env['HOST'] ?? DEFAULT_OPTIONS.host;
   const server = createServer({ port, host });
-  console.log(`[geekslides] server listening on http://${host}:${String(port)}`);
+  log.info({ host, port }, 'server listening');
 
   process.on('SIGINT', () => {
     const s = server as ServerWithRoomStore;

@@ -5,6 +5,10 @@
  * then uploads them to the server content proxy.
  */
 
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('upload');
+
 /** Relative file paths referenced by the deck. */
 export interface DeckManifest {
   readonly configPath: string;
@@ -141,10 +145,10 @@ export async function uploadDeck(
         const data = await res.arrayBuffer();
         filesToUpload.push({ path: relativePath, data });
       } else {
-        console.warn(`[content-proxy] Skipping ${relativePath}: ${String(res.status)}`);
+        log.warn({ path: relativePath, status: res.status }, 'skipping file — fetch failed');
       }
     } catch (err) {
-      console.warn(`[content-proxy] Failed to fetch ${relativePath}:`, err);
+      log.warn({ path: relativePath, err }, 'failed to fetch file for upload');
     }
   }
 

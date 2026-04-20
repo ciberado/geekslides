@@ -4,6 +4,19 @@ import { mermaidProcessor } from '../../src/plugins/builtins/mermaid-processor.t
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 import type { ProcessorContext } from '../../src/plugins/types.ts';
 
+const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }));
+vi.mock('../../src/logging.ts', () => ({
+  createLogger: () => ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: warnMock,
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn(),
+  }),
+}));
+
 // Mock the mermaid module
 vi.mock('mermaid', () => {
   const renderMock = vi.fn<(id: string, definition: string) => Promise<{ svg: string }>>()
@@ -100,8 +113,7 @@ describe('mermaid-processor', () => {
     const el = document.createElement('div');
     el.innerHTML = '<pre><code class="language-mermaid">invalid syntax %%%</code></pre>';
 
-    // Suppress console.warn for this test
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => { /* noop */ });
+    warnMock.mockClear();
 
     mermaidProcessor(el, makeContext(el));
 
@@ -111,9 +123,9 @@ describe('mermaid-processor', () => {
 
     const pre = el.querySelector('pre');
     expect(pre?.classList.contains('gs-mermaid-error')).toBe(true);
-    expect(warnSpy).toHaveBeenCalledWith(
-      '[mermaid] Failed to render diagram:',
-      expect.any(Error),
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.objectContaining({ err: expect.any(Error) }),
+      'failed to render diagram',
     );
   });
 

@@ -6,7 +6,9 @@
  */
 
 import type { ContentUpdatePayload } from './vite-plugin-geekslides-hmr.ts';
+import { createLogger } from '../logging.ts';
 
+const log = createLogger('hmr');
 const HMR_EVENT = 'geekslides:content-update';
 
 export interface HotClientOptions {
@@ -46,6 +48,7 @@ export async function handleContentUpdate(
   payload: ContentUpdatePayload,
   options: HotClientOptions,
 ): Promise<void> {
+  log.debug({ type: payload.type, file: payload.file }, 'HMR update received');
   switch (payload.type) {
     case 'markdown':
       await handleMarkdownUpdate(options);

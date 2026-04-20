@@ -303,6 +303,22 @@ export class WhiteboardToolbar extends HTMLElement {
 
     body.appendChild(this.#createSeparator());
 
+    // Hide whiteboard button
+    const hideBtn = document.createElement('button');
+    hideBtn.className = 'action-btn';
+    hideBtn.setAttribute('data-action', 'hide');
+    hideBtn.textContent = '⊘';
+    hideBtn.title = 'Hide whiteboard';
+    hideBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
+    hideBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.dispatchEvent(new CustomEvent('geek:whiteboard:hide-request', {
+        bubbles: true,
+        composed: true,
+      }));
+    });
+    body.appendChild(hideBtn);
+
     // Clear slide button
     const clearBtn = document.createElement('button');
     clearBtn.className = 'action-btn';

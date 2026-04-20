@@ -657,6 +657,9 @@ try {
     wbToolbar.addEventListener('geek:whiteboard:color-change', (e) => {
       whiteboard.setColor(e.detail.color);
     });
+    wbToolbar.addEventListener('geek:whiteboard:hide-request', () => {
+      whiteboard.toggleCanvas();
+    });
     wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
       whiteboard.clear();
     });

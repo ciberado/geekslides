@@ -9,6 +9,9 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('create');
 
 const execFileAsync = promisify(execFile);
 
@@ -96,5 +99,6 @@ Speaker notes go here.
 
       console.log(`  Created: ${dir}/`);
       console.log('  Files: config.json, README.md, css/local.css, images/');
+      log.debug({ dir, title: opts.title }, 'presentation scaffolded');
     });
 }

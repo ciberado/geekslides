@@ -6,6 +6,9 @@
 
 import type { GeekSlidesConfig } from '../core/Config.ts';
 import type { Plugin, Preprocessor, Processor, ProcessorContext } from './types.ts';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('plugins');
 
 interface NamedPreprocessor {
   name: string;
@@ -35,6 +38,7 @@ export class PluginManager {
         this.#processors.push({ name: plugin.name, fn });
       }
     }
+    log.debug({ plugin: plugin.name }, 'plugin registered');
   }
 
   /**

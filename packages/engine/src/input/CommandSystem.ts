@@ -5,6 +5,10 @@
  * toolbar, palette) route through CommandSystem.execute().
  */
 
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('commands');
+
 export interface Command {
   readonly name: string;
   readonly label: string;
@@ -28,9 +32,10 @@ export class CommandSystem {
   execute(name: string, args?: string[]): void {
     const cmd = this.#commands.get(name);
     if (!cmd) {
-      console.warn(`[geekslides] Unknown command: ${name}`);
+      log.warn({ name }, 'unknown command');
       return;
     }
+    log.debug({ name, args }, 'command executed');
     cmd.execute(args);
   }
 

@@ -14,7 +14,9 @@
  */
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
+import { createLogger } from './logging.ts';
 
+const log = createLogger('plugins');
 const MAX_PLUGIN_SIZE = 1024 * 1024; // 1 MB
 
 const ALLOWED_PROTOCOLS = new Set(['https:']);
@@ -77,6 +79,7 @@ export async function handlePluginProxy(req: IncomingMessage, res: ServerRespons
   }
 
   if (!ALLOWED_PROTOCOLS.has(parsed.protocol)) {
+    log.warn({ url: targetUrl, protocol: parsed.protocol }, 'plugin proxy blocked — protocol not allowed');
     sendProxyError(res, 400, `Protocol "${parsed.protocol}" is not allowed; use https:`);
     return true;
   }
@@ -121,6 +124,7 @@ export async function handlePluginProxy(req: IncomingMessage, res: ServerRespons
       'Cache-Control': 'public, max-age=300',
     });
     res.end(bodyBuffer);
+    log.info({ url: targetUrl, size: bodyBuffer.length }, 'plugin proxied');
     return true;
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Fetch failed';

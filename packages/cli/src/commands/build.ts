@@ -15,6 +15,9 @@ import { basename, dirname, join, resolve } from 'node:path';
 import { build, type InlineConfig } from 'vite';
 import { DEFAULT_CONFIG } from '@geekslides/engine/headless';
 import { resolveDeckConfigPath, resolveCliAppRoot } from './dev.ts';
+import { createLogger } from '../logging.ts';
+
+const log = createLogger('build');
 
 export function registerBuildCommand(program: Command): void {
   program
@@ -93,5 +96,6 @@ export function registerBuildCommand(program: Command): void {
       }
 
       console.log(`  Build complete: ${opts.outDir}/`);
+      log.debug({ outDir: opts.outDir, configPath }, 'build finished');
     });
 }

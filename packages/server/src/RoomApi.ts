@@ -6,6 +6,9 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { RoomStore } from './RoomStore.ts';
+import { createLogger } from './logging.ts';
+
+const log = createLogger('rooms');
 
 function sendJson(res: ServerResponse, status: number, data: unknown): void {
   const body = JSON.stringify(data);
@@ -100,6 +103,7 @@ export function createRoomApiHandler(roomStore: RoomStore): (req: IncomingMessag
  */
 function handleShare(res: ServerResponse, room: string, store: RoomStore): boolean {
   const { presenterToken } = store.createRoom(room);
+  log.info({ room }, 'protected room created');
   sendJson(res, 201, { room, presenterToken });
   return true;
 }
@@ -135,6 +139,7 @@ async function handleAuth(
   }
 
   const valid = store.validateToken(room, token);
+  log.debug({ room, valid }, 'auth token validation');
   if (valid) {
     sendJson(res, 200, { room, role: 'presenter' });
   } else {

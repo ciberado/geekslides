@@ -1,6 +1,19 @@
 import { describe, it, expect, vi } from 'vitest';
 import { parse } from '../../src/core/SlideParser.ts';
 
+const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }));
+vi.mock('../../src/logging.ts', () => ({
+  createLogger: () => ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: warnMock,
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn(),
+  }),
+}));
+
 describe('SlideParser', () => {
   it('splits markdown with empty-link separators into slides', () => {
     const md = `# First slide
@@ -206,7 +219,7 @@ Content 2
   });
 
   it('warns about duplicate slide IDs', () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    warnMock.mockClear();
     const md = `[](#dup)
 
 First slide
@@ -216,9 +229,9 @@ First slide
 Second slide
 `;
     parse(md);
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Duplicate slide ID: "dup"'),
+    expect(warnMock).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'dup' }),
+      expect.stringContaining('duplicate slide ID'),
     );
-    warnSpy.mockRestore();
   });
 });
