@@ -347,6 +347,12 @@ try {
           sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
         });
 
+        // Mark as uploader immediately so checkContentProxy() never
+        // overwrites the locally-loaded deck with stale proxy data.
+        if (!isReadonly) {
+          isContentUploader = true;
+        }
+
         // Content proxy: upload deck assets to server so remote viewers can access them
         // Fire-and-forget — don't block the rest of initialization
         void (async () => {
@@ -355,7 +361,6 @@ try {
             const manifest = buildManifest(configUrl, config, markdown, combinedCss);
             await uploadDeck(serverBaseUrl, room, configBase, manifest);
 
-            isContentUploader = true;
             // Publish proxy info so audience clients know where to find content
             const proxyBase = getProxyBaseUrl(serverBaseUrl, room);
             sync.doc.transact(() => {
