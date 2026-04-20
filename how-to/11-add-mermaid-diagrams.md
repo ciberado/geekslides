@@ -154,4 +154,4 @@ pre.gs-mermaid-error {
 
 ---
 
-← Previous: [Use the Docker CLI](10-use-the-docker-cli.md) | Back to [index →](README.md)
+← Previous: [Use the Docker CLI](10-use-the-docker-cli.md) | Next: [Sync Your Presentation →](12-sync-your-presentation.md)
