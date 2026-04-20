@@ -424,8 +424,8 @@ describe('Whiteboard', () => {
     // Navigate to slide 1 (no strokes)
     wb.slideIndex = 1;
 
-    // Canvas should be hidden (empty slide)
-    expect(canvas.style.display).toBe('none');
+    // Canvas stays displayed on empty slide so pointer events work for drawing
+    expect(canvas.style.display).toBe('block');
 
     // Navigate back to slide 0 (has strokes)
     wb.slideIndex = 0;
@@ -438,17 +438,17 @@ describe('Whiteboard', () => {
     expect(canvas.style.display).toBe('block');
   });
 
-  it('slideIndex change keeps canvas hidden on empty slide', () => {
+  it('slideIndex change keeps canvas displayed on empty slide for pointer events', () => {
     wb.setActive(true);
     const canvas = wb.shadowRoot?.querySelector('canvas.main') as HTMLCanvasElement;
 
     // Navigate to slide 1 (no strokes)
     wb.slideIndex = 1;
 
-    // Should stay hidden even after TRANSITION_MS
+    // Canvas stays displayed so pointer events work for drawing
     vi.advanceTimersByTime(Whiteboard.TRANSITION_MS + 10);
-    expect(canvas.style.display).toBe('none');
-    // But whiteboard is still logically active
+    expect(canvas.style.display).toBe('block');
+    // Whiteboard is still logically active
     expect(wb.isVisible).toBe(true);
   });
 

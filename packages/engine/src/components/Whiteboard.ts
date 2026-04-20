@@ -93,14 +93,22 @@ export class Whiteboard extends HTMLElement {
     this.restoreSlide();
 
     // Only fade in if the target slide has drawn content.
-    // Keeping the canvas hidden when empty avoids a GPU compositing
-    // layer that subtly tints the slide below.
     if (this.#visible && this.#hasContent()) {
       this.#scheduleFadeIn();
     } else if (this.#visible) {
-      // Canvas stays logically active but visually hidden until drawing starts
-      this.#hideCanvas();
-      this.#visible = true;  // preserve active state for auto-draw
+      // Empty slide while active — keep canvas displayed so pointer
+      // events still work for drawing.  An empty canvas is fully
+      // transparent, so there is no visual artifact.
+      if (this.#canvas) {
+        this.#canvas.style.display = 'block';
+        this.#canvas.style.opacity = '';
+        this.#canvas.style.transition = '';
+      }
+      if (this.#tempCanvas) {
+        this.#tempCanvas.style.display = 'block';
+        this.#tempCanvas.style.opacity = '';
+        this.#tempCanvas.style.transition = '';
+      }
     }
   }
 

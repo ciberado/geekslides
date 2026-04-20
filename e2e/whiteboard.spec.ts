@@ -358,6 +358,71 @@ test.describe('Whiteboard', () => {
     expect(slideAfter).toBe(slideBefore);
   });
 
+  test('drawing works on multiple slides without reload', async ({ page }) => {
+    // Activate whiteboard on slide 0
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Draw on slide 0
+    const stroke0 = page.evaluate(() => {
+      return new Promise<boolean>((resolve) => {
+        const wb = document.getElementById('slideshow')?.shadowRoot?.querySelector('geek-whiteboard');
+        wb?.addEventListener('geek:whiteboard:stroke', () => resolve(true), { once: true });
+        setTimeout(() => resolve(false), 3000);
+      });
+    });
+
+    const box = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(box).toBeTruthy();
+
+    await page.mouse.move(box!.x + box!.width * 0.3, box!.y + box!.height * 0.3);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width * 0.5, box!.y + box!.height * 0.5, { steps: 5 });
+    await page.mouse.up();
+
+    expect(await stroke0).toBe(true);
+
+    // Navigate to slide 1
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(500);
+
+    // Draw on slide 1 (should work without reload)
+    const stroke1 = page.evaluate(() => {
+      return new Promise<boolean>((resolve) => {
+        const wb = document.getElementById('slideshow')?.shadowRoot?.querySelector('geek-whiteboard');
+        wb?.addEventListener('geek:whiteboard:stroke', () => resolve(true), { once: true });
+        setTimeout(() => resolve(false), 3000);
+      });
+    });
+
+    const box1 = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(box1).toBeTruthy();
+
+    await page.mouse.move(box1!.x + box1!.width * 0.3, box1!.y + box1!.height * 0.3);
+    await page.mouse.down();
+    await page.mouse.move(box1!.x + box1!.width * 0.5, box1!.y + box1!.height * 0.5, { steps: 5 });
+    await page.mouse.up();
+
+    expect(await stroke1).toBe(true);
+  });
+
   test('strokes sync to a second window in the same room', async ({ browser }) => {
     const context = await browser.newContext();
     const page1 = await context.newPage();
