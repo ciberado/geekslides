@@ -4,12 +4,17 @@
  * Manages uploaded deck assets in per-room temp directories.
  */
 
-import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises';
+import { mkdtemp, mkdir, writeFile, readFile, rm, stat, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { join, dirname, normalize, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 
 export const MAX_UPLOAD_SIZE = 200 * 1024 * 1024; // 200 MB
+
+/** Default TTL for room content: 24 hours */
+export const DEFAULT_CONTENT_TTL_MS = 24 * 60 * 60 * 1000;
+
+let cleanupTimer: ReturnType<typeof setInterval> | null = null;
 
 export interface RoomContent {
   readonly room: string;
@@ -124,6 +129,81 @@ export async function deleteRoomContent(room: string): Promise<void> {
 
 export function listRooms(): string[] {
   return [...rooms.keys()];
+}
+
+/**
+ * Remove all rooms whose content is older than maxAgeMs.
+ */
+export async function evictExpiredRooms(maxAgeMs = DEFAULT_CONTENT_TTL_MS): Promise<void> {
+  const now = Date.now();
+  const expired = [...rooms.entries()]
+    .filter(([, content]) => now - content.createdAt > maxAgeMs)
+    .map(([room]) => room);
+
+  await Promise.all(expired.map((room) => deleteRoomContent(room)));
+}
+
+/**
+ * Scan tmpdir for orphaned gs-room-* directories from previous server instances
+ * and remove any that are older than maxAgeMs.
+ */
+export async function cleanOrphanedRoomDirs(maxAgeMs = DEFAULT_CONTENT_TTL_MS): Promise<void> {
+  const base = tmpdir();
+  let entries: string[];
+  try {
+    entries = await readdir(base);
+  } catch {
+    return;
+  }
+
+  const knownDirs = new Set([...rooms.values()].map((c) => c.dir));
+  const now = Date.now();
+
+  await Promise.all(
+    entries
+      .filter((name) => name.startsWith('gs-room-'))
+      .map(async (name) => {
+        const fullPath = join(base, name);
+        if (knownDirs.has(fullPath)) return;
+        try {
+          const s = await stat(fullPath);
+          if (now - s.mtimeMs > maxAgeMs) {
+            await rm(fullPath, { recursive: true, force: true });
+          }
+        } catch {
+          // Directory already gone or inaccessible — skip
+        }
+      }),
+  );
+}
+
+/**
+ * Start periodic cleanup of expired room content and orphaned tmp dirs.
+ * Uses unref() so the timer won't prevent process exit.
+ */
+export function startCleanup(
+  intervalMs = 60 * 60 * 1000,
+  maxAgeMs = DEFAULT_CONTENT_TTL_MS,
+): void {
+  stopCleanup();
+  cleanupTimer = setInterval(() => {
+    void evictExpiredRooms(maxAgeMs);
+    void cleanOrphanedRoomDirs(maxAgeMs);
+  }, intervalMs);
+
+  if (typeof cleanupTimer === 'object' && 'unref' in cleanupTimer) {
+    cleanupTimer.unref();
+  }
+}
+
+/**
+ * Stop periodic cleanup.
+ */
+export function stopCleanup(): void {
+  if (cleanupTimer !== null) {
+    clearInterval(cleanupTimer);
+    cleanupTimer = null;
+  }
 }
 
 export async function getFileStats(room: string, filePath: string): Promise<{ size: number } | null> {

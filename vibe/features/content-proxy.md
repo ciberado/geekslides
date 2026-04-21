@@ -141,7 +141,8 @@ base URL instead of needing a local `?config=` parameter.
 - Add HTTP server alongside WebSocket server (share the same port via upgrade routing)
 - `POST /api/rooms/:room/content` — accept multipart upload, write to temp dir
 - `GET /api/rooms/:room/content/*` — serve files from temp dir
-- Room cleanup: delete temp dir when last client disconnects (or after TTL)
+- Room cleanup: TTL-based eviction (24 h default) via `evictExpiredRooms()` + orphan
+  scan on startup via `cleanOrphanedRoomDirs()`, run hourly via `startCleanup()`
 - Size limit enforcement (200 MB)
 - Path traversal protection (reject `..` in file paths)
 

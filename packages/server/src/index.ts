@@ -18,11 +18,12 @@ import { RoomStore } from './RoomStore.ts';
 import { RateLimiter } from './RateLimiter.ts';
 import { createRoomApiHandler } from './RoomApi.ts';
 import { createLogger } from './logging.ts';
+import { startCleanup as startContentCleanup, stopCleanup as stopContentCleanup, cleanOrphanedRoomDirs } from './ContentStore.ts';
 
 const log = createLogger('ws');
 const httpLog = createLogger('http');
 
-export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_UPLOAD_SIZE } from './ContentStore.ts';
+export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_UPLOAD_SIZE, startCleanup as startContentCleanup, stopCleanup as stopContentCleanup, cleanOrphanedRoomDirs } from './ContentStore.ts';
 export { handleContentApi } from './ContentApi.ts';
 export { handlePluginProxy } from './PluginProxy.ts';
 export { RoomStore } from './RoomStore.ts';
@@ -208,6 +209,10 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
   (httpServer as ServerWithRoomStore).__roomStore = roomStore;
   (httpServer as ServerWithRoomStore).__rateLimiter = rateLimiter;
 
+  // Clean up stale content on startup, then run hourly
+  void cleanOrphanedRoomDirs();
+  startContentCleanup();
+
   return httpServer;
 }
 
@@ -232,6 +237,7 @@ if (
   process.on('SIGINT', () => {
     const s = server as ServerWithRoomStore;
     s.__rateLimiter.stopCleanup();
+    stopContentCleanup();
     s.close();
     process.exit(0);
   });
