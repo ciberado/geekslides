@@ -316,7 +316,34 @@ try {
     });
   } else {
     const vtoken = params.get('vtoken');
-    const isReadonly = params.has('readonly') || vtoken !== null;
+    const hasToken = Boolean(params.get('token'));
+    let isReadonly = params.has('readonly') || vtoken !== null;
+
+    // Before rendering the UI, confirm room protection status with the server.
+    // If the room is protected and the client provides no credential, force
+    // read-only mode so the editor UI is never shown to unauthenticated visitors.
+    // The WS-level 403 is the ultimate write-enforcement layer; this prevents
+    // UI confusion when someone strips ?vtoken from the viewer URL.
+    if (!isReadonly && !hasToken) {
+      try {
+        const _sc = config.sync || {};
+        if (_sc.enabled !== false) {
+          const _r = params.get('room') || _sc.room || 'default';
+          const _res = await fetch(
+            `${location.protocol}//${location.host}/api/rooms/${encodeURIComponent(_r)}/role`,
+          );
+          if (_res.ok) {
+            const _d = await _res.json();
+            if (_d.protected) {
+              isReadonly = true;
+            }
+          }
+        }
+      } catch {
+        // Sync server unavailable — fall back to URL-param-based detection
+      }
+    }
+
     document.body.innerHTML = isReadonly
       ? '<geek-slideshow id="slideshow"></geek-slideshow>'
       : '<geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
