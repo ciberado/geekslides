@@ -668,4 +668,20 @@ describe('Whiteboard', () => {
     wb.setActive(true);
     expect(wb.userDismissed).toBe(false);
   });
+
+  it('toggleCanvas toggles visibility without setting userDismissed', () => {
+    wb.setActive(true);
+    expect(wb.isVisible).toBe(true);
+    expect(wb.userDismissed).toBe(false);
+
+    // Hide via toggleCanvas — userDismissed stays false
+    wb.toggleCanvas();
+    expect(wb.isVisible).toBe(false);
+    expect(wb.userDismissed).toBe(false);
+
+    // Show via toggleCanvas — still no userDismissed
+    wb.toggleCanvas();
+    expect(wb.isVisible).toBe(true);
+    expect(wb.userDismissed).toBe(false);
+  });
 });

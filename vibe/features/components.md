@@ -79,12 +79,18 @@ Separate route/tab:
   interact with slide content, hide the whiteboard first via the toolbar hide button
   (`⊘`), the `whiteboard` toggle command, or the `wb-hide` command. Hiding sets
   `display: none` on the canvas, fully restoring click-through.
+- **`toggleCanvas()`**: Toggles canvas visibility without setting `userDismissed`,
+  so auto-activation on drag still works after hiding. Used by the toolbar `⊘` button
+  via the `geek:whiteboard:hide-request` event. The `deactivate()` method (used by
+  `wb-hide` and the `whiteboard` toggle command) sets `userDismissed = true` and
+  suppresses auto-activation until the next explicit activation. Both are no-ops when
+  `readonly` is set.
 - **Readonly mode**: When the `readonly` attribute is set, the component disables all
   local drawing: pointer/touch listeners are not registered, and `toggle()`,
-  `setActive()`, `beginStroke()`, and `clear()` become no-ops. Remote strokes are
-  still rendered and auto-show the canvas via the internal `#setActiveInternal()`
-  path, so view-only clients see the presenter's drawings without being able to
-  modify them.
+  `setActive()`, `beginStroke()`, `toggleCanvas()`, and `clear()` become no-ops. Remote
+  strokes are still rendered and auto-show the canvas via the internal
+  `#setActiveInternal()` path, so view-only clients see the presenter's drawings
+  without being able to modify them.
 
 ## Whiteboard Toolbar
 

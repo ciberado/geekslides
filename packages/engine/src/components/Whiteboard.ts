@@ -143,6 +143,23 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
+   * Toggle canvas visibility without setting userDismissed.
+   * Used by the toolbar hide button so auto-activation still works
+   * and the toolbar remains accessible.
+   */
+  toggleCanvas(): void {
+    if (this.hasAttribute('readonly')) return;
+    this.#visible = !this.#visible;
+    if (this.#canvas) {
+      if (this.#visible) {
+        this.#showCanvas();
+      } else {
+        this.#hideCanvas();
+      }
+    }
+  }
+
+  /**
    * Show the whiteboard (auto-activate).
    */
   setActive(active: boolean): void {
