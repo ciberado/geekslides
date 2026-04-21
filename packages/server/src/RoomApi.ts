@@ -99,12 +99,12 @@ export function createRoomApiHandler(roomStore: RoomStore): (req: IncomingMessag
 
 /**
  * POST /api/rooms/:room/share
- * Creates a protected room and returns the presenter token.
+ * Creates a protected room and returns both the presenter token and a viewer token.
  */
 function handleShare(res: ServerResponse, room: string, store: RoomStore): boolean {
-  const { presenterToken } = store.createRoom(room);
+  const { presenterToken, viewerToken } = store.createRoom(room);
   log.info({ room }, 'protected room created');
-  sendJson(res, 201, { room, presenterToken });
+  sendJson(res, 201, { room, presenterToken, viewerToken });
   return true;
 }
 

@@ -62,10 +62,11 @@ function extractRoom(req: IncomingMessage): string | null {
   return pathSegments[pathSegments.length - 1] || url.searchParams.get('room');
 }
 
-function parseConnectionParams(req: IncomingMessage): { token: string | null; readonly: boolean } {
+function parseConnectionParams(req: IncomingMessage): { token: string | null; vtoken: string | null; readonly: boolean } {
   const url = new URL(req.url ?? '/', `http://${req.headers.host ?? 'localhost'}`);
   return {
     token: url.searchParams.get('token'),
+    vtoken: url.searchParams.get('vtoken'),
     readonly: url.searchParams.has('readonly'),
   };
 }
@@ -85,22 +86,23 @@ function getClientIp(req: IncomingMessage): string {
  */
 function resolveRole(
   room: string,
-  params: { token: string | null; readonly: boolean },
+  params: { token: string | null; vtoken: string | null; readonly: boolean },
   roomStore: RoomStore,
 ): 'presenter' | 'viewer' | 'peer' | null {
   if (!roomStore.isProtected(room)) {
-    // Unprotected room — backward compat. ?readonly forces viewer even on unprotected rooms.
-    return params.readonly ? 'viewer' : 'peer';
+    // Unprotected room — backward compat. ?readonly or ?vtoken forces viewer.
+    return (params.readonly || params.vtoken !== null) ? 'viewer' : 'peer';
   }
 
-  // Protected room
-  if (params.readonly) {
-    return 'viewer';
-  }
+  // Protected room: presenter token takes priority
   if (params.token && roomStore.validateToken(room, params.token)) {
     return 'presenter';
   }
-  // Protected room, no readonly flag, no valid token → reject
+  // Protected room: valid viewer token → read-only viewer
+  if (params.vtoken && roomStore.validateViewerToken(room, params.vtoken)) {
+    return 'viewer';
+  }
+  // Protected room, no valid credential → reject
   return null;
 }
 

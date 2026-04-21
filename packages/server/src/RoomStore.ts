@@ -7,11 +7,12 @@
 
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 
-/** Byte length for generated presenter tokens (32 bytes → 64 hex chars). */
+/** Byte length for generated tokens (32 bytes → 64 hex chars). */
 const TOKEN_BYTES = 32;
 
 interface ProtectedRoom {
   readonly presenterToken: string;
+  readonly viewerToken: string;
   readonly createdAt: number;
 }
 
@@ -19,18 +20,19 @@ export class RoomStore {
   readonly #rooms = new Map<string, ProtectedRoom>();
 
   /**
-   * Protect a room by generating a presenter token.
-   * If the room is already protected, returns the existing token.
+   * Protect a room by generating a presenter token and a viewer token.
+   * If the room is already protected, returns the existing tokens.
    */
-  createRoom(room: string): { presenterToken: string } {
+  createRoom(room: string): { presenterToken: string; viewerToken: string } {
     const existing = this.#rooms.get(room);
     if (existing) {
-      return { presenterToken: existing.presenterToken };
+      return { presenterToken: existing.presenterToken, viewerToken: existing.viewerToken };
     }
 
     const presenterToken = randomBytes(TOKEN_BYTES).toString('hex');
-    this.#rooms.set(room, { presenterToken, createdAt: Date.now() });
-    return { presenterToken };
+    const viewerToken = randomBytes(TOKEN_BYTES).toString('hex');
+    this.#rooms.set(room, { presenterToken, viewerToken, createdAt: Date.now() });
+    return { presenterToken, viewerToken };
   }
 
   /**
@@ -49,6 +51,21 @@ export class RoomStore {
     if (!entry) return false;
 
     const expected = Buffer.from(entry.presenterToken, 'utf-8');
+    const provided = Buffer.from(token, 'utf-8');
+
+    if (expected.length !== provided.length) return false;
+    return timingSafeEqual(expected, provided);
+  }
+
+  /**
+   * Validate a viewer token for a room using constant-time comparison.
+   * Returns false for unprotected rooms (no token to match).
+   */
+  validateViewerToken(room: string, token: string): boolean {
+    const entry = this.#rooms.get(room);
+    if (!entry) return false;
+
+    const expected = Buffer.from(entry.viewerToken, 'utf-8');
     const provided = Buffer.from(token, 'utf-8');
 
     if (expected.length !== provided.length) return false;

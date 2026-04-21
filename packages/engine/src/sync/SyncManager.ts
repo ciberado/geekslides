@@ -55,9 +55,10 @@ export class SyncManager {
 
   /**
    * Connect to a y-websocket server.
-   * In readonly mode, appends `readonly` query parameter to the connection URL.
+   * Pass `viewerToken` for a token-authenticated read-only connection (preferred).
+   * Falls back to `?readonly` for backward-compatible unprotected room viewer access.
    */
-  connect(serverUrl: string, room: string, options?: { token?: string }): void {
+  connect(serverUrl: string, room: string, options?: { token?: string; viewerToken?: string }): void {
     if (this.#provider) {
       this.disconnect();
     }
@@ -65,7 +66,11 @@ export class SyncManager {
     this.#currentRoom = room;
 
     const wsParams: Record<string, string> = {};
-    if (this.#readonly) {
+    if (options?.viewerToken) {
+      // Authenticated viewer: token is the credential, no need for ?readonly
+      wsParams['vtoken'] = options.viewerToken;
+    } else if (this.#readonly) {
+      // Backward-compat: unprotected room viewer
       wsParams['readonly'] = '';
     }
     if (options?.token) {

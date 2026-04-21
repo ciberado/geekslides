@@ -315,7 +315,8 @@ try {
       }
     });
   } else {
-    const isReadonly = params.has('readonly');
+    const vtoken = params.get('vtoken');
+    const isReadonly = params.has('readonly') || vtoken !== null;
     document.body.innerHTML = isReadonly
       ? '<geek-slideshow id="slideshow"></geek-slideshow>'
       : '<geek-slideshow id="slideshow"></geek-slideshow><geek-terminal></geek-terminal>';
@@ -340,7 +341,7 @@ try {
         const room = params.get('room') || syncConfig.room || 'default';
         const token = params.get('token') || undefined;
         sync.bind(slideshow);
-        sync.connect(wsUrl, room, { token });
+        sync.connect(wsUrl, room, { token, viewerToken: vtoken ?? undefined });
 
         slideshow.addEventListener('geek:navigate', (e) => {
           sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
@@ -806,8 +807,9 @@ try {
             const data = await res.json();
             const viewerUrl = new URL(window.location.href);
             viewerUrl.searchParams.delete('token');
+            viewerUrl.searchParams.delete('readonly');
             viewerUrl.searchParams.set('room', room);
-            viewerUrl.searchParams.set('readonly', '');
+            viewerUrl.searchParams.set('vtoken', data.viewerToken);
             const viewerLink = viewerUrl.toString();
 
             // Copy to clipboard (best-effort — requires HTTPS or localhost)
@@ -822,6 +824,7 @@ try {
             const prefix = copied ? '✓ Share link (copied to clipboard): ' : '✓ Share link: ';
             terminal.setOutputLink(prefix, viewerLink, { persist: true });
             console.log('[share] Presenter token:', data.presenterToken);
+            console.log('[share] Viewer token:', data.viewerToken);
             console.log('[share] Viewer URL:', viewerLink);
 
             // Store the presenter token so future reconnections are authenticated

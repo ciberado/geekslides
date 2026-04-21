@@ -80,9 +80,11 @@ describe('Room API', () => {
     const res = await httpRequest(`${baseUrl}/api/rooms/my-talk/share`, { method: 'POST' });
     expect(res.status).toBe(201);
 
-    const data = JSON.parse(res.body) as { room: string; presenterToken: string };
+    const data = JSON.parse(res.body) as { room: string; presenterToken: string; viewerToken: string };
     expect(data.room).toBe('my-talk');
     expect(data.presenterToken).toHaveLength(64);
+    expect(data.viewerToken).toHaveLength(64);
+    expect(data.presenterToken).not.toBe(data.viewerToken);
   });
 
   it('POST /api/rooms/:room/auth validates a presenter token', async () => {
@@ -158,16 +160,16 @@ describe('WebSocket auth', () => {
     }
   });
 
-  it('allows readonly viewer on protected room', async () => {
+  it('allows viewer with valid vtoken on protected room', async () => {
     const { wsUrl, roomStore } = await startServer();
-    roomStore.createRoom('secured');
+    const { viewerToken } = roomStore.createRoom('secured');
 
     const doc = new Y.Doc();
     const provider = new WebsocketProvider(
       wsUrl,
       'secured',
       doc,
-      { WebSocketPolyfill: WebSocket, params: { readonly: '' } },
+      { WebSocketPolyfill: WebSocket, params: { vtoken: viewerToken } },
     );
 
     try {
@@ -176,6 +178,21 @@ describe('WebSocket auth', () => {
     } finally {
       provider.destroy();
     }
+  });
+
+  it('rejects ?readonly without token on protected room (cannot strip vtoken for access)', async () => {
+    const { wsUrl, roomStore } = await startServer();
+    roomStore.createRoom('secured');
+
+    const ws = new WebSocket(`${wsUrl}/secured?readonly`);
+    const closePromise = new Promise<number>((resolve) => {
+      ws.on('error', () => { /* expected */ });
+      ws.on('close', (code) => resolve(code));
+      ws.on('unexpected-response', (_, res) => resolve(res.statusCode ?? 0));
+    });
+
+    const result = await closePromise;
+    expect(result).toBe(403);
   });
 
   it('rejects connection to protected room without token or readonly', async () => {
@@ -243,7 +260,7 @@ describe('write filtering', () => {
 
   it('presenter can write to a protected room', async () => {
     const { wsUrl, roomStore } = await startServer();
-    const { presenterToken } = roomStore.createRoom('guarded');
+    const { presenterToken, viewerToken } = roomStore.createRoom('guarded');
 
     const presenterDoc = new Y.Doc();
     const viewerDoc = new Y.Doc();
@@ -258,7 +275,7 @@ describe('write filtering', () => {
       wsUrl,
       'guarded',
       viewerDoc,
-      { WebSocketPolyfill: WebSocket, params: { readonly: '' }, disableBc: true },
+      { WebSocketPolyfill: WebSocket, params: { vtoken: viewerToken }, disableBc: true },
     );
 
     try {
@@ -278,7 +295,7 @@ describe('write filtering', () => {
 
   it('viewer writes are silently dropped on protected room', async () => {
     const { wsUrl, roomStore } = await startServer();
-    const { presenterToken } = roomStore.createRoom('guarded');
+    const { presenterToken, viewerToken } = roomStore.createRoom('guarded');
 
     const presenterDoc = new Y.Doc();
     const viewerDoc = new Y.Doc();
@@ -293,7 +310,7 @@ describe('write filtering', () => {
       wsUrl,
       'guarded',
       viewerDoc,
-      { WebSocketPolyfill: WebSocket, params: { readonly: '' }, disableBc: true },
+      { WebSocketPolyfill: WebSocket, params: { vtoken: viewerToken }, disableBc: true },
     );
 
     try {
