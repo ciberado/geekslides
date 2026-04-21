@@ -123,7 +123,7 @@ describe('Terminal', () => {
     }
   });
 
-  it('auto-dismisses after command execution', () => {
+  it('stays open after command execution until Escape', () => {
     terminal.open();
 
     const input = terminal.shadowRoot?.querySelector('input');
@@ -132,13 +132,18 @@ describe('Terminal', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     }
 
-    expect(terminal.isOpen).toBe(true); // Still open for feedback
+    vi.advanceTimersByTime(5000);
+    expect(terminal.isOpen).toBe(true); // stays open
 
-    vi.advanceTimersByTime(1200);
-    expect(terminal.isOpen).toBe(false); // Auto-dismissed
+    // Only Escape closes it
+    const input2 = terminal.shadowRoot?.querySelector('input');
+    if (input2) {
+      input2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    }
+    expect(terminal.isOpen).toBe(false);
   });
 
-  it('help does not auto-dismiss', () => {
+  it('help stays open (as does everything else)', () => {
     terminal.open();
 
     const input = terminal.shadowRoot?.querySelector('input');
@@ -147,8 +152,8 @@ describe('Terminal', () => {
       input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
     }
 
-    vi.advanceTimersByTime(1200);
-    expect(terminal.isOpen).toBe(true); // help should stay open
+    vi.advanceTimersByTime(5000);
+    expect(terminal.isOpen).toBe(true); // stays open until Escape
   });
 
   it('does not have a built-in goto handler', () => {
@@ -197,12 +202,12 @@ describe('Terminal', () => {
       expect(terminal.isOpen).toBe(true);
     });
 
-    it('without persist auto-dismisses', () => {
+    it('without persist stays open', () => {
       terminal.open();
       terminal.setOutputLink('Link: ', 'https://example.com/');
 
-      vi.advanceTimersByTime(1200);
-      expect(terminal.isOpen).toBe(false);
+      vi.advanceTimersByTime(5000);
+      expect(terminal.isOpen).toBe(true);
     });
   });
 });

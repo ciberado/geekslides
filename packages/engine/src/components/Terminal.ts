@@ -8,15 +8,12 @@
 
 import type { CommandSystem } from '../input/CommandSystem.ts';
 
-const AUTO_DISMISS_MS = 1200;
-
 export class Terminal extends HTMLElement {
   #commandSystem: CommandSystem | null = null;
   #history: string[] = [];
   #historyIndex = -1;
   #input: HTMLInputElement | null = null;
   #output: HTMLElement | null = null;
-  #dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   constructor() {
     super();
@@ -45,7 +42,6 @@ export class Terminal extends HTMLElement {
    * Show the terminal and focus the input.
    */
   open(): void {
-    this.#clearDismissTimer();
     this.style.display = 'block';
     this.#historyIndex = -1;
 
@@ -63,7 +59,6 @@ export class Terminal extends HTMLElement {
    * Hide the terminal and dispatch close event.
    */
   close(): void {
-    this.#clearDismissTimer();
     this.style.display = 'none';
     if (this.#input) {
       this.#input.value = '';
@@ -84,14 +79,8 @@ export class Terminal extends HTMLElement {
     if (!this.#output) return;
     const className = isError ? 'error' : 'success';
     this.#output.innerHTML = `<span class="${className}">${this.#escapeHtml(message)}</span>`;
-    if (options?.persist) {
-      this.#clearDismissTimer();
-      // Re-open if already closed by auto-dismiss
-      if (this.style.display === 'none') {
-        this.style.display = 'block';
-      }
-    } else {
-      this.#autoDismiss();
+    if (options?.persist && this.style.display === 'none') {
+      this.style.display = 'block';
     }
   }
 
@@ -111,13 +100,8 @@ export class Terminal extends HTMLElement {
     anchor.textContent = linkUrl;
     span.appendChild(anchor);
     this.#output.replaceChildren(span);
-    if (options?.persist) {
-      this.#clearDismissTimer();
-      if (this.style.display === 'none') {
-        this.style.display = 'block';
-      }
-    } else {
-      this.#autoDismiss();
+    if (options?.persist && this.style.display === 'none') {
+      this.style.display = 'block';
     }
   }
 
@@ -334,7 +318,6 @@ export class Terminal extends HTMLElement {
     }
 
     input.value = '';
-    this.#autoDismiss();
   }
 
   #showHelp(): void {
@@ -397,20 +380,6 @@ export class Terminal extends HTMLElement {
       input.value = '';
     } else {
       input.value = this.#history[this.#historyIndex] ?? '';
-    }
-  }
-
-  #autoDismiss(): void {
-    this.#clearDismissTimer();
-    this.#dismissTimer = setTimeout(() => {
-      this.close();
-    }, AUTO_DISMISS_MS);
-  }
-
-  #clearDismissTimer(): void {
-    if (this.#dismissTimer !== null) {
-      clearTimeout(this.#dismissTimer);
-      this.#dismissTimer = null;
     }
   }
 
