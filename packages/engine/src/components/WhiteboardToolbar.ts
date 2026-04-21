@@ -75,6 +75,11 @@ export class WhiteboardToolbar extends HTMLElement {
   toggleCollapse(): void {
     this.#collapsed = !this.#collapsed;
     this.#updateCollapsed();
+    this.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
+      bubbles: true,
+      composed: true,
+      detail: { collapsed: this.#collapsed },
+    }));
   }
 
   /**

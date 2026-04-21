@@ -76,9 +76,15 @@ Separate route/tab:
   above the slide content (`pointer-events: auto`, `z-index: 100`), so links, iframes,
   and other interactive elements underneath cannot be clicked. The canvas stays
   displayed even on empty slides to keep pointer events working for drawing. To
-  interact with slide content, hide the whiteboard first via the toolbar hide button
-  (`⊘`), the `whiteboard` toggle command, or the `wb-hide` command. Hiding sets
-  `display: none` on the canvas, fully restoring click-through.
+  interact with slide content you have two options:
+  - **Collapse the toolbar** (click `≡` or run `wb-toolbar`): sets `display: none` on
+    the canvas so all pointer events pass through to the slide. Auto-activation is also
+    suppressed while collapsed. Expanding the toolbar restores the canvas exactly as it
+    was.
+  - **Hide the whiteboard** (`⊘` button, `whiteboard` command, or `wb-hide`): hides
+    the canvas via `display: none` and also controls `userDismissed` state.
+  Both approaches fully restore click-through to links, sliders, and other interactive
+  elements in the slide.
 - **`toggleCanvas()`**: Toggles canvas visibility without setting `userDismissed`,
   so auto-activation on drag still works after hiding. Used by the toolbar `⊘` button
   via the `geek:whiteboard:hide-request` event. The `deactivate()` method (used by
@@ -149,6 +155,9 @@ The toolbar dispatches custom events that the Whiteboard component listens for:
 - `geek:whiteboard:color-change` — `{ color: string }`
 - `geek:whiteboard:clear-request` — triggers clear with confirmation
 - `geek:whiteboard:hide-request` — hides the whiteboard for the current slide
+- `geek:whiteboard:collapsed-change` — `{ collapsed: boolean }` — fires when the
+  toolbar is collapsed or expanded; `main.js` calls `whiteboard.setToolbarCollapsed()`
+  which hides/restores the canvas and suppresses auto-activation while collapsed
 
 The toolbar is created and managed by the host app (main.js), not by the
 Whiteboard component itself, keeping both components decoupled.

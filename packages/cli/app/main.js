@@ -663,6 +663,9 @@ try {
     wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
       whiteboard.clear();
     });
+    wbToolbar.addEventListener('geek:whiteboard:collapsed-change', (e) => {
+      whiteboard.setToolbarCollapsed(e.detail.collapsed);
+    });
 
     // Update whiteboard slide index on navigation
     slideshow.addEventListener('geek:navigate', (e) => {
@@ -682,7 +685,7 @@ try {
       gsContainer.addEventListener('pointermove', (e) => {
         if (!pointerStartedOnSlide) return;
         if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
-        if (!whiteboard.isVisible && !whiteboard.userDismissed) {
+        if (!whiteboard.isVisible && !whiteboard.userDismissed && !whiteboard.toolbarCollapsed) {
           whiteboard.setActive(true);
           whiteboard.beginStroke(e);
         }

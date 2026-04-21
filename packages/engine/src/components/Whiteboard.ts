@@ -24,6 +24,8 @@ export class Whiteboard extends HTMLElement {
   #isDrawing = false;
   #currentPoints: [number, number][] = [];
   #color = '#ff0000';
+  /** When true, the canvas is suppressed so pointer events pass through to the slide. */
+  #toolbarCollapsed = false;
   #lineWidth = 3;
   #compositeOp: GlobalCompositeOperation = 'source-over';
   #alpha = 1.0;
@@ -124,6 +126,29 @@ export class Whiteboard extends HTMLElement {
    */
   get userDismissed(): boolean {
     return this.#userDismissed;
+  }
+
+  /**
+   * Whether the toolbar is currently collapsed.
+   * When collapsed the canvas is hidden so pointer events reach the slide content.
+   */
+  get toolbarCollapsed(): boolean {
+    return this.#toolbarCollapsed;
+  }
+
+  /**
+   * Called by the toolbar when the user collapses or expands it.
+   * Hides/restores the canvas so pointer events pass through when collapsed.
+   */
+  setToolbarCollapsed(collapsed: boolean): void {
+    if (collapsed === this.#toolbarCollapsed) return;
+    this.#toolbarCollapsed = collapsed;
+    if (!this.#canvas) return;
+    if (collapsed) {
+      this.#hideCanvas();
+    } else if (this.#visible) {
+      this.#showCanvas();
+    }
   }
 
   /**
