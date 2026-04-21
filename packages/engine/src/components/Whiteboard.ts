@@ -41,6 +41,8 @@ export class Whiteboard extends HTMLElement {
   #slideSnapshots = new Map<number, SlideSnapshot>();
   #onRemoteStroke: ((e: Event) => void) | null = null;
   #onRemoteProgress: ((e: Event) => void) | null = null;
+  #onRemoteClear: ((e: Event) => void) | null = null;
+  #onRemoteVisibility: ((e: Event) => void) | null = null;
   /** Timer for coalescing rapid pen lift/contact cycles into one stroke. */
   #coalesceTimer: ReturnType<typeof setTimeout> | null = null;
   /** Timer for emitting stroke progress to remote viewers. */
@@ -535,6 +537,18 @@ export class Whiteboard extends HTMLElement {
     };
     document.addEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
     document.addEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
+
+    this.#onRemoteClear = (e: Event) => {
+      const { slideIndex, remaining } = (e as CustomEvent<{ slideIndex: number; remaining: WhiteboardStroke[] }>).detail;
+      this.#handleRemoteClear(slideIndex, remaining);
+    };
+    document.addEventListener('geek:whiteboard:remote-clear', this.#onRemoteClear);
+
+    this.#onRemoteVisibility = (e: Event) => {
+      const { visible } = (e as CustomEvent<{ visible: boolean }>).detail;
+      this.#setActiveInternal(visible);
+    };
+    document.addEventListener('geek:whiteboard:remote-visibility', this.#onRemoteVisibility);
   }
 
   #stopListeningForRemoteStrokes(): void {
@@ -545,6 +559,43 @@ export class Whiteboard extends HTMLElement {
     if (this.#onRemoteProgress) {
       document.removeEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
       this.#onRemoteProgress = null;
+    }
+    if (this.#onRemoteClear) {
+      document.removeEventListener('geek:whiteboard:remote-clear', this.#onRemoteClear);
+      this.#onRemoteClear = null;
+    }
+    if (this.#onRemoteVisibility) {
+      document.removeEventListener('geek:whiteboard:remote-visibility', this.#onRemoteVisibility);
+      this.#onRemoteVisibility = null;
+    }
+  }
+
+  /**
+   * Handle a remote clear event: wipe the canvas and snapshot for the affected
+   * slide, then redraw any remaining strokes (e.g. partial clears in the future).
+   */
+  #handleRemoteClear(slideIndex: number, remaining: WhiteboardStroke[]): void {
+    this.#slideSnapshots.delete(slideIndex);
+
+    if (slideIndex === this.#slideIndex) {
+      if (this.#ctx && this.#canvas) {
+        this.#ctx.clearRect(0, 0, this.#canvas.width, this.#canvas.height);
+      }
+      if (this.#tempCtx && this.#tempCanvas) {
+        this.#tempCtx.clearRect(0, 0, this.#tempCanvas.width, this.#tempCanvas.height);
+      }
+      this.#liveStrokesRendered.clear();
+      this.#remoteTempStrokes.clear();
+      if (remaining.length > 0) {
+        const snapshot: SlideSnapshot = { strokes: [] };
+        this.#slideSnapshots.set(slideIndex, snapshot);
+        for (const stroke of remaining) {
+          this.#drawStroke(stroke);
+          snapshot.strokes.push(stroke);
+        }
+      }
+    } else if (remaining.length > 0) {
+      this.#slideSnapshots.set(slideIndex, { strokes: [...remaining] });
     }
   }
 

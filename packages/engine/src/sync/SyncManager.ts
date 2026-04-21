@@ -179,12 +179,23 @@ export class SyncManager {
   clearStrokes(slideIndex: number): void {
     if (this.#readonly) return;
     const arr = this.#whiteboardStrokes;
-    for (let i = arr.length - 1; i >= 0; i--) {
-      const item = arr.get(i) as WhiteboardStroke | undefined;
-      if (item?.slideIndex === slideIndex) {
-        arr.delete(i, 1);
+    this.doc.transact(() => {
+      for (let i = arr.length - 1; i >= 0; i--) {
+        const item = arr.get(i) as WhiteboardStroke | undefined;
+        if (item?.slideIndex === slideIndex) {
+          arr.delete(i, 1);
+        }
       }
-    }
+    });
+  }
+
+  /**
+   * Publish whiteboard canvas visibility to all connected sessions.
+   * No-op in readonly mode.
+   */
+  publishWhiteboardVisible(visible: boolean): void {
+    if (this.#readonly) return;
+    this.#sessionState.set('whiteboardVisible', visible);
   }
 
   /**
@@ -234,6 +245,18 @@ export class SyncManager {
     // Observe remote session state changes
     this.#sessionState.observe((event) => {
       if (event.transaction.local) return;
+
+      // Whiteboard visibility is independent of follow-presenter mode.
+      if (event.keysChanged.has('whiteboardVisible')) {
+        const visible = this.#sessionState.get('whiteboardVisible') as boolean | undefined;
+        if (visible !== undefined) {
+          this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-visibility', {
+            bubbles: true,
+            detail: { visible },
+          }));
+        }
+      }
+
       if (!this.#followPresenter) return;
       if (!this.#target) return;
 
@@ -263,6 +286,27 @@ export class SyncManager {
           this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke', {
             bubbles: true,
             detail: stroke,
+          }));
+        }
+      }
+
+      // Handle stroke deletions — notify clients to clear and redraw.
+      if (event.changes.deleted.size > 0) {
+        const clearedSlides = new Set<number>();
+        for (const item of event.changes.deleted) {
+          const content = item.content.getContent() as WhiteboardStroke[];
+          for (const stroke of content) {
+            clearedSlides.add(stroke.slideIndex);
+          }
+        }
+        const remaining = this.getStrokes();
+        for (const slideIndex of clearedSlides) {
+          this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-clear', {
+            bubbles: true,
+            detail: {
+              slideIndex,
+              remaining: remaining.filter((s) => s.slideIndex === slideIndex),
+            },
           }));
         }
       }

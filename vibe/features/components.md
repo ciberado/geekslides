@@ -57,7 +57,13 @@ Separate route/tab:
   `composed: true` so they escape the shadow DOM. The `WhiteboardSync` bridge forwards
   them to `SyncManager.addStroke()`. Remote strokes arrive as
   `geek:whiteboard:remote-stroke` events and are rendered via `drawRemoteStroke()`.
-  The whiteboard component listens for both event directions.
+  The whiteboard component listens for all remote event directions:
+  - `geek:whiteboard:remote-stroke` — renders a completed stroke
+  - `geek:whiteboard:remote-stroke-progress` — renders incremental live-stroke points
+  - `geek:whiteboard:remote-clear` — clears and redraws the affected slide's strokes
+    when the presenter calls clear, keeping all sessions in sync
+  - `geek:whiteboard:remote-visibility` — calls `#setActiveInternal()` to mirror the
+    presenter's canvas show/hide state on all connected sessions (bypasses readonly)
 - **Progressive sync**: During a long continuous stroke, the component emits
   `geek:whiteboard:stroke-progress` events every `PROGRESS_MS` (100 ms) containing
   the cumulative points so far. `WhiteboardSync` bridges these to

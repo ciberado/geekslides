@@ -91,9 +91,9 @@ is finalized and moved to `whiteboardStrokes`.
 
 **`connect(serverUrl, room)`**: Creates a `WebsocketProvider` connecting to the given server URL and room name. Listens for `status` events and dispatches `geek:sync:state` CustomEvents when connection status changes.
 
-- **Session state observer**: Watches the Y.Map for changes. When a remote transaction arrives (ignoring local ones), reads `slide`, `partial`, and `mode` from the map and applies them to the slideshow via `goTo()` and `mode` setter. Sets `#isRemoteUpdate` to `true` during application to prevent the local change from being re-published.
+- **Session state observer**: Watches the Y.Map for changes. When a remote transaction arrives (ignoring local ones), reads `slide`, `partial`, and `mode` from the map and applies them to the slideshow via `goTo()` and `mode` setter. Sets `#isRemoteUpdate` to `true` during application to prevent the local change from being re-published. Also monitors the `whiteboardVisible` key independently of follow-presenter mode: when changed remotely it dispatches `geek:whiteboard:remote-visibility` (`{ visible: boolean }`) so all sessions mirror the presenter's canvas show/hide state.
 
-- **Whiteboard observer**: Watches the Y.Array for added items from remote transactions. For each new stroke, dispatches a `geek:whiteboard:remote-stroke` CustomEvent with the stroke data. The `<geek-whiteboard>` component listens for this event and renders each remote stroke via `drawRemoteStroke()`. `WhiteboardSync` is activated in `main.js` alongside sync setup, completing the bidirectional pipeline: local draw → event → `addStroke()` → Y.Array → remote observer → event → `drawRemoteStroke()`.
+- **Whiteboard observer**: Watches the Y.Array for added items from remote transactions. For each new stroke, dispatches a `geek:whiteboard:remote-stroke` CustomEvent with the stroke data. The `<geek-whiteboard>` component listens for this event and renders each remote stroke via `drawRemoteStroke()`. `WhiteboardSync` is activated in `main.js` alongside sync setup, completing the bidirectional pipeline: local draw → event → `addStroke()` → Y.Array → remote observer → event → `drawRemoteStroke()`. When strokes are **deleted** remotely (via `clearStrokes()`), the observer collects the affected slide indices from `event.changes.deleted`, then dispatches `geek:whiteboard:remote-clear` (`{ slideIndex, remaining }`) so all clients wipe and redraw only the remaining strokes for that slide.
 
 - **Live stroke observer**: Watches the `liveStrokes` Y.Map for remote updates. When a key is added or updated, dispatches a `geek:whiteboard:remote-stroke-progress` CustomEvent. The whiteboard renders only the new points since the last update via `drawLiveStroke()`, providing real-time progressive rendering. On finalization, `WhiteboardSync` clears the live entry and pushes the completed stroke to the Y.Array; `drawRemoteStroke()` skips re-drawing points already rendered by the live path.
 
@@ -103,7 +103,9 @@ is finalized and moved to `whiteboardStrokes`.
 
 **`getStrokes()`**: Returns all existing strokes from the Y.Array as a plain array. Used by late-joining clients to replay whiteboard state that was drawn before they connected.
 
-**`clearStrokes(slideIndex)`**: Within a transaction, iterates the Y.Array in reverse and deletes all strokes matching the given slide index.
+**`clearStrokes(slideIndex)`**: Within a transaction, iterates the Y.Array in reverse and deletes all strokes matching the given slide index. Remote observers receive a `geek:whiteboard:remote-clear` event so all other sessions immediately clear and redraw the affected slide.
+
+**`publishWhiteboardVisible(visible)`**: Sets `whiteboardVisible` on the shared `sessionState` Y.Map. Remote observers dispatch `geek:whiteboard:remote-visibility` so all sessions mirror the canvas show/hide state.
 
 **`updateConnectionToken(token)`**: Stores the token in the live WebSocket provider's URL params so that any future reconnection by y-websocket uses it automatically. No disconnect/reconnect is performed — the existing connection stays open.
 

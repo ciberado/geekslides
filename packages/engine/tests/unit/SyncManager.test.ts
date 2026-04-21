@@ -293,3 +293,73 @@ describe('SyncManager readonly mode', () => {
     expect(sm.getStrokes()).toHaveLength(1);
   });
 });
+
+describe('SyncManager remote-clear event', () => {
+  it('dispatches geek:whiteboard:remote-clear when remote strokes are deleted', () => {
+    const eventTarget = new EventTarget();
+    const sm = new SyncManager(eventTarget);
+
+    // Add two strokes on slide 0 and one on slide 1
+    sm.addStroke({ id: 's1', slideIndex: 0, points: [[0.1, 0.2]], color: '#f00', width: 3, clientId: 'a' });
+    sm.addStroke({ id: 's2', slideIndex: 0, points: [[0.3, 0.4]], color: '#f00', width: 3, clientId: 'a' });
+    sm.addStroke({ id: 's3', slideIndex: 1, points: [[0.5, 0.6]], color: '#0f0', width: 3, clientId: 'a' });
+
+    // Listen for remote-clear on another SyncManager sharing the same doc (simulates a peer)
+    const peer = new SyncManager(eventTarget);
+    Y.applyUpdate(peer.doc, Y.encodeStateAsUpdate(sm.doc));
+
+    const clearEvents: CustomEvent[] = [];
+    eventTarget.addEventListener('geek:whiteboard:remote-clear', (e) => {
+      clearEvents.push(e as CustomEvent);
+    });
+
+    // Simulate a remote peer deleting slide-0 strokes
+    const remoteDoc = new Y.Doc();
+    Y.applyUpdate(remoteDoc, Y.encodeStateAsUpdate(peer.doc));
+    // Delete both slide-0 strokes from the remote doc
+    remoteDoc.transact(() => {
+      const arr = remoteDoc.getArray('whiteboardStrokes');
+      // Delete indices 0 and 1 (both slide 0 strokes)
+      arr.delete(1, 1);
+      arr.delete(0, 1);
+    });
+
+    Y.applyUpdate(peer.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    expect(clearEvents.length).toBeGreaterThanOrEqual(1);
+    const slideIndices = clearEvents.map((e) => (e as CustomEvent<{ slideIndex: number }>).detail.slideIndex);
+    expect(slideIndices).toContain(0);
+  });
+
+  it('publishWhiteboardVisible writes whiteboardVisible to sessionState', () => {
+    const sm = new SyncManager(new EventTarget());
+    sm.publishWhiteboardVisible(false);
+    expect(sm.doc.getMap('sessionState').get('whiteboardVisible')).toBe(false);
+    sm.publishWhiteboardVisible(true);
+    expect(sm.doc.getMap('sessionState').get('whiteboardVisible')).toBe(true);
+  });
+
+  it('publishWhiteboardVisible is a no-op in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+    sm.publishWhiteboardVisible(false);
+    expect(sm.doc.getMap('sessionState').get('whiteboardVisible')).toBeUndefined();
+  });
+
+  it('dispatches geek:whiteboard:remote-visibility when remote peer sets whiteboardVisible', () => {
+    const eventTarget = new EventTarget();
+    const sm = new SyncManager(eventTarget);
+
+    const visibilityEvents: CustomEvent[] = [];
+    eventTarget.addEventListener('geek:whiteboard:remote-visibility', (e) => {
+      visibilityEvents.push(e as CustomEvent);
+    });
+
+    // Simulate a remote peer publishing visibility=false
+    const remoteDoc = new Y.Doc();
+    remoteDoc.getMap('sessionState').set('whiteboardVisible', false);
+    Y.applyUpdate(sm.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    expect(visibilityEvents).toHaveLength(1);
+    expect((visibilityEvents[0] as CustomEvent<{ visible: boolean }>).detail.visible).toBe(false);
+  });
+});

@@ -687,9 +687,11 @@ try {
     });
     wbToolbar.addEventListener('geek:whiteboard:hide-request', () => {
       whiteboard.toggleCanvas();
+      if (sync) sync.publishWhiteboardVisible(whiteboard.isVisible);
     });
     wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
       whiteboard.clear();
+      if (sync) sync.clearStrokes(whiteboard.slideIndex);
     });
     wbToolbar.addEventListener('geek:whiteboard:collapsed-change', (e) => {
       whiteboard.setToolbarCollapsed(e.detail.collapsed);
@@ -762,10 +764,12 @@ try {
 
     commands.register({ name: 'whiteboard', label: 'Toggle whiteboard', execute: () => {
       whiteboard.toggle();
+      if (sync) sync.publishWhiteboardVisible(whiteboard.isVisible);
     }, category: 'built-in' });
 
     commands.register({ name: 'whiteboard-clear', label: 'Clear whiteboard on current slide', execute: () => {
       whiteboard.clear();
+      if (sync) sync.clearStrokes(whiteboard.slideIndex);
     }, category: 'built-in' });
 
     commands.register({ name: 'wb-toolbar', label: 'Toggle whiteboard toolbar', execute: () => {
