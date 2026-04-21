@@ -1,7 +1,10 @@
 import { describe, it, expect } from 'vitest';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile as fsReadFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { CLI_VERSION } from '../src/index.ts';
 import {
   buildDeckDevUrl,
@@ -152,5 +155,101 @@ describe('cli', () => {
     expect(html).toContain('.page.horizontal.no-details:not(.hero) .thumb { flex-shrink: 0; width: 140mm; }');
     expect(html).toContain('.page.horizontal.has-details .thumb img { width: 140mm; height: 78.75mm; object-fit: contain; border: 1px solid #ccc; border-radius: 3px; }');
     expect(html).not.toContain('.page.horizontal .thumb img { width: 140mm; height: 78.75mm; object-fit: contain; border: 1px solid #ccc; border-radius: 3px; }');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Built bundle integrity — guard against pino/thread-stream being inlined
+// ---------------------------------------------------------------------------
+
+const DIST_CJS = resolve(fileURLToPath(import.meta.url), '..', '..', 'dist', 'index.cjs');
+const BUNDLE_EXISTS = existsSync(DIST_CJS);
+
+describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
+  it('resolves pino as an external require(), not inlined', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    // If pino were inlined, its internal path join(__dirname, 'worker.js') would
+    // resolve to dist/lib/worker.js at runtime — which does not exist — and the
+    // CLI would crash with MODULE_NOT_FOUND on startup.
+    // The fix is --external:pino in the esbuild command, which turns all pino
+    // imports into require("pino") calls resolved from node_modules at runtime.
+    expect(bundle).toMatch(/require\(["']pino["']\)/);
+  });
+
+  it('resolves pino-pretty as an external require(), not inlined', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    expect(bundle).toMatch(/require\(["']pino-pretty["']\)/);
+  });
+
+  it('does not contain pino worker path that would break at runtime', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    // This string appears in pino's source when it constructs the worker path.
+    // Its presence in the bundle means pino was inlined and __dirname will
+    // resolve to the bundle's directory, not node_modules/pino/lib/.
+    expect(bundle).not.toContain('pino-worker');
+  });
+
+  it('binary loads without MODULE_NOT_FOUND error', () => {
+    const result = spawnSync(process.execPath, [DIST_CJS, '--version'], {
+      timeout: 10_000,
+      encoding: 'utf8',
+      env: { ...process.env, GEEKSLIDES_LOG: 'silent' },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    // stderr should not contain the worker path or MODULE_NOT_FOUND
+    expect(result.stderr).not.toContain('dist/lib/worker.js');
+    expect(result.stderr).not.toContain('MODULE_NOT_FOUND');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Built bundle integrity — guard against pino/thread-stream being inlined
+// ---------------------------------------------------------------------------
+
+const DIST_CJS = resolve(fileURLToPath(import.meta.url), '..', '..', 'dist', 'index.cjs');
+const BUNDLE_EXISTS = existsSync(DIST_CJS);
+
+describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
+  it('resolves pino as an external require(), not inlined', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    // If pino were inlined, its internal path join(__dirname, 'worker.js') would
+    // resolve to dist/lib/worker.js at runtime — which does not exist — and the
+    // CLI would crash with MODULE_NOT_FOUND on startup.
+    // The fix is --external:pino in the esbuild command, which turns all pino
+    // imports into require("pino") calls resolved from node_modules at runtime.
+    expect(bundle).toMatch(/require\(["']pino["']\)/);
+  });
+
+  it('resolves pino-pretty as an external transport target, not inlined', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    // pino-pretty is referenced as a transport target string so pino loads it
+    // dynamically from node_modules at runtime. It must not be inlined (which
+    // would break thread-stream's file-path-based worker spawning).
+    expect(bundle).toContain('"pino-pretty"');
+    // If it were inlined its own source code would appear — detect by a string
+    // unique to pino-pretty's internals.
+    expect(bundle).not.toContain('prettifyErrorWithCause');
+  });
+
+  it('does not contain pino worker path that would break at runtime', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    // This string appears in pino's source when it constructs the worker path.
+    // Its presence in the bundle means pino was inlined and __dirname will
+    // resolve to the bundle's directory, not node_modules/pino/lib/.
+    expect(bundle).not.toContain('pino-worker');
+  });
+
+  it('binary loads without MODULE_NOT_FOUND error', () => {
+    const result = spawnSync(process.execPath, [DIST_CJS, '--version'], {
+      timeout: 10_000,
+      encoding: 'utf8',
+      env: { ...process.env, GEEKSLIDES_LOG: 'silent' },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    // stderr should not contain the worker path or MODULE_NOT_FOUND
+    expect(result.stderr).not.toContain('dist/lib/worker.js');
+    expect(result.stderr).not.toContain('MODULE_NOT_FOUND');
   });
 });
