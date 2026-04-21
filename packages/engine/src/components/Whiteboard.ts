@@ -99,7 +99,7 @@ export class Whiteboard extends HTMLElement {
     // Only fade in if the target slide has drawn content.
     if (this.#visible && this.#hasContent()) {
       this.#scheduleFadeIn();
-    } else if (this.#visible) {
+    } else if (this.#visible && !this.#toolbarCollapsed) {
       // Empty slide while active — keep canvas displayed so pointer
       // events still work for drawing.  An empty canvas is fully
       // transparent, so there is no visual artifact.
@@ -550,6 +550,9 @@ export class Whiteboard extends HTMLElement {
 
   #showCanvas(): void {
     if (!this.#canvas) return;
+    // Don't reveal the canvas while the toolbar is collapsed — the user
+    // explicitly suppressed drawing and pointer events should pass through.
+    if (this.#toolbarCollapsed) return;
     this.#cancelFade();
     // Make visible, start transparent, animate to opaque
     this.#canvas.style.display = 'block';

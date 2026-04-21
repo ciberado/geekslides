@@ -164,4 +164,45 @@ describe('Terminal', () => {
       expect(output?.innerHTML).toContain('unknown command');
     }
   });
+
+  describe('setOutputLink', () => {
+    it('renders a clickable anchor with the given URL', () => {
+      terminal.open();
+      terminal.setOutputLink('Share link: ', 'https://example.com/?room=test&readonly', { persist: true });
+
+      const output = terminal.shadowRoot?.querySelector('.output');
+      const anchor = output?.querySelector('a');
+      expect(anchor).toBeTruthy();
+      expect(anchor?.href).toBe('https://example.com/?room=test&readonly');
+      expect(anchor?.textContent).toBe('https://example.com/?room=test&readonly');
+      expect(anchor?.target).toBe('_blank');
+      expect(anchor?.rel).toContain('noopener');
+    });
+
+    it('renders the prefix as plain text (not as HTML)', () => {
+      terminal.open();
+      terminal.setOutputLink('<b>Bold</b>: ', 'https://example.com/');
+
+      const output = terminal.shadowRoot?.querySelector('.output');
+      // The bold tag must be escaped, not rendered as markup
+      expect(output?.innerHTML).toContain('&lt;b&gt;');
+      expect(output?.querySelector('b')).toBeNull();
+    });
+
+    it('with persist:true re-opens the terminal if closed', () => {
+      terminal.close();
+      expect(terminal.isOpen).toBe(false);
+
+      terminal.setOutputLink('✓ Share link: ', 'https://example.com/', { persist: true });
+      expect(terminal.isOpen).toBe(true);
+    });
+
+    it('without persist auto-dismisses', () => {
+      terminal.open();
+      terminal.setOutputLink('Link: ', 'https://example.com/');
+
+      vi.advanceTimersByTime(1200);
+      expect(terminal.isOpen).toBe(false);
+    });
+  });
 });

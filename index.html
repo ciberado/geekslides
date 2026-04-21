@@ -889,7 +889,18 @@
                 viewerUrl.searchParams.set('room', room);
                 viewerUrl.searchParams.set('readonly', '');
                 const viewerLink = viewerUrl.toString();
-                terminal.setOutput(`✓ Share link: ${viewerLink}`, false, { persist: true });
+
+                // Copy to clipboard (best-effort — requires HTTPS or localhost)
+                let copied = false;
+                try {
+                  await navigator.clipboard.writeText(viewerLink);
+                  copied = true;
+                } catch {
+                  // Clipboard unavailable (insecure context or permission denied)
+                }
+
+                const prefix = copied ? '✓ Share link (copied to clipboard): ' : '✓ Share link: ';
+                terminal.setOutputLink(prefix, viewerLink, { persist: true });
                 console.log('[share] Presenter token:', data.presenterToken);
                 console.log('[share] Viewer URL:', viewerLink);
 

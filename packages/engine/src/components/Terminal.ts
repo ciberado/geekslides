@@ -95,6 +95,32 @@ export class Terminal extends HTMLElement {
     }
   }
 
+  /**
+   * Set the output to a success message with an embedded clickable link.
+   * Uses DOM manipulation (not innerHTML) so the URL cannot inject markup.
+   */
+  setOutputLink(prefix: string, linkUrl: string, options?: { persist?: boolean }): void {
+    if (!this.#output) return;
+    const span = document.createElement('span');
+    span.className = 'success';
+    span.appendChild(document.createTextNode(prefix));
+    const anchor = document.createElement('a');
+    anchor.href = linkUrl;
+    anchor.target = '_blank';
+    anchor.rel = 'noopener noreferrer';
+    anchor.textContent = linkUrl;
+    span.appendChild(anchor);
+    this.#output.replaceChildren(span);
+    if (options?.persist) {
+      this.#clearDismissTimer();
+      if (this.style.display === 'none') {
+        this.style.display = 'block';
+      }
+    } else {
+      this.#autoDismiss();
+    }
+  }
+
 
   #render(): void {
     const shadow = this.shadowRoot;
@@ -182,6 +208,16 @@ export class Terminal extends HTMLElement {
 
       .output .success {
         color: #50fa7b;
+      }
+
+      .output a {
+        color: #8be9fd;
+        text-decoration: underline;
+        cursor: pointer;
+        word-break: break-all;
+      }
+      .output a:hover {
+        color: #cdfaff;
       }
 
       /* Mobile: larger targets */

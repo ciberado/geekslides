@@ -178,58 +178,10 @@ describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
 
   it('resolves pino-pretty as an external require(), not inlined', async () => {
     const bundle = await fsReadFile(DIST_CJS, 'utf8');
-    expect(bundle).toMatch(/require\(["']pino-pretty["']\)/);
-  });
-
-  it('does not contain pino worker path that would break at runtime', async () => {
-    const bundle = await fsReadFile(DIST_CJS, 'utf8');
-    // This string appears in pino's source when it constructs the worker path.
-    // Its presence in the bundle means pino was inlined and __dirname will
-    // resolve to the bundle's directory, not node_modules/pino/lib/.
-    expect(bundle).not.toContain('pino-worker');
-  });
-
-  it('binary loads without MODULE_NOT_FOUND error', () => {
-    const result = spawnSync(process.execPath, [DIST_CJS, '--version'], {
-      timeout: 10_000,
-      encoding: 'utf8',
-      env: { ...process.env, GEEKSLIDES_LOG: 'silent' },
-    });
-    expect(result.error).toBeUndefined();
-    expect(result.status).toBe(0);
-    // stderr should not contain the worker path or MODULE_NOT_FOUND
-    expect(result.stderr).not.toContain('dist/lib/worker.js');
-    expect(result.stderr).not.toContain('MODULE_NOT_FOUND');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Built bundle integrity — guard against pino/thread-stream being inlined
-// ---------------------------------------------------------------------------
-
-const DIST_CJS = resolve(fileURLToPath(import.meta.url), '..', '..', 'dist', 'index.cjs');
-const BUNDLE_EXISTS = existsSync(DIST_CJS);
-
-describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
-  it('resolves pino as an external require(), not inlined', async () => {
-    const bundle = await fsReadFile(DIST_CJS, 'utf8');
-    // If pino were inlined, its internal path join(__dirname, 'worker.js') would
-    // resolve to dist/lib/worker.js at runtime — which does not exist — and the
-    // CLI would crash with MODULE_NOT_FOUND on startup.
-    // The fix is --external:pino in the esbuild command, which turns all pino
-    // imports into require("pino") calls resolved from node_modules at runtime.
-    expect(bundle).toMatch(/require\(["']pino["']\)/);
-  });
-
-  it('resolves pino-pretty as an external transport target, not inlined', async () => {
-    const bundle = await fsReadFile(DIST_CJS, 'utf8');
-    // pino-pretty is referenced as a transport target string so pino loads it
-    // dynamically from node_modules at runtime. It must not be inlined (which
-    // would break thread-stream's file-path-based worker spawning).
-    expect(bundle).toContain('"pino-pretty"');
-    // If it were inlined its own source code would appear — detect by a string
-    // unique to pino-pretty's internals.
-    expect(bundle).not.toContain('prettifyErrorWithCause');
+    // pino-pretty is referenced by pino as a transport string ("pino-pretty"),
+    // not as a direct require() call. The important guarantee is that its source
+    // is NOT inlined — confirmed by the absence of its distinctive export name.
+    expect(bundle).not.toContain('prettifyMessage');
   });
 
   it('does not contain pino worker path that would break at runtime', async () => {

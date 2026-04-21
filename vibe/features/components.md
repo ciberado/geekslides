@@ -191,7 +191,8 @@ The command workflow is terminal-based:
 - Type command (`help`, `go 8`, `speaker`, `whiteboard`, `overview`, `fullscreen`, `share`).
 - Press Enter to execute; Esc closes the terminal.
 - `help` output stays visible until manually dismissed (no auto-dismiss).
-- `setOutput(message, isError?, { persist? })` displays command results. With `persist: true`, the terminal stays open (used by `share` to let the user copy the link). Otherwise, auto-dismisses after 1.2 s.
+- `setOutput(message, isError?, { persist? })` displays command results. With `persist: true`, the terminal stays open. Otherwise, auto-dismisses after 1.2 s.
+- `setOutputLink(prefix, url, { persist? })` renders the prefix as escaped text followed by a clickable `<a target="_blank">` link built via DOM manipulation (no innerHTML). Used by `share` to display the viewer URL.
 - Press `?` for a keyboard shortcuts overlay.
 - Navigation keys remain direct and always available in normal mode.
 

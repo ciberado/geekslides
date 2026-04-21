@@ -190,6 +190,9 @@ Protected rooms enforce a presenter/viewer split. The presenter can navigate and
 ### `share` Terminal Command
 
 1. `POST /api/rooms/:room/share` to create a protected room
-2. Displays the viewer URL with `&readonly` parameter
-3. Stores the presenter token on the live connection via `sync.updateConnectionToken(token)` (avoids tearing down the WebSocket, which would produce reconnection errors)
-4. Updates the browser URL with `&token=` parameter
+2. Copies the viewer URL to the clipboard via `navigator.clipboard.writeText` (best-effort; silent fallback on non-HTTPS contexts)
+3. Renders the viewer URL as a clickable link via `terminal.setOutputLink()` with `persist: true`
+4. Stores the presenter token on the live connection via `sync.updateConnectionToken(token)` (avoids tearing down the WebSocket)
+5. Updates the browser URL with `&token=` parameter
+
+**Security:** removing `&readonly` from the viewer URL does not grant write access. The server enforces role at WebSocket upgrade time — connections to a protected room without a valid `presenterToken` are rejected with HTTP 403. Viewer connections with `?readonly` have Yjs update messages silently dropped by `applyReadOnlyFilter` server-side.
