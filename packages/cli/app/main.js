@@ -6,7 +6,8 @@ import {
   KeyBindings,
   TouchInput,
   SyncManager,
-  WhiteboardSync,
+  FeatureManager,
+  loadFeature,
   iframeProcessor,
   chartProcessor,
   videoProcessor,
@@ -430,22 +431,43 @@ try {
         badge.style.cssText = 'position:fixed;top:8px;left:50%;transform:translateX(-50%);z-index:50;padding:2px 12px;border-radius:4px;background:rgba(0,0,0,0.5);color:#aaa;font:500 11px/1.4 system-ui,sans-serif;letter-spacing:0.05em;pointer-events:none;opacity:0.8;';
         document.body.appendChild(badge);
 
-        // Whiteboard replay (view-only: see presenter's strokes, no drawing)
-        const whiteboard = document.createElement('geek-whiteboard');
-        whiteboard.setAttribute('readonly', '');
-        slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(whiteboard);
-        whiteboard.slideIndex = slideshow.currentSlide;
+        // --- Feature system (readonly mode) ---
+        const featuresContainer = document.createElement('div');
+        featuresContainer.className = 'gs-features';
+        slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(featuresContainer);
 
-        slideshow.addEventListener('geek:navigate', (e) => {
-          whiteboard.slideIndex = e.detail.slide;
+        const featureManager = new FeatureManager({
+          slideshow,
+          commands: { register() {} }, // No commands in readonly mode
+          sync,
+          config,
+          role: 'viewer',
+          featuresContainer,
+          output: { show() {} },
         });
 
-        const wbSync = new WhiteboardSync(sync);
-        wbSync.activate();
-
-        for (const stroke of sync.getStrokes()) {
-          whiteboard.drawRemoteStroke(stroke);
+        // Load features from config
+        for (const featureName of config.features) {
+          try {
+            const feature = await loadFeature(featureName, resolveUrl);
+            featureManager.register(feature);
+          } catch (err) {
+            console.warn(`[features] Failed to load feature '${featureName}':`, err.message);
+          }
         }
+
+        // Emit initial navigation event for features
+        let lastSlide = slideshow.currentSlide;
+        slideshow.addEventListener('geek:navigate', (e) => {
+          const prevSlide = lastSlide;
+          lastSlide = e.detail.slide;
+          if (prevSlide !== lastSlide) {
+            featureManager.emit('slide:leave', { slideIndex: prevSlide, nextIndex: lastSlide });
+            featureManager.emit('slide:enter', { slideIndex: lastSlide, previousIndex: prevSlide });
+          }
+        });
+
+        featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
 
         // Content proxy observer
         let proxyLoaded = false;
@@ -666,75 +688,35 @@ try {
     commands.register({ name: 'speaker', label: 'Open speaker view', execute: () => {
       window.open(`${location.pathname}?view=speaker&config=${configUrl}`, '_blank');
     }, category: 'view' });
-    // --- Whiteboard setup ---
-    const whiteboard = document.createElement('geek-whiteboard');
-    slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(whiteboard);
-    whiteboard.slideIndex = slideshow.currentSlide;
 
-    // --- Whiteboard Toolbar ---
-    const wbToolbar = document.createElement('geek-whiteboard-toolbar');
-    whiteboard.shadowRoot?.appendChild(wbToolbar);
+    // --- Feature system (presenter/peer mode) ---
+    const featuresContainer = document.createElement('div');
+    featuresContainer.className = 'gs-features';
+    slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(featuresContainer);
 
-    // Tool changes → update whiteboard drawing settings
-    wbToolbar.addEventListener('geek:whiteboard:tool-change', (e) => {
-      const { settings } = e.detail;
-      whiteboard.setCompositeOp(settings.compositeOp);
-      whiteboard.setWidth(settings.width);
-      whiteboard.setAlpha(settings.alpha);
-    });
-    wbToolbar.addEventListener('geek:whiteboard:color-change', (e) => {
-      whiteboard.setColor(e.detail.color);
-    });
-    wbToolbar.addEventListener('geek:whiteboard:hide-request', () => {
-      whiteboard.toggleCanvas();
-      if (sync) sync.publishWhiteboardVisible(whiteboard.isVisible);
-    });
-    wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
-      whiteboard.clear();
-      if (sync) sync.clearStrokes(whiteboard.slideIndex);
-    });
-    wbToolbar.addEventListener('geek:whiteboard:collapsed-change', (e) => {
-      whiteboard.setToolbarCollapsed(e.detail.collapsed);
+    const featureManager = new FeatureManager({
+      slideshow,
+      commands,
+      sync,
+      config,
+      role: 'presenter',
+      featuresContainer,
+      output: { show: (msg) => showCmdOutput(msg) },
     });
 
-    // Update whiteboard slide index on navigation
-    slideshow.addEventListener('geek:navigate', (e) => {
-      whiteboard.slideIndex = e.detail.slide;
-    });
-
-    // Auto-activate whiteboard on pointer drag over the slideshow
-    const gsContainer = slideshow.shadowRoot?.querySelector('.gs-container');
-    if (gsContainer) {
-      let pointerStartedOnSlide = false;
-      gsContainer.addEventListener('pointerdown', (e) => {
-        if (e.button !== 0) return;
-        if (e.composedPath().some((el) => el.tagName === 'GEEK-WHITEBOARD')) return;
-        pointerStartedOnSlide = true;
-        e.preventDefault(); // prevent text selection during drag
-      });
-      gsContainer.addEventListener('pointermove', (e) => {
-        if (!pointerStartedOnSlide) return;
-        if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
-        if (!whiteboard.isVisible && !whiteboard.userDismissed && !whiteboard.toolbarCollapsed) {
-          whiteboard.setActive(true);
-          whiteboard.beginStroke(e);
-        }
-      });
-      gsContainer.addEventListener('pointerup', () => { pointerStartedOnSlide = false; });
+    // Load features from config
+    for (const featureName of config.features) {
+      try {
+        const feature = await loadFeature(featureName, resolveUrl);
+        featureManager.register(feature);
+      } catch (err) {
+        console.warn(`[features] Failed to load feature '${featureName}':`, err.message);
+      }
     }
 
-    // Activate WhiteboardSync to bridge local strokes to SyncManager
+    // Content proxy: watch for proxy info published by presenter
+    // Skip if this client is the uploader (presenter already has content loaded)
     if (sync) {
-      const wbSync = new WhiteboardSync(sync);
-      wbSync.activate();
-
-      // Replay existing strokes from the Y.Array (late-joining clients)
-      for (const stroke of sync.getStrokes()) {
-        whiteboard.drawRemoteStroke(stroke);
-      }
-
-      // Content proxy: watch for proxy info published by presenter
-      // Skip if this client is the uploader (presenter already has content loaded)
       let proxyLoaded = false;
       const checkContentProxy = () => {
         if (proxyLoaded || isContentUploader) return;
@@ -762,49 +744,18 @@ try {
       checkContentProxy();
     }
 
-    commands.register({ name: 'whiteboard', label: 'Toggle whiteboard', execute: () => {
-      whiteboard.toggle();
-      if (sync) sync.publishWhiteboardVisible(whiteboard.isVisible);
-    }, category: 'built-in' });
-
-    commands.register({ name: 'whiteboard-clear', label: 'Clear whiteboard on current slide', execute: () => {
-      whiteboard.clear();
-      if (sync) sync.clearStrokes(whiteboard.slideIndex);
-    }, category: 'built-in' });
-
-    commands.register({ name: 'wb-toolbar', label: 'Toggle whiteboard toolbar', execute: () => {
-      wbToolbar.toggleCollapse();
-    }, category: 'whiteboard' });
-
-    commands.register({ name: 'wb-hide', label: 'Hide whiteboard toolbar', execute: () => {
-      wbToolbar.hide();
-    }, category: 'whiteboard' });
-
-    commands.register({ name: 'wb-show', label: 'Show whiteboard toolbar', execute: () => {
-      wbToolbar.show();
-    }, category: 'whiteboard' });
-
-    commands.register({ name: 'wb-pen', label: 'Switch to pen tool', execute: () => {
-      wbToolbar.setTool('pen');
-    }, category: 'whiteboard' });
-
-    commands.register({ name: 'wb-highlighter', label: 'Switch to highlighter tool', execute: () => {
-      wbToolbar.setTool('highlighter');
-    }, category: 'whiteboard' });
-
-    commands.register({ name: 'wb-eraser', label: 'Switch to eraser tool', execute: () => {
-      wbToolbar.setTool('eraser');
-    }, category: 'whiteboard' });
-
-    commands.register({ name: 'wb-color', label: 'Set drawing color (usage: wb-color #ff0000)', execute: (args) => {
-      const color = args?.[0];
-      if (!color) {
-        showCmdOutput('✗ Usage: wb-color <hex-color>');
-        return;
+    // Track navigation for feature lifecycle events
+    let lastSlide = slideshow.currentSlide;
+    slideshow.addEventListener('geek:navigate', (e) => {
+      const prevSlide = lastSlide;
+      lastSlide = e.detail.slide;
+      if (prevSlide !== lastSlide) {
+        featureManager.emit('slide:leave', { slideIndex: prevSlide, nextIndex: lastSlide });
+        featureManager.emit('slide:enter', { slideIndex: lastSlide, previousIndex: prevSlide });
       }
-      wbToolbar.setColor(color);
-      whiteboard.setColor(color);
-    }, category: 'whiteboard' });
+    });
+
+    featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
 
     commands.register({ name: 'toggle-toolbar', label: 'Toggle toolbar', execute: () => {
       slideshow.toggleToolbar();

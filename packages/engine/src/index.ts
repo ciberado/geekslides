@@ -64,6 +64,19 @@ export type { WhiteboardStroke } from './sync/types.ts';
 export { uploadDeck, buildManifest, scanMarkdownImages, scanCssUrls, getProxyBaseUrl } from './sync/DeckUploader.ts';
 export type { DeckManifest } from './sync/DeckUploader.ts';
 
+// Phase 9: Feature System
+export { FeatureManager, loadFeature } from './features/index.ts';
+export type {
+  Feature,
+  FeatureContext,
+  FeatureLifecycleEvents,
+  FeatureSlideshowAPI,
+  FeatureCommandAPI,
+  FeatureSyncAPI,
+  FeatureOutputAPI,
+} from './features/index.ts';
+export { whiteboardFeature } from './features/builtins/whiteboard-feature.ts';
+
 // Register custom elements
 function registerElements(): void {
   if (typeof customElements !== 'undefined') {

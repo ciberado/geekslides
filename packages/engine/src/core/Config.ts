@@ -22,6 +22,7 @@ export interface GeekSlidesConfig {
   readonly content: string;
   readonly styles: readonly string[];
   readonly plugins: PluginsConfig;
+  readonly features: readonly string[];
   readonly aspectRatio: string;
   readonly sync: SyncConfig;
   readonly background: string;
@@ -36,6 +37,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
     preprocessors: ['header'],
     processors: ['iframe'],
   },
+  features: ['whiteboard'],
   aspectRatio: '16/9',
   sync: {
     enabled: true,
@@ -126,6 +128,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
       preprocessors,
       processors,
     },
+    features: Array.isArray(obj['features']) ? (obj['features'] as string[]) : [...DEFAULT_CONFIG.features],
     aspectRatio: typeof obj['aspectRatio'] === 'string' ? obj['aspectRatio'] : DEFAULT_CONFIG.aspectRatio,
     sync: {
       enabled: typeof rawSync['enabled'] === 'boolean' ? rawSync['enabled'] : DEFAULT_CONFIG.sync.enabled,

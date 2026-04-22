@@ -39,6 +39,7 @@ export function registerCreateCommand(program: Command): void {
         title: opts.title,
         content: 'README.md',
         styles: ['css/local.css'],
+        features: ['whiteboard'],
         aspectRatio: '16/9',
       };
       await writeFile(join(dir, 'config.json'), JSON.stringify(config, null, 2) + '\n', 'utf-8');

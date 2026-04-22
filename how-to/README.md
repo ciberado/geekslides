@@ -16,6 +16,8 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Use the Docker CLI](10-use-the-docker-cli.md) | Run GeekSlides commands via Docker without installing Node.js |
 | [Add Mermaid Diagrams](11-add-mermaid-diagrams.md) | Render flowcharts and sequence diagrams in slides with fenced code blocks |
 | [Sync Your Presentation](12-sync-your-presentation.md) | Set up real-time sync rooms, follow/unfollow, whiteboard sharing, and multi-device workflows |
+| [Add a Feature](13-add-a-feature.md) | Enable the whiteboard, load local or remote features, and configure per-deck |
+| [Create a Custom Feature](14-create-a-custom-feature.md) | Build a synced countdown timer feature from scratch with commands, UI, and lifecycle events |
 
 ## Screenshots
 

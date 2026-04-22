@@ -199,6 +199,12 @@ SlideData[] (HTML sections)
 Slides Ready
 ```
 
+## Plugins vs Features
+
+Plugins handle **content transformation** at parse time. For **interactive, stateful extensions** that need ongoing access to navigation, sync, commands, and the DOM at runtime, see the [Feature System](feature-system.md).
+
+Examples of features (not plugins): whiteboard, live surveys, Q&A overlays, audience reactions.
+
 ## v1 → v2 Migration
 
 | v1 | v2 |

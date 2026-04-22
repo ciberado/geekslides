@@ -241,4 +241,4 @@ All four devices stay in sync through the same room.
 
 ---
 
-← Previous: [Add Mermaid Diagrams](11-add-mermaid-diagrams.md) | Back to [index →](README.md)
+Next: [Add a Feature →](13-add-a-feature.md)

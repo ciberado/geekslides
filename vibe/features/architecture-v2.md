@@ -103,6 +103,13 @@ geekslides/
 │   │   │   │   │   ├── video-processor.ts
 │   │   │   │   │   └── iframe-processor.ts
 │   │   │   │   └── index.ts
+│   │   │   ├── features/
+│   │   │   │   ├── types.ts              # Feature, FeatureContext interfaces
+│   │   │   │   ├── FeatureManager.ts     # registration, lifecycle, events
+│   │   │   │   ├── FeatureContext.ts     # context factory
+│   │   │   │   ├── builtins/
+│   │   │   │   │   └── whiteboard-feature.ts  # whiteboard as feature
+│   │   │   │   └── index.ts
 │   │   │   ├── sync/
 │   │   │   │   ├── SyncManager.ts        # Yjs Y.Map ↔ slideshow state
 │   │   │   │   ├── WhiteboardSync.ts     # Yjs Y.Array for strokes
@@ -282,6 +289,23 @@ Presenter Browser                      Audience Browser
 | `geek:slides:loaded` | `{ count }` | Slideshow | SyncManager, SpeakerView |
 | `geek:config:loaded` | `{ config }` | CLI/dev server | Slideshow |
 | `geek:hmr:update` | `{ contentUrl }` | Vite HMR handler | Slideshow (re-render) |
+
+## Extension Model: Plugins vs Features
+
+geekslides v2 has two extension mechanisms:
+
+- **Plugins** (preprocessors + processors) — stateless, fire-once content transformations at parse time. See [plugin-system.md](plugin-system.md).
+- **Features** — stateful, long-lived interactive extensions with access to navigation, sync, commands, and DOM. See [feature-system.md](feature-system.md).
+
+Plugins and features are complementary. A deck can use both.
+
+| Aspect | Plugin | Feature |
+|--------|--------|--------|
+| Scope | Content transformation | Interactive runtime behavior |
+| Lifecycle | Fire-once (parse time) | Long-lived (presentation session) |
+| State | Stateless | Stateful (local + synced via Yjs) |
+| API access | Markdown string or DOM element | Full FeatureContext (slideshow, sync, commands, DOM) |
+| Examples | header, chart, mermaid | whiteboard, survey, Q&A |
 
 ## Key Architectural Differences from v1
 
