@@ -101,6 +101,7 @@ function makeContext(
     syncManager: SyncManager | null;
     strokes: WhiteboardStroke[];
     currentSlide: number;
+    mode: string;
   }> = {},
 ): { ctx: FeatureContext; container: HTMLElement; gsContainer: HTMLElement; commands: ReturnType<typeof vi.fn>; on: ReturnType<typeof vi.fn>; outputShow: ReturnType<typeof vi.fn>; handlers: Map<string, EventHandler[]> } {
   const handlers = new Map<string, EventHandler[]>();
@@ -133,7 +134,7 @@ function makeContext(
     featureId: 'whiteboard',
     config: {} as never,
     role: overrides.role ?? 'presenter',
-    slideshow: { currentSlide: overrides.currentSlide ?? 0, slideCount: 5 } as never,
+    slideshow: { currentSlide: overrides.currentSlide ?? 0, slideCount: 5, mode: overrides.mode ?? 'present' } as never,
     commands: { register: commands } as never,
     sync: null,
     syncManager: overrides.syncManager ?? null,
@@ -529,6 +530,17 @@ describe('whiteboardFeature', () => {
     firePointer(gsContainer, 'pointerdown', { button: 0 });
     // Move with no button held — simulates pointer-leave then move
     firePointer(gsContainer, 'pointermove', { buttons: 0 });
+
+    expect(wb.setActive).not.toHaveBeenCalled();
+  });
+
+  it('does not auto-activate when slideshow is in overview mode', () => {
+    const { ctx, gsContainer, container } = makeContext({ role: 'presenter', mode: 'overview' });
+    whiteboardFeature.activate(ctx);
+    const wb = getWhiteboard(container);
+
+    firePointer(gsContainer, 'pointerdown', { button: 0 });
+    firePointer(gsContainer, 'pointermove', { buttons: 1 });
 
     expect(wb.setActive).not.toHaveBeenCalled();
   });

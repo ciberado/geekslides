@@ -63,6 +63,7 @@ export const whiteboardFeature: Feature = {
 
         const onPointerDown = (e: PointerEvent): void => {
           if (e.button !== 0) return;
+          if (ctx.slideshow.mode !== 'present') return;
           if (e.composedPath().some((el) => (el as Element).tagName === 'GEEK-WHITEBOARD')) return;
           pointerStartedOnSlide = true;
           e.preventDefault();
@@ -70,6 +71,7 @@ export const whiteboardFeature: Feature = {
 
         const onPointerMove = (e: PointerEvent): void => {
           if (!pointerStartedOnSlide) return;
+          if (ctx.slideshow.mode !== 'present') { pointerStartedOnSlide = false; return; }
           if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
           if (!whiteboard.isVisible && !whiteboard.userDismissed && !whiteboard.toolbarCollapsed) {
             whiteboard.setActive(true);

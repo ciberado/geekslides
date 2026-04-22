@@ -35,7 +35,7 @@ describe('TouchInput', () => {
     const noop = (): void => { /* noop */ };
     cs.register({ name: 'next', label: 'Next', execute: noop });
     cs.register({ name: 'prev', label: 'Prev', execute: noop });
-    cs.register({ name: 'toggle-overview', label: 'Overview', execute: noop });
+    cs.register({ name: 'overview', label: 'Overview', execute: noop });
     cs.register({ name: 'toggle-toolbar', label: 'Toolbar', execute: noop });
 
     // Mock HTMLElement

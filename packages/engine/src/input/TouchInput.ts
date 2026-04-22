@@ -81,7 +81,7 @@ export class TouchInput {
     }
 
     if (dy < -SWIPE_THRESHOLD_Y && Math.abs(dy) > Math.abs(dx)) {
-      this.#commandSystem.execute('toggle-overview');
+      this.#commandSystem.execute('overview');
       return;
     }
 

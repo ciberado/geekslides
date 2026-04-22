@@ -572,6 +572,10 @@ export class Slideshow extends HTMLElement {
         display: none !important;
       }
 
+      :host([mode="overview"]) .gs-features {
+        display: none;
+      }
+
       .gs-toolbar button {
         background: transparent;
         border: none;
