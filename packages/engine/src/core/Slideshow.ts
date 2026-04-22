@@ -607,7 +607,7 @@ export class Slideshow extends HTMLElement {
           <dt>← ↑</dt><dd>Previous slide / partial</dd>
           <dt>Home</dt><dd>First slide</dd>
           <dt>End</dt><dd>Last slide</dd>
-          <dt>t</dt><dd>Open command terminal</dd>
+          <dt>Esc</dt><dd>Toggle command terminal</dd>
           <dt>?</dt><dd>Toggle this help</dd>
         </dl>
         <h2>Terminal Commands</h2>

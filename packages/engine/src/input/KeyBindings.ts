@@ -3,7 +3,7 @@
  *
  * Two-mode state machine: normal / terminal.
  * Navigation keys (arrows, space, etc.) are direct — no prefix needed.
- * Pressing `t` opens the terminal command prompt for all other actions.
+ * Pressing `Escape` toggles the terminal command prompt for all other actions.
  */
 
 import type { CommandSystem } from './CommandSystem.ts';
@@ -26,7 +26,7 @@ export class KeyBindings {
   #commandSystem: CommandSystem;
   #mode: KeyMode = 'normal';
   #target: EventTarget;
-  #onTerminalOpen: (() => void) | null = null;
+  #onTerminalToggle: (() => void) | null = null;
   #onShortcutsToggle: (() => void) | null = null;
 
   constructor(commandSystem: CommandSystem, target: EventTarget = document) {
@@ -49,10 +49,10 @@ export class KeyBindings {
   }
 
   /**
-   * Set callback for when terminal should open.
+   * Set callback for when terminal should toggle open/closed.
    */
-  onTerminalOpen(callback: () => void): void {
-    this.#onTerminalOpen = callback;
+  onTerminalToggle(callback: () => void): void {
+    this.#onTerminalToggle = callback;
   }
 
   /**
@@ -76,6 +76,14 @@ export class KeyBindings {
   #handleKeydown = (e: Event): void => {
     const event = e as KeyboardEvent;
 
+    // Escape toggles the terminal regardless of current mode or focus
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.#mode = this.#mode === 'terminal' ? 'normal' : 'terminal';
+      this.#onTerminalToggle?.();
+      return;
+    }
+
     // In terminal mode, all keys go to the terminal prompt
     if (this.#mode === 'terminal') {
       return;
@@ -94,15 +102,6 @@ export class KeyBindings {
     if (event.key === '?') {
       event.preventDefault();
       this.#onShortcutsToggle?.();
-      return;
-    }
-
-    // Check for terminal activation
-    if (event.key === 't') {
-      event.preventDefault();
-      this.#mode = 'terminal';
-      this.#onTerminalOpen?.();
-      this.#target.dispatchEvent(new CustomEvent('geek:terminal:open', { bubbles: true }));
       return;
     }
 

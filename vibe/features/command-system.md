@@ -4,13 +4,14 @@
 
 v2 keeps v1's **direct-keystroke navigation** (arrows, space, page up/down) exactly as-is —
 presenters should never need a modifier key to advance slides. All other commands are
-accessed through a **terminal-like command prompt** activated by pressing **`t`**:
+accessed through a **terminal-like command prompt** toggled by pressing **`Escape`**:
 
 - **Direct keys** (no prefix): `→` `←` `Space` `PageDown` `PageUp` `Home` `End`
   — muscle-memory slide navigation, always active in NORMAL mode.
-- **Terminal** (`t`): opens a minimal command-line prompt at the bottom of the screen.
-  The presenter types a command name (e.g. `emit`, `sync`, `speaker`) and presses Enter.
-  Tab-completion and the `help` command list all available commands. Press `Escape` to dismiss.
+- **Terminal** (`Escape`): toggles a minimal command-line prompt at the bottom of the screen,
+  regardless of what is currently in focus. The presenter types a command name (e.g. `emit`,
+  `sync`, `speaker`) and presses Enter. Tab-completion and the `help` command list all
+  available commands. Press `Escape` again to dismiss. The terminal height is drag-resizable.
 - **Touch**: swipe left/right for navigation, long-press to open the terminal.
 
 This separation keeps the most critical operation (next slide) zero-friction while
@@ -28,10 +29,9 @@ Key Press
 │                              │
 │  State Machine:              │
 │  ┌──────────┐                │
-│  │  NORMAL  │─── t ───►┌──────────┐
+│  │  NORMAL  │◄──Esc───►┌──────────┐
 │  │          │           │ TERMINAL │
 │  │          │◄──Esc─────│ (prompt) │
-│  │          │◄──Enter───│          │
 │  └──────────┘           └──────────┘
 │                              │
 │  Direct keys (NORMAL mode):  │
@@ -45,8 +45,8 @@ CommandSystem.execute(commandName)
 
 The system has exactly **two modes**:
 
-- **NORMAL**: arrows/space navigate directly, `t` opens terminal
-- **TERMINAL**: command input active, all other keys are captured by the prompt
+- **NORMAL**: arrows/space navigate directly, `Escape` toggles terminal
+- **TERMINAL**: command input active, `Escape` toggles back to NORMAL; all other keys are captured by the prompt
 
 ## Components
 
@@ -61,11 +61,12 @@ for grouping in help output.
 
 Two-mode state machine (NORMAL / TERMINAL) that listens for `keydown` events.
 
-In NORMAL mode, direct keys are mapped to navigation commands. Pressing `t` transitions
-to TERMINAL mode and dispatches a `geek:terminal:open` event.
+In NORMAL mode, direct keys are mapped to navigation commands. `Escape` toggles the
+terminal — it transitions to TERMINAL mode and calls the registered `onTerminalToggle`
+callback regardless of which element has focus.
 
-In TERMINAL mode, KeyBindings defers to the terminal component — all keystrokes go to
-the prompt input. Escape or Enter (after command execution) transitions back to NORMAL.
+In TERMINAL mode, `Escape` toggles back to NORMAL. All other keystrokes are deferred to
+the terminal prompt input.
 
 ### Terminal (`<geek-terminal>`)
 
@@ -79,12 +80,13 @@ of the viewport. It provides:
   "Unknown command: foo")
 - **Help**: the `help` command lists all registered commands grouped by category
 - **History**: up/down arrows navigate through previously executed commands (session only)
-- **Auto-dismiss**: the terminal closes after executing a command (1.2s delay to show output)
-  or immediately on Escape. The `help` command skips auto-dismiss so the user has time to
-  read the full command listing.
+- **Drag-to-resize**: a drag handle at the top edge lets the presenter resize the terminal
+  height by dragging up or down (pointer capture, touch-friendly)
+- **No auto-dismiss on Escape**: the terminal is toggled exclusively via `Escape` through
+  `KeyBindings`. The `help` command keeps the panel open so the user can read the listing.
 
-The terminal dispatches `geek:terminal:close` when dismissed so `KeyBindings` returns
-to NORMAL mode.
+The terminal dispatches `geek:terminal:close` when `close()` is called. `KeyBindings`
+listens for `Escape` and calls `terminal.toggle()` to open or close the panel.
 
 ### TouchInput
 
@@ -107,7 +109,7 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `PageUp` | `prev` | Previous partial or slide |
 | `Home` | `go-first` | Jump to first slide |
 | `End` | `go-last` | Jump to last slide |
-| `t` | *(open terminal)* | Opens the command terminal |
+| `Escape` | *(toggle terminal)* | Opens or closes the command terminal (global) |
 | `?` | *(toggle shortcuts)* | Shows/hides keyboard shortcuts overlay |
 
 ## Terminal Commands

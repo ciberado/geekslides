@@ -42,30 +42,42 @@ describe('KeyBindings', () => {
     expect(spy).toHaveBeenCalledWith('go-last');
   });
 
-  it('pressing t transitions to TERMINAL mode', () => {
+  it('pressing Escape transitions to TERMINAL mode', () => {
     const terminalSpy = vi.fn();
-    kb.onTerminalOpen(terminalSpy);
+    kb.onTerminalToggle(terminalSpy);
 
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(kb.mode).toBe('terminal');
     expect(terminalSpy).toHaveBeenCalledOnce();
+  });
+
+  it('pressing Escape again in TERMINAL mode returns to NORMAL mode', () => {
+    const terminalSpy = vi.fn();
+    kb.onTerminalToggle(terminalSpy);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(kb.mode).toBe('terminal');
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(kb.mode).toBe('normal');
+    expect(terminalSpy).toHaveBeenCalledTimes(2);
   });
 
   it('in TERMINAL mode, direct keys are not handled', () => {
     const spy = vi.spyOn(cs, 'execute');
 
     // Enter terminal mode
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(kb.mode).toBe('terminal');
 
     // Arrow keys should NOT be handled (terminal captures them)
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight' }));
-    // Only the initial 't' call should be absent from execute (t opens terminal, not a command)
+    // Only the initial Escape call should be absent from execute (Escape toggles terminal, not a command)
     expect(spy).not.toHaveBeenCalled();
   });
 
   it('closeTerminal returns to NORMAL mode', () => {
-    document.dispatchEvent(new KeyboardEvent('keydown', { key: 't' }));
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(kb.mode).toBe('terminal');
 
     kb.closeTerminal();

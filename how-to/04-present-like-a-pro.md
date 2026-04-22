@@ -15,6 +15,7 @@ These keys work at all times, no prefix needed:
 | `Page Up` | Previous slide |
 | `Home` | Jump to first slide |
 | `End` | Jump to last slide |
+| `Esc` | Toggle command terminal |
 | `?` | Show keyboard shortcuts overlay |
 
 That's the minimum. Arrow keys and Space will get you through any talk.
@@ -25,7 +26,9 @@ A thin progress bar at the bottom edge and a slide counter (e.g. `3 / 15`) in th
 
 ## The terminal
 
-Press `t` to open the command terminal — a text prompt at the bottom of the screen. Type a command and press Enter.
+Press `Esc` to toggle the command terminal — a text prompt at the bottom of the screen. Press `Esc` again to close it. The terminal opens regardless of what is currently in focus.
+
+You can also **drag the top edge** of the terminal panel up or down to resize it.
 
 ![The terminal open with command suggestions](screenshots/terminal-open.png)
 
@@ -51,7 +54,7 @@ Press `t` to open the command terminal — a text prompt at the bottom of the sc
 | `sync-disconnect` | Stop following |
 | `load <url>` | Load a remote deck by config URL |
 
-Press `Escape` to close the terminal without running a command.
+Press `Esc` again to close the terminal without running a command.
 
 ## Speaker view
 

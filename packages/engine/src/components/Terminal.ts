@@ -2,8 +2,8 @@
  * GeekSlides v2 — <geek-terminal> Web Component.
  *
  * Minimal command-line prompt anchored at the bottom of the viewport.
- * Activated by pressing `t`, dismissed by Escape or after command execution.
- * Supports tab-completion, command history, and a `help` built-in.
+ * Toggled by pressing Escape, dismissed after command execution.
+ * Supports tab-completion, command history, a `help` built-in, and drag-to-resize.
  */
 
 import type { CommandSystem } from '../input/CommandSystem.ts';
@@ -14,6 +14,8 @@ export class Terminal extends HTMLElement {
   #historyIndex = -1;
   #input: HTMLInputElement | null = null;
   #output: HTMLElement | null = null;
+  #dragStartY = 0;
+  #dragStartHeight = 0;
 
   constructor() {
     super();
@@ -64,6 +66,17 @@ export class Terminal extends HTMLElement {
       this.#input.value = '';
     }
     this.dispatchEvent(new CustomEvent('geek:terminal:close', { bubbles: true }));
+  }
+
+  /**
+   * Toggle the terminal open or closed.
+   */
+  toggle(): void {
+    if (this.isOpen) {
+      this.close();
+    } else {
+      this.open();
+    }
   }
 
   get isOpen(): boolean {
@@ -120,6 +133,8 @@ export class Terminal extends HTMLElement {
         z-index: 10000;
         font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
         font-size: 16px;
+        min-height: 52px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 
       .terminal {
@@ -129,7 +144,35 @@ export class Terminal extends HTMLElement {
         display: flex;
         flex-direction: column;
         gap: 4px;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        height: 100%;
+        box-sizing: border-box;
+        overflow: hidden;
+      }
+
+      .resize-handle {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        cursor: ns-resize;
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .resize-handle::after {
+        content: '';
+        width: 40px;
+        height: 3px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.25);
+      }
+
+      .resize-handle:hover::after {
+        background: rgba(255, 255, 255, 0.5);
       }
 
       .prompt-row {
@@ -162,7 +205,7 @@ export class Terminal extends HTMLElement {
       .output {
         color: #a0a0a0;
         min-height: 0;
-        max-height: 300px;
+        flex: 1;
         overflow-y: auto;
         white-space: pre-wrap;
         line-height: 1.4;
@@ -223,6 +266,11 @@ export class Terminal extends HTMLElement {
     const container = document.createElement('div');
     container.classList.add('terminal');
 
+    const resizeHandle = document.createElement('div');
+    resizeHandle.classList.add('resize-handle');
+    resizeHandle.setAttribute('aria-hidden', 'true');
+    resizeHandle.addEventListener('pointerdown', this.#onResizePointerdown);
+
     const promptRow = document.createElement('div');
     promptRow.classList.add('prompt-row');
 
@@ -246,21 +294,39 @@ export class Terminal extends HTMLElement {
     this.#output = document.createElement('div');
     this.#output.classList.add('output');
 
+    container.appendChild(resizeHandle);
     container.appendChild(promptRow);
     container.appendChild(this.#output);
 
     shadow.replaceChildren(style, container);
   }
 
+  #onResizePointerdown = (e: PointerEvent): void => {
+    e.preventDefault();
+    this.#dragStartY = e.clientY;
+    this.#dragStartHeight = this.getBoundingClientRect().height;
+    const handle = e.currentTarget as HTMLElement;
+    handle.setPointerCapture(e.pointerId);
+    handle.addEventListener('pointermove', this.#onResizePointermove);
+    handle.addEventListener('pointerup', this.#onResizePointerup, { once: true });
+  };
+
+  #onResizePointermove = (e: PointerEvent): void => {
+    const delta = this.#dragStartY - e.clientY;
+    const newHeight = Math.max(52, this.#dragStartHeight + delta);
+    this.style.height = `${newHeight}px`;
+  };
+
+  #onResizePointerup = (e: PointerEvent): void => {
+    const handle = e.currentTarget as HTMLElement;
+    handle.removeEventListener('pointermove', this.#onResizePointermove);
+  };
+
   #onInputKeydown = (e: KeyboardEvent): void => {
     switch (e.key) {
       case 'Enter':
         e.preventDefault();
         this.#executeInput();
-        break;
-      case 'Escape':
-        e.preventDefault();
-        this.close();
         break;
       case 'Tab':
         e.preventDefault();

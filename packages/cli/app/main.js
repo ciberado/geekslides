@@ -826,7 +826,7 @@ try {
     terminal.setCommandSystem(commands);
 
     const keys = new KeyBindings(commands);
-    keys.onTerminalOpen(() => terminal.open());
+    keys.onTerminalToggle(() => terminal.toggle());
     keys.activate();
 
     const touch = new TouchInput(commands, slideshow);

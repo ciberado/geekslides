@@ -82,18 +82,23 @@ describe('Terminal', () => {
     }
   });
 
-  it('Escape closes the terminal', () => {
+  it('close() closes the terminal and dispatches event', () => {
     const closeSpy = vi.fn();
     terminal.addEventListener('geek:terminal:close', closeSpy);
 
     terminal.open();
-    const input = terminal.shadowRoot?.querySelector('input');
-    if (input) {
-      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    }
+    terminal.close();
 
     expect(terminal.isOpen).toBe(false);
     expect(closeSpy).toHaveBeenCalledOnce();
+  });
+
+  it('toggle() opens when closed and closes when open', () => {
+    expect(terminal.isOpen).toBe(false);
+    terminal.toggle();
+    expect(terminal.isOpen).toBe(true);
+    terminal.toggle();
+    expect(terminal.isOpen).toBe(false);
   });
 
   it('help shows all commands grouped by category', () => {
@@ -123,7 +128,7 @@ describe('Terminal', () => {
     }
   });
 
-  it('stays open after command execution until Escape', () => {
+  it('stays open after command execution, close() dismisses it', () => {
     terminal.open();
 
     const input = terminal.shadowRoot?.querySelector('input');
@@ -135,11 +140,8 @@ describe('Terminal', () => {
     vi.advanceTimersByTime(5000);
     expect(terminal.isOpen).toBe(true); // stays open
 
-    // Only Escape closes it
-    const input2 = terminal.shadowRoot?.querySelector('input');
-    if (input2) {
-      input2.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    }
+    // close() dismisses it (called by KeyBindings on Escape)
+    terminal.close();
     expect(terminal.isOpen).toBe(false);
   });
 
@@ -153,7 +155,7 @@ describe('Terminal', () => {
     }
 
     vi.advanceTimersByTime(5000);
-    expect(terminal.isOpen).toBe(true); // stays open until Escape
+    expect(terminal.isOpen).toBe(true); // stays open until closed
   });
 
   it('does not have a built-in goto handler', () => {
