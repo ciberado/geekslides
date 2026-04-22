@@ -21,6 +21,7 @@ export { PluginManager } from './plugins/PluginManager.ts';
 export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
 export { isLocalPluginPath, isRemotePluginUrl, importRemotePlugin, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
+export { slideSourceNotesPreprocessor } from './plugins/builtins/slide-source-notes-preprocessor.ts';
 export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
 export { chartProcessor } from './plugins/builtins/chart-processor.ts';
 export { videoProcessor } from './plugins/builtins/video-processor.ts';

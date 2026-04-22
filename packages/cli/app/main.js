@@ -2,6 +2,7 @@ import {
   loadConfig,
   parse,
   headerPreprocessor,
+  slideSourceNotesPreprocessor,
   CommandSystem,
   KeyBindings,
   TouchInput,
@@ -24,6 +25,7 @@ import { registerHotClient } from '@geekslides/engine/hot-client';
 
 const PREPROCESSORS = {
   header: headerPreprocessor,
+  'source-notes': slideSourceNotesPreprocessor,
 };
 
 const PROCESSORS = {

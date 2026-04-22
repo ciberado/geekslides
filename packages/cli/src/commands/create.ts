@@ -227,7 +227,9 @@ export function registerCreateCommand(program: Command): void {
         features: ['whiteboard'],
         aspectRatio: '16/9',
         plugins: {
-          preprocessors: [],
+          // source-notes: auto-injects each slide's markdown source into the
+          // speaker notes so this showcase deck teaches by example.
+          preprocessors: ['source-notes'],
         },
       };
       await writeFile(join(dir, 'config.json'), JSON.stringify(config, null, 2) + '\n', 'utf-8');
