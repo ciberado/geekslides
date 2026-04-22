@@ -432,7 +432,18 @@ export class WhiteboardToolbar extends HTMLElement {
     handle.setPointerCapture(e.pointerId);
     this.#dragHandle = handle;
 
+    // Switch to absolute pixel positioning immediately so that the
+    // dragOffset is computed against the same coordinate system that
+    // #onDragMove writes to (style.left / style.top, no transform).
+    // Without this, getBoundingClientRect() returns the visual position
+    // including transform: translateY(-50%), causing a jump on first move.
     const hostRect = this.getBoundingClientRect();
+    const parentRect = this.#getParentRect();
+    this.style.right = 'auto';
+    this.style.top = `${String(hostRect.top - parentRect.top)}px`;
+    this.style.left = `${String(hostRect.left - parentRect.left)}px`;
+    this.style.transform = 'none';
+
     this.#dragOffsetX = e.clientX - hostRect.left;
     this.#dragOffsetY = e.clientY - hostRect.top;
 
