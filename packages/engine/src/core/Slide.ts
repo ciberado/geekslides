@@ -218,8 +218,10 @@ export class Slide extends HTMLElement {
       }
 
       section.content {
-        width: 100%;
-        height: 100%;
+        width: calc(100% / var(--gs-thumbnail-scale, 1));
+        height: calc(100% / var(--gs-thumbnail-scale, 1));
+        transform: scale(var(--gs-thumbnail-scale, 1));
+        transform-origin: top left;
         box-sizing: border-box;
         position: relative;
         overflow: hidden;

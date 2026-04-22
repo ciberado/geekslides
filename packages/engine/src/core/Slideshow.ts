@@ -17,6 +17,7 @@ export class Slideshow extends HTMLElement {
   #currentPartial = 0;
   #mode: SlideshowMode = 'present';
   #resizeObserver: ResizeObserver | null = null;
+  #overviewResizeObserver: ResizeObserver | null = null;
   #aspectRatio = 16 / 9;
   #designWidth = 1920;
   #designHeight = 1080;
@@ -36,6 +37,7 @@ export class Slideshow extends HTMLElement {
 
   disconnectedCallback(): void {
     this.#resizeObserver?.disconnect();
+    this.#overviewResizeObserver?.disconnect();
   }
 
   get currentSlide(): number {
@@ -91,11 +93,38 @@ export class Slideshow extends HTMLElement {
     for (const el of this.#slideElements) {
       el.addEventListener('click', this.#overviewClickHandler);
     }
+    this.#setupOverviewResizeObserver();
   }
 
   #removeOverviewClickHandlers(): void {
     for (const el of this.#slideElements) {
       el.removeEventListener('click', this.#overviewClickHandler);
+    }
+    this.#overviewResizeObserver?.disconnect();
+    this.#overviewResizeObserver = null;
+    for (const el of this.#slideElements) {
+      el.style.removeProperty('--gs-thumbnail-scale');
+    }
+  }
+
+  #setupOverviewResizeObserver(): void {
+    const firstSlide = this.#slideElements[0];
+    if (!firstSlide) return;
+    this.#overviewResizeObserver = new ResizeObserver(() => {
+      this.#updateThumbnailScale();
+    });
+    this.#overviewResizeObserver.observe(firstSlide);
+    this.#updateThumbnailScale();
+  }
+
+  #updateThumbnailScale(): void {
+    const firstSlide = this.#slideElements[0];
+    if (!firstSlide) return;
+    const w = firstSlide.clientWidth;
+    if (w === 0) return;
+    const scale = w / this.#designWidth;
+    for (const el of this.#slideElements) {
+      el.style.setProperty('--gs-thumbnail-scale', String(scale));
     }
   }
 

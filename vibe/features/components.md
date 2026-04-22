@@ -178,6 +178,8 @@ so the feature sync layer can bridge them without directly managing toolbar DOM.
 - Each `geek-slide` hosts content in Shadow DOM and keeps transitions isolated.
 - In overview mode (`mode="overview"`), the container switches to a CSS grid showing
   all slide thumbnails. Clicking a thumbnail navigates to that slide and exits overview.
+  A `ResizeObserver` tracks the rendered cell width and sets `--gs-thumbnail-scale` on
+  each slide element so slide content scales down proportionally inside Shadow DOM.
 - External deck CSS is injected per slide and adapted for shadow context (`body` selectors rewritten to `:host`).
 - Font `@import` rules are hoisted to document head to ensure consistent font loading.
 

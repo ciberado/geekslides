@@ -148,6 +148,34 @@ The `transform: scale()` approach is retained because:
 The v2 improvement is **how** the factor is applied (CSS custom property + ResizeObserver
 instead of CSSOM mutation), not the fundamental scaling model.
 
+### Overview Mode: Thumbnail Scaling
+
+In overview mode, `<geek-slide>` elements are laid out in a CSS grid as small thumbnails.
+Each thumbnail's box is much narrower than the 1920px design width, so the slide content
+must be scaled down proportionally.
+
+This is handled by a second `ResizeObserver` attached to the first slide element when
+overview mode is entered. Whenever the grid cell width changes (e.g. on window resize),
+a scale factor `thumbnailWidth / designWidth` is computed and written as the CSS custom
+property `--gs-thumbnail-scale` on every slide element's inline style.
+
+Inside `<geek-slide>`'s Shadow DOM, `section.content` applies this property:
+
+```css
+section.content {
+  width:  calc(100% / var(--gs-thumbnail-scale, 1));
+  height: calc(100% / var(--gs-thumbnail-scale, 1));
+  transform: scale(var(--gs-thumbnail-scale, 1));
+  transform-origin: top left;
+}
+```
+
+This expands the section to the full design resolution in layout terms and then visually
+scales it back down to fit the thumbnail box, preserving pixel-perfect rendering of all
+slide content. In present mode the property defaults to `1`, so no behaviour changes.
+
+When overview mode is exited, the observer is disconnected and the property is removed.
+
 ### Sub-Pixel Rendering Mitigation
 
 To minimize blurry text at non-integer scale factors, slotted slides use `will-change: transform` (GPU layer promotion for sharper subpixel rendering) and `-webkit-font-smoothing: antialiased` / `-moz-osx-font-smoothing: grayscale` for optimized text rendering.
