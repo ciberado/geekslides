@@ -650,9 +650,6 @@ export class Whiteboard extends HTMLElement {
 
   #showCanvas(): void {
     if (!this.#canvas) return;
-    // Don't reveal the canvas while the toolbar is collapsed — the user
-    // explicitly suppressed drawing and pointer events should pass through.
-    if (this.#toolbarCollapsed) return;
     this.#cancelFade();
     // Make visible, start transparent, animate to opaque
     this.#canvas.style.display = 'block';

@@ -847,4 +847,33 @@ describe('Whiteboard toolbar ownership', () => {
     expect(canvas.style.pointerEvents).toBe('auto');
     expect(canvas.style.touchAction).toBe('none');
   });
+
+  it('canvas remains visible after slide navigation while toolbar is collapsed', () => {
+    const wb = makeWb(false);
+    wb.toggle(); // activate whiteboard
+    const toolbar = wb.toolbar!;
+
+    // Collapse toolbar — canvas pointer-events go passive but canvas stays shown
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
+      bubbles: true,
+      detail: { collapsed: true },
+    }));
+
+    // Simulate a draw so the slide has content, then navigate away and back
+    // by calling saveSlide / restoreSlide directly (mirrors slideIndex setter logic)
+    wb.saveSlide();
+    const snapshot = (wb as any)['#slideSnapshots']?.get?.(0)
+      ?? (wb as any)._Whiteboard__slideSnapshots?.get?.(0);
+    // We can't easily inject strokes in unit tests, so instead we verify
+    // that #showCanvas no longer bails when collapsed by checking canvas display.
+    // Directly call the private method via the exposed toggle path:
+    wb.toggle(); // hide
+    wb.toggle(); // show again — was broken when collapsed (canvas stayed display:none)
+
+    const canvas = wb.shadowRoot!.querySelector<HTMLCanvasElement>('canvas.main')!;
+    // Canvas must be displayed (even though toolbar is collapsed)
+    expect(canvas.style.display).not.toBe('none');
+    // Pointer-events must still be none (collapsed state preserved)
+    expect(canvas.style.pointerEvents).toBe('none');
+  });
 });

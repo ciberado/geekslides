@@ -87,12 +87,13 @@ Separate route/tab:
     the canvas via `display: none` and also controls `userDismissed` state. Restores
     click-through to links, sliders, and other interactive elements in the slide.
   - **Collapse the toolbar** (click `≡` or run `wb-toolbar`): collapses the toolbar
-    UI only. The canvas remains visible so annotations stay on screen, but the canvas
+    UI only. The canvas remains visible so annotations stay on screen, and the canvas
     is immediately given `pointer-events: none` / `touch-action: auto` so swipe
-    gestures and tap-zone navigation pass straight through to the slide. Expanding
-    the toolbar restores `pointer-events: auto` / `touch-action: none` for drawing.
-    Collapsing does _not_ hide the canvas; use the **⊘** button or `whiteboard`
-    command for that.
+    gestures and tap-zone navigation pass straight through to the slide. Slide
+    navigation does not hide the canvas — drawings are preserved and visible after
+    navigating away and back. Expanding the toolbar restores `pointer-events: auto` /
+    `touch-action: none` for drawing. Collapsing does _not_ hide the canvas; use the
+    **⊘** button or `whiteboard` command for that.
 - **`toggleCanvas()`**: Toggles canvas visibility without setting `userDismissed`,
   so auto-activation on drag still works after hiding. Used by the toolbar `⊘` button
   via the `geek:whiteboard:hide-request` event. The `deactivate()` method (used by

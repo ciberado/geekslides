@@ -1285,6 +1285,69 @@ test.describe('Whiteboard + Overview interaction', () => {
     expect(wbActive).toBe(false);
   });
 
+  test('whiteboard content still visible after slide navigation while toolbar collapsed', async ({ page }) => {
+    // Activate whiteboard and draw
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const canvasBounds = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(canvasBounds).toBeTruthy();
+
+    await page.mouse.move(canvasBounds!.x + canvasBounds!.width * 0.2, canvasBounds!.y + canvasBounds!.height * 0.3);
+    await page.mouse.down();
+    await page.mouse.move(canvasBounds!.x + canvasBounds!.width * 0.5, canvasBounds!.y + canvasBounds!.height * 0.6, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+
+    // Collapse the toolbar
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Navigate away then back
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('ArrowLeft');
+    await page.waitForTimeout(600);
+
+    // Canvas must still be displayed with its strokes
+    const state = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector<HTMLCanvasElement>('canvas.main');
+      if (!canvas) return { display: 'missing', hasContent: false, pointerEvents: '' };
+      const ctx = canvas.getContext('2d');
+      let hasContent = false;
+      if (ctx) {
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        for (let i = 3; i < data.length; i += 4) {
+          if (data[i]! > 0) { hasContent = true; break; }
+        }
+      }
+      return { display: canvas.style.display, hasContent, pointerEvents: canvas.style.pointerEvents };
+    });
+
+    expect(state.display).not.toBe('none');
+    expect(state.hasContent).toBe(true);
+    // Touch pass-through must still be active
+    expect(state.pointerEvents).toBe('none');
+  });
+
   test('whiteboard resumes correctly after returning from overview', async ({ page }) => {
     // Activate whiteboard and draw
     await page.keyboard.press('t');
