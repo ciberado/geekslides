@@ -31,6 +31,18 @@ if (!customElements.get('geek-whiteboard')) {
   customElements.define('geek-whiteboard', Whiteboard);
 }
 
+// Stub toolbar element — records method calls and emits real events
+class StubToolbarForWire extends HTMLElement {
+  toggleCollapse = vi.fn();
+  hide = vi.fn();
+  show = vi.fn();
+  setTool = vi.fn();
+  setColor = vi.fn();
+}
+if (!customElements.get('geek-whiteboard-toolbar')) {
+  customElements.define('geek-whiteboard-toolbar', StubToolbarForWire);
+}
+
 function makeStroke(overrides: Partial<WhiteboardStroke> = {}): WhiteboardStroke {
   return {
     id: 'stroke-1',
@@ -683,5 +695,121 @@ describe('Whiteboard', () => {
     wb.toggleCanvas();
     expect(wb.isVisible).toBe(true);
     expect(wb.userDismissed).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Toolbar ownership and wiring
+// ---------------------------------------------------------------------------
+
+describe('Whiteboard toolbar ownership', () => {
+  let container: HTMLDivElement;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+  });
+
+  afterEach(() => {
+    container.remove();
+  });
+
+  function makeWb(readonly = false): Whiteboard {
+    const el = document.createElement('geek-whiteboard') as Whiteboard;
+    if (readonly) el.setAttribute('readonly', '');
+    container.appendChild(el);
+    return el;
+  }
+
+  it('exposes toolbar for presenter mode', () => {
+    const wb = makeWb(false);
+    expect(wb.toolbar).toBeTruthy();
+  });
+
+  it('toolbar is null in readonly mode', () => {
+    const wb = makeWb(true);
+    expect(wb.toolbar).toBeNull();
+  });
+
+  it('toolbar is appended to shadow root for presenter', () => {
+    const wb = makeWb(false);
+    expect(wb.shadowRoot?.querySelector('geek-whiteboard-toolbar')).toBeTruthy();
+  });
+
+  it('no toolbar in shadow root for readonly', () => {
+    const wb = makeWb(true);
+    expect(wb.shadowRoot?.querySelector('geek-whiteboard-toolbar')).toBeNull();
+  });
+
+  it('tool-change event sets compositeOp, width, and alpha on whiteboard', () => {
+    const wb = makeWb(false);
+    const toolbar = wb.toolbar!;
+    const spyOp = vi.spyOn(wb, 'setCompositeOp');
+    const spyWidth = vi.spyOn(wb, 'setWidth');
+    const spyAlpha = vi.spyOn(wb, 'setAlpha');
+
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:tool-change', {
+      bubbles: true,
+      detail: { settings: { compositeOp: 'destination-out', width: 12, alpha: 0.5 } },
+    }));
+
+    expect(spyOp).toHaveBeenCalledWith('destination-out');
+    expect(spyWidth).toHaveBeenCalledWith(12);
+    expect(spyAlpha).toHaveBeenCalledWith(0.5);
+  });
+
+  it('color-change event sets color on whiteboard', () => {
+    const wb = makeWb(false);
+    const toolbar = wb.toolbar!;
+    const spyColor = vi.spyOn(wb, 'setColor');
+
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:color-change', {
+      bubbles: true,
+      detail: { color: '#ff9900' },
+    }));
+
+    expect(spyColor).toHaveBeenCalledWith('#ff9900');
+  });
+
+  it('hide-request event toggles canvas and emits composed geek:whiteboard:hide', () => {
+    const wb = makeWb(false);
+    const toolbar = wb.toolbar!;
+    wb.setActive(true);
+
+    const spy = vi.fn();
+    container.addEventListener('geek:whiteboard:hide', spy);
+
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:hide-request', { bubbles: true }));
+
+    expect(wb.isVisible).toBe(false);
+    expect(spy).toHaveBeenCalledOnce();
+    const event = spy.mock.calls[0]?.[0] as CustomEvent<{ visible: boolean }>;
+    expect(event.detail.visible).toBe(false);
+  });
+
+  it('clear-request event clears canvas and emits composed geek:whiteboard:clear', () => {
+    const wb = makeWb(false);
+    wb.slideIndex = 3;
+    const toolbar = wb.toolbar!;
+
+    const spy = vi.fn();
+    container.addEventListener('geek:whiteboard:clear', spy);
+
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:clear-request', { bubbles: true }));
+
+    const event = spy.mock.calls[0]?.[0] as CustomEvent<{ slideIndex: number }>;
+    expect(event.detail.slideIndex).toBe(3);
+  });
+
+  it('collapsed-change event updates toolbarCollapsed on whiteboard', () => {
+    const wb = makeWb(false);
+    const toolbar = wb.toolbar!;
+
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
+      bubbles: true,
+      detail: { collapsed: true },
+    }));
+
+    expect(wb.toolbarCollapsed).toBe(true);
   });
 });

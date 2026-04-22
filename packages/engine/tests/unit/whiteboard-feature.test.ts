@@ -33,12 +33,20 @@ class StubWhiteboard extends HTMLElement {
   setAlpha = vi.fn();
   beginStroke = vi.fn();
   drawRemoteStroke = vi.fn();
-  setToolbarCollapsed = vi.fn();
-  // Provide a minimal shadowRoot for toolbar injection
+  // toolbar is created internally by the component (not by the feature)
+  #toolbar: StubToolbar | null = null;
+  get toolbar(): StubToolbar | null { return this.#toolbar; }
   readonly shadowRoot: ShadowRoot;
   constructor() {
     super();
     this.shadowRoot = this.attachShadow({ mode: 'open' });
+  }
+  connectedCallback(): void {
+    // Create toolbar on connect if not readonly and not already created
+    if (!this.hasAttribute('readonly') && !this.#toolbar) {
+      this.#toolbar = document.createElement('geek-whiteboard-toolbar') as StubToolbar;
+      this.shadowRoot.appendChild(this.#toolbar);
+    }
   }
 }
 
@@ -180,7 +188,8 @@ describe('whiteboardFeature', () => {
     const { ctx, container } = makeContext({ role: 'viewer' });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
-    expect(wb.shadowRoot.querySelector('geek-whiteboard-toolbar')).toBeNull();
+    // Viewer whiteboard has readonly attr — toolbar is not created internally
+    expect(wb.toolbar).toBeNull();
   });
 
   it('does not register commands for viewer role', () => {
@@ -198,11 +207,12 @@ describe('whiteboardFeature', () => {
     expect(wb.hasAttribute('readonly')).toBe(false);
   });
 
-  it('creates toolbar in whiteboard shadowRoot for presenter', () => {
+  it('exposes toolbar via whiteboard.toolbar for presenter', () => {
     const { ctx, container } = makeContext({ role: 'presenter' });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
-    expect(wb.shadowRoot.querySelector('geek-whiteboard-toolbar')).toBeTruthy();
+    // Toolbar is owned by the component; feature accesses it via wb.toolbar
+    expect(wb.toolbar).toBeTruthy();
   });
 
   it('registers whiteboard toggle command for presenter', () => {
@@ -330,7 +340,7 @@ describe('whiteboardFeature', () => {
     const { ctx, container, commands } = makeContext();
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
-    const toolbar = wb.shadowRoot.querySelector('geek-whiteboard-toolbar') as StubToolbar;
+    const toolbar = wb.toolbar!;
 
     const colorCmd = (commands.mock.calls as Array<[{ name: string; execute: (args?: string[]) => void }]>)
       .map(([c]) => c)
@@ -341,104 +351,81 @@ describe('whiteboardFeature', () => {
     expect(toolbar.setColor).toHaveBeenCalledWith('#abcdef');
   });
 
-  // --- Toolbar event handlers ---
-
-  function getToolbar(container: HTMLElement): StubToolbar {
-    const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
-    return wb.shadowRoot.querySelector('geek-whiteboard-toolbar') as StubToolbar;
-  }
+  // --- Sync event bridge (composed events from whiteboard) ---
+  // Toolbar events are now handled internally by <geek-whiteboard>.
+  // The feature layer only listens for composed geek:whiteboard:hide and
+  // geek:whiteboard:clear events that bubble out of the shadow root.
 
   function getWhiteboard(container: HTMLElement): StubWhiteboard {
     return container.querySelector('geek-whiteboard') as StubWhiteboard;
   }
 
-  it('geek:whiteboard:tool-change updates whiteboard drawing settings', () => {
-    const { ctx, container } = makeContext();
-    whiteboardFeature.activate(ctx);
-    const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
-
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:tool-change', {
-      detail: { settings: { compositeOp: 'destination-out', width: 12, alpha: 0.5 } },
-    }));
-
-    expect(wb.setCompositeOp).toHaveBeenCalledWith('destination-out');
-    expect(wb.setWidth).toHaveBeenCalledWith(12);
-    expect(wb.setAlpha).toHaveBeenCalledWith(0.5);
-  });
-
-  it('geek:whiteboard:color-change updates whiteboard color', () => {
-    const { ctx, container } = makeContext();
-    whiteboardFeature.activate(ctx);
-    const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
-
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:color-change', {
-      detail: { color: '#ff9900' },
-    }));
-
-    expect(wb.setColor).toHaveBeenCalledWith('#ff9900');
-  });
-
-  it('geek:whiteboard:hide-request toggles canvas and publishes visibility with sync', () => {
+  it('geek:whiteboard:hide event publishes visibility to sync', () => {
     const syncManager = makeSyncManager();
     const { ctx, container } = makeContext({ syncManager });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
 
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:hide-request'));
+    wb.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
+      bubbles: true, composed: true,
+      detail: { visible: false },
+    }));
 
-    expect(wb.toggleCanvas).toHaveBeenCalledOnce();
-    expect(syncManager.publishWhiteboardVisible).toHaveBeenCalledOnce();
+    expect(syncManager.publishWhiteboardVisible).toHaveBeenCalledWith(false);
   });
 
-  it('geek:whiteboard:hide-request toggles canvas without sync when syncManager is null', () => {
+  it('geek:whiteboard:hide event does not throw when syncManager is null', () => {
     const { ctx, container } = makeContext({ syncManager: null });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
 
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:hide-request'));
-
-    expect(wb.toggleCanvas).toHaveBeenCalledOnce();
+    expect(() => {
+      wb.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
+        bubbles: true, composed: true,
+        detail: { visible: false },
+      }));
+    }).not.toThrow();
   });
 
-  it('geek:whiteboard:clear-request clears canvas and syncs', () => {
+  it('geek:whiteboard:clear event calls clearStrokes on sync', () => {
     const syncManager = makeSyncManager();
     const { ctx, container } = makeContext({ syncManager });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
 
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:clear-request'));
+    wb.dispatchEvent(new CustomEvent('geek:whiteboard:clear', {
+      bubbles: true, composed: true,
+      detail: { slideIndex: 2 },
+    }));
 
-    expect(wb.clear).toHaveBeenCalledOnce();
-    expect(syncManager.clearStrokes).toHaveBeenCalledWith(wb.slideIndex);
+    expect(syncManager.clearStrokes).toHaveBeenCalledWith(2);
   });
 
-  it('geek:whiteboard:clear-request clears canvas without sync when syncManager is null', () => {
+  it('geek:whiteboard:clear event does not throw when syncManager is null', () => {
     const { ctx, container } = makeContext({ syncManager: null });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
 
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:clear-request'));
-
-    expect(wb.clear).toHaveBeenCalledOnce();
+    expect(() => {
+      wb.dispatchEvent(new CustomEvent('geek:whiteboard:clear', {
+        bubbles: true, composed: true,
+        detail: { slideIndex: 0 },
+      }));
+    }).not.toThrow();
   });
 
-  it('geek:whiteboard:collapsed-change updates whiteboard toolbar collapsed state', () => {
-    const { ctx, container } = makeContext();
+  it('does not attach hide/clear listeners for viewer role', () => {
+    const syncManager = makeSyncManager();
+    const { ctx, container } = makeContext({ role: 'viewer', syncManager });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
-    const toolbar = getToolbar(container);
 
-    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
-      detail: { collapsed: true },
+    wb.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
+      bubbles: true, composed: true,
+      detail: { visible: false },
     }));
 
-    expect(wb.setToolbarCollapsed).toHaveBeenCalledWith(true);
+    expect(syncManager.publishWhiteboardVisible).not.toHaveBeenCalled();
   });
 
   // --- Pointer drag auto-activation ---
@@ -588,6 +575,21 @@ describe('whiteboardFeature', () => {
     const cleanup = whiteboardFeature.activate(ctx);
     cleanup?.();
     expect(mockWbSyncDeactivate).toHaveBeenCalledOnce();
+  });
+
+  it('cleanup removes sync event listeners', () => {
+    const syncManager = makeSyncManager();
+    const { ctx } = makeContext({ syncManager });
+    const cleanup = whiteboardFeature.activate(ctx);
+    cleanup?.();
+
+    // After cleanup, hide event dispatched directly to the ctx.container should not reach sync
+    ctx.container.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
+      bubbles: true, detail: { visible: false },
+    }));
+
+    // publishWhiteboardVisible should NOT have been called (listeners removed before cleanup)
+    expect(syncManager.publishWhiteboardVisible).not.toHaveBeenCalled();
   });
 
   it('cleanup calls slide:enter unsubscribe', () => {

@@ -1,15 +1,16 @@
 /**
  * GeekSlides v2 — Whiteboard Feature.
  *
- * Encapsulates all whiteboard setup, toolbar wiring, auto-activation,
- * sync bridging, and command registration as a self-contained Feature.
+ * Encapsulates whiteboard setup, auto-activation, sync bridging, and
+ * command registration as a self-contained Feature.
  *
- * Replaces the ~120 lines of imperative glue code in main.js.
+ * The toolbar is owned by the <geek-whiteboard> component itself and created
+ * automatically in presenter (non-readonly) mode. This feature only handles
+ * the sync layer and keyboard commands that need external context.
  */
 
 import type { Feature, FeatureContext } from '../types.ts';
 import type { Whiteboard } from '../../components/Whiteboard.ts';
-import type { WhiteboardToolbar } from '../../components/WhiteboardToolbar.ts';
 import { WhiteboardSync } from '../../sync/WhiteboardSync.ts';
 
 export const whiteboardFeature: Feature = {
@@ -21,6 +22,7 @@ export const whiteboardFeature: Feature = {
     const syncManager = ctx.syncManager;
 
     // --- Create whiteboard component ---
+    // The toolbar is created internally by <geek-whiteboard> when readonly is absent.
     const whiteboard = document.createElement('geek-whiteboard') as Whiteboard;
     if (isReadonly) {
       whiteboard.setAttribute('readonly', '');
@@ -28,37 +30,20 @@ export const whiteboardFeature: Feature = {
     ctx.container.appendChild(whiteboard);
     whiteboard.slideIndex = ctx.slideshow.currentSlide;
 
-    // --- Create toolbar (presenter only) ---
-    let wbToolbar: WhiteboardToolbar | null = null;
+    // --- Sync bridge: intercept toolbar-emitted composed events ---
+    // <geek-whiteboard> re-emits hide-request and clear-request as composed
+    // events so we can publish visibility/clear state to the sync layer.
+    const onHide = (e: Event): void => {
+      const { visible } = (e as CustomEvent<{ visible: boolean }>).detail;
+      if (syncManager) syncManager.publishWhiteboardVisible(visible);
+    };
+    const onClear = (e: Event): void => {
+      const { slideIndex } = (e as CustomEvent<{ slideIndex: number }>).detail;
+      if (syncManager) syncManager.clearStrokes(slideIndex);
+    };
     if (!isReadonly) {
-      wbToolbar = document.createElement('geek-whiteboard-toolbar') as WhiteboardToolbar;
-      whiteboard.shadowRoot?.appendChild(wbToolbar);
-
-      // Tool changes → update whiteboard drawing settings
-      wbToolbar.addEventListener('geek:whiteboard:tool-change', ((e: CustomEvent) => {
-        const { settings } = e.detail as { settings: { compositeOp: GlobalCompositeOperation; width: number; alpha: number } };
-        whiteboard.setCompositeOp(settings.compositeOp);
-        whiteboard.setWidth(settings.width);
-        whiteboard.setAlpha(settings.alpha);
-      }) as EventListener);
-
-      wbToolbar.addEventListener('geek:whiteboard:color-change', ((e: CustomEvent) => {
-        whiteboard.setColor((e.detail as { color: string }).color);
-      }) as EventListener);
-
-      wbToolbar.addEventListener('geek:whiteboard:hide-request', () => {
-        whiteboard.toggleCanvas();
-        if (syncManager) syncManager.publishWhiteboardVisible(whiteboard.isVisible);
-      });
-
-      wbToolbar.addEventListener('geek:whiteboard:clear-request', () => {
-        whiteboard.clear();
-        if (syncManager) syncManager.clearStrokes(whiteboard.slideIndex);
-      });
-
-      wbToolbar.addEventListener('geek:whiteboard:collapsed-change', ((e: CustomEvent) => {
-        whiteboard.setToolbarCollapsed((e.detail as { collapsed: boolean }).collapsed);
-      }) as EventListener);
+      whiteboard.addEventListener('geek:whiteboard:hide', onHide);
+      whiteboard.addEventListener('geek:whiteboard:clear', onClear);
     }
 
     // --- Slide navigation tracking ---
@@ -137,8 +122,8 @@ export const whiteboardFeature: Feature = {
         category: 'whiteboard',
       });
 
-      if (wbToolbar) {
-        const toolbar = wbToolbar;
+      const toolbar = whiteboard.toolbar;
+      if (toolbar) {
         ctx.commands.register({
           name: 'wb-toolbar', label: 'Toggle whiteboard toolbar',
           execute: () => { toolbar.toggleCollapse(); },
@@ -188,6 +173,10 @@ export const whiteboardFeature: Feature = {
     // --- Return cleanup ---
     return () => {
       unsubSlideEnter();
+      if (!isReadonly) {
+        whiteboard.removeEventListener('geek:whiteboard:hide', onHide);
+        whiteboard.removeEventListener('geek:whiteboard:clear', onClear);
+      }
       pointerCleanup?.();
       wbSync?.deactivate();
       whiteboard.remove();

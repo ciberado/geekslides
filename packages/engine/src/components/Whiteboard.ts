@@ -8,9 +8,11 @@
  * - Per-slide persistence: each slide keeps its own ImageData snapshot.
  * - Auto-activation: becomes visible on first pointer drag.
  * - Remote stroke rendering: listens for geek:whiteboard:remote-stroke events.
+ * - Toolbar: created internally for presenter (non-readonly) mode.
  */
 
 import type { WhiteboardStroke } from '../sync/types.ts';
+import type { WhiteboardToolbar } from './WhiteboardToolbar.ts';
 
 interface SlideSnapshot {
   strokes: WhiteboardStroke[];
@@ -39,6 +41,7 @@ export class Whiteboard extends HTMLElement {
   #strokeIdCounter = 0;
   #slideIndex = 0;
   #slideSnapshots = new Map<number, SlideSnapshot>();
+  #toolbar: WhiteboardToolbar | null = null;
   #onRemoteStroke: ((e: Event) => void) | null = null;
   #onRemoteProgress: ((e: Event) => void) | null = null;
   #onRemoteClear: ((e: Event) => void) | null = null;
@@ -139,10 +142,15 @@ export class Whiteboard extends HTMLElement {
   }
 
   /**
-   * Called by the toolbar when the user collapses or expands it.
-   * Hides/restores the canvas so pointer events pass through when collapsed.
+   * The internal toolbar element, or null in readonly mode.
+   * Exposed for external command wiring (wb-toolbar, wb-pen, etc.).
    */
-  setToolbarCollapsed(collapsed: boolean): void {
+  get toolbar(): WhiteboardToolbar | null {
+    return this.#toolbar;
+  }
+
+  /** Handle toolbar collapsed/expanded state change. */
+  #handleToolbarCollapsed(collapsed: boolean): void {
     if (collapsed === this.#toolbarCollapsed) return;
     this.#toolbarCollapsed = collapsed;
     if (!this.#canvas) return;
@@ -490,6 +498,47 @@ export class Whiteboard extends HTMLElement {
     this.#tempCtx = this.#tempCanvas.getContext('2d');
 
     shadow.replaceChildren(style, this.#canvas, this.#tempCanvas);
+
+    // Create toolbar for presenter (non-readonly) mode.
+    if (!this.hasAttribute('readonly')) {
+      this.#toolbar = document.createElement('geek-whiteboard-toolbar') as WhiteboardToolbar;
+      shadow.appendChild(this.#toolbar);
+      this.#wireToolbar(this.#toolbar);
+    }
+  }
+
+  #wireToolbar(toolbar: WhiteboardToolbar): void {
+    toolbar.addEventListener('geek:whiteboard:tool-change', ((e: CustomEvent) => {
+      const { settings } = e.detail as { settings: { compositeOp: GlobalCompositeOperation; width: number; alpha: number } };
+      this.setCompositeOp(settings.compositeOp);
+      this.setWidth(settings.width);
+      this.setAlpha(settings.alpha);
+    }) as EventListener);
+
+    toolbar.addEventListener('geek:whiteboard:color-change', ((e: CustomEvent) => {
+      this.setColor((e.detail as { color: string }).color);
+    }) as EventListener);
+
+    toolbar.addEventListener('geek:whiteboard:collapsed-change', ((e: CustomEvent) => {
+      this.#handleToolbarCollapsed((e.detail as { collapsed: boolean }).collapsed);
+    }) as EventListener);
+
+    // Re-emit as composed events so the feature layer can intercept for sync.
+    toolbar.addEventListener('geek:whiteboard:hide-request', () => {
+      this.toggleCanvas();
+      this.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
+        bubbles: true, composed: true,
+        detail: { visible: this.#visible },
+      }));
+    });
+
+    toolbar.addEventListener('geek:whiteboard:clear-request', () => {
+      this.clear();
+      this.dispatchEvent(new CustomEvent('geek:whiteboard:clear', {
+        bubbles: true, composed: true,
+        detail: { slideIndex: this.#slideIndex },
+      }));
+    });
   }
 
   #setupListeners(): void {
