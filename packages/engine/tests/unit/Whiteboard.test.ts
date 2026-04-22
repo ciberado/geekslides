@@ -812,4 +812,39 @@ describe('Whiteboard toolbar ownership', () => {
 
     expect(wb.toolbarCollapsed).toBe(true);
   });
+
+  it('collapsing toolbar disables pointer-events and touch-action on canvas', () => {
+    const wb = makeWb(false);
+    wb.toggle(); // make visible so canvas is shown
+    const toolbar = wb.toolbar!;
+
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
+      bubbles: true,
+      detail: { collapsed: true },
+    }));
+
+    const canvas = wb.shadowRoot!.querySelector<HTMLCanvasElement>('canvas.main')!;
+    expect(canvas.style.pointerEvents).toBe('none');
+    expect(canvas.style.touchAction).toBe('auto');
+  });
+
+  it('expanding toolbar restores pointer-events and touch-action on canvas', () => {
+    const wb = makeWb(false);
+    wb.toggle();
+    const toolbar = wb.toolbar!;
+
+    // Collapse then expand
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
+      bubbles: true,
+      detail: { collapsed: true },
+    }));
+    toolbar.dispatchEvent(new CustomEvent('geek:whiteboard:collapsed-change', {
+      bubbles: true,
+      detail: { collapsed: false },
+    }));
+
+    const canvas = wb.shadowRoot!.querySelector<HTMLCanvasElement>('canvas.main')!;
+    expect(canvas.style.pointerEvents).toBe('auto');
+    expect(canvas.style.touchAction).toBe('none');
+  });
 });

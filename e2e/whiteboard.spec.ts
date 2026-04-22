@@ -1130,3 +1130,216 @@ test.describe('Whiteboard', () => {
     await context.close();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Overview / whiteboard interaction
+// ---------------------------------------------------------------------------
+
+test.describe('Whiteboard + Overview interaction', () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto(`http://localhost:5173/?room=${uniqueRoom('wb-overview')}`);
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    });
+  });
+
+  test('entering overview mode hides whiteboard canvas and toolbar', async ({ page }) => {
+    // Activate whiteboard
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const visibleBefore = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard') as any;
+      return wb?.isVisible === true;
+    });
+    expect(visibleBefore).toBe(true);
+
+    // Enter overview
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('overview');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    // The features container must be display:none in overview
+    const featuresHidden = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const features = ss?.shadowRoot?.querySelector('.gs-features') as HTMLElement | null;
+      if (!features) return false;
+      const style = getComputedStyle(features);
+      return style.display === 'none';
+    });
+    expect(featuresHidden).toBe(true);
+  });
+
+  test('clicking a thumbnail exits overview and navigates to correct slide', async ({ page }) => {
+    // Advance past first slide so we have somewhere to navigate back from
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(200);
+
+    // Enter overview
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('overview');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+
+    const mode = await page.evaluate(() => (document.getElementById('slideshow') as any)?.mode);
+    expect(mode).toBe('overview');
+
+    // Click the first thumbnail (slide 0)
+    await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const firstSlide = ss?.shadowRoot?.querySelectorAll('geek-slide')[0] as HTMLElement | undefined;
+      firstSlide?.click();
+    });
+    await page.waitForTimeout(400);
+
+    const state = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return { mode: ss?.mode, slide: ss?.currentSlide };
+    });
+    expect(state.mode).toBe('present');
+    expect(state.slide).toBe(0);
+  });
+
+  test('whiteboard canvas pointer-events pass through when toolbar is collapsed', async ({ page }) => {
+    // Activate whiteboard
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Collapse toolbar
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Verify canvas has pointer-events:none
+    const canvasPointerEvents = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector<HTMLCanvasElement>('canvas.main');
+      return canvas?.style.pointerEvents ?? null;
+    });
+    expect(canvasPointerEvents).toBe('none');
+
+    // Verify slide navigation still works via keyboard (arrow key advances slide)
+    const slideBefore = await page.evaluate(() => (document.getElementById('slideshow') as any)?.currentSlide);
+    await page.keyboard.press('ArrowRight');
+    await page.waitForTimeout(300);
+    const slideAfter = await page.evaluate(() => (document.getElementById('slideshow') as any)?.currentSlide);
+    expect(slideAfter).toBeGreaterThan(slideBefore);
+  });
+
+  test('whiteboard does not auto-activate on drag during overview mode', async ({ page }) => {
+    // Enter overview
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('overview');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+
+    const box = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const container = ss?.shadowRoot?.querySelector('.gs-container');
+      const rect = container?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(box).toBeTruthy();
+
+    // Drag across the container (would auto-activate in present mode)
+    await page.mouse.move(box!.x + box!.width * 0.3, box!.y + box!.height * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width * 0.6, box!.y + box!.height * 0.5, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+
+    const wbActive = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard') as any;
+      return wb?.isVisible === true;
+    });
+    expect(wbActive).toBe(false);
+  });
+
+  test('whiteboard resumes correctly after returning from overview', async ({ page }) => {
+    // Activate whiteboard and draw
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const canvasBounds = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector('canvas');
+      const rect = canvas?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null;
+    });
+    expect(canvasBounds).toBeTruthy();
+
+    await page.mouse.move(canvasBounds!.x + canvasBounds!.width * 0.2, canvasBounds!.y + canvasBounds!.height * 0.3);
+    await page.mouse.down();
+    await page.mouse.move(canvasBounds!.x + canvasBounds!.width * 0.5, canvasBounds!.y + canvasBounds!.height * 0.6, { steps: 8 });
+    await page.mouse.up();
+    await page.waitForTimeout(200);
+
+    // Enter and exit overview (click first thumbnail)
+    await page.keyboard.press('t');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('overview');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(400);
+
+    await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const firstSlide = ss?.shadowRoot?.querySelectorAll('geek-slide')[0] as HTMLElement | undefined;
+      firstSlide?.click();
+    });
+    await page.waitForTimeout(500);
+
+    // Whiteboard canvas should still have its strokes (drawing not cleared by overview)
+    const hasContent = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const canvas = wb?.shadowRoot?.querySelector<HTMLCanvasElement>('canvas.main');
+      if (!canvas) return false;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i]! > 0) return true;
+      }
+      return false;
+    });
+    expect(hasContent).toBe(true);
+  });
+});

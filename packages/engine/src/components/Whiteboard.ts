@@ -153,6 +153,12 @@ export class Whiteboard extends HTMLElement {
   #handleToolbarCollapsed(collapsed: boolean): void {
     if (collapsed === this.#toolbarCollapsed) return;
     this.#toolbarCollapsed = collapsed;
+    // When collapsed the canvas must not intercept pointer/touch events so
+    // swipe gestures and tap-zone navigation reach the slide underneath.
+    if (this.#canvas) {
+      this.#canvas.style.pointerEvents = collapsed ? 'none' : 'auto';
+      this.#canvas.style.touchAction   = collapsed ? 'auto' : 'none';
+    }
   }
 
   /**
