@@ -153,12 +153,6 @@ export class Whiteboard extends HTMLElement {
   #handleToolbarCollapsed(collapsed: boolean): void {
     if (collapsed === this.#toolbarCollapsed) return;
     this.#toolbarCollapsed = collapsed;
-    if (!this.#canvas) return;
-    if (collapsed) {
-      this.#hideCanvas();
-    } else if (this.#visible) {
-      this.#showCanvas();
-    }
   }
 
   /**
