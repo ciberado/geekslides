@@ -418,11 +418,28 @@ export class WhiteboardToolbar extends HTMLElement {
   #boundDragMove = (e: Event): void => { this.#onDragMove(e as PointerEvent); };
   #boundDragEnd = (): void => { this.#endDrag(); };
 
+  /** The shadow-host element (<geek-whiteboard>) that contains this toolbar. */
+  #getParentEl(): HTMLElement | null {
+    const root = this.getRootNode();
+    return root instanceof ShadowRoot ? root.host as HTMLElement : null;
+  }
+
   /** Resolve the containing element's rect for clamping drag position. */
   #getParentRect(): DOMRect {
-    const root = this.getRootNode();
-    const host = root instanceof ShadowRoot ? root.host as HTMLElement : null;
-    return host?.getBoundingClientRect() ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+    return this.#getParentEl()?.getBoundingClientRect()
+      ?? new DOMRect(0, 0, window.innerWidth, window.innerHeight);
+  }
+
+  /**
+   * CSS scale factor applied to the container.
+   * getBoundingClientRect() returns screen-space (post-scale) coords; style.top/left
+   * expect layout-space (pre-scale) values. Dividing screen deltas by this factor
+   * converts them to the correct layout-space units.
+   */
+  #getScale(): number {
+    const el = this.#getParentEl();
+    if (!el || el.offsetWidth === 0) return 1;
+    return el.getBoundingClientRect().width / el.offsetWidth;
   }
 
   #startDrag(e: PointerEvent): void {
@@ -432,18 +449,20 @@ export class WhiteboardToolbar extends HTMLElement {
     handle.setPointerCapture(e.pointerId);
     this.#dragHandle = handle;
 
-    // Switch to absolute pixel positioning immediately so that the
-    // dragOffset is computed against the same coordinate system that
-    // #onDragMove writes to (style.left / style.top, no transform).
-    // Without this, getBoundingClientRect() returns the visual position
-    // including transform: translateY(-50%), causing a jump on first move.
+    // Pin to current visual position in layout coords immediately, so
+    // subsequent pointermove events work against a stable coordinate system
+    // (no transform: translateY(-50%) or right-edge anchor in play).
     const hostRect = this.getBoundingClientRect();
     const parentRect = this.#getParentRect();
+    const scale = this.#getScale();
+
     this.style.right = 'auto';
-    this.style.top = `${String(hostRect.top - parentRect.top)}px`;
-    this.style.left = `${String(hostRect.left - parentRect.left)}px`;
+    this.style.top = `${String((hostRect.top - parentRect.top) / scale)}px`;
+    this.style.left = `${String((hostRect.left - parentRect.left) / scale)}px`;
     this.style.transform = 'none';
 
+    // Drag offset: how far from the toolbar's top-left the pointer landed.
+    // Stored in screen-space pixels; divided by scale in #onDragMove.
     this.#dragOffsetX = e.clientX - hostRect.left;
     this.#dragOffsetY = e.clientY - hostRect.top;
 
@@ -463,19 +482,22 @@ export class WhiteboardToolbar extends HTMLElement {
       this.classList.add('dragging');
     }
 
+    const parentEl = this.#getParentEl();
     const parentRect = this.#getParentRect();
+    const scale = this.#getScale();
 
-    let newLeft = e.clientX - parentRect.left - this.#dragOffsetX;
-    let newTop = e.clientY - parentRect.top - this.#dragOffsetY;
+    // Convert screen-space pointer position to layout-space toolbar position.
+    let newLeft = (e.clientX - parentRect.left - this.#dragOffsetX) / scale;
+    let newTop  = (e.clientY - parentRect.top  - this.#dragOffsetY) / scale;
 
-    // Clamp inside parent
-    newLeft = Math.max(0, Math.min(newLeft, parentRect.width - this.offsetWidth));
-    newTop = Math.max(0, Math.min(newTop, parentRect.height - this.offsetHeight));
+    // Clamp inside parent using layout dimensions.
+    const maxLeft = (parentEl?.offsetWidth  ?? parentRect.width)  - this.offsetWidth;
+    const maxTop  = (parentEl?.offsetHeight ?? parentRect.height) - this.offsetHeight;
+    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+    newTop  = Math.max(0, Math.min(newTop,  maxTop));
 
-    this.style.right = 'auto';
-    this.style.top = `${String(newTop)}px`;
     this.style.left = `${String(newLeft)}px`;
-    this.style.transform = 'none';
+    this.style.top  = `${String(newTop)}px`;
   }
 
   #endDrag(): void {
