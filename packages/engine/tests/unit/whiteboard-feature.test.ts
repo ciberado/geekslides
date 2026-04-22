@@ -105,11 +105,20 @@ function makeContext(
     return vi.fn(); // unsub
   });
 
+  // Mirror the real DOM nesting created by FeatureManager:
+  //   .gs-container
+  //     └── .gs-features
+  //           └── div[data-feature="whiteboard"]   ← ctx.container
+  // Using parentElement on ctx.container gives .gs-features (wrong),
+  // while closest('.gs-container') correctly skips up to .gs-container.
   const gsContainer = document.createElement('div');
   gsContainer.className = 'gs-container';
+  const gsFeaturesDiv = document.createElement('div');
+  gsFeaturesDiv.className = 'gs-features';
   const container = document.createElement('div');
-  container.className = 'gs-features';
-  gsContainer.appendChild(container);
+  container.setAttribute('data-feature', 'whiteboard');
+  gsFeaturesDiv.appendChild(container);
+  gsContainer.appendChild(gsFeaturesDiv);
   document.body.appendChild(gsContainer);
 
   const ctx: FeatureContext = {
