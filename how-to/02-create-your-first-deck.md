@@ -14,11 +14,13 @@ This creates the following structure:
 
 ```
 my-first-talk/
-├── config.json       # Deck metadata and settings
-├── README.md         # Your slide content (Markdown)
+├── config.json              # Deck metadata and settings
+├── README.md                # Your slide content (Markdown)
 ├── css/
-│   └── local.css     # Custom styles
-└── images/           # Image assets
+│   ├── layouts.css          # Slide layout rules (grid, flex, spacing)
+│   ├── theme-default.css    # Default colour and typography theme
+│   └── local.css            # Your per-deck overrides
+└── images/                  # Image assets
 ```
 
 ## Anatomy of a deck
@@ -31,11 +33,10 @@ The configuration file tells GeekSlides how to load and render your deck:
 {
   "title": "My First Talk",
   "content": "README.md",
-  "styles": ["css/local.css"],
+  "styles": ["css/layouts.css", "css/theme-default.css", "css/local.css"],
   "aspectRatio": "16/9",
   "plugins": {
-    "preprocessors": ["header"],
-    "processors": []
+    "preprocessors": []
   }
 }
 ```
@@ -46,10 +47,10 @@ The configuration file tells GeekSlides how to load and render your deck:
 | `content` | Path to the Markdown file with your slides |
 | `styles` | Array of CSS files to load (order matters) |
 | `aspectRatio` | Slide aspect ratio — `"16/9"` or `"4/3"` |
-| `plugins.preprocessors` | Markdown transforms applied before parsing |
+| `plugins.preprocessors` | Markdown transforms applied before parsing (empty = none) |
 | `plugins.processors` | Slide transforms applied after parsing |
 
-> **Tip:** The `header` preprocessor converts any Markdown heading (`#`, `##`, `###`, …) into a slide marker automatically, so you can write natural Markdown without worrying about the slide separator syntax. Headings inside `:::` container blocks (Notes, Details) are left untouched.
+> **Tip:** The scaffolded deck uses explicit `[]()` slide markers (see below), so `preprocessors` is empty by default. You can add `"header"` to the array if you prefer to use bare Markdown headings as slide separators instead.
 
 ### README.md — Your slides
 
@@ -73,23 +74,27 @@ The `#intro` and `#agenda` parts are optional IDs. They create anchor-friendly U
 
 ![A freshly created deck open in the browser](screenshots/new-deck.png)
 
-### local.css — Custom styles
+### css/ — Stylesheets
 
-A minimal starting point for your deck's visual identity:
+Three CSS files ship with every new deck:
+
+- **`layouts.css`** — structural layout rules (grid, flex, spacing). Controls how content is arranged inside each slide type. Usually left unchanged.
+- **`theme-default.css`** — colours, fonts, and decorative styles. This is your starting point for a visual theme.
+- **`local.css`** — per-deck overrides. Start here when you want to tweak fonts or colours without editing the full theme.
+
+A typical `local.css` looks like:
 
 ```css
-:root {
+/* Override font and accent colour for this deck */
+:host {
   --gs-font-family: 'Inter', system-ui, sans-serif;
-  --gs-heading-color: #1a1a2e;
-  --gs-link-color: #e94560;
-}
-
-h1 {
-  font-size: 3rem;
+  --gs-accent: #e94560;
 }
 ```
 
 Changes to CSS files are hot-reloaded instantly — no page refresh needed.
+
+See [Style Your Deck](07-style-your-deck.md) for the full guide to the layout and theme system.
 
 ### images/
 

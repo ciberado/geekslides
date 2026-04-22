@@ -157,9 +157,15 @@ geekslides/
 │       │   │   ├── build.ts      # production build
 │       │   │   ├── pdf.ts        # Playwright/Chromium PDF export
 │       │   │   └── create.ts     # scaffold new presentation
-│       │   └── imageoptimizer.ts # sharp-based optimizer (from v1 tool)
-│       └── tests/
-│           └── cli.test.ts
+       │   ├── templates/
+       │   │   ├── layouts.css          # canonical layout CSS (structure)
+       │   │   ├── theme-default.css    # canonical default theme (colours/fonts)
+       │   │   ├── layouts-css.ts       # generated TS export (sync-templates)
+       │   │   └── theme-default-css.ts # generated TS export (sync-templates)
+       │   └── imageoptimizer.ts # sharp-based optimizer (from v1 tool)
+       └── tests/
+           ├── cli.test.ts
+           └── template-sync.test.ts  # verifies TS exports match canonical CSS
 │
 ├── e2e/                          # Playwright E2E tests
 │   ├── playwright.config.ts

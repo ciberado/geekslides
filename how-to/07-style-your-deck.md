@@ -26,7 +26,7 @@ This is where your deck's visual identity lives. List one or more CSS files in `
 
 ```json
 {
-  "styles": ["css/local.css"]
+  "styles": ["css/layouts.css", "css/theme-default.css", "css/local.css"]
 }
 ```
 
@@ -52,38 +52,67 @@ h1, h2 {
 
 > **Tip:** `@import` rules for web fonts are automatically hoisted to the document `<head>`, so fonts load correctly even though the CSS lives inside Shadow DOM.
 
-### Using a theme file
+### The layout / theme split
 
-There's no built-in theme registry, but you can create reusable theme files. Put your theme in a shared location and reference it alongside a local override file:
+Every scaffolded deck ships with three CSS files that have distinct responsibilities:
+
+| File | Responsibility | Edit it when… |
+|---|---|---|
+| `css/layouts.css` | Grid and flex structure — how content is *arranged* | Rarely; only if you're building custom layouts |
+| `css/theme-default.css` | Colours, fonts, decorations — how content *looks* | You want a different visual theme |
+| `css/local.css` | Per-deck overrides | You need small tweaks for this talk only |
+
+Order matters — later files win. Keep structural rules out of your theme and colour rules out of your layouts.
+
+### Available layout classes
+
+Add a layout class to a slide's marker to activate its layout:
+
+```markdown
+[](.layout-two-col#my-slide)
+### Heading
+#### Column A
+- Point 1
+#### Column B
+- Point 2
+```
+
+| Class | Description |
+|---|---|
+| `layout-title` | Centered hero — use for the opening slide |
+| `layout-cover` | Full-bleed image with text at the bottom |
+| `layout-section` | Accent-background section break |
+| `layout-two-col` | Two-column grid (use `####` as a column break) |
+| `layout-img-text` | Image on the left, text on the right |
+| `layout-big-stat` | Giant centred `h1` for key metrics |
+| `layout-three-col` | Three card columns (each starts with `####`) |
+| `layout-timeline` | Horizontal ordered list with numbered circles |
+| `layout-chart` | Heading + full-height data table |
+| `layout-compare` | Two panels for A vs B comparisons |
+| `layout-team` | Row of circular headshots |
+| `layout-grid` | Responsive image grid / mood board |
+| `layout-table` | Heading + full-width feature matrix table |
+| `layout-blank` | Empty canvas (whiteboard-friendly) |
+
+### Creating your own theme
+
+To replace the default theme entirely, create a new CSS file and update `config.json`:
 
 ```json
 {
-  "styles": ["../themes/allysum.css", "css/local.css"]
+  "styles": ["css/layouts.css", "css/my-theme.css", "css/local.css"]
 }
 ```
 
-Order matters — files listed later override earlier ones. This lets you keep a consistent look across decks while tweaking individual presentations:
+Your theme targets the same `:host` and `section.content` selectors. Start from `theme-default.css` as a reference — it shows every design token and layout-specific override.
 
+To share a theme across multiple decks, point all their `config.json` files to the same file:
+
+```json
+{
+  "styles": ["css/layouts.css", "../shared/dark-theme.css", "css/local.css"]
+}
 ```
-themes/
-├── allysum.css       # Shared visual identity
-└── monochrome.css    # Another theme option
-my-talk/
-├── config.json       # styles: ["../themes/allysum.css", "css/local.css"]
-├── css/
-│   └── local.css     # Overrides specific to this deck
-└── README.md
-```
-
-### What goes in a theme vs. local CSS?
-
-| Theme CSS | Local CSS |
-|---|---|
-| Font families and sizes | Slide-specific font overrides |
-| Color palette | One-off background colors |
-| Base heading styles | Title slide typography |
-| Link appearance | Deck-specific image treatment |
-| List and code block styling | Layout tweaks for this talk |
 
 ## Layer 3: Per-slide scoped CSS
 
@@ -158,53 +187,49 @@ A typical setup for a polished deck:
 {
   "title": "Scaling on AWS",
   "content": "README.md",
-  "styles": ["../themes/allysum.css", "css/local.css"],
+  "styles": ["css/layouts.css", "css/theme-default.css", "css/local.css"],
   "aspectRatio": "16/9",
   "plugins": {
-    "preprocessors": ["header"],
-    "processors": []
+    "preprocessors": []
   }
 }
 ```
 
-**themes/allysum.css** — shared across decks:
+**css/theme-default.css** — colours and fonts for the whole deck:
 ```css
 @import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;700&display=swap');
 
 :host {
-  font-family: 'Open Sans', system-ui, sans-serif;
+  --gs-font-family: 'Open Sans', system-ui, sans-serif;
+  --gs-accent: #e94560;
+  font-family: var(--gs-font-family);
   font-size: 40pt;
 }
 
-h1, h2, h3 {
-  font-weight: 700;
-}
-
-a { color: #e94560; }
+h1, h2, h3 { color: var(--gs-accent); }
+a { color: var(--gs-accent); }
 ```
 
-**css/local.css** — specific to this deck:
+**css/local.css** — one-off tweaks specific to this deck:
 ```css
-h1 {
-  font-size: 100pt;
-  text-align: center;
+:host {
+  --gs-accent: #0078d4;  /* Override accent for this talk */
 }
 ```
 
-**README.md** — a slide with one-off styling:
+**README.md** — a slide with one-off per-slide styling:
 ```markdown
-[](#hero)
+[](.layout-cover#hero)
 # Scaling on AWS
 
+![AWS re:Invent](images/aws-bg.jpg)
+
 <style>
-section.content {
-  background: url('../images/aws-bg.jpg') center/cover;
-}
 h1 { color: white; text-shadow: 0 2px 8px rgba(0,0,0,0.7); }
 </style>
 ```
 
-The result: base engine styles → allysum theme → local overrides → hero slide custom background, all composing cleanly.
+The result: base engine styles → layout rules → theme colours → local overrides → per-slide custom background, all composing cleanly.
 
 ---
 

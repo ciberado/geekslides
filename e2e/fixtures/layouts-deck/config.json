@@ -1,0 +1,13 @@
+{
+  "title": "Layout E2E Fixture",
+  "content": "README.md",
+  "styles": [
+    "layouts.css",
+    "theme-default.css"
+  ],
+  "aspectRatio": "16/9",
+  "plugins": {
+    "preprocessors": [],
+    "processors": []
+  }
+}

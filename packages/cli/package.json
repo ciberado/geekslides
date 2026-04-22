@@ -14,6 +14,7 @@
     "build:bin": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:vite --external:sharp --external:playwright --external:pino --external:pino-pretty --external:thread-stream --external:@geekslides/server",
     "build:types": "tsc",
     "build:app": "vite build --config vite.app.config.ts",
+    "sync-templates": "node -e \"const fs=require('fs');const p='src/templates/';['layouts','theme-default'].forEach(n=>{const css=fs.readFileSync(p+n+'.css','utf-8');const name=n==='layouts'?'layoutsCss':'themeDefaultCss';fs.writeFileSync(p+n+'-css.ts','export const '+name+' = '+JSON.stringify(css)+' as const;\\n')});console.log('Templates synced')\"",
     "typecheck": "tsc --noEmit",
     "dev": "vite --host 0.0.0.0"
   },

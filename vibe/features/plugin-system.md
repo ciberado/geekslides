@@ -41,6 +41,8 @@ Converts `##` headers into slide separators with auto-generated anchors (same lo
 
 A single preprocessor function uses a regex to match lines starting with `## `. For each match, it generates a URL-friendly anchor by lowercasing the title, replacing non-alphanumeric runs with hyphens, and trimming leading/trailing hyphens. It inserts an empty link `[](.slide#anchor)` before the header line, which the slide parser later uses as a section separator.
 
+> **Important:** The header preprocessor inserts a separator before *every* heading level (h1–h6). Decks that use explicit `[]()` slide markers and sub-headings within slides (e.g. `####` column breaks or `##` sub-titles) must disable it to avoid unintended slide splits. Set `"preprocessors": []` in `config.json`. The CLI `create` command scaffolds new decks with the preprocessor disabled by default.
+
 ### chart-processor
 
 Converts `<table>` elements inside slides marked with the `.chart` class into Chart.js canvases (replacing v1's `ChartSlideController`).
