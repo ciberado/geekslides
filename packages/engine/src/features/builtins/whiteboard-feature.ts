@@ -69,8 +69,10 @@ export const whiteboardFeature: Feature = {
     // --- Auto-activate whiteboard on pointer drag (presenter only) ---
     let pointerCleanup: (() => void) | null = null;
     if (!isReadonly) {
-      // The container is mounted inside gs-container (or is gs-container's child).
-      const gsContainer = ctx.container.parentElement;
+      // ctx.container is a feature wrapper div inside .gs-features inside .gs-container.
+      // Pointer events from slide content bubble to .gs-container (not .gs-features),
+      // so we must listen on .gs-container to catch drags that originate on slide elements.
+      const gsContainer = ctx.container.closest<HTMLElement>('.gs-container') ?? ctx.container.parentElement;
       if (gsContainer) {
         let pointerStartedOnSlide = false;
 
