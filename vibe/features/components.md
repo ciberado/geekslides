@@ -87,9 +87,12 @@ Separate route/tab:
     the canvas via `display: none` and also controls `userDismissed` state. Restores
     click-through to links, sliders, and other interactive elements in the slide.
   - **Collapse the toolbar** (click `≡` or run `wb-toolbar`): collapses the toolbar
-    UI only. The canvas and its pointer events remain active — the whiteboard is still
-    visible and drawing still works. Collapsing does _not_ hide the canvas; use the
-    **⊘** button or `whiteboard` command for that.
+    UI only. The canvas remains visible so annotations stay on screen, but the canvas
+    is immediately given `pointer-events: none` / `touch-action: auto` so swipe
+    gestures and tap-zone navigation pass straight through to the slide. Expanding
+    the toolbar restores `pointer-events: auto` / `touch-action: none` for drawing.
+    Collapsing does _not_ hide the canvas; use the **⊘** button or `whiteboard`
+    command for that.
 - **`toggleCanvas()`**: Toggles canvas visibility without setting `userDismissed`,
   so auto-activation on drag still works after hiding. Used by the toolbar `⊘` button
   via the `geek:whiteboard:hide-request` event. The `deactivate()` method (used by
@@ -162,7 +165,8 @@ The toolbar dispatches custom events that the Whiteboard component listens for:
 - `geek:whiteboard:hide-request` — hides the whiteboard for the current slide
 - `geek:whiteboard:collapsed-change` — `{ collapsed: boolean }` — fires when the
   toolbar is collapsed or expanded; the whiteboard updates its `toolbarCollapsed`
-  property (used to suppress auto-activation on drag) but does **not** hide the canvas
+  property and sets `pointer-events: none` / `touch-action: auto` on the canvas
+  while collapsed so touch navigation is not blocked
 
 The toolbar is created and owned by `<geek-whiteboard>` itself (inside its shadow root)
 in non-readonly mode. It is exposed via the read-only `toolbar` getter for external
@@ -180,6 +184,10 @@ so the feature sync layer can bridge them without directly managing toolbar DOM.
   all slide thumbnails. Clicking a thumbnail navigates to that slide and exits overview.
   A `ResizeObserver` tracks the rendered cell width and sets `--gs-thumbnail-scale` on
   each slide element so slide content scales down proportionally inside Shadow DOM.
+  The `.gs-features` wrapper (which holds the whiteboard overlay and toolbar) is hidden
+  via `display: none` in overview CSS so the canvas cannot block thumbnail interaction.
+  Auto-activation pointer handlers also guard against `mode !== 'present'` so drags
+  in overview never activate the whiteboard.
 - External deck CSS is injected per slide and adapted for shadow context (`body` selectors rewritten to `:host`).
 - Font `@import` rules are hoisted to document head to ensure consistent font loading.
 
