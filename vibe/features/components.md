@@ -83,14 +83,13 @@ Separate route/tab:
   and other interactive elements underneath cannot be clicked. The canvas stays
   displayed even on empty slides to keep pointer events working for drawing. To
   interact with slide content you have two options:
-  - **Collapse the toolbar** (click `≡` or run `wb-toolbar`): sets `display: none` on
-    the canvas so all pointer events pass through to the slide. Auto-activation is also
-    suppressed while collapsed. Expanding the toolbar restores the canvas exactly as it
-    was.
   - **Hide the whiteboard** (`⊘` button, `whiteboard` command, or `wb-hide`): hides
-    the canvas via `display: none` and also controls `userDismissed` state.
-  Both approaches fully restore click-through to links, sliders, and other interactive
-  elements in the slide.
+    the canvas via `display: none` and also controls `userDismissed` state. Restores
+    click-through to links, sliders, and other interactive elements in the slide.
+  - **Collapse the toolbar** (click `≡` or run `wb-toolbar`): collapses the toolbar
+    UI only. The canvas and its pointer events remain active — the whiteboard is still
+    visible and drawing still works. Collapsing does _not_ hide the canvas; use the
+    **⊘** button or `whiteboard` command for that.
 - **`toggleCanvas()`**: Toggles canvas visibility without setting `userDismissed`,
   so auto-activation on drag still works after hiding. Used by the toolbar `⊘` button
   via the `geek:whiteboard:hide-request` event. The `deactivate()` method (used by
@@ -162,11 +161,14 @@ The toolbar dispatches custom events that the Whiteboard component listens for:
 - `geek:whiteboard:clear-request` — triggers clear with confirmation
 - `geek:whiteboard:hide-request` — hides the whiteboard for the current slide
 - `geek:whiteboard:collapsed-change` — `{ collapsed: boolean }` — fires when the
-  toolbar is collapsed or expanded; `main.js` calls `whiteboard.setToolbarCollapsed()`
-  which hides/restores the canvas and suppresses auto-activation while collapsed
+  toolbar is collapsed or expanded; the whiteboard updates its `toolbarCollapsed`
+  property (used to suppress auto-activation on drag) but does **not** hide the canvas
 
-The toolbar is created and managed by the host app (main.js), not by the
-Whiteboard component itself, keeping both components decoupled.
+The toolbar is created and owned by `<geek-whiteboard>` itself (inside its shadow root)
+in non-readonly mode. It is exposed via the read-only `toolbar` getter for external
+command wiring (e.g. `wb-pen`, `wb-color`). The toolbar re-emits `hide-request` and
+`clear-request` as composed `geek:whiteboard:hide` / `geek:whiteboard:clear` events
+so the feature sync layer can bridge them without directly managing toolbar DOM.
 
 ## Rendering Strategy
 
