@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSS Slide Layout Catalog</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f5f4f0;
+    --surface: #ffffff;
+    --border: rgba(0,0,0,0.1);
+    --border-subtle: rgba(0,0,0,0.06);
+    --text-primary: #1a1a18;
+    --text-secondary: #6b6b66;
+    --accent: #3B55A0;
+    --accent-light: rgba(59,85,160,0.12);
+    --accent-mid: rgba(59,85,160,0.35);
+    --accent-dim: rgba(59,85,160,0.2);
+    --radius-card: 12px;
+    --radius-sm: 6px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #141412;
+      --surface: #1e1e1b;
+      --border: rgba(255,255,255,0.1);
+      --border-subtle: rgba(255,255,255,0.05);
+      --text-primary: #e8e6df;
+      --text-secondary: #8a8880;
+      --accent: #6b87d4;
+      --accent-light: rgba(107,135,212,0.12);
+      --accent-mid: rgba(107,135,212,0.35);
+      --accent-dim: rgba(107,135,212,0.2);
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    padding: 40px 24px 60px;
+    min-height: 100vh;
+  }
+
+  header {
+    max-width: 900px;
+    margin: 0 auto 36px;
+  }
+
+  header h1 {
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+  }
+
+  header p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .catalog {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-card);
+    padding: 20px;
+  }
+
+  .card h3 {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 4px;
+    color: var(--text-primary);
+  }
+
+  .card p {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin: 0 0 14px;
+    line-height: 1.5;
+  }
+
+  .diagram {
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    background: var(--bg);
+    display: block;
+    width: 100%;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>CSS slide layout catalog</h1>
+  <p>15 popular slide layouts, each achievable with CSS. Diagrams show the structural composition of each layout.</p>
+</header>
+
+<div class="catalog">
+
+  <!-- 1. Title slide -->
+  <div class="card">
+    <h3>Title slide</h3>
+    <p>Centered title and subtitle on a full-bleed background. The simplest opener.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect width="260" height="150" rx="0" fill="#3B55A0" opacity="0.12"/>
+      <rect x="40" y="52" width="180" height="16" rx="3" fill="#3B55A0" opacity="0.5"/>
+      <rect x="70" y="76" width="120" height="9" rx="3" fill="#3B55A0" opacity="0.25"/>
+    </svg>
+  </div>
+
+  <!-- 2. Title + content -->
+  <div class="card">
+    <h3>Title + content</h3>
+    <p>Heading at the top, body area below for bullets, text, or a simple list.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="30" fill="#3B55A0" opacity="0.12"/>
+      <rect x="16" y="9" width="120" height="12" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="16" y="48" width="140" height="8" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="16" y="64" width="110" height="8" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="16" y="80" width="130" height="8" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="16" y="96" width="90" height="8" rx="2" fill="rgba(0,0,0,0.12)"/>
+    </svg>
+  </div>
+
+  <!-- 3. Two-column text -->
+  <div class="card">
+    <h3>Two-column text</h3>
+    <p>Content split into two equal columns for comparisons or dense material.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="30" fill="#3B55A0" opacity="0.12"/>
+      <rect x="16" y="9" width="100" height="12" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="16" y="46" width="100" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="16" y="59" width="80" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="16" y="72" width="90" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="16" y="85" width="70" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <line x1="130" y1="36" x2="130" y2="140" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      <rect x="144" y="46" width="100" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="144" y="59" width="75" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="144" y="72" width="90" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="144" y="85" width="60" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+    </svg>
+  </div>
+
+  <!-- 4. Image + text half-half -->
+  <div class="card">
+    <h3>Image + text (half and half)</h3>
+    <p>Left half is a full-height image or color block; right half holds the headline and copy.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="120" height="150" fill="#3B55A0" opacity="0.18"/>
+      <rect x="136" y="40" width="100" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="136" y="61" width="90" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="136" y="74" width="80" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="136" y="87" width="95" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+    </svg>
+  </div>
+
+  <!-- 5. Full-bleed image with overlay -->
+  <div class="card">
+    <h3>Full-bleed image + overlay</h3>
+    <p>Image fills the entire slide; a semi-transparent overlay anchors the headline at top or bottom.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect width="260" height="150" fill="#3B55A0" opacity="0.15"/>
+      <rect x="0" y="108" width="260" height="42" fill="#1a1a2e" opacity="0.45"/>
+      <rect x="16" y="116" width="140" height="12" rx="3" fill="white" opacity="0.8"/>
+      <rect x="16" y="133" width="100" height="7" rx="2" fill="white" opacity="0.45"/>
+    </svg>
+  </div>
+
+  <!-- 6. Section header / divider -->
+  <div class="card">
+    <h3>Section header / divider</h3>
+    <p>Large centered label that marks the start of a new chapter in the deck.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect width="260" height="150" fill="#3B55A0" opacity="0.08"/>
+      <rect x="80" y="62" width="100" height="8" rx="2" fill="#3B55A0" opacity="0.25"/>
+      <rect x="60" y="76" width="140" height="18" rx="4" fill="#3B55A0" opacity="0.45"/>
+      <rect x="100" y="101" width="60" height="7" rx="2" fill="#3B55A0" opacity="0.2"/>
+    </svg>
+  </div>
+
+  <!-- 7. Three-column cards -->
+  <div class="card">
+    <h3>Three-column cards</h3>
+    <p>Three equal-width cards in a row, each with an icon or stat, label, and short description.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="28" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="7" width="100" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="12" y="40" width="70" height="90" rx="6" fill="white" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      <rect x="95" y="40" width="70" height="90" rx="6" fill="white" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      <rect x="178" y="40" width="70" height="90" rx="6" fill="white" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      <rect x="28" y="52" width="38" height="22" rx="4" fill="#3B55A0" opacity="0.2"/>
+      <rect x="111" y="52" width="38" height="22" rx="4" fill="#3B55A0" opacity="0.2"/>
+      <rect x="194" y="52" width="38" height="22" rx="4" fill="#3B55A0" opacity="0.2"/>
+      <rect x="20" y="82" width="54" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="103" y="82" width="54" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="186" y="82" width="54" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="20" y="95" width="46" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+      <rect x="103" y="95" width="46" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+      <rect x="186" y="95" width="46" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+    </svg>
+  </div>
+
+  <!-- 8. Big stat / quote -->
+  <div class="card">
+    <h3>Big stat / pull quote</h3>
+    <p>A single oversized number or short quote dominates the slide, with a small label beneath.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="55" y="38" width="150" height="48" rx="6" fill="#3B55A0" opacity="0.1"/>
+      <rect x="90" y="48" width="80" height="30" rx="4" fill="#3B55A0" opacity="0.35"/>
+      <rect x="85" y="94" width="90" height="8" rx="3" fill="rgba(0,0,0,0.12)"/>
+      <rect x="100" y="108" width="60" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+    </svg>
+  </div>
+
+  <!-- 9. Timeline / process steps -->
+  <div class="card">
+    <h3>Timeline / process steps</h3>
+    <p>Horizontal steps connected by a line or arrows, each with a number, label, and short description.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="28" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="7" width="100" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <line x1="34" y1="80" x2="226" y2="80" stroke="rgba(0,0,0,0.15)" stroke-width="1.5"/>
+      <circle cx="50" cy="80" r="10" fill="#3B55A0" opacity="0.35"/>
+      <circle cx="110" cy="80" r="10" fill="#3B55A0" opacity="0.35"/>
+      <circle cx="170" cy="80" r="10" fill="#3B55A0" opacity="0.35"/>
+      <circle cx="230" cy="80" r="10" fill="#3B55A0" opacity="0.35"/>
+      <rect x="24" y="97" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="84" y="97" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="144" y="97" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="204" y="97" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+    </svg>
+  </div>
+
+  <!-- 10. Chart / data slide -->
+  <div class="card">
+    <h3>Chart / data slide</h3>
+    <p>Title and subtitle at top, chart or graph takes up most of the content area, with a legend below.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="28" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="7" width="90" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <line x1="20" y1="38" x2="20" y2="120" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+      <line x1="20" y1="120" x2="244" y2="120" stroke="rgba(0,0,0,0.15)" stroke-width="1"/>
+      <rect x="30" y="90" width="26" height="30" rx="2" fill="#3B55A0" opacity="0.3"/>
+      <rect x="66" y="70" width="26" height="50" rx="2" fill="#3B55A0" opacity="0.45"/>
+      <rect x="102" y="55" width="26" height="65" rx="2" fill="#3B55A0" opacity="0.55"/>
+      <rect x="138" y="62" width="26" height="58" rx="2" fill="#3B55A0" opacity="0.5"/>
+      <rect x="174" y="44" width="26" height="76" rx="2" fill="#3B55A0" opacity="0.65"/>
+      <rect x="210" y="75" width="26" height="45" rx="2" fill="#3B55A0" opacity="0.4"/>
+      <rect x="60" y="132" width="30" height="6" rx="2" fill="#3B55A0" opacity="0.3"/>
+      <rect x="100" y="132" width="30" height="6" rx="2" fill="#3B55A0" opacity="0.45"/>
+      <rect x="140" y="132" width="30" height="6" rx="2" fill="#3B55A0" opacity="0.6"/>
+    </svg>
+  </div>
+
+  <!-- 11. Comparison A vs B -->
+  <div class="card">
+    <h3>Comparison (A vs B)</h3>
+    <p>Two panels side by side divided by a center line, each with its own heading and attributes.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="28" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="7" width="90" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="10" y="36" width="112" height="105" rx="6" fill="rgba(0,0,0,0.03)" stroke="rgba(0,0,0,0.1)" stroke-width="0.5"/>
+      <rect x="138" y="36" width="112" height="105" rx="6" fill="#3B55A0" opacity="0.08" stroke="#3B55A0" stroke-width="0.5" stroke-opacity="0.4"/>
+      <rect x="26" y="46" width="80" height="10" rx="3" fill="rgba(0,0,0,0.12)"/>
+      <rect x="154" y="46" width="80" height="10" rx="3" fill="#3B55A0" opacity="0.35"/>
+      <rect x="20" y="64" width="70" height="6" rx="2" fill="rgba(0,0,0,0.08)"/>
+      <rect x="20" y="76" width="80" height="6" rx="2" fill="rgba(0,0,0,0.08)"/>
+      <rect x="20" y="88" width="60" height="6" rx="2" fill="rgba(0,0,0,0.08)"/>
+      <rect x="148" y="64" width="70" height="6" rx="2" fill="#3B55A0" opacity="0.2"/>
+      <rect x="148" y="76" width="80" height="6" rx="2" fill="#3B55A0" opacity="0.2"/>
+      <rect x="148" y="88" width="60" height="6" rx="2" fill="#3B55A0" opacity="0.2"/>
+    </svg>
+  </div>
+
+  <!-- 12. Team / people grid -->
+  <div class="card">
+    <h3>Team / people grid</h3>
+    <p>Headshots or avatar circles in a row with a name and role below each one.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="28" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="7" width="80" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <circle cx="50" cy="80" r="24" fill="#3B55A0" opacity="0.2"/>
+      <circle cx="130" cy="80" r="24" fill="#3B55A0" opacity="0.2"/>
+      <circle cx="210" cy="80" r="24" fill="#3B55A0" opacity="0.2"/>
+      <rect x="24" y="110" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="104" y="110" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="184" y="110" width="52" height="7" rx="2" fill="rgba(0,0,0,0.12)"/>
+      <rect x="30" y="122" width="40" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+      <rect x="110" y="122" width="40" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+      <rect x="190" y="122" width="40" height="6" rx="2" fill="rgba(0,0,0,0.07)"/>
+    </svg>
+  </div>
+
+  <!-- 13. Image grid / mood board -->
+  <div class="card">
+    <h3>Image grid / mood board</h3>
+    <p>A grid of equally-sized image placeholders fills the slide, with a title bar at the top.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="24" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="5" width="90" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="8" y="30" width="78" height="54" rx="4" fill="#3B55A0" opacity="0.15"/>
+      <rect x="91" y="30" width="78" height="54" rx="4" fill="#3B55A0" opacity="0.22"/>
+      <rect x="174" y="30" width="78" height="54" rx="4" fill="#3B55A0" opacity="0.12"/>
+      <rect x="8" y="89" width="78" height="54" rx="4" fill="#3B55A0" opacity="0.2"/>
+      <rect x="91" y="89" width="78" height="54" rx="4" fill="#3B55A0" opacity="0.12"/>
+      <rect x="174" y="89" width="78" height="54" rx="4" fill="#3B55A0" opacity="0.18"/>
+    </svg>
+  </div>
+
+  <!-- 14. Table / matrix -->
+  <div class="card">
+    <h3>Table / matrix</h3>
+    <p>A structured table with a header row, used for feature comparisons, schedules, or data grids.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="0" y="0" width="260" height="24" fill="#3B55A0" opacity="0.12"/>
+      <rect x="14" y="5" width="90" height="13" rx="3" fill="#3B55A0" opacity="0.4"/>
+      <rect x="8" y="30" width="244" height="18" rx="3" fill="#3B55A0" opacity="0.25"/>
+      <line x1="8" y1="48" x2="252" y2="48" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="8" y1="62" x2="252" y2="62" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="8" y1="76" x2="252" y2="76" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="8" y1="90" x2="252" y2="90" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="8" y1="104" x2="252" y2="104" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="8" y1="118" x2="252" y2="118" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="70" y1="30" x2="70" y2="130" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="132" y1="30" x2="132" y2="130" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+      <line x1="192" y1="30" x2="192" y2="130" stroke="rgba(0,0,0,0.08)" stroke-width="0.5"/>
+    </svg>
+  </div>
+
+  <!-- 15. Blank / canvas -->
+  <div class="card">
+    <h3>Blank / canvas</h3>
+    <p>Empty slide with a subtle border or background, used for custom diagrams, freehand, or whiteboard content.</p>
+    <svg class="diagram" viewBox="0 0 260 150" width="100%">
+      <rect width="260" height="150" fill="none"/>
+      <rect x="8" y="8" width="244" height="134" rx="6" fill="white" stroke="rgba(0,0,0,0.15)" stroke-width="1" stroke-dasharray="5 4"/>
+    </svg>
+  </div>
+
+</div>
+</body>
+</html>

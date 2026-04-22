@@ -1,0 +1,16 @@
+{
+  "title": "Test Showcase",
+  "content": "README.md",
+  "styles": [
+    "css/layouts.css",
+    "css/theme-default.css",
+    "css/local.css"
+  ],
+  "features": [
+    "whiteboard"
+  ],
+  "aspectRatio": "16/9",
+  "plugins": {
+    "preprocessors": []
+  }
+}

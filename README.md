@@ -1,6 +1,6 @@
 # GeekSlides
 
-GeekSlides is a markdown-first presentation system focused on technical talks and learning sessions.
+GeekSlides is a markdown-first presentation system focused on learning sessions.
 
 The current v2 is a TypeScript rewrite with Web Components, real-time synchronization, speaker view, mobile support, and a terminal-style command workflow.
 

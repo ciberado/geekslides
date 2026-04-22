@@ -1,0 +1,16 @@
+/* Test Showcase — local style overrides.
+ *
+ * This file is loaded AFTER layouts.css and theme-default.css.
+ * Override any design token here:
+ *
+ *   :host {
+ *     --gs-color-accent: #E63946;
+ *     --gs-font-family: "Inter", sans-serif;
+ *   }
+ *
+ * Or add slide-specific rules:
+ *
+ *   section.content.layout-title > h1 {
+ *     font-size: 96pt;
+ *   }
+ */
