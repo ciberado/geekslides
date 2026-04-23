@@ -26,6 +26,11 @@ function buildReadme(title: string): string {
 
 ## A modern slide deck
 
+::: Notes
+**layout-title** — centred flex column over a background image.
+Markdown: \`[](.layout-title#id,bgurl(image.jpg))\` then \`# Heading\` + \`## Subtitle\`.
+:::
+
 [](.layout-cover.coverbg#vision,bgurl(https://picsum.photos/seed/geekslides-cover/1920/1080))
 
 # Think Bold, Ship Fast
@@ -33,8 +38,9 @@ function buildReadme(title: string): string {
 Empowering teams to communicate ideas that matter.
 
 ::: Notes
-This cover slide uses \`layout-cover\` with a background image.
-The gradient overlay is provided by the theme.
+**layout-cover** — full-bleed background with a gradient overlay.
+Content sits at the bottom. Add \`.coverbg\` so the parser treats the
+marker's bgurl as a full-bleed background.
 :::
 
 [](.layout-section#chapter-story)
@@ -42,6 +48,33 @@ The gradient overlay is provided by the theme.
 ## The Story
 
 ### Why we built this
+
+::: Notes
+**layout-section** — accent-background section divider.
+Uses \`h2\` for the chapter title and optional \`h3\` for the tagline.
+:::
+
+[](.layout-section#chapter-solo)
+
+## Single-Line Section
+
+::: Notes
+A section divider without a tagline — just the \`h2\`.
+:::
+
+[](.layout-agenda#agenda)
+
+### Today's Agenda
+
+1. The story behind the product
+2. Layouts & content combinations
+3. Data, comparisons & tables
+4. Team, gallery & closing
+
+::: Notes
+**layout-agenda** — numbered items fill the available height evenly.
+Use an \`ol\` after the \`h3\` heading.
+:::
 
 [](.layout-two-col#problem-solution)
 
@@ -58,8 +91,25 @@ The gradient overlay is provided by the theme.
 - **Git-native** — branch, merge, review
 
 ::: Notes
-Two-column layout: the h4 acts as a hidden column separator.
-Everything before the h4 is column 1; everything after is column 2.
+**layout-two-col** — two equal columns separated by a hidden \`h4\`.
+This example uses bullet lists in both columns.
+:::
+
+[](.layout-two-col#two-col-paragraphs)
+
+### Design Philosophy
+
+The layout file controls **structure** — grids, flex, spacing.
+It never sets colours or fonts.
+
+#### Theme Responsibility
+
+The theme file controls **appearance** — colours, typography,
+decorative treatments. Swap themes without touching layouts.
+
+::: Notes
+**layout-two-col with paragraphs** — the same two-column grid works
+with paragraphs, not just lists.
 :::
 
 [](.layout-img-text#product)
@@ -73,6 +123,26 @@ Everything before the h4 is column 1; everything after is column 2.
 - **Real-time sync** across devices via Yjs
 - **PDF export** with a single CLI command
 
+::: Notes
+**layout-img-text** — image on the left, heading + content on the right.
+Works with \`ul\`, \`ol\`, or \`p\` elements on the right side.
+:::
+
+[](.layout-img-text#product-steps)
+
+### Getting Started
+
+![Setup](https://picsum.photos/seed/geekslides-setup/800/600)
+
+1. Install the CLI with \`npm i -g @geekslides/cli\`
+2. Scaffold a deck with \`geekslides create\`
+3. Start the dev server with \`geekslides dev\`
+4. Edit your markdown — changes appear live
+
+::: Notes
+**layout-img-text with ordered list** — numbered steps on the right.
+:::
+
 [](.layout-img-text-bleed#product-bleed)
 
 ![Full-bleed shot](https://picsum.photos/seed/geekslides-bleed/960/1080)
@@ -83,11 +153,47 @@ Everything before the h4 is column 1; everything after is column 2.
 - Heading and content sit comfortably on the right
 - Great for product screenshots or hero photos
 
+::: Notes
+**layout-img-text-bleed** — image touches the north, south, and west
+edges of the slide. The right column has standard padding.
+:::
+
+[](.layout-img-text-bleed#bleed-paragraph)
+
+![Architecture](https://picsum.photos/seed/geekslides-arch/960/1080)
+
+### Architecture Overview
+
+The engine runs entirely in the browser as a set of Web Components.
+Each slide is a \`<geek-slide>\` with its own Shadow DOM, which
+isolates styles and keeps slides independent.
+
+The server provides real-time sync via Yjs CRDTs over WebSocket,
+so multiple presenters can co-navigate the same deck.
+
+::: Notes
+**layout-img-text-bleed with paragraphs** — text-heavy variant.
+:::
+
 [](.layout-big-stat#traction)
 
 ### 42M+
 
 Slides rendered across 120 countries
+
+::: Notes
+**layout-big-stat** — giant \`h3\` number with a plain paragraph label.
+:::
+
+[](.layout-big-stat#quote)
+
+### "Simple wins."
+
+A pull quote works just as well as a number in this layout.
+
+::: Notes
+**layout-big-stat as pull quote** — any short text in the \`h3\` works.
+:::
 
 [](.layout-three-col#pillars)
 
@@ -105,6 +211,37 @@ Author slides in seconds using plain Markdown. No drag-and-drop, no bloated edit
 
 Theme tokens ensure every slide looks polished. Change one variable, update the entire deck.
 
+::: Notes
+**layout-three-col with text** — each \`h4\` starts a card, followed
+by a \`p\` body.
+:::
+
+[](.layout-three-col#pillars-lists)
+
+### How It Works
+
+#### Author
+
+- Write in Markdown
+- Use layout classes
+- Add speaker notes
+
+#### Preview
+
+- Live dev server
+- Hot CSS reload
+- Mobile sync
+
+#### Ship
+
+- PDF export
+- Docker deploy
+- Static hosting
+
+::: Notes
+**layout-three-col with lists** — card bodies can be \`ul\` or \`ol\`.
+:::
+
 [](.layout-three-col#pillars-images)
 
 ### Platform Highlights
@@ -121,6 +258,10 @@ Theme tokens ensure every slide looks polished. Change one variable, update the 
 
 ![Mobile](https://picsum.photos/seed/geekslides-card-mobile/600/400)
 
+::: Notes
+**layout-three-col with images** — card bodies can be images.
+:::
+
 [](.layout-timeline#roadmap)
 
 ### Product Roadmap
@@ -131,18 +272,9 @@ Theme tokens ensure every slide looks polished. Change one variable, update the 
 4. **Launch**: public release with documentation and CLI.
 
 ::: Notes
-The timeline layout converts an ordered list into a horizontal
-process diagram with numbered circles and a connecting line.
+**layout-timeline** — horizontal process steps with numbered circles
+and a connecting line. Each \`li\` starts with a \`**bold label**\`.
 :::
-
-[](.layout-agenda#agenda)
-
-### Today's Agenda
-
-1. Introduction & vision
-2. Architecture deep-dive
-3. Live demo
-4. Q & A
 
 [](.layout-section#chapter-data)
 
@@ -161,6 +293,10 @@ process diagram with numbered circles and a connecting line.
 | Asia-Pacific| 90   | 140  | 195  | 260  |
 | Total       | 590  | 770  | 945  | 1160 |
 
+::: Notes
+**layout-chart** — heading at top, table fills remaining height.
+:::
+
 [](.layout-compare#comparison)
 
 ### Traditional Tools vs GeekSlides
@@ -177,6 +313,29 @@ process diagram with numbered circles and a connecting line.
 - **GeekSlides**: Git-friendly plain text
 - **GeekSlides**: real-time WebSocket sync
 
+::: Notes
+**layout-compare** — two panels with a bold VS divider in the centre.
+The \`h4\` appears as an accent badge between the columns.
+:::
+
+[](.layout-compare#compare-ordered)
+
+### Deployment Options
+
+1. **Docker Compose** — single-command setup
+2. **Managed host** — zero maintenance
+3. **CI pipeline** — automated builds
+
+#### vs
+
+1. **Static export** — no server needed
+2. **CDN** — global edge caching
+3. **GitHub Pages** — free hosting
+
+::: Notes
+**layout-compare with ordered lists** — numbered items work too.
+:::
+
 [](.layout-table#features)
 
 ### Feature Matrix
@@ -190,6 +349,10 @@ process diagram with numbered circles and a connecting line.
 | Sync              | 2 devices   | 10 devices  | Unlimited   |
 | Support           | Community   | Email       | Dedicated   |
 
+::: Notes
+**layout-table** — heading + full-width feature matrix.
+:::
+
 [](.layout-team#team)
 
 ### Meet the Team
@@ -202,7 +365,25 @@ process diagram with numbered circles and a connecting line.
 
 ![Dan Kim](https://picsum.photos/seed/geekslides-dan/400/400)
 
-[](.layout-grid#gallery-large)
+::: Notes
+**layout-team** — header at the top, circular headshots below.
+Works with any number of images; they wrap automatically.
+:::
+
+[](.layout-team.heading-center#team-pair)
+
+### Co-Founders
+
+![Alice Chen](https://picsum.photos/seed/geekslides-alice/400/400)
+
+![Bob Martinez](https://picsum.photos/seed/geekslides-bob/400/400)
+
+::: Notes
+**layout-team.heading-center** — modifier that centres the heading
+vertically with the images. Good for small groups (2–3 people).
+:::
+
+[](.layout-grid#gallery-four)
 
 ### Product Gallery — Four Images
 
@@ -213,6 +394,11 @@ process diagram with numbered circles and a connecting line.
 ![Presenter view](https://picsum.photos/seed/geekslides-present/800/600)
 
 ![Mobile sync](https://picsum.photos/seed/geekslides-mobile/800/600)
+
+::: Notes
+**layout-grid (4 images)** — auto-fit grid with \`minmax(350px, 1fr)\`.
+Four images fill a 2×2 grid at 16:9.
+:::
 
 [](.layout-grid#gallery-six)
 
@@ -230,6 +416,57 @@ process diagram with numbered circles and a connecting line.
 
 ![Deploy](https://picsum.photos/seed/geekslides-deploy/800/600)
 
+::: Notes
+**layout-grid (6 images)** — the same grid auto-fits to 3×2 with
+six images.
+:::
+
+[](.layout-grid#gallery-three)
+
+### Product Gallery — Three Images
+
+![Whiteboard](https://picsum.photos/seed/geekslides-wb/800/600)
+
+![Terminal](https://picsum.photos/seed/geekslides-term/800/600)
+
+![Diagrams](https://picsum.photos/seed/geekslides-diagram/800/600)
+
+::: Notes
+**layout-grid (3 images)** — three images arrange in a single row.
+:::
+
+[](#code-example)
+
+### Per-Slide Style Override
+
+\`\`\`css
+/* Inside your markdown — scoped to this slide only */
+<style>
+section.content { background: #1a1a2e; color: #eee; }
+h3 { color: #e94560; }
+</style>
+\`\`\`
+
+::: Notes
+**Default layout with code** — no layout class. Works well for
+code samples, CLI output, or configuration snippets.
+You can also embed a real \`<style>\` tag to override this slide's look.
+:::
+
+[](#blockquote-slide)
+
+### What People Say
+
+> "GeekSlides changed how our team communicates technical ideas.
+> We went from spending hours in design tools to minutes in Markdown."
+>
+> — **Engineering Lead, Acme Corp**
+
+::: Notes
+**Default layout with blockquote** — great for testimonials or
+key quotes from customers, users, or articles.
+:::
+
 [](#closing)
 
 ### Thank You
@@ -243,11 +480,16 @@ npx @geekslides/cli create --title "My Next Talk"
 \`\`\`
 
 ::: Notes
-This is the default "title + content" layout — no layout class needed.
-It works well for closing slides, Q&A prompts, or simple text content.
+**Default layout** — no layout class needed. Works well for closing
+slides, Q&A prompts, or simple text content.
 :::
 
 [](.layout-blank#whiteboard)
+
+::: Notes
+**layout-blank** — empty canvas. Use the whiteboard feature (\`W\` key)
+to draw on this slide during your presentation.
+:::
 `;
 }
 
