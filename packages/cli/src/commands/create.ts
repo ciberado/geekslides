@@ -39,9 +39,9 @@ The gradient overlay is provided by the theme.
 
 [](.layout-section#chapter-story)
 
-# The Story
+## The Story
 
-## Why we built this
+### Why we built this
 
 [](.layout-two-col#problem-solution)
 
@@ -68,16 +68,26 @@ Everything before the h4 is column 1; everything after is column 2.
 
 ![Product screenshot](https://picsum.photos/seed/geekslides-product/800/600)
 
-- **15 built-in layouts** for any content type
+- **15+ built-in layouts** for any content type
 - **Theme system** separates color from structure
 - **Real-time sync** across devices via Yjs
 - **PDF export** with a single CLI command
 
+[](.layout-img-text-bleed#product-bleed)
+
+![Full-bleed shot](https://picsum.photos/seed/geekslides-bleed/960/1080)
+
+### Edge-to-Edge Imagery
+
+- Image fills the entire left half — no gaps
+- Heading and content sit comfortably on the right
+- Great for product screenshots or hero photos
+
 [](.layout-big-stat#traction)
 
-# 42M+
+### 42M+
 
-#### Slides rendered across 120 countries
+Slides rendered across 120 countries
 
 [](.layout-three-col#pillars)
 
@@ -89,11 +99,27 @@ Author slides in seconds using plain Markdown. No drag-and-drop, no bloated edit
 
 #### Flexibility
 
-15 layout classes handle any content pattern, from data tables to image grids to timelines.
+15+ layout classes handle any content pattern, from data tables to image grids to timelines.
 
 #### Consistency
 
 Theme tokens ensure every slide looks polished. Change one variable, update the entire deck.
+
+[](.layout-three-col#pillars-images)
+
+### Platform Highlights
+
+#### Dashboard
+
+![Dashboard](https://picsum.photos/seed/geekslides-card-dash/600/400)
+
+#### Editor
+
+![Editor](https://picsum.photos/seed/geekslides-card-editor/600/400)
+
+#### Mobile
+
+![Mobile](https://picsum.photos/seed/geekslides-card-mobile/600/400)
 
 [](.layout-timeline#roadmap)
 
@@ -109,11 +135,20 @@ The timeline layout converts an ordered list into a horizontal
 process diagram with numbered circles and a connecting line.
 :::
 
+[](.layout-agenda#agenda)
+
+### Today's Agenda
+
+1. Introduction & vision
+2. Architecture deep-dive
+3. Live demo
+4. Q & A
+
 [](.layout-section#chapter-data)
 
-# The Data
+## The Data
 
-## Numbers that speak
+### Numbers that speak
 
 [](.layout-chart#revenue)
 
@@ -149,7 +184,7 @@ process diagram with numbered circles and a connecting line.
 | Capability        | Free         | Pro          | Enterprise   |
 |-------------------|-------------|-------------|-------------|
 | Slides per deck   | Unlimited   | Unlimited   | Unlimited   |
-| Layouts           | 15          | 15 + custom | Bespoke     |
+| Layouts           | 15+         | 15+ custom  | Bespoke     |
 | Themes            | Default     | 5 built-in  | White-label |
 | PDF export        | Watermarked | Clean       | Branded     |
 | Sync              | 2 devices   | 10 devices  | Unlimited   |
@@ -165,9 +200,11 @@ process diagram with numbered circles and a connecting line.
 
 ![Carol Okonkwo](https://picsum.photos/seed/geekslides-carol/400/400)
 
-[](.layout-grid#gallery)
+![Dan Kim](https://picsum.photos/seed/geekslides-dan/400/400)
 
-### Product Gallery
+[](.layout-grid#gallery-large)
+
+### Product Gallery — Four Images
 
 ![Dashboard](https://picsum.photos/seed/geekslides-dash/800/600)
 
@@ -176,6 +213,22 @@ process diagram with numbered circles and a connecting line.
 ![Presenter view](https://picsum.photos/seed/geekslides-present/800/600)
 
 ![Mobile sync](https://picsum.photos/seed/geekslides-mobile/800/600)
+
+[](.layout-grid#gallery-six)
+
+### Product Gallery — Six Images
+
+![Themes](https://picsum.photos/seed/geekslides-themes/800/600)
+
+![Plugins](https://picsum.photos/seed/geekslides-plugins/800/600)
+
+![Export](https://picsum.photos/seed/geekslides-export/800/600)
+
+![Sync](https://picsum.photos/seed/geekslides-sync/800/600)
+
+![CLI](https://picsum.photos/seed/geekslides-cli/800/600)
+
+![Deploy](https://picsum.photos/seed/geekslides-deploy/800/600)
 
 [](#closing)
 
