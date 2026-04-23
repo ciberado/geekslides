@@ -417,14 +417,16 @@ test.describe('Layout CSS', () => {
 
   /* ── 14. Image + text full-bleed ────────────────────────────────────────── */
 
-  test('layout-img-text-bleed: grid with two columns', async ({ page }) => {
+  test('layout-img-text-bleed: float-based split layout', async ({ page }) => {
     await goToSlide(page, 14);
     expect(await hasContentClass(page, 'layout-img-text-bleed')).toBe(true);
 
-    const styles = await getContentStyles(page, ['display', 'grid-template-columns']);
-    expect(styles['display']).toBe('grid');
-    const cols = (styles['grid-template-columns'] ?? '').split(' ');
-    expect(cols.length).toBe(2);
+    const styles = await getContentStyles(page, ['display']);
+    expect(styles['display']).toBe('block');
+
+    const imageStyles = await getChildStyles(page, '.block-image', ['float', 'width']);
+    expect(imageStyles['float']).toBe('left');
+    expect(parseFloat(imageStyles['width'] ?? '0')).toBeGreaterThan(0);
   });
 
   test('layout-img-text-bleed: has block-image and list', async ({ page }) => {

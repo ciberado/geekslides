@@ -171,6 +171,9 @@ isolates styles and keeps slides independent.
 The server provides real-time sync via Yjs CRDTs over WebSocket,
 so multiple presenters can co-navigate the same deck.
 
+The plugin pipeline cleanly separates text preprocessing from DOM
+processing, so teams can extend behavior without forking core code.
+
 ::: Notes
 **layout-img-text-bleed with paragraphs** — text-heavy variant.
 :::
@@ -270,19 +273,25 @@ by a \`p\` body.
 
 Expert guidance on architecture, performance, and developer experience.
 
+![Workshop](https://picsum.photos/seed/geekslides-consult/640/360)
+
+From first audit to production rollout.
+
 #### Training
 
-![Training session](https://picsum.photos/seed/geekslides-train/600/400)
+![Training session](https://picsum.photos/seed/geekslides-train/600/400) Live cohorts for engineering teams.
 
 #### Open Source
 
-- Layout engine
-- Theme system
-- CLI tooling
+We build in public and ship reusable tools.
+
+![Open source](https://picsum.photos/seed/geekslides-oss/640/360)
+
+Community-driven roadmap and examples.
 
 ::: Notes
-**layout-three-col with mixed content** — each card can hold a different
-content type: text, image, or list. Mix and match freely.
+**layout-three-col with mixed content** — shows text+image+text,
+image+text, and text+image+text patterns.
 :::
 
 [](.layout-timeline#roadmap)
@@ -462,6 +471,41 @@ Images grow to fill horizontal space; works with any count.
 vertically with the images. Good for small groups (2–3 people).
 :::
 
+[](.layout-team#team-with-text)
+
+### Engineering Team Profiles
+
+- ![Alice Chen](https://picsum.photos/seed/geekslides-alice/400/400)
+  **Alice Chen**
+  Platform lead — build and release systems.
+- ![Bob Martinez](https://picsum.photos/seed/geekslides-bob/400/400)
+  **Bob Martinez**
+  Runtime lead — rendering and performance.
+- ![Carol Okonkwo](https://picsum.photos/seed/geekslides-carol/400/400)
+  **Carol Okonkwo**
+  UX lead — interaction and accessibility.
+
+::: Notes
+**layout-team with optional text** — use a markdown list where each
+item contains image + name + short description.
+:::
+
+[](.layout-grid.cols-2#gallery-two-col)
+
+### Product Gallery — 2 Columns
+
+![Dashboard](https://picsum.photos/seed/geekslides-dash/800/600)
+
+![Editor](https://picsum.photos/seed/geekslides-editor/800/600)
+
+![Presenter view](https://picsum.photos/seed/geekslides-present/800/600)
+
+![Mobile sync](https://picsum.photos/seed/geekslides-mobile/800/600)
+
+::: Notes
+**layout-grid.cols-2** — explicit two-column layout for wider tiles.
+:::
+
 [](.layout-grid#gallery-four)
 
 ### Product Gallery — Four Images
@@ -475,11 +519,10 @@ vertically with the images. Good for small groups (2–3 people).
 ![Mobile sync](https://picsum.photos/seed/geekslides-mobile/800/600)
 
 ::: Notes
-**layout-grid (4 images)** — auto-fit grid with \`minmax(350px, 1fr)\`.
-Four images fill a 2×2 grid at 16:9.
+**layout-grid (default)** — defaults to three columns.
 :::
 
-[](.layout-grid#gallery-six)
+[](.layout-grid.cols-3#gallery-six)
 
 ### Product Gallery — Six Images
 
@@ -496,11 +539,26 @@ Four images fill a 2×2 grid at 16:9.
 ![Deploy](https://picsum.photos/seed/geekslides-deploy/800/600)
 
 ::: Notes
-**layout-grid (6 images)** — the same grid auto-fits to 3×2 with
-six images.
+**layout-grid.cols-3** — explicit three-column grid.
 :::
 
-[](.layout-grid#gallery-three)
+[](.layout-grid.cols-4#gallery-four-col)
+
+### Product Gallery — 4 Columns
+
+![Runtime](https://picsum.photos/seed/geekslides-runtime/800/600)
+
+![Sync](https://picsum.photos/seed/geekslides-sync2/800/600)
+
+![Whiteboard](https://picsum.photos/seed/geekslides-wb2/800/600)
+
+![CLI](https://picsum.photos/seed/geekslides-cli2/800/600)
+
+::: Notes
+**layout-grid.cols-4** — four-column variation for denser galleries.
+:::
+
+[](.layout-grid.cols-3#gallery-three)
 
 ### Product Gallery — Three Images
 
@@ -511,10 +569,11 @@ six images.
 ![Diagrams](https://picsum.photos/seed/geekslides-diagram/800/600)
 
 ::: Notes
-**layout-grid (3 images)** — three images arrange in a single row.
+**layout-grid.cols-3 (3 images)** — each image expands to fill one
+of the three columns.
 :::
 
-[](.layout-grid#gallery-two)
+[](.layout-grid.cols-2#gallery-two)
 
 ### Side by Side
 
@@ -523,7 +582,7 @@ six images.
 ![After](https://picsum.photos/seed/geekslides-after/800/600)
 
 ::: Notes
-**layout-grid (2 images)** — two images fill a single row.
+**layout-grid.cols-2 (2 images)** — two images fill the entire row.
 :::
 
 [](.layout-team#team-six)

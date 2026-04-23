@@ -230,6 +230,10 @@ section.content.layout-three-col {
     border-radius: 0 0 var(--gs-radius) var(--gs-radius);
     overflow: hidden;
   }
+
+  > h4 + p img {
+    border-radius: calc(var(--gs-radius) * 0.8);
+  }
 }
 
 /* --- Timeline --- */
@@ -323,6 +327,19 @@ section.content.layout-team {
   .block-image img {
     border-radius: 50%;
     border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li {
+    color: var(--gs-color-muted);
+  }
+
+  > ul > li strong {
+    color: var(--gs-color-heading);
   }
 }
 
