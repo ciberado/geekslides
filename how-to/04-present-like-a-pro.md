@@ -56,6 +56,8 @@ You can also **drag the top edge** of the terminal panel up or down to resize it
 
 Press `Esc` again to close the terminal without running a command.
 
+For a full command reference with examples and output, see the [Terminal Commands Reference](../docs/terminal-commands/README.md).
+
 ## Speaker view
 
 Open a second browser tab (or window on a second monitor) with the `speaker` query parameter:
