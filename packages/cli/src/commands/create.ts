@@ -262,6 +262,29 @@ by a \`p\` body.
 **layout-three-col with images** — card bodies can be images.
 :::
 
+[](.layout-three-col#pillars-mixed)
+
+### What We Offer
+
+#### Consulting
+
+Expert guidance on architecture, performance, and developer experience.
+
+#### Training
+
+![Training session](https://picsum.photos/seed/geekslides-train/600/400)
+
+#### Open Source
+
+- Layout engine
+- Theme system
+- CLI tooling
+
+::: Notes
+**layout-three-col with mixed content** — each card can hold a different
+content type: text, image, or list. Mix and match freely.
+:::
+
 [](.layout-timeline#roadmap)
 
 ### Product Roadmap
@@ -274,6 +297,39 @@ by a \`p\` body.
 ::: Notes
 **layout-timeline** — horizontal process steps with numbered circles
 and a connecting line. Each \`li\` starts with a \`**bold label**\`.
+:::
+
+[](.partial#partial-list)
+
+### Key Benefits
+
+- **Fast authoring** — write, don't design [partial]
+- **Live preview** — instant feedback as you type [partial]
+- **PDF export** — one command, print-ready [partial]
+- **Team sync** — real-time via WebSocket [partial]
+
+::: Notes
+**Partial reveal (list)** — add \`[partial]\` after each \`li\` to reveal
+bullets one at a time. The slide class \`.partial\` enables the feature.
+:::
+
+[](.partial.layout-two-col#partial-cols)
+
+### Markdown vs Design Tools
+
+- Plain text files [partial]
+- Version control friendly [partial]
+- Works in any editor [partial]
+
+#### Design Tools
+
+- Binary formats [partial]
+- Merge conflicts [partial]
+- Vendor lock-in [partial]
+
+::: Notes
+**Partial reveal in two-col** — partials work inside any layout.
+Each bullet appears on its own step.
 :::
 
 [](.layout-section#chapter-data)
@@ -336,6 +392,29 @@ The \`h4\` appears as an accent badge between the columns.
 **layout-compare with ordered lists** — numbered items work too.
 :::
 
+[](.layout-compare#compare-tables)
+
+### Performance Benchmarks
+
+| Metric     | Before |
+|-----------|--------|
+| Build     | 12s    |
+| Bundle    | 4.2 MB |
+| LCP       | 2.8s   |
+
+#### vs
+
+| Metric     | After  |
+|-----------|--------|
+| Build     | 3s     |
+| Bundle    | 980 KB |
+| LCP       | 0.9s   |
+
+::: Notes
+**layout-compare with tables** — tables produce equal-height rows,
+so both panels line up perfectly.
+:::
+
 [](.layout-table#features)
 
 ### Feature Matrix
@@ -367,7 +446,7 @@ The \`h4\` appears as an accent badge between the columns.
 
 ::: Notes
 **layout-team** — header at the top, circular headshots below.
-Works with any number of images; they wrap automatically.
+Images grow to fill horizontal space; works with any count.
 :::
 
 [](.layout-team.heading-center#team-pair)
@@ -433,6 +512,39 @@ six images.
 
 ::: Notes
 **layout-grid (3 images)** — three images arrange in a single row.
+:::
+
+[](.layout-grid#gallery-two)
+
+### Side by Side
+
+![Before](https://picsum.photos/seed/geekslides-before/800/600)
+
+![After](https://picsum.photos/seed/geekslides-after/800/600)
+
+::: Notes
+**layout-grid (2 images)** — two images fill a single row.
+:::
+
+[](.layout-team#team-six)
+
+### Engineering Team
+
+![Alice](https://picsum.photos/seed/geekslides-alice/400/400)
+
+![Bob](https://picsum.photos/seed/geekslides-bob/400/400)
+
+![Carol](https://picsum.photos/seed/geekslides-carol/400/400)
+
+![Dan](https://picsum.photos/seed/geekslides-dan/400/400)
+
+![Eve](https://picsum.photos/seed/geekslides-eve/400/400)
+
+![Frank](https://picsum.photos/seed/geekslides-frank/400/400)
+
+::: Notes
+**layout-team (6 images)** — images resize and wrap automatically.
+Compare with the 4-person and 2-person team slides.
 :::
 
 [](#code-example)

@@ -297,6 +297,7 @@ section.content.layout-img-text {
 section.content.layout-img-text-bleed {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto 1fr;
   row-gap: calc(var(--gs-gap) / 2);
   padding: 0;
 
@@ -324,6 +325,7 @@ section.content.layout-img-text-bleed {
     grid-column: 2;
     align-self: start;
     padding-inline: var(--gs-pad-x);
+    margin-block: 0;
   }
 
   > :last-child {
@@ -371,6 +373,10 @@ section.content.layout-three-col {
 
   > h4 + :is(p, ul, ol) {
     padding: 0.5em 0.8em 0.8em;
+  }
+
+  > h4 + :is(ul, ol) {
+    padding-inline-start: 2em;
   }
 
   > h4 + .block-image {
@@ -502,12 +508,18 @@ section.content.layout-compare {
   grid-template-rows: auto 1fr;
   column-gap: var(--gs-gap);
   row-gap: var(--gs-gap);
-  align-content: start;
+  align-items: start;
 
   > h3 { grid-column: 1 / -1; grid-row: 1; }
   > h4 { grid-column: 2; grid-row: 2; align-self: center; text-align: center; }
+
+  /* Lists */
   > ul:first-of-type, > ol:first-of-type { grid-column: 1; grid-row: 2; }
   > ul:last-of-type, > ol:last-of-type { grid-column: 3; grid-row: 2; }
+
+  /* Tables — span left + right columns, hiding the VS badge */
+  > table:first-of-type { grid-column: 1; grid-row: 2; }
+  > table:last-of-type { grid-column: 3; grid-row: 2; }
 }
 
 
@@ -537,11 +549,12 @@ section.content.layout-team {
 
   .block-image {
     text-align: center;
-    flex: 0 0 auto;
+    flex: 1 1 280px;
+    max-width: 400px;
 
     img {
-      width: 320px;
-      height: 320px;
+      width: 100%;
+      aspect-ratio: 1;
       object-fit: cover;
     }
   }
@@ -570,7 +583,7 @@ section.content.layout-team.heading-center {
 
 section.content.layout-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   column-gap: calc(var(--gs-gap) / 2);
   row-gap: var(--gs-gap);
   align-content: start;
