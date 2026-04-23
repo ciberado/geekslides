@@ -45,9 +45,9 @@ With overlay text
 
 [](.layout-section#section-divider)
 
-# Section Divider
+## Section Divider
 
-## New Chapter Begins
+### New Chapter Begins
 
 [](.layout-three-col#three-col)
 
@@ -67,9 +67,9 @@ Third card description text.
 
 [](.layout-big-stat#big-stat)
 
-# 99.9%
+### 99.9%
 
-#### Uptime across all regions
+Uptime across all regions
 
 [](.layout-timeline#timeline)
 
@@ -135,6 +135,24 @@ Third card description text.
 | Users       | 5    | 50   | Unlimited  |
 | Storage     | 1 GB | 50 GB| 1 TB       |
 | Support     | Email| Chat | Dedicated  |
+
+[](.layout-img-text-bleed#img-text-bleed)
+
+![Placeholder](placeholder.svg)
+
+### Full-Bleed Image
+
+- Edge-to-edge image on the left
+- Heading and list on the right
+
+[](.layout-agenda#agenda-slide)
+
+### Agenda
+
+1. Introduction
+2. Architecture overview
+3. Live demo
+4. Q & A
 
 [](.layout-blank#blank-canvas)
 

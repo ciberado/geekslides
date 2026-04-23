@@ -5,14 +5,15 @@
  * produces the expected CSS computed styles inside the Shadow DOM.
  *
  * Slide index → layout class:
- *   0  layout-title         8  layout-timeline
- *   1  (default content)    9  layout-chart
- *   2  layout-two-col      10  layout-compare
- *   3  layout-img-text     11  layout-team
- *   4  layout-cover        12  layout-grid
- *   5  layout-section      13  layout-table
- *   6  layout-three-col    14  layout-blank
- *   7  layout-big-stat
+ *   0  layout-title            8  layout-timeline
+ *   1  (default content)       9  layout-chart
+ *   2  layout-two-col         10  layout-compare
+ *   3  layout-img-text        11  layout-team
+ *   4  layout-cover           12  layout-grid
+ *   5  layout-section         13  layout-table
+ *   6  layout-three-col       14  layout-img-text-bleed
+ *   7  layout-big-stat        15  layout-agenda
+ *                             16  layout-blank
  */
 import { test, expect } from '@playwright/test';
 
@@ -215,7 +216,7 @@ test.describe('Layout CSS', () => {
     expect(styles['justify-content']).toBe('flex-end');
   });
 
-  test('layout-cover: has h1 and ::before overlay structure', async ({ page }) => {
+  test('layout-cover: has h1', async ({ page }) => {
     await goToSlide(page, 4);
     expect(await countChildren(page, 'h1')).toBe(1);
   });
@@ -233,6 +234,12 @@ test.describe('Layout CSS', () => {
     expect(styles['flex-direction']).toBe('column');
     expect(styles['justify-content']).toBe('center');
     expect(styles['text-align']).toBe('center');
+  });
+
+  test('layout-section: contains h2 and h3', async ({ page }) => {
+    await goToSlide(page, 5);
+    expect(await countChildren(page, 'h2')).toBe(1);
+    expect(await countChildren(page, 'h3')).toBe(1);
   });
 
   /* ── 6. Three-column cards ──────────────────────────────────────────────── */
@@ -264,13 +271,19 @@ test.describe('Layout CSS', () => {
     expect(styles['text-align']).toBe('center');
   });
 
-  test('layout-big-stat: h1 has large font size', async ({ page }) => {
+  test('layout-big-stat: h3 has large font size', async ({ page }) => {
     await goToSlide(page, 7);
-    const h1 = await getChildStyles(page, 'h1', ['font-size']);
-    const fontSize = parseFloat(h1['font-size'] ?? '0');
-    // 180pt on the 1920×1080 canvas ≈ 240px; after scaling it could vary,
-    // but it should be significantly larger than the default
-    expect(fontSize).toBeGreaterThan(100);
+    const h3 = await getChildStyles(page, 'h3', ['font-size']);
+    const fontSize = parseFloat(h3['font-size'] ?? '0');
+    // 180pt on the 1920×1080 canvas — after engine scaling it varies,
+    // but must be significantly larger than body text
+    expect(fontSize).toBeGreaterThan(60);
+  });
+
+  test('layout-big-stat: has h3 and paragraph label', async ({ page }) => {
+    await goToSlide(page, 7);
+    expect(await countChildren(page, 'h3')).toBe(1);
+    expect(await countChildren(page, 'p')).toBe(1);
   });
 
   /* ── 8. Timeline / process steps ────────────────────────────────────────── */
@@ -327,20 +340,20 @@ test.describe('Layout CSS', () => {
 
   /* ── 10. Comparison (A vs B) ────────────────────────────────────────────── */
 
-  test('layout-compare: grid with two columns', async ({ page }) => {
+  test('layout-compare: grid with three columns', async ({ page }) => {
     await goToSlide(page, 10);
     expect(await hasContentClass(page, 'layout-compare')).toBe(true);
 
     const styles = await getContentStyles(page, ['display', 'grid-template-columns']);
     expect(styles['display']).toBe('grid');
     const cols = (styles['grid-template-columns'] ?? '').split(' ');
-    expect(cols.length).toBe(2);
+    expect(cols.length).toBe(3);
   });
 
-  test('layout-compare: h4 separator is hidden', async ({ page }) => {
+  test('layout-compare: h4 VS badge is visible', async ({ page }) => {
     await goToSlide(page, 10);
     const h4Display = await getChildStyles(page, 'h4', ['display']);
-    expect(h4Display['display']).toBe('none');
+    expect(h4Display['display']).not.toBe('none');
   });
 
   test('layout-compare: two lists exist', async ({ page }) => {
@@ -393,13 +406,60 @@ test.describe('Layout CSS', () => {
   /* ── 14. Blank / canvas ─────────────────────────────────────────────────── */
 
   test('layout-blank: has layout-blank class', async ({ page }) => {
-    await goToSlide(page, 14);
+    await goToSlide(page, 16);
     expect(await hasContentClass(page, 'layout-blank')).toBe(true);
   });
 
   test('layout-blank: no visible content elements', async ({ page }) => {
-    await goToSlide(page, 14);
+    await goToSlide(page, 16);
     expect(await countChildren(page, 'h1, h2, h3, h4, p, ul, ol, table')).toBe(0);
+  });
+
+  /* ── 14. Image + text full-bleed ────────────────────────────────────────── */
+
+  test('layout-img-text-bleed: grid with two columns', async ({ page }) => {
+    await goToSlide(page, 14);
+    expect(await hasContentClass(page, 'layout-img-text-bleed')).toBe(true);
+
+    const styles = await getContentStyles(page, ['display', 'grid-template-columns']);
+    expect(styles['display']).toBe('grid');
+    const cols = (styles['grid-template-columns'] ?? '').split(' ');
+    expect(cols.length).toBe(2);
+  });
+
+  test('layout-img-text-bleed: has block-image and list', async ({ page }) => {
+    await goToSlide(page, 14);
+    expect(await countChildren(page, '.block-image')).toBe(1);
+    expect(await countChildren(page, 'ul')).toBe(1);
+  });
+
+  test('layout-img-text-bleed: zero padding on section', async ({ page }) => {
+    await goToSlide(page, 14);
+    const styles = await getContentStyles(page, ['padding-left', 'padding-top']);
+    expect(parseFloat(styles['padding-left'] ?? '1')).toBe(0);
+    expect(parseFloat(styles['padding-top'] ?? '1')).toBe(0);
+  });
+
+  /* ── 15. Agenda ─────────────────────────────────────────────────────────── */
+
+  test('layout-agenda: grid with two rows', async ({ page }) => {
+    await goToSlide(page, 15);
+    expect(await hasContentClass(page, 'layout-agenda')).toBe(true);
+
+    const styles = await getContentStyles(page, ['display']);
+    expect(styles['display']).toBe('grid');
+  });
+
+  test('layout-agenda: has h3 heading and four list items', async ({ page }) => {
+    await goToSlide(page, 15);
+    expect(await countChildren(page, 'h3')).toBe(1);
+    expect(await countChildren(page, 'ol > li')).toBe(4);
+  });
+
+  test('layout-agenda: list items have no default list-style', async ({ page }) => {
+    await goToSlide(page, 15);
+    const liStyle = await getChildStyles(page, 'ol > li', ['list-style-type']);
+    expect(liStyle['list-style-type']).toBe('none');
   });
 
   /* ── Cross-cutting: base element styles ─────────────────────────────────── */

@@ -36,7 +36,11 @@ npm ci                  # Install all workspace dependencies
 npm run typecheck       # tsc --build (all packages)
 npm run lint            # ESLint check
 npm test                # Vitest unit + integration tests (80% coverage threshold)
-npm run test:e2e        # Playwright e2e (requires dev server: npm run dev)
+npm run test:e2e        # Playwright e2e — always use this, not bare `npx playwright test`
+                        # The npm script passes --config=e2e/playwright.config.ts which is
+                        # required: bare `npx playwright test` won't find the config and all
+                        # tests fail with ERR_CONNECTION_REFUSED (no dev server started).
+                        # To run a single spec: npx playwright test --config e2e/playwright.config.ts e2e/layouts.spec.ts
 npm run dev             # Vite + yjs-server on 0.0.0.0
 npm run build           # Build all packages
 npm run docker:build    # Build all Docker images (main, server, cli, cli:chromium)

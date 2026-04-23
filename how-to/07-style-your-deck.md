@@ -79,20 +79,100 @@ Add a layout class to a slide's marker to activate its layout:
 
 | Class | Description |
 |---|---|
-| `layout-title` | Centered hero — use for the opening slide |
+| `layout-title` | Centered hero — use for the opening slide (`h1` + `h2`) |
 | `layout-cover` | Full-bleed image with text at the bottom |
-| `layout-section` | Accent-background section break |
+| `layout-section` | Accent-background section break (`h2` + optional `h3`) |
 | `layout-two-col` | Two-column grid (use `####` as a column break) |
-| `layout-img-text` | Image on the left, text on the right |
-| `layout-big-stat` | Giant centred `h1` for key metrics |
-| `layout-three-col` | Three card columns (each starts with `####`) |
-| `layout-timeline` | Horizontal ordered list with numbered circles |
+| `layout-img-text` | Image on the left, text/list on the right |
+| `layout-img-text-bleed` | Image fills left edge-to-edge, text/list on the right |
+| `layout-big-stat` | Giant centred `h3` for key metrics + paragraph label |
+| `layout-three-col` | Three card columns (each `####` starts a card; body: `p`, `ul`, `ol`, or image) |
+| `layout-timeline` | Horizontal steps with numbered circles; steps support images |
 | `layout-chart` | Heading + full-height data table |
-| `layout-compare` | Two panels for A vs B comparisons |
-| `layout-team` | Row of circular headshots |
+| `layout-compare` | Two panels with a bold VS divider in the centre |
+| `layout-team` | Row of circular headshots (add `.heading-above` to pin heading to top) |
 | `layout-grid` | Responsive image grid / mood board |
 | `layout-table` | Heading + full-width feature matrix table |
+| `layout-agenda` | Numbered session agenda with accent circles |
 | `layout-blank` | Empty canvas (whiteboard-friendly) |
+
+### Extending layouts.css with a custom layout
+
+If none of the built-in layouts fit a slide, add your own to `css/layouts.css`. Follow the structural-only rule: no colours, no fonts — only `display`, grid/flex properties, and spacing.
+
+```css
+/* css/layouts.css — append at the bottom */
+
+/* Custom: heading + two-row content + footer strip */
+section.content.layout-hero-split {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  row-gap: var(--gs-gap);
+
+  > h2 { grid-row: 1; }
+  > p  { grid-row: 2; align-self: center; }
+  > ul { grid-row: 3; }
+}
+```
+
+Then add matching decorative rules in `css/theme-default.css` (or your theme file):
+
+```css
+/* css/theme-default.css — append under layout-specific overrides */
+section.content.layout-hero-split {
+  > ul {
+    background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+    border-radius: var(--gs-radius);
+    padding: 0.6em 1em;
+  }
+}
+```
+
+Activate it with a slide marker:
+
+```markdown
+[](.layout-hero-split#intro)
+## Key Message
+Main content paragraph.
+- Footer point A
+- Footer point B
+```
+
+### Customising design tokens
+
+The theme exposes all visual values as CSS custom properties on `:host`. Override any of them in `css/local.css` without touching the theme file:
+
+```css
+/* css/local.css */
+:host {
+  --gs-color-accent:   #e94560;   /* brand red */
+  --gs-font-size-h1:  80pt;       /* bigger hero text */
+  --gs-radius:         4px;        /* sharper cards */
+}
+```
+
+| Token | Default | Controls |
+|---|---|---|
+| `--gs-pad-x` | `80px` | Horizontal slide padding |
+| `--gs-pad-y` | `60px` | Vertical slide padding |
+| `--gs-gap` | `32px` | Gap between grid/flex children |
+| `--gs-font-family` | `system-ui, …` | Body typeface |
+| `--gs-font-mono` | `ui-monospace, …` | Code typeface |
+| `--gs-font-size-base` | `32pt` | Body text size |
+| `--gs-font-size-h1` | `72pt` | `h1` size |
+| `--gs-font-size-h2` | `48pt` | `h2` size |
+| `--gs-font-size-h3` | `40pt` | `h3` size |
+| `--gs-font-size-h4` | `24pt` | `h4` size |
+| `--gs-line-height` | `1.5` | Body line height |
+| `--gs-color-text` | `#1a1a2e` | Body text |
+| `--gs-color-heading` | `#0f0f23` | Heading text |
+| `--gs-color-muted` | `#6b7280` | Secondary text |
+| `--gs-color-accent` | `#3B55A0` | Accent / brand colour |
+| `--gs-color-surface` | `#ffffff` | Slide background |
+| `--gs-color-border` | `rgba(0,0,0,0.1)` | Table / card borders |
+| `--gs-radius` | `12px` | Card / image border radius |
+
+> **Tip:** All layout-specific decorative rules in `theme-default.css` consume these tokens via `var()`, so a single token change ripples through every layout automatically.
 
 ### Creating your own theme
 

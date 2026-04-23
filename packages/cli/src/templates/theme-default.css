@@ -183,12 +183,12 @@ section.content.layout-cover {
 section.content.layout-section {
   background: var(--gs-color-accent);
 
-  > h1 {
+  > h2 {
     color: white;
     font-size: 88pt;
   }
 
-  > h2 {
+  > h3 {
     color: oklch(1 0 0 / 0.7);
     font-weight: 400;
   }
@@ -197,16 +197,17 @@ section.content.layout-section {
 /* --- Big stat --- */
 
 section.content.layout-big-stat {
-  > h1 {
+  > h3 {
     font-size: 180pt;
     line-height: 1;
     color: var(--gs-color-accent);
   }
 
-  > h4 {
+  > p {
     font-size: 28pt;
     font-weight: 400;
     color: var(--gs-color-muted);
+    margin-block: 0;
   }
 }
 
@@ -218,11 +219,16 @@ section.content.layout-three-col {
     border-radius: var(--gs-radius) var(--gs-radius) 0 0;
   }
 
-  > h4 + p {
+  > h4 + :is(p, ul, ol) {
     background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
     border-radius: 0 0 var(--gs-radius) var(--gs-radius);
     color: var(--gs-color-muted);
     font-size: 0.85em;
+  }
+
+  > h4 + .block-image {
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    overflow: hidden;
   }
 }
 
@@ -262,8 +268,40 @@ section.content.layout-chart {
 /* --- Comparison panels --- */
 
 section.content.layout-compare {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: var(--gs-color-border);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  > h3 {
+    position: relative;
+    z-index: 1;
+  }
+
+  > h4 {
+    position: relative;
+    z-index: 2;
+    font-weight: 900;
+    color: var(--gs-color-surface);
+    background: var(--gs-color-accent);
+    border-radius: var(--gs-radius);
+    padding: 0.3em 0.7em;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
   > ul:first-of-type,
   > ol:first-of-type {
+    position: relative;
+    z-index: 1;
     background: color-mix(in oklch, var(--gs-color-accent) 5%, transparent);
     padding: 1em 1.4em;
     border-radius: var(--gs-radius);
@@ -271,6 +309,8 @@ section.content.layout-compare {
 
   > ul:last-of-type,
   > ol:last-of-type {
+    position: relative;
+    z-index: 1;
     border: 2px solid color-mix(in oklch, var(--gs-color-accent) 25%, transparent);
     padding: 1em 1.4em;
     border-radius: var(--gs-radius);
@@ -283,6 +323,14 @@ section.content.layout-team {
   .block-image img {
     border-radius: 50%;
     border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+}
+
+/* --- Full-bleed image + text --- */
+
+section.content.layout-img-text-bleed {
+  > .block-image img {
+    border-radius: 0;
   }
 }
 
@@ -319,5 +367,22 @@ section.content.layout-blank {
   &::after {
     border: 2px dashed var(--gs-color-border);
     border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Agenda --- */
+
+section.content.layout-agenda {
+  > ol > li {
+    font-size: var(--gs-font-size-h3);
+    font-weight: 600;
+    color: var(--gs-color-heading);
+
+    &::before {
+      background: var(--gs-color-accent);
+      color: white;
+      font-weight: 700;
+      font-size: var(--gs-font-size-h4);
+    }
   }
 }
