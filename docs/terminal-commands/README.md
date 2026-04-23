@@ -287,7 +287,15 @@ If not connected to a room:
 
 ### whiteboard
 
-Drawing overlay commands. The whiteboard feature must be loaded in your deck's `config.json` (it is included by default when the `whiteboard` feature is enabled).
+> **Requires the whiteboard feature.** These commands are only available when `"whiteboard"` is listed in the `features` array of your deck's `config.json`. New decks include it by default. If the commands are missing from `help` output, add the feature:
+>
+> ```json
+> {
+>   "features": ["whiteboard"]
+> }
+> ```
+>
+> See [Add a Feature to Your Deck](../../how-to/13-add-a-feature.md) for details.
 
 #### `whiteboard`
 
@@ -410,16 +418,18 @@ If no color is provided:
 | `sync-follow` | — | sync | Toggle follow-presenter |
 | `sync-disconnect` | — | sync | Leave sync room |
 | `share` | — | sync | Create viewer share link |
-| `whiteboard` | — | whiteboard | Toggle drawing canvas |
-| `whiteboard-clear` | — | whiteboard | Clear current slide strokes |
-| `wb-toolbar` | — | whiteboard | Toggle toolbar visibility |
-| `wb-hide` | — | whiteboard | Hide toolbar |
-| `wb-show` | — | whiteboard | Show toolbar |
-| `wb-pen` | — | whiteboard | Switch to pen tool |
-| `wb-highlighter` | — | whiteboard | Switch to highlighter tool |
-| `wb-eraser` | — | whiteboard | Switch to eraser tool |
-| `wb-color` | `<hex>` | whiteboard | Set drawing color |
+| `whiteboard` † | — | whiteboard | Toggle drawing canvas |
+| `whiteboard-clear` † | — | whiteboard | Clear current slide strokes |
+| `wb-toolbar` † | — | whiteboard | Toggle toolbar visibility |
+| `wb-hide` † | — | whiteboard | Hide toolbar |
+| `wb-show` † | — | whiteboard | Show toolbar |
+| `wb-pen` † | — | whiteboard | Switch to pen tool |
+| `wb-highlighter` † | — | whiteboard | Switch to highlighter tool |
+| `wb-eraser` † | — | whiteboard | Switch to eraser tool |
+| `wb-color` † | `<hex>` | whiteboard | Set drawing color |
+
+† Requires the `whiteboard` feature to be enabled in `config.json`.
 
 ---
 
-See also: [HTML Reference](../html-reference/slides.md)
+See also: [HTML Reference](../html-reference/slides.md) · [Add a Feature to Your Deck](../../how-to/13-add-a-feature.md)
