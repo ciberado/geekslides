@@ -276,8 +276,8 @@ export class DashboardPage extends LitElement {
           </div>
 
           ${this._uploadTab === 'files' ? html`
-            <label>Select deck files (config.json, README.md, images, CSS)</label>
-            <input type="file" id="files-input" multiple>
+            <label>Select the deck folder (must contain config.json)</label>
+            <input type="file" id="files-input" webkitdirectory>
           ` : nothing}
 
           ${this._uploadTab === 'zip' ? html`

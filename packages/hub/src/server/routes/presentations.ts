@@ -66,8 +66,21 @@ export function registerPresentationRoutes(
               const extracted = extractZip(data);
               uploaded.push(...extracted);
             } else {
-              // Multi-file upload — use filename as path
+              // Multi-file or directory upload — use filename as path
               uploaded.push({ path: part.filename || part.fieldname, data });
+            }
+          }
+        }
+        // Strip common root directory (e.g. "my-deck/" from webkitdirectory uploads)
+        if (uploaded.length > 0 && uploaded.every((f) => f.path.includes('/'))) {
+          const paths = uploaded.map((f) => f.path);
+          const firstSlash = paths[0]?.indexOf('/') ?? -1;
+          if (firstSlash !== -1) {
+            const prefix = paths[0]?.slice(0, firstSlash + 1) ?? '';
+            if (prefix.length > 0 && paths.every((p) => p.startsWith(prefix))) {
+              for (const file of uploaded) {
+                (file as { path: string }).path = file.path.slice(prefix.length);
+              }
             }
           }
         }
@@ -170,6 +183,20 @@ export function registerPresentationRoutes(
             uploaded.push(...extractZip(data));
           } else {
             uploaded.push({ path: part.filename || part.fieldname, data });
+          }
+        }
+      }
+
+      // Strip common root directory (e.g. "my-deck/" from webkitdirectory uploads)
+      if (uploaded.length > 0 && uploaded.every((f) => f.path.includes('/'))) {
+        const paths = uploaded.map((f) => f.path);
+        const firstSlash = paths[0]?.indexOf('/') ?? -1;
+        if (firstSlash !== -1) {
+          const prefix = paths[0]?.slice(0, firstSlash + 1) ?? '';
+          if (prefix.length > 0 && paths.every((p) => p.startsWith(prefix))) {
+            for (const file of uploaded) {
+              (file as { path: string }).path = file.path.slice(prefix.length);
+            }
           }
         }
       }
