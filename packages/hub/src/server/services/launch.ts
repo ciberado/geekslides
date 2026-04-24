@@ -49,9 +49,11 @@ export async function launchPresentation(
   const token = isPresenter ? roomTokens.presenterToken : roomTokens.viewerToken;
   const tokenParam = isPresenter ? 'token' : 'vtoken';
 
-  const configUrl = `${serverBaseUrl}/api/rooms/${encodeURIComponent(room)}/content/config.json`;
-  const url = `${viewerBaseUrl}/?config=${encodeURIComponent(configUrl)}&room=${encodeURIComponent(room)}&${tokenParam}=${token}`;
-  const shareUrl = `${viewerBaseUrl}/?config=${encodeURIComponent(configUrl)}&room=${encodeURIComponent(room)}&vtoken=${roomTokens.viewerToken}`;
+  // Use relative path so the viewer's dev proxy (/api → server) handles the request,
+  // which works both on localhost and through tunneled environments (Codespaces, etc.)
+  const configPath = `/api/rooms/${encodeURIComponent(room)}/content/config.json`;
+  const url = `${viewerBaseUrl}/?config=${encodeURIComponent(configPath)}&room=${encodeURIComponent(room)}&${tokenParam}=${token}`;
+  const shareUrl = `${viewerBaseUrl}/?config=${encodeURIComponent(configPath)}&room=${encodeURIComponent(room)}&vtoken=${roomTokens.viewerToken}`;
 
   recordLaunch(db, presentationId, userId);
 
