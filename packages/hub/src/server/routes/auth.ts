@@ -115,11 +115,62 @@ function setCookies(
   });
 }
 
+export interface DevUser {
+  readonly name: string;
+  readonly email: string;
+  readonly role: 'user' | 'admin';
+  readonly avatarUrl: string;
+}
+
+const DEV_USERS: readonly DevUser[] = [
+  { name: 'Alice Admin', email: 'alice@localhost', role: 'admin', avatarUrl: 'https://api.dicebear.com/9.x/thumbs/svg?seed=alice' },
+  { name: 'Bob Presenter', email: 'bob@localhost', role: 'user', avatarUrl: 'https://api.dicebear.com/9.x/thumbs/svg?seed=bob' },
+  { name: 'Carol Viewer', email: 'carol@localhost', role: 'user', avatarUrl: 'https://api.dicebear.com/9.x/thumbs/svg?seed=carol' },
+];
+
 export function registerAuthRoutes(
   fastify: FastifyInstance,
   db: HubDatabase,
   options: HubServerOptions,
 ): void {
+  // Dev-mode: mock login without OAuth
+  if (options.devMode) {
+    fastify.get('/hub/api/auth/dev-users', async (_request, reply) => {
+      await reply.send(DEV_USERS);
+    });
+
+    fastify.post('/hub/api/auth/dev-login', async (request, reply) => {
+      const body = request.body as { email?: string } | null;
+      const email = body?.email;
+      const persona = DEV_USERS.find((u) => u.email === email);
+      if (!persona) {
+        await reply.status(400).send({ error: 'Unknown dev user' });
+        return;
+      }
+
+      const profile: OAuthProfile = {
+        provider: 'github',
+        providerId: `dev-${persona.email}`,
+        email: persona.email,
+        name: persona.name,
+        avatarUrl: persona.avatarUrl,
+      };
+
+      const user = upsertUser(db, profile, persona.email);
+      // Ensure dev users get the right role
+      if (user.role !== persona.role) {
+        const { users: usersTable } = await import('../db/schema.ts');
+        const { eq } = await import('drizzle-orm');
+        db.update(usersTable).set({ role: persona.role }).where(eq(usersTable.id, user.id)).run();
+        (user as { role: string }).role = persona.role;
+      }
+
+      const tokens = issueTokens(fastify, user);
+      setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain);
+      await reply.send({ ok: true, redirect: '/hub/' });
+    });
+  }
+
   // GitHub OAuth
   fastify.get('/hub/api/auth/github', async (request, reply) => {
     const invite = (request.query as Record<string, string | undefined>)['invite'] ?? '';

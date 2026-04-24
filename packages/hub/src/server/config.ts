@@ -12,6 +12,8 @@ export interface HubServerOptions {
   readonly adminEmail: string;
   readonly jwtSecret: string;
   readonly cookieDomain: string;
+  /** Enable dev-mode login with mock users (no OAuth required). */
+  readonly devMode: boolean;
 }
 
 export const defaultOptions: HubServerOptions = {
@@ -28,4 +30,5 @@ export const defaultOptions: HubServerOptions = {
   adminEmail: '',
   jwtSecret: '',
   cookieDomain: 'localhost',
+  devMode: false,
 };

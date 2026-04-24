@@ -105,6 +105,10 @@ if (isDirectRun) {
     adminEmail: process.env['ADMIN_EMAIL'] ?? '',
     jwtSecret: process.env['JWT_SECRET'] ?? '',
     cookieDomain: process.env['COOKIE_DOMAIN'] ?? 'localhost',
+    devMode: process.env['HUB_DEV_MODE'] === 'true'
+      || (process.env['NODE_ENV'] !== 'production'
+        && !process.env['GITHUB_CLIENT_ID']
+        && !process.env['GOOGLE_CLIENT_ID']),
   }).then(async (server) => {
     await server.listen({
       port: Number(process.env['PORT']) || 3000,

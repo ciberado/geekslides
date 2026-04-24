@@ -1,5 +1,12 @@
-import { LitElement, html, css, type TemplateResult } from 'lit';
+import { LitElement, html, css, nothing, type TemplateResult } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
+
+interface DevUser {
+  readonly name: string;
+  readonly email: string;
+  readonly role: 'user' | 'admin';
+  readonly avatarUrl: string;
+}
 
 @customElement('hub-login-page')
 export class LoginPage extends LitElement {
@@ -46,6 +53,46 @@ export class LoginPage extends LitElement {
     }
     .btn:hover { border-color: var(--gs-accent); }
     .btn + .btn { margin-top: 0.75rem; }
+    .dev-section {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--gs-border);
+    }
+    .dev-section h2 {
+      font-size: 0.875rem;
+      color: var(--gs-text-muted);
+      margin-bottom: 0.75rem;
+      font-weight: 500;
+    }
+    .dev-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      border: 1px dashed var(--gs-border);
+      border-radius: var(--gs-radius);
+      background: var(--gs-bg);
+      color: var(--gs-text);
+      font: inherit;
+      font-size: 0.875rem;
+      cursor: pointer;
+      transition: border-color 0.15s, background 0.15s;
+      text-align: left;
+    }
+    .dev-btn:hover { border-color: var(--gs-accent); background: var(--gs-surface); }
+    .dev-btn + .dev-btn { margin-top: 0.5rem; }
+    .dev-btn img {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+    }
+    .dev-btn .info { flex: 1; }
+    .dev-btn .name { font-weight: 600; }
+    .dev-btn .role {
+      font-size: 0.75rem;
+      color: var(--gs-text-muted);
+    }
     .invite-section {
       margin-top: 1.5rem;
       padding-top: 1.5rem;
@@ -74,10 +121,39 @@ export class LoginPage extends LitElement {
   `;
 
   @state() private _inviteCode = '';
+  @state() private _devUsers: DevUser[] = [];
+
+  override connectedCallback(): void {
+    super.connectedCallback();
+    void this._loadDevUsers();
+  }
+
+  private async _loadDevUsers(): Promise<void> {
+    try {
+      const res = await fetch('/hub/api/auth/dev-users');
+      if (res.ok) {
+        this._devUsers = (await res.json()) as DevUser[];
+      }
+    } catch {
+      // Not in dev mode — OAuth only
+    }
+  }
 
   private _login(provider: 'github' | 'google'): void {
     const params = this._inviteCode ? `?invite=${encodeURIComponent(this._inviteCode)}` : '';
     window.location.href = `/hub/api/auth/${provider}${params}`;
+  }
+
+  private async _devLogin(user: DevUser): Promise<void> {
+    const res = await fetch('/hub/api/auth/dev-login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ email: user.email }),
+    });
+    if (res.ok) {
+      window.location.href = '/hub/';
+    }
   }
 
   override render(): TemplateResult {
@@ -85,6 +161,8 @@ export class LoginPage extends LitElement {
       <div class="card">
         <h1>GeekSlides Hub</h1>
         <p>Sign in to manage and share your presentations</p>
+
+        ${this._devUsers.length > 0 ? this._renderDevUsers() : nothing}
 
         <button class="btn" @click=${() => { this._login('github'); }}>
           <svg viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
@@ -106,6 +184,23 @@ export class LoginPage extends LitElement {
             @input=${(e: Event) => { this._inviteCode = (e.target as HTMLInputElement).value; }}
           >
         </div>
+      </div>
+    `;
+  }
+
+  private _renderDevUsers(): TemplateResult {
+    return html`
+      <div class="dev-section">
+        <h2>Dev Mode — Quick Login</h2>
+        ${this._devUsers.map((user) => html`
+          <button class="dev-btn" @click=${() => void this._devLogin(user)}>
+            <img src=${user.avatarUrl} alt="">
+            <span class="info">
+              <span class="name">${user.name}</span>
+              <span class="role">${user.role}</span>
+            </span>
+          </button>
+        `)}
       </div>
     `;
   }
