@@ -19,7 +19,8 @@
   "references": [
     { "path": "packages/engine" },
     { "path": "packages/server" },
-    { "path": "packages/cli" }
+    { "path": "packages/cli" },
+    { "path": "packages/hub" }
   ],
   "files": [],
   "exclude": ["node_modules", "dist", "coverage", "e2e"]

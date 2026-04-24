@@ -31,6 +31,7 @@ export default tseslint.config(
       'coverage/',
       'vibe/',
       'e2e/',
+      '**/e2e/',
       'how-to/',
       'docker/',
       '**/*.config.js',
