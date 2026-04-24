@@ -1,0 +1,146 @@
+# Use the Hub
+
+The Hub is a community presentation platform where teams publish, discover, and launch slide decks through a browser. This guide covers deploying the Hub, signing in with OAuth, uploading your first deck, and sharing it with others.
+
+## Prerequisites
+
+- A running GeekSlides server ([Deploy the Server](05-deploy-the-server.md))
+- Docker and Docker Compose installed ([Use the Docker CLI](10-use-the-docker-cli.md))
+- A GitHub or Google OAuth application (see below)
+
+## Set Up OAuth Providers
+
+The Hub uses OAuth 2.0 — no local passwords. You need at least one provider configured.
+
+### GitHub
+
+1. Go to **github.com → Settings → Developer settings → OAuth Apps → New OAuth App**
+2. Set the **Authorization callback URL** to `https://<your-domain>/hub/api/auth/github/callback`
+3. Note the **Client ID** and **Client Secret**
+
+### Google
+
+1. Go to **Google Cloud Console → APIs & Credentials → Create OAuth 2.0 Client ID**
+2. Add `https://<your-domain>/hub/api/auth/google/callback` as an **Authorized redirect URI**
+3. Note the **Client ID** and **Client Secret**
+
+## Configure Environment Variables
+
+Create a `.env` file or pass these variables to your Docker Compose stack:
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `GITHUB_CLIENT_ID` | If using GitHub | GitHub OAuth client ID |
+| `GITHUB_CLIENT_SECRET` | If using GitHub | GitHub OAuth client secret |
+| `GOOGLE_CLIENT_ID` | If using Google | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | If using Google | Google OAuth client secret |
+| `ADMIN_EMAIL` | Yes | Email of the first admin — auto-approved on first login |
+| `JWT_SECRET` | Yes (production) | Secret for signing auth tokens |
+| `COOKIE_DOMAIN` | Production | Domain for auth cookies (e.g. `example.com`) |
+| `SERVER_BASE_URL` | If non-default | GeekSlides server URL (default `http://localhost:1234`) |
+| `VIEWER_BASE_URL` | If non-default | Viewer SPA URL (default `http://localhost:5173`) |
+| `DB_PATH` | If non-default | SQLite file path (default `./data/hub.db`) |
+| `REPO_DIR` | If non-default | Git repo storage dir (default `./data/repos`) |
+
+## Deploy with Docker Compose
+
+The Hub runs alongside the existing GeekSlides services. Caddy routes `/hub/*` to the Hub Fastify server on port 3000.
+
+```bash
+docker compose -f docker/docker-compose.yml up -d
+```
+
+Data is persisted in a `hub-data` Docker volume containing the SQLite database and bare git repositories.
+
+## Sign In
+
+1. Open `https://<your-domain>/hub/` in a browser
+2. Click **Sign in with GitHub** or **Sign in with Google**
+3. Authorize the OAuth application
+
+The first login matching `ADMIN_EMAIL` is automatically approved and granted admin rights. Other users land on a **Pending** page until an admin approves them or they provide a valid invite code.
+
+## Upload a Deck
+
+1. Click **New Presentation** on the dashboard
+2. Enter a title and description
+3. Choose an upload method:
+
+| Method | When to use |
+|--------|-------------|
+| **Multi-file picker** | Select individual files from your file system |
+| **ZIP archive** | Upload a complete deck folder as a `.zip` |
+| **GitHub URL** | Import directly from a public GitHub repo |
+
+4. The upload must include a valid `config.json` with a `content` field pointing to your markdown file
+
+```json
+{
+  "title": "My Deck",
+  "content": "README.md",
+  "styles": ["layouts.css", "theme-default.css"]
+}
+```
+
+> **Tip:** Each user has a storage quota (default 50 MB). The admin can adjust quotas per user from the admin panel.
+
+## Launch a Presentation
+
+Click **Present** on any deck card. The Hub:
+
+1. Creates a room on the GeekSlides server
+2. Uploads the deck files from the git repository
+3. Redirects you to the viewer with a presenter token
+
+Share the viewer URL with your audience — they get read-only access automatically.
+
+## Share a Deck
+
+1. Click **Share** on a deck card
+2. Enter the recipient's email and choose a role:
+
+| Role | Access |
+|------|--------|
+| **Viewer** | Can launch and view the deck |
+| **Copresenter** | Can launch with presenter controls |
+
+3. The recipient sees a pending invitation on their dashboard and can accept or reject it
+
+You can also toggle a deck's **visibility** between private and public. Public decks appear in search results for all users.
+
+## Search for Decks
+
+Use the search bar to find public presentations by title or description. Results show the deck owner's name and avatar.
+
+## Admin Panel
+
+Admins see an **Admin** link in the navigation. The panel has three tabs:
+
+| Tab | Actions |
+|-----|---------|
+| **Users** | Approve or reject pending users, adjust storage quotas |
+| **Invite Codes** | Generate, list, and revoke 8-character invite codes |
+| **Stats** | View total users, presentations, storage used, and pending approvals |
+
+> **Tip:** Invite codes let you pre-approve users — they skip the pending queue when they sign up with a valid code.
+
+## Update a Deck
+
+Click **Edit** on a deck card to update the title, description, or files. File updates create a new git commit, so previous versions are preserved internally.
+
+## Local Development
+
+To run the Hub locally without Docker:
+
+```bash
+# Start the Hub (Fastify + Vite dev server)
+npm run dev --workspace=@geekslides/hub
+
+# Fastify API on :3000, Lit SPA on :3001 (proxies /hub/api → :3000)
+```
+
+Set the OAuth environment variables before starting. For local development, use `http://localhost:3001/hub/api/auth/<provider>/callback` as the OAuth callback URL.
+
+---
+
+← Previous: [Create a Custom Feature](14-create-a-custom-feature.md) | Back to [index →](README.md)

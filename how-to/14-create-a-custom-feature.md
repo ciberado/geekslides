@@ -258,4 +258,4 @@ The whiteboard feature uses this pattern — presenters get drawing tools and te
 
 ---
 
-← Previous: [Add a Feature](13-add-a-feature.md) | Back to [index →](README.md)
+← Previous: [Add a Feature](13-add-a-feature.md) | Next: [Use the Hub →](15-use-the-hub.md)
