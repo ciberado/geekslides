@@ -61,13 +61,17 @@ export function registerPresentationRoutes(
             }
             const data = Buffer.concat(chunks);
 
-            if (part.filename.endsWith('.zip')) {
+            // Decode URI-encoded filename (client encodes to preserve
+            // directory paths that busboy/multipart would strip).
+            const filename = decodeURIComponent(part.filename || part.fieldname);
+
+            if (filename.endsWith('.zip')) {
               // Zip upload
               const extracted = extractZip(data);
               uploaded.push(...extracted);
             } else {
               // Multi-file or directory upload — use filename as path
-              uploaded.push({ path: part.filename || part.fieldname, data });
+              uploaded.push({ path: filename, data });
             }
           }
         }
@@ -179,10 +183,14 @@ export function registerPresentationRoutes(
             chunks.push(Buffer.from(chunk as ArrayBuffer));
           }
           const data = Buffer.concat(chunks);
-          if (part.filename.endsWith('.zip')) {
+          // Decode URI-encoded filename (client encodes to preserve
+          // directory paths that busboy/multipart would strip).
+          const filename = decodeURIComponent(part.filename || part.fieldname);
+
+          if (filename.endsWith('.zip')) {
             uploaded.push(...extractZip(data));
           } else {
-            uploaded.push({ path: part.filename || part.fieldname, data });
+            uploaded.push({ path: filename, data });
           }
         }
       }

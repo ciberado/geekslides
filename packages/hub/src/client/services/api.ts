@@ -103,7 +103,10 @@ class ApiClient {
     const form = new FormData();
     form.append('title', title);
     for (const file of files) {
-      form.append('files', file, file.webkitRelativePath || file.name);
+      // Encode the full relative path so @fastify/multipart (busboy) does not
+      // strip directory components via path.basename().
+      const relativePath = file.webkitRelativePath || file.name;
+      form.append('files', file, encodeURIComponent(relativePath));
     }
     return this.request('/presentations', { method: 'POST', body: form });
   }
