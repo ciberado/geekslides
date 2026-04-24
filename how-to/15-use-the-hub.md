@@ -107,6 +107,8 @@ The first login matching `ADMIN_EMAIL` is automatically approved and granted adm
 }
 ```
 
+> **Tip:** When uploading via the folder picker, the title field is automatically populated from the first `# H1` heading found in your markdown files. You can edit it before submitting.
+
 > **Tip:** Each user has a storage quota (default 50 MB). The admin can adjust quotas per user from the admin panel.
 
 ## Launch a Presentation
@@ -151,7 +153,9 @@ Admins see an **Admin** link in the navigation. The panel has three tabs:
 
 ## Update a Deck
 
-Click **Edit** on a deck card to update the title, description, or files. File updates create a new git commit, so previous versions are preserved internally.
+To update the title, description, or visibility, click the corresponding action on the deck card.
+
+To replace all files in a deck, click **Replace Files** on the deck card. Select the updated deck folder — the upload must still contain a valid `config.json`. File replacements create a new git commit, so previous versions are preserved internally.
 
 ## Local Development
 

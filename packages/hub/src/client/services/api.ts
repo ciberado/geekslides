@@ -106,6 +106,8 @@ class ApiClient {
       // Encode the full relative path so @fastify/multipart (busboy) does not
       // strip directory components via path.basename().
       const relativePath = file.webkitRelativePath || file.name;
+      // Skip dotfiles and directories starting with a dot (.git, .DS_Store, etc.)
+      if (relativePath.split('/').some((seg) => seg.startsWith('.'))) continue;
       form.append('files', file, encodeURIComponent(relativePath));
     }
     return this.request('/presentations', { method: 'POST', body: form });
@@ -123,6 +125,16 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify({ title, githubUrl }),
     });
+  }
+
+  reuploadPresentationFiles(id: string, files: FileList | File[]): Promise<Presentation> {
+    const form = new FormData();
+    for (const file of files) {
+      const relativePath = file.webkitRelativePath || file.name;
+      if (relativePath.split('/').some((seg) => seg.startsWith('.'))) continue;
+      form.append('files', file, encodeURIComponent(relativePath));
+    }
+    return this.request(`/presentations/${id}/files`, { method: 'PUT', body: form });
   }
 
   updatePresentation(id: string, data: Partial<Pick<Presentation, 'title' | 'description' | 'visibility'>>): Promise<Presentation> {

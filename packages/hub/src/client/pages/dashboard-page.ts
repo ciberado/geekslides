@@ -156,10 +156,12 @@ export class DashboardPage extends LitElement {
   @state() private _showUpload = false;
   @state() private _uploadTab: 'files' | 'zip' | 'github' = 'files';
   @state() private _uploadTitle = '';
+  @state() private _titleManuallyEdited = false;
   @state() private _githubUrl = '';
   @state() private _uploading = false;
   @state() private _error = '';
   @state() private _launchResult: LaunchResult | null = null;
+  @state() private _replaceTarget: Presentation | null = null;
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -192,6 +194,7 @@ export class DashboardPage extends LitElement {
       }
       this._showUpload = false;
       this._uploadTitle = '';
+      this._titleManuallyEdited = false;
       this._githubUrl = '';
       await this._load();
     } catch (err) {
@@ -247,6 +250,7 @@ export class DashboardPage extends LitElement {
                   <button @click=${() => void this._toggleVisibility(p)}>
                     ${p.visibility === 'public' ? 'Make Private' : 'Make Public'}
                   </button>
+                  <button @click=${() => void this._replaceFiles(p)}>Replace Files</button>
                   <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
                 </div>
               </div>
@@ -255,6 +259,7 @@ export class DashboardPage extends LitElement {
         `}
 
       ${this._showUpload ? this._renderUploadModal() : nothing}
+      ${this._replaceTarget ? this._renderReplaceModal() : nothing}
       ${this._launchResult ? this._renderShareModal() : nothing}
     `;
   }
@@ -268,7 +273,7 @@ export class DashboardPage extends LitElement {
 
           <label>Title</label>
           <input type="text" .value=${this._uploadTitle}
-            @input=${(e: Event) => { this._uploadTitle = (e.target as HTMLInputElement).value; }}>
+            @input=${(e: Event) => { this._uploadTitle = (e.target as HTMLInputElement).value; this._titleManuallyEdited = true; }}>
 
           <div class="tab-bar">
             <button class="tab ${this._uploadTab === 'files' ? 'active' : ''}" @click=${() => { this._uploadTab = 'files'; }}>Files</button>
@@ -278,7 +283,8 @@ export class DashboardPage extends LitElement {
 
           ${this._uploadTab === 'files' ? html`
             <label>Select the deck folder (must contain config.json)</label>
-            <input type="file" id="files-input" webkitdirectory>
+            <input type="file" id="files-input" webkitdirectory
+              @change=${(e: Event) => { const input = e.target as HTMLInputElement; if (input.files?.length) void this._extractTitleFromFiles(input.files); }}>
           ` : nothing}
 
           ${this._uploadTab === 'zip' ? html`
@@ -304,6 +310,27 @@ export class DashboardPage extends LitElement {
     `;
   }
 
+  private _renderReplaceModal(): TemplateResult {
+    return html`
+      <div class="modal-overlay" @click=${(e: Event) => { if (e.target === e.currentTarget) this._replaceTarget = null; }}>
+        <div class="modal">
+          <h2>Replace Files — ${this._replaceTarget?.title}</h2>
+          ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
+
+          <label>Select the updated deck folder</label>
+          <input type="file" id="replace-files-input" webkitdirectory>
+
+          <div class="modal-actions">
+            <button class="tab" @click=${() => { this._replaceTarget = null; }}>Cancel</button>
+            <button class="btn-primary" ?disabled=${this._uploading} @click=${(e: Event) => void this._doReplace(e)}>
+              ${this._uploading ? 'Uploading…' : 'Replace'}
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
   private _renderShareModal(): TemplateResult {
     return html`
       <div class="modal-overlay" @click=${(e: Event) => { if (e.target === e.currentTarget) this._launchResult = null; }}>
@@ -320,6 +347,44 @@ export class DashboardPage extends LitElement {
         </div>
       </div>
     `;
+  }
+
+  private async _extractTitleFromFiles(files: FileList): Promise<void> {
+    if (this._titleManuallyEdited) return;
+    for (const file of Array.from(files)) {
+      const rel = file.webkitRelativePath || file.name;
+      if (rel.split('/').some((s) => s.startsWith('.'))) continue;
+      const name = rel.split('/').pop() ?? '';
+      if (!name.endsWith('.md')) continue;
+      try {
+        const text = await file.text();
+        const match = /^#\s+(.+)$/m.exec(text);
+        if (match?.[1]) { this._uploadTitle = match[1].trim(); return; }
+      } catch { /* ignore read errors */ }
+    }
+  }
+
+  private async _replaceFiles(p: Presentation): Promise<void> {
+    this._replaceTarget = p;
+  }
+
+  private async _doReplace(e: Event): Promise<void> {
+    e.preventDefault();
+    if (!this._replaceTarget) return;
+    this._error = '';
+    this._uploading = true;
+    try {
+      const input = this.shadowRoot?.querySelector<HTMLInputElement>('#replace-files-input');
+      const files = input?.files;
+      if (!files?.length) { this._error = 'Select files'; this._uploading = false; return; }
+      await apiClient.reuploadPresentationFiles(this._replaceTarget.id, files);
+      this._replaceTarget = null;
+      await this._load();
+    } catch (err) {
+      this._error = err instanceof Error ? err.message : 'Replace failed';
+    } finally {
+      this._uploading = false;
+    }
   }
 
   private async _toggleVisibility(p: Presentation): Promise<void> {

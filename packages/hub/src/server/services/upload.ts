@@ -14,7 +14,8 @@ function sanitizePath(filePath: string): string | null {
   const normalized = filePath.replace(/\\/g, '/').replace(/^\/+/, '');
   if (FORBIDDEN_PATH_PATTERNS.test(normalized)) return null;
   if (normalized.length === 0 || normalized.length > MAX_FILENAME_LENGTH) return null;
-  if (normalized.startsWith('.git/') || normalized === '.git') return null;
+  // Reject any path whose segments start with a dot (.git, .DS_Store, .env, etc.)
+  if (normalized.split('/').some((seg) => seg.startsWith('.'))) return null;
   return normalized;
 }
 
@@ -23,9 +24,7 @@ export function validateDeckFiles(files: readonly RepoFile[]): UploadValidationR
 
   for (const file of files) {
     const safePath = sanitizePath(file.path);
-    if (!safePath) {
-      return { valid: false, error: `Invalid file path: ${file.path}`, files: [] };
-    }
+    if (!safePath) continue; // silently skip dotfiles, traversal attempts, etc.
     sanitized.push({ path: safePath, data: file.data });
   }
 

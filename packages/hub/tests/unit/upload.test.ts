@@ -44,26 +44,30 @@ describe('upload service', () => {
       expect(result.error).toContain('slides.md');
     });
 
-    it('rejects path traversal attempts', () => {
+    it('silently skips path traversal attempts', () => {
       const files: RepoFile[] = [
         makeFile('config.json', JSON.stringify({ content: 'README.md' })),
         makeFile('../../../etc/passwd', 'hack'),
         makeFile('README.md', '# Hello'),
       ];
       const result = validateDeckFiles(files);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Invalid file path');
+      expect(result.valid).toBe(true);
+      expect(result.files).toHaveLength(2);
+      expect(result.files.find((f) => f.path.includes('passwd'))).toBeUndefined();
     });
 
-    it('rejects .git paths', () => {
+    it('silently skips dotfiles and dot-directories', () => {
       const files: RepoFile[] = [
         makeFile('config.json', JSON.stringify({ content: 'README.md' })),
         makeFile('.git/config', 'hack'),
+        makeFile('.gitignore', 'node_modules'),
+        makeFile('.DS_Store', 'binary'),
         makeFile('README.md', '# Hello'),
       ];
       const result = validateDeckFiles(files);
-      expect(result.valid).toBe(false);
-      expect(result.error).toContain('Invalid file path');
+      expect(result.valid).toBe(true);
+      expect(result.files).toHaveLength(2);
+      expect(result.files.find((f) => f.path.includes('.git'))).toBeUndefined();
     });
 
     it('rejects invalid JSON in config.json', () => {
