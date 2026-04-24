@@ -42,6 +42,7 @@ npm run test:e2e        # Playwright e2e — always use this, not bare `npx play
                         # tests fail with ERR_CONNECTION_REFUSED (no dev server started).
                         # To run a single spec: npx playwright test --config e2e/playwright.config.ts e2e/layouts.spec.ts
 npm run dev             # Vite + yjs-server on 0.0.0.0
+npm run dev --workspace=@geekslides/hub  # Hub Fastify + Lit SPA (dev-mode login, no OAuth needed)
 npm run build           # Build all packages
 npm run docker:build    # Build all Docker images (main, server, cli, cli:chromium)
 npm run docker:push     # Push all Docker images to Docker Hub
@@ -49,9 +50,9 @@ npm run docker:push     # Push all Docker images to Docker Hub
 
 ## Testing Conventions
 
-- **Unit tests**: Vitest, pure logic — `packages/engine/tests/unit/`, `packages/server/tests/`
+- **Unit tests**: Vitest, pure logic — `packages/engine/tests/unit/`, `packages/server/tests/`, `packages/hub/tests/unit/`
 - **Integration tests**: Vitest browser mode — `packages/engine/tests/integration/`
-- **E2E tests**: Playwright with Chromium/Firefox/WebKit — `e2e/`
+- **E2E tests**: Playwright with Chromium/Firefox/WebKit — `e2e/`, `packages/hub/e2e/`
 - New logic needs corresponding tests. Coverage thresholds: 80% branches/functions/lines/statements
 - E2E fixtures live in `e2e/fixtures/`
 

@@ -62,6 +62,19 @@ users ──< presentations ──< shares
 4. If invite code provided and valid, auto-approve
 5. Otherwise user stays in `pending` status until admin approves
 
+### Dev Mode
+
+When `devMode` is enabled, two extra routes are registered and the login page shows
+three built-in personas (Alice Admin, Bob Presenter, Carol Viewer). Clicking a persona
+calls `POST /hub/api/auth/dev-login` to upsert the mock user and issue JWT cookies
+directly — no external OAuth provider involved.
+
+Dev mode activates automatically when **both** conditions are true:
+- `NODE_ENV` is **not** `production`
+- Neither `GITHUB_CLIENT_ID` nor `GOOGLE_CLIENT_ID` is set
+
+It can also be forced with `HUB_DEV_MODE=true`.
+
 ## Launch Flow
 
 1. User clicks "Launch" on a presentation
@@ -91,6 +104,8 @@ All uploads are validated: must include `config.json` with a `content` field poi
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
+| GET | `/hub/api/auth/dev-users` | — | List dev personas (dev mode only) |
+| POST | `/hub/api/auth/dev-login` | — | Authenticate as dev persona (dev mode only) |
 | GET | `/hub/api/auth/:provider` | — | OAuth redirect |
 | GET | `/hub/api/auth/:provider/callback` | — | OAuth callback |
 | POST | `/hub/api/auth/refresh` | cookie | Refresh access token |
@@ -143,3 +158,4 @@ Integrates into the main docker-compose with Caddy reverse proxy at `/hub/*`.
 | `ADMIN_EMAIL` | — | Auto-admin email |
 | `JWT_SECRET` | — | JWT signing secret |
 | `COOKIE_DOMAIN` | localhost | Cookie domain |
+| `HUB_DEV_MODE` | (auto) | Force dev-mode login; auto-enabled when no OAuth secrets and not production |

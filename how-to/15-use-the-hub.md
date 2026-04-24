@@ -1,8 +1,32 @@
 # Use the Hub
 
-The Hub is a community presentation platform where teams publish, discover, and launch slide decks through a browser. This guide covers deploying the Hub, signing in with OAuth, uploading your first deck, and sharing it with others.
+The Hub is a community presentation platform where teams publish, discover, and launch slide decks through a browser. This guide covers running the Hub locally in dev mode, deploying it with OAuth for production, uploading your first deck, and sharing it with others.
 
-## Prerequisites
+## Quick Start (Dev Mode)
+
+The fastest way to explore the Hub — no OAuth apps, no domain, no environment variables:
+
+```bash
+# 1. Start the GeekSlides server (needed for launching decks)
+npm run dev
+
+# 2. In a second terminal, start the Hub
+npm run dev --workspace=@geekslides/hub
+```
+
+Open **http://localhost:3001/hub/** in your browser. Because no OAuth client IDs are configured, the login screen shows three built-in personas:
+
+| Persona | Role | What you can do |
+|---------|------|-----------------|
+| **Alice Admin** | admin | Full access: upload, share, admin panel, invite codes |
+| **Bob Presenter** | user | Upload and present decks |
+| **Carol Viewer** | user | Upload and present decks |
+
+Click any persona to sign in instantly — no redirects, no external services.
+
+> **Tip:** Dev mode activates automatically when `NODE_ENV` is not `production` and neither `GITHUB_CLIENT_ID` nor `GOOGLE_CLIENT_ID` are set. Force it explicitly with `HUB_DEV_MODE=true`.
+
+## Prerequisites (Production)
 
 - A running GeekSlides server ([Deploy the Server](05-deploy-the-server.md))
 - Docker and Docker Compose installed ([Use the Docker CLI](10-use-the-docker-cli.md))
@@ -37,6 +61,7 @@ Create a `.env` file or pass these variables to your Docker Compose stack:
 | `ADMIN_EMAIL` | Yes | Email of the first admin — auto-approved on first login |
 | `JWT_SECRET` | Yes (production) | Secret for signing auth tokens |
 | `COOKIE_DOMAIN` | Production | Domain for auth cookies (e.g. `example.com`) |
+| `HUB_DEV_MODE` | No | Set to `true` to force dev-mode login (auto-detected otherwise) |
 | `SERVER_BASE_URL` | If non-default | GeekSlides server URL (default `http://localhost:1234`) |
 | `VIEWER_BASE_URL` | If non-default | Viewer SPA URL (default `http://localhost:5173`) |
 | `DB_PATH` | If non-default | SQLite file path (default `./data/hub.db`) |
@@ -130,16 +155,23 @@ Click **Edit** on a deck card to update the title, description, or files. File u
 
 ## Local Development
 
-To run the Hub locally without Docker:
+To run the full stack locally without Docker:
 
 ```bash
-# Start the Hub (Fastify + Vite dev server)
-npm run dev --workspace=@geekslides/hub
+# Terminal 1 — GeekSlides viewer + y-websocket server
+npm run dev
 
-# Fastify API on :3000, Lit SPA on :3001 (proxies /hub/api → :3000)
+# Terminal 2 — Hub (Fastify API + Lit SPA)
+npm run dev --workspace=@geekslides/hub
 ```
 
-Set the OAuth environment variables before starting. For local development, use `http://localhost:3001/hub/api/auth/<provider>/callback` as the OAuth callback URL.
+The Hub starts two processes:
+- **Fastify API** on `http://localhost:3000` — serves `/hub/api/*` routes
+- **Vite dev server** on `http://localhost:3001` — serves the Lit SPA with HMR, proxies `/hub/api` → `:3000`
+
+Open **http://localhost:3001/hub/** to access the Hub. Dev-mode login is available by default (see [Quick Start](#quick-start-dev-mode) above).
+
+To test with real OAuth locally, set the callback URLs to `http://localhost:3001/hub/api/auth/<provider>/callback` and export the client ID/secret environment variables before starting.
 
 ---
 
