@@ -271,11 +271,7 @@ by a \`p\` body.
 
 #### Consulting
 
-Expert guidance on architecture, performance, and developer experience.
-
-![Workshop](https://picsum.photos/seed/geekslides-consult/640/360)
-
-From first audit to production rollout.
+Expert guidance on architecture, performance, and developer experience. ![Workshop](https://picsum.photos/seed/geekslides-consult/640/360) From first audit to production rollout.
 
 #### Training
 
@@ -283,11 +279,7 @@ From first audit to production rollout.
 
 #### Open Source
 
-We build in public and ship reusable tools.
-
-![Open source](https://picsum.photos/seed/geekslides-oss/640/360)
-
-Community-driven roadmap and examples.
+We build in public and ship reusable tools. ![Open source](https://picsum.photos/seed/geekslides-oss/640/360) Community-driven roadmap and examples.
 
 ::: Notes
 **layout-three-col with mixed content** — shows text+image+text,

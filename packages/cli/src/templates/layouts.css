@@ -49,6 +49,10 @@ h1, h2, h3, h4 {
   margin-block: 0 0.4em;
 }
 
+h3 {
+  margin-block-end: 0.55em;
+}
+
 /* --- Paragraphs --- */
 
 p {
@@ -316,7 +320,11 @@ section.content.layout-img-text-bleed {
   > h3 {
     margin-inline: calc(50% + var(--gs-pad-x)) var(--gs-pad-x);
     margin-block: 0;
-    padding-block-start: var(--gs-pad-y);
+    padding-block-start: calc(var(--gs-pad-y) * 0.7);
+  }
+
+  > h3 + :is(p, ul, ol) {
+    margin-block-start: 0.9em;
   }
 
   > p {
