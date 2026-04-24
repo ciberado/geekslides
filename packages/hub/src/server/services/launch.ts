@@ -52,8 +52,10 @@ export async function launchPresentation(
   // Use relative path so the viewer's dev proxy (/api → server) handles the request,
   // which works both on localhost and through tunneled environments (Codespaces, etc.)
   const configPath = `/api/rooms/${encodeURIComponent(room)}/content/config.json`;
-  const url = `${viewerBaseUrl}/?config=${encodeURIComponent(configPath)}&room=${encodeURIComponent(room)}&${tokenParam}=${token}`;
-  const shareUrl = `${viewerBaseUrl}/?config=${encodeURIComponent(configPath)}&room=${encodeURIComponent(room)}&vtoken=${roomTokens.viewerToken}`;
+  // Path-only URLs — resolved by the browser against the current origin.
+  // Works in dev (hub Vite proxies to viewer on :5173) and production (Caddy same-domain).
+  const url = `/?config=${encodeURIComponent(configPath)}&room=${encodeURIComponent(room)}&${tokenParam}=${token}`;
+  const shareUrl = `/?config=${encodeURIComponent(configPath)}&room=${encodeURIComponent(room)}&vtoken=${roomTokens.viewerToken}`;
 
   recordLaunch(db, presentationId, userId);
 

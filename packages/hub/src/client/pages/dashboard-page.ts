@@ -219,7 +219,8 @@ export class DashboardPage extends LitElement {
 
   private _copyShareUrl(): void {
     if (this._launchResult) {
-      void navigator.clipboard.writeText(this._launchResult.shareUrl);
+      const full = new URL(this._launchResult.shareUrl, window.location.origin).href;
+      void navigator.clipboard.writeText(full);
     }
   }
 
