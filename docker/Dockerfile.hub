@@ -1,0 +1,62 @@
+# ----- Stage 1: Build Hub client (Lit SPA) -----
+FROM node:22-alpine AS client-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+COPY packages/hub/package.json packages/hub/
+
+RUN npm ci --workspace=@geekslides/hub --ignore-scripts
+
+COPY packages/hub/ packages/hub/
+
+RUN npm run build:client --workspace=@geekslides/hub
+
+# ----- Stage 2: Build Hub server (esbuild → CJS) -----
+FROM node:22-alpine AS server-builder
+
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+COPY packages/hub/package.json packages/hub/
+
+RUN npm ci --workspace=@geekslides/hub --ignore-scripts
+
+COPY packages/hub/ packages/hub/
+
+RUN npm run build:server --workspace=@geekslides/hub
+
+# ----- Stage 3: Runtime -----
+FROM node:22-alpine
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Server bundle
+COPY --from=server-builder /app/packages/hub/dist/server/index.cjs ./index.cjs
+
+# Client assets
+COPY --from=client-builder /app/packages/hub/dist/client ./dist/client
+
+# Runtime native dependencies (better-sqlite3 needs the .node binary)
+COPY --from=server-builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
+COPY --from=server-builder /app/node_modules/bindings ./node_modules/bindings
+COPY --from=server-builder /app/node_modules/prebuild-install ./node_modules/prebuild-install
+COPY --from=server-builder /app/node_modules/file-uri-to-path ./node_modules/file-uri-to-path
+
+USER node
+
+EXPOSE 3000
+
+ENV PORT=3000
+ENV HOST=0.0.0.0
+ENV DB_PATH=/data/hub.db
+ENV REPO_DIR=/data/repos
+
+VOLUME ["/data"]
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "const n=require('net');const c=n.connect(3000,'localhost');c.on('connect',()=>{c.end();process.exit(0)});c.on('error',()=>process.exit(1))"
+
+CMD ["node", "index.cjs"]

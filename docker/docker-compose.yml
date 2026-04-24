@@ -15,6 +15,31 @@ services:
       - caddy-data:/data
       - caddy-config:/config
 
+  hub:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.hub
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: "3000"
+      HOST: "0.0.0.0"
+      DB_PATH: /data/hub.db
+      REPO_DIR: /data/repos
+      SERVER_BASE_URL: http://geekslides:1234
+      VIEWER_BASE_URL: ${VIEWER_BASE_URL:-http://localhost}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN:-localhost}
+    volumes:
+      - hub-data:/data
+
 volumes:
   caddy-data:
   caddy-config:
+  hub-data:
