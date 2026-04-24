@@ -10,7 +10,7 @@
     "build:client": "vite build --config vite.client.config.ts",
     "typecheck": "tsc --noEmit",
     "start": "node dist/server/index.cjs",
-    "dev": "concurrently --kill-others \"tsx src/server/index.ts\" \"vite --config vite.client.config.ts\"",
+    "dev": "concurrently --kill-others \"tsx src/server/index.ts\" \"vite --config vite.client.config.ts --host 0.0.0.0\"",
     "test:e2e": "playwright test --config e2e/playwright.config.ts"
   },
   "dependencies": {
