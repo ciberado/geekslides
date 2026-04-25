@@ -1,0 +1,414 @@
+/* =============================================================================
+ * GeekSlides — Forest Theme
+ *
+ * Earthy warm-cream background with deep forest-green accents. "Playfair
+ * Display" headings give an organic, editorial feel.
+ *
+ * Pair with layouts.css:
+ *
+ *   "styles": ["layouts.css", "theme-forest.css"]
+ *
+ * CSS features used:
+ *   - Nesting (Chrome 120+, Firefox 117+, Safari 17.2+)
+ *   - color-mix() in oklch
+ * ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Lato:wght@300;400;700&family=Courier+Prime:wght@400;700&display=swap');
+
+
+/* ─── 1. DESIGN TOKENS ──────────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+:host {
+  /* Typography */
+  --gs-font-family: "Lato", system-ui, sans-serif;
+  --gs-font-mono: "Courier Prime", ui-monospace, monospace;
+  --gs-font-size-base: 32pt;
+  --gs-font-size-h1: 72pt;
+  --gs-font-size-h2: 48pt;
+  --gs-font-size-h3: 38pt;
+  --gs-font-size-h4: 24pt;
+  --gs-line-height: 1.6;
+
+  /* Colors */
+  --gs-color-text: #2a1f0a;
+  --gs-color-heading: #1a1004;
+  --gs-color-muted: #7a6e55;
+  --gs-color-accent: #2d6a4f;
+  --gs-color-surface: #f4efe5;
+  --gs-color-border: rgba(45, 106, 79, 0.15);
+
+  /* Decoration */
+  --gs-radius: 10px;
+
+  font-family: var(--gs-font-family);
+  font-size: var(--gs-font-size-base);
+  line-height: var(--gs-line-height);
+  color: var(--gs-color-text);
+}
+
+
+/* ─── 2. BASE ELEMENT STYLES ────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+section.content {
+  background: var(--gs-color-surface);
+}
+
+/* --- Headings --- */
+
+h1, h2, h3, h4 {
+  font-family: "Playfair Display", Georgia, serif;
+  color: var(--gs-color-heading);
+}
+
+h1 { font-size: var(--gs-font-size-h1); font-weight: 900; }
+h2 { font-size: var(--gs-font-size-h2); font-weight: 700; }
+h3 { font-size: var(--gs-font-size-h3); font-weight: 700; }
+h4 { font-size: var(--gs-font-size-h4); font-weight: 700; font-family: var(--gs-font-family); }
+
+/* --- Definition-style list items --- */
+
+li > strong:first-child,
+li > em:first-child {
+  color: var(--gs-color-accent);
+}
+
+/* --- Tables --- */
+
+table {
+  font-size: 0.85em;
+
+  th, td {
+    border-block-end: 1px solid var(--gs-color-border);
+  }
+
+  thead th {
+    background: color-mix(in oklch, var(--gs-color-accent) 10%, transparent);
+    font-weight: 700;
+    color: var(--gs-color-heading);
+  }
+
+  tbody tr:nth-child(even) td {
+    background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
+  }
+}
+
+/* --- Code --- */
+
+pre {
+  font-family: var(--gs-font-mono);
+  font-size: 0.72em;
+  background: #ece5d8;
+  border-radius: var(--gs-radius);
+  padding: 0.8em 1em;
+}
+
+code {
+  font-family: var(--gs-font-mono);
+  font-size: 0.88em;
+  background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+  color: #1b4332;
+  padding-inline: 0.3em;
+  border-radius: 4px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--gs-color-text);
+}
+
+/* --- Blockquotes --- */
+
+blockquote {
+  border-inline-start: 4px solid var(--gs-color-accent);
+  color: var(--gs-color-muted);
+  font-style: italic;
+}
+
+/* --- Images --- */
+
+.block-image img {
+  border-radius: var(--gs-radius);
+}
+
+/* --- Links --- */
+
+a {
+  color: #1b4332;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+
+/* ─── 3. LAYOUT-SPECIFIC THEME OVERRIDES ────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* --- Title slide --- */
+
+section.content.layout-title {
+  > h1 {
+    text-shadow: 0 4px 16px oklch(0 0 0 / 0.45);
+    color: white;
+    font-style: italic;
+  }
+
+  > h2 {
+    color: oklch(0.92 0.04 120);
+    font-weight: 400;
+    font-style: italic;
+    text-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+  }
+}
+
+/* --- Full-bleed cover --- */
+
+section.content.layout-cover {
+  &::before {
+    background: linear-gradient(to bottom, transparent 30%, oklch(0.1 0.06 140 / 0.8));
+  }
+
+  > h1 {
+    color: white;
+    text-shadow: 0 2px 12px oklch(0 0 0 / 0.7);
+    font-style: italic;
+  }
+
+  > p {
+    color: oklch(0.92 0.04 120);
+    font-size: var(--gs-font-size-h4);
+  }
+}
+
+/* --- Section divider --- */
+
+section.content.layout-section {
+  background: var(--gs-color-accent);
+
+  > h2 {
+    color: #f4efe5;
+    font-size: 88pt;
+    font-weight: 900;
+    font-style: italic;
+  }
+
+  > h3 {
+    color: oklch(0.92 0.04 130 / 0.8);
+    font-weight: 400;
+    font-style: italic;
+  }
+}
+
+/* --- Big stat --- */
+
+section.content.layout-big-stat {
+  > h3 {
+    font-size: 180pt;
+    line-height: 1;
+    color: var(--gs-color-accent);
+    font-style: italic;
+  }
+
+  > p {
+    font-size: 28pt;
+    font-weight: 300;
+    color: var(--gs-color-muted);
+    margin-block: 0;
+  }
+}
+
+/* --- Three-column cards --- */
+
+section.content.layout-three-col {
+  > h4 {
+    background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+    border-radius: var(--gs-radius) var(--gs-radius) 0 0;
+    border-block-start: 3px solid var(--gs-color-accent);
+  }
+
+  > h4 + :is(p, ul, ol) {
+    background: #ece5d8;
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    color: var(--gs-color-muted);
+    font-size: 0.85em;
+  }
+
+  > h4 + .block-image {
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    overflow: hidden;
+  }
+}
+
+/* --- Timeline --- */
+
+section.content.layout-timeline {
+  > ol {
+    &::before {
+      background: var(--gs-color-border);
+    }
+
+    > li {
+      font-size: 0.85em;
+
+      &::before {
+        background: var(--gs-color-accent);
+        color: white;
+        font-weight: 700;
+        font-size: 20pt;
+      }
+
+      > strong:first-child {
+        font-size: 1.1em;
+        font-family: "Playfair Display", Georgia, serif;
+      }
+    }
+  }
+}
+
+/* --- Chart --- */
+
+section.content.layout-chart {
+  > table {
+    font-size: 0.9em;
+  }
+}
+
+/* --- Comparison panels --- */
+
+section.content.layout-compare {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: var(--gs-color-border);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  > h3 {
+    position: relative;
+    z-index: 1;
+  }
+
+  > h4 {
+    position: relative;
+    z-index: 2;
+    font-weight: 700;
+    color: white;
+    background: var(--gs-color-accent);
+    border-radius: var(--gs-radius);
+    padding: 0.3em 0.7em;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+    font-family: var(--gs-font-family);
+  }
+
+  > ul:first-of-type,
+  > ol:first-of-type {
+    position: relative;
+    z-index: 1;
+    background: color-mix(in oklch, var(--gs-color-accent) 6%, transparent);
+    padding: 1em 1.4em;
+    border-radius: var(--gs-radius);
+  }
+
+  > ul:last-of-type,
+  > ol:last-of-type {
+    position: relative;
+    z-index: 1;
+    border: 2px solid color-mix(in oklch, var(--gs-color-accent) 25%, transparent);
+    padding: 1em 1.4em;
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Team photos --- */
+
+section.content.layout-team {
+  .block-image img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li {
+    color: var(--gs-color-muted);
+  }
+
+  > ul > li strong {
+    color: var(--gs-color-heading);
+  }
+}
+
+/* --- Full-bleed image + text --- */
+
+section.content.layout-img-text-bleed {
+  > .block-image img {
+    border-radius: 0;
+  }
+}
+
+/* --- Image grid --- */
+
+section.content.layout-grid {
+  .block-image {
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Table / matrix --- */
+
+section.content.layout-table {
+  > table {
+    font-size: 0.95em;
+
+    thead th {
+      font-size: 1em;
+      padding-block: 0.65em;
+      background: var(--gs-color-accent);
+      color: white;
+    }
+
+    td {
+      padding-block: 0.55em;
+    }
+  }
+}
+
+/* --- Blank canvas --- */
+
+section.content.layout-blank {
+  &::after {
+    border: 2px dashed var(--gs-color-border);
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Agenda --- */
+
+section.content.layout-agenda {
+  > ol > li {
+    font-size: var(--gs-font-size-h3);
+    font-weight: 600;
+    color: var(--gs-color-heading);
+    font-family: "Playfair Display", Georgia, serif;
+
+    &::before {
+      background: var(--gs-color-accent);
+      color: white;
+      font-weight: 700;
+      font-size: var(--gs-font-size-h4);
+      font-family: var(--gs-font-family);
+    }
+  }
+}

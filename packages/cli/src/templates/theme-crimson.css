@@ -1,0 +1,428 @@
+/* =============================================================================
+ * GeekSlides — Crimson Theme
+ *
+ * Elegant parchment background with deep crimson/burgundy accents.
+ * "Cormorant Garamond" brings a refined, high-fashion editorial feel.
+ *
+ * Pair with layouts.css:
+ *
+ *   "styles": ["layouts.css", "theme-crimson.css"]
+ *
+ * CSS features used:
+ *   - Nesting (Chrome 120+, Firefox 117+, Safari 17.2+)
+ *   - color-mix() in oklch
+ * ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,400;1,600&family=Courier+Prime:wght@400;700&display=swap');
+
+
+/* ─── 1. DESIGN TOKENS ──────────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+:host {
+  /* Typography */
+  --gs-font-family: "Cormorant Garamond", Georgia, serif;
+  --gs-font-mono: "Courier Prime", ui-monospace, monospace;
+  --gs-font-size-base: 34pt;
+  --gs-font-size-h1: 76pt;
+  --gs-font-size-h2: 52pt;
+  --gs-font-size-h3: 42pt;
+  --gs-font-size-h4: 26pt;
+  --gs-line-height: 1.5;
+
+  /* Colors */
+  --gs-color-text: #1c1510;
+  --gs-color-heading: #0d0a07;
+  --gs-color-muted: #8c7a6b;
+  --gs-color-accent: #7b0020;
+  --gs-color-surface: #faf8f4;
+  --gs-color-border: rgba(123, 0, 32, 0.15);
+
+  /* Decoration */
+  --gs-radius: 6px;
+
+  font-family: var(--gs-font-family);
+  font-size: var(--gs-font-size-base);
+  line-height: var(--gs-line-height);
+  color: var(--gs-color-text);
+}
+
+
+/* ─── 2. BASE ELEMENT STYLES ────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+section.content {
+  background: var(--gs-color-surface);
+}
+
+/* --- Headings --- */
+
+h1, h2, h3, h4 {
+  color: var(--gs-color-heading);
+  letter-spacing: 0.01em;
+}
+
+h1 { font-size: var(--gs-font-size-h1); font-weight: 700; font-style: italic; }
+h2 { font-size: var(--gs-font-size-h2); font-weight: 600; }
+h3 { font-size: var(--gs-font-size-h3); font-weight: 600; }
+h4 { font-size: var(--gs-font-size-h4); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+
+/* --- Definition-style list items --- */
+
+li > strong:first-child,
+li > em:first-child {
+  color: var(--gs-color-accent);
+}
+
+/* --- Tables --- */
+
+table {
+  font-size: 0.85em;
+
+  th, td {
+    border-block-end: 1px solid var(--gs-color-border);
+  }
+
+  thead th {
+    background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+    font-weight: 700;
+    color: var(--gs-color-heading);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.85em;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
+  }
+}
+
+/* --- Code --- */
+
+pre {
+  font-family: var(--gs-font-mono);
+  font-size: 0.68em;
+  background: #f0ece4;
+  border-radius: var(--gs-radius);
+  padding: 0.8em 1em;
+  border: 1px solid var(--gs-color-border);
+}
+
+code {
+  font-family: var(--gs-font-mono);
+  font-size: 0.82em;
+  background: color-mix(in oklch, var(--gs-color-accent) 6%, transparent);
+  color: #5a0018;
+  padding-inline: 0.3em;
+  border-radius: 3px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--gs-color-text);
+}
+
+/* --- Blockquotes --- */
+
+blockquote {
+  border-inline-start: 3px solid var(--gs-color-accent);
+  color: var(--gs-color-muted);
+  font-style: italic;
+  font-size: 1.1em;
+}
+
+/* --- Images --- */
+
+.block-image img {
+  border-radius: var(--gs-radius);
+}
+
+/* --- Links --- */
+
+a {
+  color: var(--gs-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+
+/* ─── 3. LAYOUT-SPECIFIC THEME OVERRIDES ────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* --- Title slide --- */
+
+section.content.layout-title {
+  > h1 {
+    text-shadow: 0 4px 16px oklch(0 0 0 / 0.45);
+    color: white;
+    font-style: italic;
+  }
+
+  > h2 {
+    color: oklch(0.9 0.04 30);
+    font-weight: 300;
+    font-style: italic;
+    text-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+  }
+}
+
+/* --- Full-bleed cover --- */
+
+section.content.layout-cover {
+  &::before {
+    background: linear-gradient(to bottom, transparent 30%, oklch(0.08 0.06 15 / 0.85));
+  }
+
+  > h1 {
+    color: white;
+    text-shadow: 0 2px 12px oklch(0 0 0 / 0.6);
+    font-style: italic;
+  }
+
+  > p {
+    color: oklch(0.9 0.04 30);
+    font-size: var(--gs-font-size-h4);
+    font-style: italic;
+  }
+}
+
+/* --- Section divider --- */
+
+section.content.layout-section {
+  background: var(--gs-color-accent);
+
+  > h2 {
+    color: #faf8f4;
+    font-size: 88pt;
+    font-weight: 700;
+    font-style: italic;
+    letter-spacing: 0.02em;
+  }
+
+  > h3 {
+    color: oklch(0.85 0.03 30 / 0.8);
+    font-weight: 300;
+    font-style: italic;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-size: var(--gs-font-size-h4);
+  }
+}
+
+/* --- Big stat --- */
+
+section.content.layout-big-stat {
+  > h3 {
+    font-size: 180pt;
+    line-height: 1;
+    color: var(--gs-color-accent);
+    font-style: italic;
+  }
+
+  > p {
+    font-size: 28pt;
+    font-weight: 300;
+    font-style: italic;
+    color: var(--gs-color-muted);
+    margin-block: 0;
+  }
+}
+
+/* --- Three-column cards --- */
+
+section.content.layout-three-col {
+  > h4 {
+    background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+    border-radius: var(--gs-radius) var(--gs-radius) 0 0;
+    border-block-start: 2px solid var(--gs-color-accent);
+  }
+
+  > h4 + :is(p, ul, ol) {
+    background: #f0ece4;
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    color: var(--gs-color-muted);
+    font-size: 0.85em;
+  }
+
+  > h4 + .block-image {
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    overflow: hidden;
+  }
+}
+
+/* --- Timeline --- */
+
+section.content.layout-timeline {
+  > ol {
+    &::before {
+      background: var(--gs-color-border);
+    }
+
+    > li {
+      font-size: 0.85em;
+
+      &::before {
+        background: var(--gs-color-accent);
+        color: white;
+        font-weight: 700;
+        font-size: 20pt;
+      }
+
+      > strong:first-child {
+        font-size: 1.1em;
+        font-style: italic;
+      }
+    }
+  }
+}
+
+/* --- Chart --- */
+
+section.content.layout-chart {
+  > table {
+    font-size: 0.9em;
+  }
+}
+
+/* --- Comparison panels --- */
+
+section.content.layout-compare {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: var(--gs-color-border);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  > h3 {
+    position: relative;
+    z-index: 1;
+  }
+
+  > h4 {
+    position: relative;
+    z-index: 2;
+    font-weight: 700;
+    color: white;
+    background: var(--gs-color-accent);
+    border-radius: var(--gs-radius);
+    padding: 0.3em 0.7em;
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.85em;
+  }
+
+  > ul:first-of-type,
+  > ol:first-of-type {
+    position: relative;
+    z-index: 1;
+    background: color-mix(in oklch, var(--gs-color-accent) 5%, transparent);
+    padding: 1em 1.4em;
+    border-radius: var(--gs-radius);
+  }
+
+  > ul:last-of-type,
+  > ol:last-of-type {
+    position: relative;
+    z-index: 1;
+    border: 2px solid color-mix(in oklch, var(--gs-color-accent) 25%, transparent);
+    padding: 1em 1.4em;
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Team photos --- */
+
+section.content.layout-team {
+  .block-image img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li {
+    color: var(--gs-color-muted);
+  }
+
+  > ul > li strong {
+    color: var(--gs-color-heading);
+  }
+}
+
+/* --- Full-bleed image + text --- */
+
+section.content.layout-img-text-bleed {
+  > .block-image img {
+    border-radius: 0;
+  }
+}
+
+/* --- Image grid --- */
+
+section.content.layout-grid {
+  .block-image {
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Table / matrix --- */
+
+section.content.layout-table {
+  > table {
+    font-size: 0.95em;
+
+    thead th {
+      font-size: 1em;
+      padding-block: 0.65em;
+      background: var(--gs-color-accent);
+      color: white;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding-block: 0.55em;
+    }
+  }
+}
+
+/* --- Blank canvas --- */
+
+section.content.layout-blank {
+  &::after {
+    border: 2px dashed var(--gs-color-border);
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Agenda --- */
+
+section.content.layout-agenda {
+  > ol > li {
+    font-size: var(--gs-font-size-h3);
+    font-weight: 600;
+    color: var(--gs-color-heading);
+    font-style: italic;
+
+    &::before {
+      background: var(--gs-color-accent);
+      color: white;
+      font-weight: 700;
+      font-size: var(--gs-font-size-h4);
+      font-style: normal;
+    }
+  }
+}

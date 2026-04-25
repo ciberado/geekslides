@@ -12,7 +12,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createLogger } from '../logging.ts';
 import { layoutsCss } from '../templates/layouts-css.ts';
-import { themeDefaultCss } from '../templates/theme-default-css.ts';
+import { THEME_NAMES, findTheme } from '../templates/themes.ts';
 
 const log = createLogger('create');
 
@@ -663,7 +663,15 @@ export function registerCreateCommand(program: Command): void {
     .requiredOption('--title <string>', 'Presentation title')
     .option('--dir <path>', 'Target directory (default: slugified title)')
     .option('--no-git', 'Skip git init')
-    .action(async (opts: { title: string; dir?: string; git: boolean }) => {
+    .option(`--theme <name>`, `Built-in theme to use (default: default). Available: ${THEME_NAMES.join(', ')}`)
+    .action(async (opts: { title: string; dir?: string; git: boolean; theme?: string }) => {
+      const themeName = opts.theme ?? 'default';
+      const theme = findTheme(themeName);
+      if (!theme) {
+        console.error(`Unknown theme: "${themeName}". Available themes: ${THEME_NAMES.join(', ')}`);
+        process.exit(1);
+      }
+
       const slug = opts.title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, '-')
@@ -675,13 +683,15 @@ export function registerCreateCommand(program: Command): void {
       await mkdir(join(dir, 'images'), { recursive: true });
       await mkdir(join(dir, 'css'), { recursive: true });
 
+      const themeFileName = `theme-${theme.name}.css`;
+
       // config.json — layout + theme + local overrides
       // The template uses explicit []() separators, so disable the header
       // preprocessor that would auto-split on every heading.
       const config = {
         title: opts.title,
         content: 'README.md',
-        styles: ['css/layouts.css', 'css/theme-default.css', 'css/local.css'],
+        styles: ['css/layouts.css', `css/${themeFileName}`, 'css/local.css'],
         features: ['whiteboard'],
         aspectRatio: '16/9',
         plugins: {
@@ -698,8 +708,8 @@ export function registerCreateCommand(program: Command): void {
       // css/layouts.css — structural layout system
       await writeFile(join(dir, 'css', 'layouts.css'), layoutsCss, 'utf-8');
 
-      // css/theme-default.css — default color/typography theme
-      await writeFile(join(dir, 'css', 'theme-default.css'), themeDefaultCss, 'utf-8');
+      // css/theme-<name>.css — chosen color/typography theme
+      await writeFile(join(dir, 'css', themeFileName), theme.css, 'utf-8');
 
       // css/local.css — user overrides (loaded last)
       const localCss = `/* ${opts.title} — local style overrides.
@@ -735,7 +745,7 @@ export function registerCreateCommand(program: Command): void {
       }
 
       console.log(`  Created: ${dir}/`);
-      console.log('  Files: config.json, README.md, css/{layouts,theme-default,local}.css, images/');
-      log.debug({ dir, title: opts.title }, 'presentation scaffolded');
+      console.log(`  Files: config.json, README.md, css/{layouts,${themeFileName},local}.css, images/`);
+      log.debug({ dir, title: opts.title, theme: theme.name }, 'presentation scaffolded');
     });
 }

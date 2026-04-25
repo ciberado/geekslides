@@ -1,0 +1,405 @@
+/* =============================================================================
+ * GeekSlides — Nordic Theme
+ *
+ * Cool Scandinavian-inspired palette: light grey background, nordic blue
+ * accents. "DM Sans" gives a clean, modern, slightly geometric feel ideal
+ * for professional and technical presentations.
+ *
+ * Pair with layouts.css:
+ *
+ *   "styles": ["layouts.css", "theme-nordic.css"]
+ *
+ * CSS features used:
+ *   - Nesting (Chrome 120+, Firefox 117+, Safari 17.2+)
+ *   - color-mix() in oklch
+ * ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,700;1,400&family=DM+Mono:wght@400;500&display=swap');
+
+
+/* ─── 1. DESIGN TOKENS ──────────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+:host {
+  /* Typography */
+  --gs-font-family: "DM Sans", system-ui, sans-serif;
+  --gs-font-mono: "DM Mono", ui-monospace, monospace;
+  --gs-font-size-base: 32pt;
+  --gs-font-size-h1: 72pt;
+  --gs-font-size-h2: 48pt;
+  --gs-font-size-h3: 40pt;
+  --gs-font-size-h4: 24pt;
+  --gs-line-height: 1.55;
+
+  /* Colors */
+  --gs-color-text: #1a1e2c;
+  --gs-color-heading: #0a0e18;
+  --gs-color-muted: #6b7492;
+  --gs-color-accent: #3d5a99;
+  --gs-color-surface: #f0f2f5;
+  --gs-color-border: rgba(61, 90, 153, 0.15);
+
+  /* Decoration */
+  --gs-radius: 8px;
+
+  font-family: var(--gs-font-family);
+  font-size: var(--gs-font-size-base);
+  line-height: var(--gs-line-height);
+  color: var(--gs-color-text);
+}
+
+
+/* ─── 2. BASE ELEMENT STYLES ────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+section.content {
+  background: var(--gs-color-surface);
+}
+
+/* --- Headings --- */
+
+h1, h2, h3, h4 {
+  color: var(--gs-color-heading);
+  letter-spacing: -0.01em;
+}
+
+h1 { font-size: var(--gs-font-size-h1); font-weight: 700; }
+h2 { font-size: var(--gs-font-size-h2); font-weight: 500; }
+h3 { font-size: var(--gs-font-size-h3); font-weight: 500; }
+h4 { font-size: var(--gs-font-size-h4); font-weight: 600; }
+
+/* --- Definition-style list items --- */
+
+li > strong:first-child,
+li > em:first-child {
+  color: var(--gs-color-accent);
+}
+
+/* --- Tables --- */
+
+table {
+  font-size: 0.85em;
+
+  th, td {
+    border-block-end: 1px solid var(--gs-color-border);
+  }
+
+  thead th {
+    background: color-mix(in oklch, var(--gs-color-accent) 10%, transparent);
+    font-weight: 600;
+    color: var(--gs-color-heading);
+  }
+
+  tbody tr:nth-child(even) td {
+    background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
+  }
+}
+
+/* --- Code --- */
+
+pre {
+  font-family: var(--gs-font-mono);
+  font-size: 0.72em;
+  background: #e4e8f0;
+  border-radius: var(--gs-radius);
+  padding: 0.8em 1em;
+}
+
+code {
+  font-family: var(--gs-font-mono);
+  font-size: 0.88em;
+  background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+  color: #2a3d6e;
+  padding-inline: 0.3em;
+  border-radius: 4px;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  color: var(--gs-color-text);
+}
+
+/* --- Blockquotes --- */
+
+blockquote {
+  border-inline-start: 4px solid var(--gs-color-accent);
+  color: var(--gs-color-muted);
+  font-style: italic;
+}
+
+/* --- Images --- */
+
+.block-image img {
+  border-radius: var(--gs-radius);
+}
+
+/* --- Links --- */
+
+a {
+  color: var(--gs-color-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+
+/* ─── 3. LAYOUT-SPECIFIC THEME OVERRIDES ────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* --- Title slide --- */
+
+section.content.layout-title {
+  > h1 {
+    text-shadow: 0 4px 16px oklch(0 0 0 / 0.4);
+    color: white;
+  }
+
+  > h2 {
+    color: oklch(0.88 0.05 230);
+    font-weight: 300;
+    text-shadow: 0 2px 8px oklch(0 0 0 / 0.3);
+  }
+}
+
+/* --- Full-bleed cover --- */
+
+section.content.layout-cover {
+  &::before {
+    background: linear-gradient(to bottom, transparent 30%, oklch(0.1 0.07 240 / 0.85));
+  }
+
+  > h1 {
+    color: white;
+    text-shadow: 0 2px 12px oklch(0 0 0 / 0.6);
+  }
+
+  > p {
+    color: oklch(0.88 0.05 230);
+    font-size: var(--gs-font-size-h4);
+  }
+}
+
+/* --- Section divider --- */
+
+section.content.layout-section {
+  background: var(--gs-color-accent);
+
+  > h2 {
+    color: white;
+    font-size: 88pt;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  > h3 {
+    color: oklch(0.88 0.05 230 / 0.8);
+    font-weight: 300;
+  }
+}
+
+/* --- Big stat --- */
+
+section.content.layout-big-stat {
+  > h3 {
+    font-size: 180pt;
+    line-height: 1;
+    color: var(--gs-color-accent);
+  }
+
+  > p {
+    font-size: 28pt;
+    font-weight: 400;
+    color: var(--gs-color-muted);
+    margin-block: 0;
+  }
+}
+
+/* --- Three-column cards --- */
+
+section.content.layout-three-col {
+  > h4 {
+    background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+    border-radius: var(--gs-radius) var(--gs-radius) 0 0;
+  }
+
+  > h4 + :is(p, ul, ol) {
+    background: #e4e8f0;
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    color: var(--gs-color-muted);
+    font-size: 0.85em;
+  }
+
+  > h4 + .block-image {
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    overflow: hidden;
+  }
+}
+
+/* --- Timeline --- */
+
+section.content.layout-timeline {
+  > ol {
+    &::before {
+      background: var(--gs-color-border);
+    }
+
+    > li {
+      font-size: 0.85em;
+
+      &::before {
+        background: var(--gs-color-accent);
+        color: white;
+        font-weight: 700;
+        font-size: 20pt;
+      }
+
+      > strong:first-child {
+        font-size: 1.1em;
+      }
+    }
+  }
+}
+
+/* --- Chart --- */
+
+section.content.layout-chart {
+  > table {
+    font-size: 0.9em;
+  }
+}
+
+/* --- Comparison panels --- */
+
+section.content.layout-compare {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: var(--gs-color-border);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  > h3 {
+    position: relative;
+    z-index: 1;
+  }
+
+  > h4 {
+    position: relative;
+    z-index: 2;
+    font-weight: 700;
+    color: white;
+    background: var(--gs-color-accent);
+    border-radius: var(--gs-radius);
+    padding: 0.3em 0.7em;
+    white-space: nowrap;
+    letter-spacing: 0.05em;
+  }
+
+  > ul:first-of-type,
+  > ol:first-of-type {
+    position: relative;
+    z-index: 1;
+    background: color-mix(in oklch, var(--gs-color-accent) 5%, transparent);
+    padding: 1em 1.4em;
+    border-radius: var(--gs-radius);
+  }
+
+  > ul:last-of-type,
+  > ol:last-of-type {
+    position: relative;
+    z-index: 1;
+    border: 2px solid color-mix(in oklch, var(--gs-color-accent) 25%, transparent);
+    padding: 1em 1.4em;
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Team photos --- */
+
+section.content.layout-team {
+  .block-image img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li img {
+    border-radius: 50%;
+    border: 4px solid color-mix(in oklch, var(--gs-color-accent) 20%, transparent);
+  }
+
+  > ul > li {
+    color: var(--gs-color-muted);
+  }
+
+  > ul > li strong {
+    color: var(--gs-color-heading);
+  }
+}
+
+/* --- Full-bleed image + text --- */
+
+section.content.layout-img-text-bleed {
+  > .block-image img {
+    border-radius: 0;
+  }
+}
+
+/* --- Image grid --- */
+
+section.content.layout-grid {
+  .block-image {
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Table / matrix --- */
+
+section.content.layout-table {
+  > table {
+    font-size: 0.95em;
+
+    thead th {
+      font-size: 1em;
+      padding-block: 0.65em;
+      background: var(--gs-color-accent);
+      color: white;
+    }
+
+    td {
+      padding-block: 0.55em;
+    }
+  }
+}
+
+/* --- Blank canvas --- */
+
+section.content.layout-blank {
+  &::after {
+    border: 2px dashed var(--gs-color-border);
+    border-radius: var(--gs-radius);
+  }
+}
+
+/* --- Agenda --- */
+
+section.content.layout-agenda {
+  > ol > li {
+    font-size: var(--gs-font-size-h3);
+    font-weight: 600;
+    color: var(--gs-color-heading);
+
+    &::before {
+      background: var(--gs-color-accent);
+      color: white;
+      font-weight: 700;
+      font-size: var(--gs-font-size-h4);
+    }
+  }
+}

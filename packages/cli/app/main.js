@@ -23,6 +23,34 @@ import {
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
+// Built-in theme CSS strings (imported as raw text for runtime switching)
+import themeDefaultRaw from '../src/templates/theme-default.css?raw';
+import themeAuroraRaw from '../src/templates/theme-aurora.css?raw';
+import themeSolarizedRaw from '../src/templates/theme-solarized.css?raw';
+import themeOceanRaw from '../src/templates/theme-ocean.css?raw';
+import themeForestRaw from '../src/templates/theme-forest.css?raw';
+import themeSunsetRaw from '../src/templates/theme-sunset.css?raw';
+import themeNordicRaw from '../src/templates/theme-nordic.css?raw';
+import themeCrimsonRaw from '../src/templates/theme-crimson.css?raw';
+import themeMonochromeRaw from '../src/templates/theme-monochrome.css?raw';
+import themeCandyRaw from '../src/templates/theme-candy.css?raw';
+import themeVolcanoRaw from '../src/templates/theme-volcano.css?raw';
+
+/** Registry of all built-in themes available at runtime. */
+const BUILTIN_THEMES = [
+  { name: 'default',     label: 'Default',     description: 'Clean neutral palette, blue accent (system-ui)',          dark: false, css: themeDefaultRaw },
+  { name: 'aurora',      label: 'Aurora',      description: 'Deep-space dark, electric-cyan accents (Exo 2)',          dark: true,  css: themeAuroraRaw },
+  { name: 'solarized',   label: 'Solarized',   description: 'Warm Solarized Light, amber accents (Source Serif 4)',    dark: false, css: themeSolarizedRaw },
+  { name: 'ocean',       label: 'Ocean',       description: 'Deep-blue ocean, teal accents (Nunito)',                  dark: false, css: themeOceanRaw },
+  { name: 'forest',      label: 'Forest',      description: 'Earthy warm-cream, forest-green accents (Playfair)',      dark: false, css: themeForestRaw },
+  { name: 'sunset',      label: 'Sunset',      description: 'Warm ivory, coral/orange accents (Raleway)',              dark: false, css: themeSunsetRaw },
+  { name: 'nordic',      label: 'Nordic',      description: 'Cool Scandinavian grey, nordic-blue accents (DM Sans)',   dark: false, css: themeNordicRaw },
+  { name: 'crimson',     label: 'Crimson',     description: 'Parchment cream, deep burgundy accents (Cormorant)',      dark: false, css: themeCrimsonRaw },
+  { name: 'monochrome',  label: 'Monochrome',  description: 'Pure black-and-white, typography-driven (Space Grotesk)', dark: false, css: themeMonochromeRaw },
+  { name: 'candy',       label: 'Candy',       description: 'Soft lavender, vivid violet accents (Poppins)',           dark: false, css: themeCandyRaw },
+  { name: 'volcano',     label: 'Volcano',     description: 'Near-black, fiery orange-red accents (Oswald)',           dark: true,  css: themeVolcanoRaw },
+];
+
 const PREPROCESSORS = {
   header: headerPreprocessor,
   'source-notes': slideSourceNotesPreprocessor,
@@ -544,6 +572,11 @@ try {
     const commands = new CommandSystem();
     const terminal = document.querySelector('geek-terminal');
 
+    // Track the base combined CSS (from config styles) and a separate theme
+    // override CSS. When the user switches themes via the `theme` command,
+    // we append the new theme CSS on top so its :host tokens win by cascade.
+    let activeThemeOverrideCss = '';
+
     function showCmdOutput(msg) {
       terminal.setOutput(msg);
     }
@@ -762,6 +795,32 @@ try {
     commands.register({ name: 'toggle-toolbar', label: 'Toggle toolbar', execute: () => {
       slideshow.toggleToolbar();
     }, category: 'built-in' });
+
+    commands.register({ name: 'theme-list', label: 'List all available built-in themes', execute: () => {
+      const lines = BUILTIN_THEMES.map((t) => {
+        const dark = t.dark ? ' [dark]' : '';
+        return `  ${t.name.padEnd(12)} — ${t.description}${dark}`;
+      });
+      showCmdOutput('Built-in themes:\n' + lines.join('\n'));
+    }, category: 'theme' });
+
+    commands.register({ name: 'theme', label: 'Switch to a built-in theme (usage: theme aurora)', execute: (args) => {
+      const name = args?.[0];
+      if (!name) {
+        showCmdOutput('✗ Usage: theme <name>  (run theme-list to see available themes)');
+        return;
+      }
+      const found = BUILTIN_THEMES.find((t) => t.name === name);
+      if (!found) {
+        const names = BUILTIN_THEMES.map((t) => t.name).join(', ');
+        showCmdOutput(`✗ Unknown theme: "${name}". Available: ${names}`);
+        return;
+      }
+      activeThemeOverrideCss = found.css;
+      slideshow.loadStyles(combinedCss + '\n' + activeThemeOverrideCss);
+      showCmdOutput(`✓ Theme switched to: ${found.label}`);
+      console.log('[theme] Switched to:', found.name);
+    }, category: 'theme' });
 
     if (sync) {
       commands.register({ name: 'sync-follow', label: 'Toggle follow presenter', execute: () => {

@@ -1,0 +1,423 @@
+/* =============================================================================
+ * GeekSlides — Monochrome Theme
+ *
+ * Pure black-and-white palette with sharp, functional typography.
+ * "Space Grotesk" gives a modern geometric feel; bold weight contrasts
+ * drive hierarchy without any color distractions.
+ *
+ * Pair with layouts.css:
+ *
+ *   "styles": ["layouts.css", "theme-monochrome.css"]
+ *
+ * CSS features used:
+ *   - Nesting (Chrome 120+, Firefox 117+, Safari 17.2+)
+ *   - color-mix() in oklch
+ * ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+
+/* ─── 1. DESIGN TOKENS ──────────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+:host {
+  /* Typography */
+  --gs-font-family: "Space Grotesk", system-ui, sans-serif;
+  --gs-font-mono: "Space Mono", ui-monospace, monospace;
+  --gs-font-size-base: 30pt;
+  --gs-font-size-h1: 70pt;
+  --gs-font-size-h2: 46pt;
+  --gs-font-size-h3: 38pt;
+  --gs-font-size-h4: 22pt;
+  --gs-line-height: 1.5;
+
+  /* Colors */
+  --gs-color-text: #111111;
+  --gs-color-heading: #000000;
+  --gs-color-muted: #666666;
+  --gs-color-accent: #111111;
+  --gs-color-surface: #ffffff;
+  --gs-color-border: rgba(0, 0, 0, 0.15);
+
+  /* Decoration */
+  --gs-radius: 0px;
+
+  font-family: var(--gs-font-family);
+  font-size: var(--gs-font-size-base);
+  line-height: var(--gs-line-height);
+  color: var(--gs-color-text);
+}
+
+
+/* ─── 2. BASE ELEMENT STYLES ────────────────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* --- Headings --- */
+
+h1, h2, h3, h4 {
+  color: var(--gs-color-heading);
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: var(--gs-font-size-h1); font-weight: 700; }
+h2 { font-size: var(--gs-font-size-h2); font-weight: 700; }
+h3 { font-size: var(--gs-font-size-h3); font-weight: 600; }
+h4 { font-size: var(--gs-font-size-h4); font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; }
+
+/* --- Definition-style list items --- */
+
+li > strong:first-child,
+li > em:first-child {
+  color: var(--gs-color-accent);
+}
+
+/* --- Tables --- */
+
+table {
+  font-size: 0.85em;
+
+  th, td {
+    border-block-end: 1px solid #000;
+  }
+
+  thead th {
+    border-block-end: 2px solid #000;
+    font-weight: 700;
+    color: #000;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    font-size: 0.8em;
+  }
+
+  tbody tr:nth-child(even) td {
+    background: #f5f5f5;
+  }
+}
+
+/* --- Code --- */
+
+pre {
+  font-family: var(--gs-font-mono);
+  font-size: 0.68em;
+  background: #f5f5f5;
+  border: 1px solid #000;
+  padding: 0.8em 1em;
+}
+
+code {
+  font-family: var(--gs-font-mono);
+  font-size: 0.84em;
+  background: #f0f0f0;
+  color: #000;
+  padding-inline: 0.3em;
+  border: 1px solid #ccc;
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  font-size: inherit;
+  border: none;
+  color: inherit;
+}
+
+/* --- Blockquotes --- */
+
+blockquote {
+  border-inline-start: 4px solid #000;
+  color: var(--gs-color-muted);
+  font-style: italic;
+}
+
+/* --- Images --- */
+
+.block-image img {
+  border-radius: var(--gs-radius);
+}
+
+/* --- Links --- */
+
+a {
+  color: #000;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 2px;
+}
+
+
+/* ─── 3. LAYOUT-SPECIFIC THEME OVERRIDES ────────────────────────────────────
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* --- Title slide --- */
+
+section.content.layout-title {
+  > h1 {
+    text-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    color: white;
+  }
+
+  > h2 {
+    color: rgba(255, 255, 255, 0.75);
+    font-weight: 300;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+}
+
+/* --- Full-bleed cover --- */
+
+section.content.layout-cover {
+  &::before {
+    background: linear-gradient(to bottom, transparent 30%, rgba(0, 0, 0, 0.75));
+  }
+
+  > h1 {
+    color: white;
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.8);
+  }
+
+  > p {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: var(--gs-font-size-h4);
+  }
+}
+
+/* --- Section divider --- */
+
+section.content.layout-section {
+  background: #000;
+
+  > h2 {
+    color: white;
+    font-size: 88pt;
+    font-weight: 700;
+  }
+
+  > h3 {
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: var(--gs-font-size-h4);
+  }
+}
+
+/* --- Big stat --- */
+
+section.content.layout-big-stat {
+  > h3 {
+    font-size: 180pt;
+    line-height: 1;
+    color: #000;
+  }
+
+  > p {
+    font-size: 28pt;
+    font-weight: 400;
+    color: var(--gs-color-muted);
+    margin-block: 0;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    font-size: 20pt;
+  }
+}
+
+/* --- Three-column cards --- */
+
+section.content.layout-three-col {
+  > h4 {
+    background: #000;
+    color: white;
+    border-radius: 0;
+    padding-block: 0.4em;
+  }
+
+  > h4 + :is(p, ul, ol) {
+    background: #f5f5f5;
+    border-radius: 0;
+    border: 1px solid #000;
+    border-block-start: none;
+    color: var(--gs-color-muted);
+    font-size: 0.85em;
+  }
+
+  > h4 + .block-image {
+    border-radius: 0;
+    overflow: hidden;
+    border: 1px solid #000;
+    border-block-start: none;
+  }
+}
+
+/* --- Timeline --- */
+
+section.content.layout-timeline {
+  > ol {
+    &::before {
+      background: #000;
+    }
+
+    > li {
+      font-size: 0.85em;
+
+      &::before {
+        background: #000;
+        color: white;
+        font-weight: 700;
+        font-size: 20pt;
+      }
+
+      > strong:first-child {
+        font-size: 1.1em;
+      }
+    }
+  }
+}
+
+/* --- Chart --- */
+
+section.content.layout-chart {
+  > table {
+    font-size: 0.9em;
+  }
+}
+
+/* --- Comparison panels --- */
+
+section.content.layout-compare {
+  &::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 2px;
+    background: #000;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  > h3 {
+    position: relative;
+    z-index: 1;
+  }
+
+  > h4 {
+    position: relative;
+    z-index: 2;
+    font-weight: 700;
+    color: white;
+    background: #000;
+    border-radius: 0;
+    padding: 0.3em 0.7em;
+    white-space: nowrap;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 0.85em;
+  }
+
+  > ul:first-of-type,
+  > ol:first-of-type {
+    position: relative;
+    z-index: 1;
+    background: #f0f0f0;
+    border: 1px solid #000;
+    padding: 1em 1.4em;
+    border-radius: 0;
+  }
+
+  > ul:last-of-type,
+  > ol:last-of-type {
+    position: relative;
+    z-index: 1;
+    border: 2px solid #000;
+    padding: 1em 1.4em;
+    border-radius: 0;
+  }
+}
+
+/* --- Team photos --- */
+
+section.content.layout-team {
+  .block-image img {
+    border-radius: 50%;
+    border: 3px solid #000;
+  }
+
+  > ul > li img {
+    border-radius: 50%;
+    border: 3px solid #000;
+  }
+
+  > ul > li {
+    color: var(--gs-color-muted);
+  }
+
+  > ul > li strong {
+    color: #000;
+  }
+}
+
+/* --- Full-bleed image + text --- */
+
+section.content.layout-img-text-bleed {
+  > .block-image img {
+    border-radius: 0;
+  }
+}
+
+/* --- Image grid --- */
+
+section.content.layout-grid {
+  .block-image {
+    border-radius: 0;
+    border: 1px solid #ccc;
+  }
+}
+
+/* --- Table / matrix --- */
+
+section.content.layout-table {
+  > table {
+    font-size: 0.95em;
+
+    thead th {
+      font-size: 0.9em;
+      padding-block: 0.65em;
+      background: #000;
+      color: white;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding-block: 0.55em;
+    }
+  }
+}
+
+/* --- Blank canvas --- */
+
+section.content.layout-blank {
+  &::after {
+    border: 2px dashed #000;
+    border-radius: 0;
+  }
+}
+
+/* --- Agenda --- */
+
+section.content.layout-agenda {
+  > ol > li {
+    font-size: var(--gs-font-size-h3);
+    font-weight: 600;
+    color: #000;
+
+    &::before {
+      background: #000;
+      color: white;
+      font-weight: 700;
+      font-size: var(--gs-font-size-h4);
+    }
+  }
+}

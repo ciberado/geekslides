@@ -194,6 +194,63 @@ To share a theme across multiple decks, point all their `config.json` files to t
 }
 ```
 
+## Built-in themes
+
+GeekSlides ships with 11 ready-to-use themes. Choose one when scaffolding a deck or switch at runtime during a presentation.
+
+### Selecting a theme at create time
+
+Pass `--theme <name>` to the `create` command:
+
+```bash
+npx geekslides create --title "My Talk" --theme aurora
+```
+
+The chosen theme's CSS is copied into `css/theme-aurora.css` (or whatever the theme name is) and referenced in `config.json` automatically.
+
+### Available themes
+
+| Name | Style | Dark? | Fonts |
+|---|---|---|---|
+| `default` | Clean neutral, blue accent | — | system-ui |
+| `aurora` | Deep-space, electric-cyan | ✓ | Exo 2 + Fira Code |
+| `solarized` | Warm Solarized Light, amber | — | Source Serif 4 + Source Code Pro |
+| `ocean` | Deep-blue ocean, teal | — | Nunito + JetBrains Mono |
+| `forest` | Earthy cream, forest-green | — | Playfair Display + Lato |
+| `sunset` | Warm ivory, coral/orange | — | Raleway + IBM Plex Mono |
+| `nordic` | Cool Scandinavian grey, blue | — | DM Sans + DM Mono |
+| `crimson` | Parchment cream, burgundy | — | Cormorant Garamond + Courier Prime |
+| `monochrome` | Pure black-and-white | — | Space Grotesk + Space Mono |
+| `candy` | Soft lavender, vivid violet | — | Poppins + Roboto Mono |
+| `volcano` | Near-black, fiery orange-red | ✓ | Oswald + Open Sans |
+
+### Switching themes at runtime
+
+While presenting, open the terminal (`t` key) and use the `theme` command:
+
+```
+theme aurora
+```
+
+This applies the built-in theme on top of the current deck styles — no page reload, instant preview.
+
+List all available themes from the terminal:
+
+```
+theme-list
+```
+
+Output:
+```
+Built-in themes:
+  default      — Clean neutral palette, blue accent (system-ui)
+  aurora       — Deep-space dark, electric-cyan accents (Exo 2) [dark]
+  solarized    — Warm Solarized Light, amber accents (Source Serif 4)
+  ...
+```
+
+> **Note:** Runtime theme switching appends the built-in theme CSS on top of the deck's existing styles. The override persists until you reload the page. To make a theme permanent, update `css/theme-*.css` in your deck files and `config.json`.
+
 ## Layer 3: Per-slide scoped CSS
 
 Drop a `<style>` tag inside any slide. It's automatically scoped — it won't leak into other slides:
