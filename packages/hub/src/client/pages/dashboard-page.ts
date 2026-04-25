@@ -192,13 +192,14 @@ export class DashboardPage extends LitElement {
       border-radius: var(--gs-radius);
       padding: 0.625rem 1rem;
     }
-    .list-row-info { flex: 1; min-width: 0; }
+    .list-row-info { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.625rem; }
     .list-row-title {
       font-size: 0.9375rem;
       font-weight: 600;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      min-width: 0;
     }
     .list-row-meta {
       font-size: 0.75rem;
@@ -206,7 +207,8 @@ export class DashboardPage extends LitElement {
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin-top: 0.125rem;
+      flex-shrink: 0;
+      white-space: nowrap;
     }
     .list-row-actions { display: flex; gap: 0.375rem; flex-shrink: 0; flex-wrap: wrap; }
     .list-row-actions button {
