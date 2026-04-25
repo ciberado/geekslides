@@ -145,3 +145,132 @@ test.describe('Security', () => {
     expect(res.status()).toBeLessThan(500);
   });
 });
+
+// ────────────────────────────────────────────────────────────
+// Dashboard: filter + layout toggle (requires built SPA client)
+// ────────────────────────────────────────────────────────────
+
+test.describe('Dashboard filter and layout toggle', () => {
+  const DOMAIN = '127.0.0.1';
+  const USER_ID = 'filter-test-user';
+
+  test.beforeAll(async () => {
+    // Seed a user and three presentations with distinct titles
+    const { upsertUser } = await import('../src/server/services/user.ts');
+    const { createPresentation, generateSlug } = await import('../src/server/services/presentation.ts');
+    const { users } = await import('../src/server/db/schema.ts');
+    const { eq } = await import('drizzle-orm');
+    const { createDatabase } = await import('../src/server/db/index.ts');
+    const db = createDatabase(`${ctx.tmpDir}/hub.db`);
+
+    upsertUser(db, {
+      provider: 'github',
+      providerId: USER_ID,
+      email: 'filteruser@test.com',
+      name: 'Filter User',
+      avatarUrl: null,
+    }, '');
+
+    const existing = db.select().from(users).where(eq(users.email, 'filteruser@test.com')).get();
+    if (existing) {
+      db.update(users)
+        .set({ id: USER_ID, role: 'user', status: 'approved' })
+        .where(eq(users.email, 'filteruser@test.com'))
+        .run();
+    }
+
+    const titles = ['AWS Cloud Architecture', 'Kubernetes Deep Dive', 'Docker Compose Tips'];
+    for (const title of titles) {
+      await createPresentation(db, {
+        userId: USER_ID,
+        title,
+        slug: generateSlug(title),
+        files: [
+          { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+          { path: 'README.md', data: Buffer.from(`# ${title}`) },
+        ],
+        repoDir: `${ctx.tmpDir}/repos`,
+      });
+    }
+  });
+
+  async function openDashboard(page: import('@playwright/test').Page): Promise<void> {
+    const token = ctx.signToken({ sub: USER_ID, role: 'user', status: 'approved' });
+    await page.context().addCookies([{
+      name: 'hub_access',
+      value: token,
+      domain: DOMAIN,
+      path: '/hub',
+      httpOnly: true,
+      sameSite: 'Lax',
+    }]);
+    await page.goto(`${ctx.baseUrl}/hub/`);
+    // Wait for the toolbar (shown only when presentations exist)
+    await expect(page.locator('.toolbar')).toBeVisible({ timeout: 10000 });
+  }
+
+  test('shows all presentations on load', async ({ page }) => {
+    await openDashboard(page);
+    await expect(page.locator('.card-title')).toHaveCount(3);
+  });
+
+  test('filter hides non-matching cards', async ({ page }) => {
+    await openDashboard(page);
+    await page.getByPlaceholder('Filter presentations…').fill('aws');
+    await expect(page.locator('.card-title')).toHaveCount(1);
+    await expect(page.locator('.card-title')).toHaveText('AWS Cloud Architecture');
+  });
+
+  test('fuzzy filter: sparse characters match', async ({ page }) => {
+    await openDashboard(page);
+    // 'kdd' matches 'Kubernetes Deep Dive'
+    await page.getByPlaceholder('Filter presentations…').fill('kdd');
+    await expect(page.locator('.card-title')).toHaveCount(1);
+    await expect(page.locator('.card-title')).toHaveText('Kubernetes Deep Dive');
+  });
+
+  test('filter shows no-results message when nothing matches', async ({ page }) => {
+    await openDashboard(page);
+    await page.getByPlaceholder('Filter presentations…').fill('zzznomatch');
+    await expect(page.locator('.card-title')).toHaveCount(0);
+    await expect(page.locator('.no-results')).toBeVisible();
+  });
+
+  test('clearing the filter restores all presentations', async ({ page }) => {
+    await openDashboard(page);
+    const input = page.getByPlaceholder('Filter presentations…');
+    await input.fill('aws');
+    await expect(page.locator('.card-title')).toHaveCount(1);
+    await input.fill('');
+    await expect(page.locator('.card-title')).toHaveCount(3);
+  });
+
+  test('switching to list view renders list rows instead of cards', async ({ page }) => {
+    await openDashboard(page);
+    // Cards visible by default
+    await expect(page.locator('.card')).toHaveCount(3);
+    await expect(page.locator('.list-row')).toHaveCount(0);
+
+    // Click list view button (title="List view")
+    await page.getByTitle('List view').click();
+    await expect(page.locator('.list-row')).toHaveCount(3);
+    await expect(page.locator('.card')).toHaveCount(0);
+  });
+
+  test('filter works in list view too', async ({ page }) => {
+    await openDashboard(page);
+    await page.getByTitle('List view').click();
+    await page.getByPlaceholder('Filter presentations…').fill('docker');
+    await expect(page.locator('.list-row')).toHaveCount(1);
+    await expect(page.locator('.list-row-title')).toHaveText('Docker Compose Tips');
+  });
+
+  test('switching back to card view restores cards', async ({ page }) => {
+    await openDashboard(page);
+    await page.getByTitle('List view').click();
+    await expect(page.locator('.list-row')).toHaveCount(3);
+    await page.getByTitle('Card view').click();
+    await expect(page.locator('.card')).toHaveCount(3);
+    await expect(page.locator('.list-row')).toHaveCount(0);
+  });
+});

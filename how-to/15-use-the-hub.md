@@ -154,6 +154,33 @@ Admins see an **Admin** link in the navigation. The panel has three tabs:
 
 > **Tip:** Invite codes let you pre-approve users — they skip the pending queue when they sign up with a valid code.
 
+## Browse and Filter Your Presentations
+
+The dashboard toolbar lets you quickly find and view your decks.
+
+### Filter by name
+
+Type in the **Filter presentations…** search box to narrow the list in real time. The filter uses fuzzy matching — you don't need to type the exact title. A few key characters in order is enough:
+
+| What you type | What it matches |
+|---------------|-----------------|
+| `aws` | "AWS Cloud Architecture" |
+| `kdd` | "Kubernetes Deep Dive" |
+| `dct` | "Docker Compose Tips" |
+
+When no decks match, a "No presentations match …" message appears.
+
+### Switch between card and list view
+
+Use the **⊞** and **☰** buttons on the right of the toolbar to toggle between:
+
+| View | Best for |
+|------|----------|
+| **Card view** (⊞) | Browsing with titles and action buttons visible at a glance |
+| **List view** (☰) | Scanning a long list compactly, with inline actions |
+
+Both views respect the active filter.
+
 ## Edit Metadata
 
 Click **Edit** on a deck card to open the metadata modal. You can change:

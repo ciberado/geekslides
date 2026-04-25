@@ -1,6 +1,7 @@
 import { LitElement, html, css, type TemplateResult, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
 import { apiClient, type Presentation, type LaunchResult, type GitHubCheckResult } from '../services/api.ts';
+import { fuzzyMatch } from '../utils/fuzzy.ts';
 
 @customElement('hub-dashboard-page')
 export class DashboardPage extends LitElement {
@@ -150,6 +151,84 @@ export class DashboardPage extends LitElement {
       font-size: 0.75rem;
       cursor: pointer;
     }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .search-input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--gs-border);
+      border-radius: var(--gs-radius);
+      background: var(--gs-bg);
+      color: var(--gs-text);
+      font: inherit;
+      font-size: 0.875rem;
+    }
+    .search-input:focus { outline: none; border-color: var(--gs-accent); }
+    .view-toggle { display: flex; }
+    .view-toggle button {
+      padding: 0.375rem 0.625rem;
+      border: 1px solid var(--gs-border);
+      background: transparent;
+      color: var(--gs-text-muted);
+      font: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+      line-height: 1;
+    }
+    .view-toggle button:first-child { border-radius: var(--gs-radius) 0 0 var(--gs-radius); }
+    .view-toggle button:last-child { border-radius: 0 var(--gs-radius) var(--gs-radius) 0; border-left: none; }
+    .view-toggle button.active { background: var(--gs-accent); color: white; border-color: var(--gs-accent); }
+    .list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .list-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--gs-surface);
+      border: 1px solid var(--gs-border);
+      border-radius: var(--gs-radius);
+      padding: 0.625rem 1rem;
+    }
+    .list-row-info { flex: 1; min-width: 0; }
+    .list-row-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .list-row-meta {
+      font-size: 0.75rem;
+      color: var(--gs-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 0.125rem;
+    }
+    .list-row-actions { display: flex; gap: 0.375rem; flex-shrink: 0; flex-wrap: wrap; }
+    .list-row-actions button {
+      padding: 0.25rem 0.625rem;
+      border: 1px solid var(--gs-border);
+      border-radius: var(--gs-radius);
+      background: transparent;
+      color: var(--gs-text);
+      font: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .list-row-actions button:hover { border-color: var(--gs-accent); color: var(--gs-accent); }
+    .list-row-actions button.danger:hover { border-color: var(--gs-danger); color: var(--gs-danger); }
+    .list-row-actions button.present {
+      background: var(--gs-accent);
+      border-color: var(--gs-accent);
+      color: white;
+    }
+    .list-row-actions button.present:hover { background: var(--gs-accent-hover); }
+    .no-results { text-align: center; padding: 2rem; color: var(--gs-text-muted); }
   `;
 
   @state() private _presentations: Presentation[] = [];
@@ -167,6 +246,8 @@ export class DashboardPage extends LitElement {
   @state() private _editDescription = '';
   @state() private _editVisibility: 'private' | 'public' = 'private';
   @state() private _githubStatus: Map<string, GitHubCheckResult | 'checking' | 'refreshing' | 'error'> = new Map();
+  @state() private _layout: 'cards' | 'list' = 'cards';
+  @state() private _filter = '';
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -233,17 +314,36 @@ export class DashboardPage extends LitElement {
   }
 
   override render(): TemplateResult {
+    const items = this._filtered;
     return html`
       <div class="header">
         <h1>My Presentations</h1>
         <button class="btn-primary" @click=${() => { this._showUpload = true; }}>New Presentation</button>
       </div>
 
-      ${this._presentations.length === 0
+      ${this._presentations.length > 0 ? html`
+        <div class="toolbar">
+          <input class="search-input" type="search" placeholder="Filter presentations…"
+            .value=${this._filter}
+            @input=${(e: Event) => { this._filter = (e.target as HTMLInputElement).value; }}>
+          <div class="view-toggle">
+            <button class=${this._layout === 'cards' ? 'active' : ''} title="Card view"
+              @click=${() => { this._layout = 'cards'; }}>⊞</button>
+            <button class=${this._layout === 'list' ? 'active' : ''} title="List view"
+              @click=${() => { this._layout = 'list'; }}>☰</button>
+          </div>
+        </div>
+      ` : nothing}
+
+      ${items.length === 0 && this._filter
+        ? html`<div class="no-results">No presentations match "<strong>${this._filter}</strong>"</div>`
+        : items.length === 0
         ? html`<div class="empty"><p>No presentations yet. Create your first one!</p></div>`
+        : this._layout === 'list'
+        ? html`<div class="list">${items.map((p) => this._renderListRow(p))}</div>`
         : html`
           <div class="grid">
-            ${this._presentations.map((p) => html`
+            ${items.map((p) => html`
               <div class="card">
                 <div class="card-title">${p.title}</div>
                 <div class="card-meta">
@@ -493,6 +593,34 @@ export class DashboardPage extends LitElement {
       this._error = err instanceof Error ? err.message : 'Refresh failed';
       this._githubStatus = new Map(this._githubStatus).set(p.id, 'error');
     }
+  }
+
+  private get _filtered(): Presentation[] {
+    const q = this._filter.trim().toLowerCase();
+    if (!q) return this._presentations;
+    return this._presentations.filter((p) => fuzzyMatch(p.title, q));
+  }
+
+  private _renderListRow(p: Presentation): TemplateResult {
+    return html`
+      <div class="list-row">
+        <div class="list-row-info">
+          <div class="list-row-title">${p.title}</div>
+          <div class="list-row-meta">
+            <span class="badge ${p.visibility === 'public' ? 'badge-public' : 'badge-private'}">${p.visibility}</span>
+            <span>${this._formatSize(p.sizeBytes)}</span>
+            ${p.githubUrl ? html`<span title=${p.githubUrl}>⎇ GitHub</span>` : nothing}
+          </div>
+        </div>
+        <div class="list-row-actions">
+          <button class="present" @click=${() => void this._launch(p.id)}>Present</button>
+          <button @click=${() => { this._openEdit(p); }}>Edit</button>
+          <button @click=${() => { this._replaceFiles(p); }}>Replace</button>
+          ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
+          <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
+        </div>
+      </div>
+    `;
   }
 
   private _formatSize(bytes: number): string {

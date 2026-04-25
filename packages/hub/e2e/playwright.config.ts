@@ -6,6 +6,7 @@ const baseURL = process.env['HUB_E2E_BASE_URL'] ?? `http://localhost:${String(hu
 export default defineConfig({
   testDir: '.',
   testMatch: '**/*.spec.ts',
+  globalSetup: './global-setup.ts',
   fullyParallel: false,
   forbidOnly: !!process.env['CI'],
   retries: process.env['CI'] ? 2 : 0,
