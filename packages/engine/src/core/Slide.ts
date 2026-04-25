@@ -89,16 +89,6 @@ export class Slide extends HTMLElement {
       this.classList.add(cls);
     }
 
-    if (options.backgroundImage) {
-      this.style.backgroundImage = `url(${options.backgroundImage})`;
-      this.style.backgroundSize = 'cover';
-      this.style.backgroundPosition = 'center';
-    }
-
-    if (options.backgroundColor) {
-      this.style.backgroundColor = options.backgroundColor;
-    }
-
     this.#notesHtml = options.notesHtml;
     this.#partialCount = options.partialCount;
     this.#visiblePartials = 0;
@@ -122,6 +112,19 @@ export class Slide extends HTMLElement {
     }
     for (const cls of options.classes) {
       content.classList.add(cls);
+    }
+
+    // Apply background and color styles to the content section (not :host)
+    // so they render on top of the slide background, allowing theme colors
+    // to coexist with background images
+    if (options.backgroundImage) {
+      content.style.backgroundImage = `url(${options.backgroundImage})`;
+      content.style.backgroundSize = 'cover';
+      content.style.backgroundPosition = 'center';
+    }
+
+    if (options.backgroundColor) {
+      content.style.backgroundColor = options.backgroundColor;
     }
 
     content.innerHTML = html;
@@ -184,8 +187,6 @@ export class Slide extends HTMLElement {
         pointer-events: none;
         overflow: hidden;
         background-color: white;
-        background-size: cover;
-        background-position: center;
       }
 
       :host([active]) {
