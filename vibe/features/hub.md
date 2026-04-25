@@ -15,10 +15,10 @@ share them, and launch them into the existing `@geekslides/server` runtime for l
 │  Browser (Lit SPA)          Hub Server (Fastify)             │
 │  ├── /hub/                  ├── OAuth2 (GitHub, Google)      │
 │  ├── Dashboard              ├── JWT in httpOnly cookies      │
-│  ├── Search                 ├── SQLite + Drizzle ORM         │
-│  ├── Admin Panel            ├── isomorphic-git repos         │
-│  └── Login / Pending        └── REST API (/hub/api/*)        │
-│                                       │                      │
+│  ├── Shared with Me         ├── SQLite + Drizzle ORM         │
+│  ├── Search                 ├── isomorphic-git repos         │
+│  ├── Admin Panel            └── REST API (/hub/api/*)        │
+│  └── Login / Pending                  │                      │
 │                                       │ launch               │
 │                                       ▼                      │
 │                              @geekslides/server              │
@@ -82,6 +82,61 @@ It can also be forced with `HUB_DEV_MODE=true`.
 3. Hub checks out files from git repo
 4. Hub uploads files via `POST /api/rooms/:room/content` (multipart)
 5. Returns viewer URL with embedded share token
+
+## Client SPA
+
+The Lit 3 SPA lives in `packages/hub/src/client/`. It is built by Vite (`vite.client.config.ts`) into `dist/client/`, which Fastify serves as static files. In dev mode, a Vite dev server runs on `:3001` and proxies `/hub/api` to Fastify on `:3000`.
+
+### Pages
+
+| Component | File | Route | Purpose |
+|-----------|------|-------|---------|
+| `hub-dashboard-page` | `pages/dashboard-page.ts` | `/hub/` | Own presentations: upload, filter, launch, share, edit, replace, GitHub sync |
+| `hub-shared-page` | `pages/shared-page.ts` | `/hub/shared` | Pending invitations (accept/decline) and accepted shares (launch) |
+| `hub-search-page` | `pages/search-page.ts` | `/hub/search` | Full-text search across public presentations |
+| `hub-admin-page` | `pages/admin-page.ts` | `/hub/admin` | User management, invite codes, system stats |
+| `hub-login-page` | `pages/login-page.ts` | `/hub/login` | OAuth provider buttons or dev-mode persona picker |
+| `hub-pending-page` | `pages/pending-page.ts` | `/hub/pending` | Awaiting admin approval |
+
+The root `hub-app` component (`main.ts`) handles routing by reading `window.location.pathname` and switching the active page via an `AppView` discriminant. Navigation links update the URL and re-render.
+
+### Dashboard Features
+
+`dashboard-page.ts` is the most complex component. Key capabilities:
+
+**Fuzzy filter** — A search input above the presentation list filters cards in real time using character-sequence matching (`utils/fuzzy.ts`). Typing `kdd` matches "Kubernetes Deep Dive"; `aws` matches "AWS Cloud Architecture". A "No presentations match …" message is shown when the filter eliminates all results.
+
+**Layout toggle** — Two icon buttons (⊞ card / ☰ list) switch between:
+- **Card view**: `<div class="card">` grid — title, visibility badge, size, and action buttons in a card. Default.
+- **List view**: compact `<div class="list-row">` rows — title + badge + size on one line, action buttons on the right.
+
+Both views honour the active filter. The choice is held in `@state() _layout` (session-scoped, not persisted).
+
+**Per-card actions**:
+
+| Button | Behaviour |
+|--------|----------|
+| **Present** | Calls `launchPresentation()` → opens viewer URL, shows share-URL modal |
+| **Edit** | Opens metadata modal (title, description, visibility) |
+| **Replace Files** / **Replace** | Opens replace modal; accepts folder picker |
+| **Check GitHub** / **↑ Update** | (GitHub imports only) Checks upstream SHA; if new commits, offers one-click re-import |
+| **Delete** | Confirm-gated delete |
+
+**GitHub check/refresh** — GitHub-imported decks store `githubUrl` and `githubSha`. The dashboard calls `GET /:id/github-check` to compare the stored SHA against the upstream HEAD. Result is cached in `_githubStatus: Map<id, GitHubCheckResult | 'checking' | 'refreshing' | 'error'>` per card. If `hasUpdate` is true, an **↑ Update** button calls `POST /:id/github-refresh`.
+
+### Shared with Me Page
+
+`shared-page.ts` fetches `GET /hub/api/shares/shared-with-me` and splits results into two sections:
+- **Pending invitations** — Accept / Decline buttons call `POST /hub/api/shares/:id/respond`.
+- **Accepted shares** — Present button launches the shared deck.
+
+Empty state shown when neither section has entries.
+
+### Client Utilities
+
+`utils/fuzzy.ts` — pure function `fuzzyMatch(text, query): boolean`. Character-sequence algorithm: iterates query characters and advances a pointer through the text string. Case-insensitive. Tested in `packages/hub/tests/unit/fuzzy.test.ts`.
+
+`services/api.ts` — `ApiClient` class wrapping all hub API endpoints with automatic token refresh (intercepts 401, calls `/auth/refresh`, retries). Key types: `Presentation`, `SharedPresentation`, `GitHubCheckResult`, `LaunchResult`.
 
 ## Upload Formats
 

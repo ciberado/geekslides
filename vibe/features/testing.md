@@ -236,6 +236,77 @@ Tests in `packages/engine/tests/unit/SyncManager.test.ts` (whiteboard-related):
 - **getStrokes returns all existing strokes** — adds two strokes, confirms both are returned.
 - **getStrokes returns strokes from remote doc sync** — simulates a late-join by applying a remote Y.Doc update, confirms strokes are readable.
 
+## Unit Tests (@geekslides/hub)
+
+Hub tests live in `packages/hub/tests/unit/` and run under the root Vitest config (Node environment). Each test file uses an in-memory SQLite database via `createTestDatabase()` from `helpers.ts`.
+
+### fuzzy.test.ts
+
+Tests for `utils/fuzzy.ts` `fuzzyMatch` function:
+
+- Exact match returns true; case-insensitive matching works in both directions.
+- Sparse character sequences match in order (`kdd` → "Kubernetes Deep Dive").
+- Returns false when a character is absent or out of order.
+- Empty query matches everything; query longer than text returns false.
+- Repeated characters handled correctly (two `o`s needed for `oo`).
+- Unicode characters handled correctly.
+
+### upload.test.ts
+
+Tests for `services/upload.ts`:
+
+- **`validateDeckFiles`**: accepts valid decks; rejects missing `config.json`, missing `content` field, missing content file; skips path traversal attempts; skips dotfiles; enforces file size and path length limits.
+- **`extractZip`**: extracts files, strips common directory prefix, skips directory entries and invalid paths.
+- **`importFromGitHub`**: resolves ref to SHA via GitHub API, fetches tree + blobs, strips subpath prefix, skips dotfiles; throws on invalid URL or API error; falls back to commits API when ref lookup fails.
+- **`fetchGitHubLatestSha`**: returns SHA from ref API; falls back to commits API; returns null for invalid URL or failed API; detects update (returned SHA ≠ stored SHA) and no-update (returned SHA = stored SHA).
+
+### presentation.test.ts
+
+Tests for `services/presentation.ts`:
+
+- **`generateSlug`**: converts title to lowercase-kebab-case, strips special characters, trims hyphens.
+- **`ensureUniqueSlug`**: appends numeric suffix when slug already exists.
+- **`createPresentation`**: stores `githubUrl`/`githubSha` when provided; stores null when omitted.
+- **`updatePresentationMetadata`**: updates title, description, visibility; returns updated row.
+- **`listPresentations`**: returns only the owner's presentations.
+- **`getPresentationById`**: returns matching presentation or undefined.
+- **`refreshFromGitHub`**: updates files and `githubSha`; throws when presentation has no `githubUrl`; throws when called by wrong owner.
+
+### Other unit test files
+
+| File | Coverage |
+|------|---------|
+| `git.test.ts` | `commitFiles`, `checkoutFiles`, `repoSize`, bare repo init |
+| `user.test.ts` | `upsertUser`, `approveUser`, `updateQuota`, `listUsers` |
+| `share.test.ts` | `createShare`, `listShares`, `respondToShare`, `listSharedWithMe`, `checkAccess` |
+| `admin.test.ts` | Invite code generation/validation/revocation, admin stats |
+| `analytics.test.ts` | `recordLaunch`, `getPresentationAnalytics`, `getUserAnalytics` |
+
+## E2E Tests (@geekslides/hub)
+
+Hub E2E tests run under Playwright (Chromium only, `packages/hub/e2e/playwright.config.ts`). A real Fastify server is started per suite via `startHubServer()`, using a temp SQLite file. Auth is bypassed by signing JWT tokens directly with `ctx.signToken()`. The config registers `global-setup.ts` which runs `npm run build:client` once before all tests so Fastify can serve the built SPA.
+
+### hub-api.spec.ts
+
+Exercises the full REST API surface (~38 tests). Seeds users and presentations directly via service imports. Covers:
+
+- **Auth**: `/auth/me` (authenticated/unauthenticated), token refresh, logout.
+- **Presentations CRUD**: create (files, zip, GitHub URL), list, get, PATCH metadata, PUT replace files (200 own, 500 wrong owner), DELETE.
+- **GitHub routes**: `GET /:id/github-check` (400 non-GitHub, 404 wrong owner, 200/502 for real GitHub); `POST /:id/github-refresh` (400 non-GitHub).
+- **Shares**: create, list, respond (accept/reject), shared-with-me, revoke.
+- **Search**: full-text search on public presentations.
+- **Admin**: list/approve/reject users, quota, invite codes, stats; 403 for non-admin.
+- **Analytics**: personal stats endpoint.
+
+### hub-ui.spec.ts
+
+Exercises the Lit SPA rendered in a real Chromium browser (~8 UI tests + ~8 API-via-browser tests). The `beforeAll` seeds three presentations with distinct titles ("AWS Cloud Architecture", "Kubernetes Deep Dive", "Docker Compose Tips"). Each test navigates to `/hub/`, waits for the `.toolbar` to appear, then interacts:
+
+- **Filter**: typing `aws` hides 2 of 3 cards; fuzzy `kdd` matches "Kubernetes Deep Dive"; `zzznomatch` shows `.no-results`; clearing restores all 3 cards.
+- **Layout toggle**: clicking ☰ switches from `.card` grid to `.list-row` list; filter still works in list view; clicking ⊞ restores cards.
+- **API from browser context**: `auth/me`, `presentations`, `admin/stats` all return correct JSON via `page.request`.
+- **Security**: expired JWT returns 401; non-API hub routes return < 500.
+
 ## CI Integration
 
 The GitHub Actions workflow (`.github/workflows/test.yml`) triggers on push and pull request with two jobs:
