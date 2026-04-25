@@ -17,9 +17,27 @@ export interface Presentation {
   readonly slug: string;
   readonly visibility: 'private' | 'public';
   readonly sizeBytes: number;
+  readonly githubUrl: string | null;
+  readonly githubSha: string | null;
   readonly createdAt: string;
   readonly updatedAt: string;
   readonly access?: string;
+}
+
+export interface GitHubCheckResult {
+  readonly currentSha: string | null;
+  readonly latestSha: string | null;
+  readonly hasUpdate: boolean;
+}
+
+export interface SharedPresentation {
+  readonly id: string;
+  readonly presentationId: string;
+  readonly userId: string;
+  readonly role: 'viewer' | 'copresenter';
+  readonly status: 'pending' | 'accepted' | 'rejected';
+  readonly createdAt: string;
+  readonly presentation: { id: string; title: string; slug: string };
 }
 
 export interface LaunchResult {
@@ -169,18 +187,6 @@ class ApiClient {
     return this.request(`/shares/${shareId}`, { method: 'DELETE' });
   }
 
-  acceptShare(shareId: string): Promise<void> {
-    return this.request(`/shares/${shareId}/accept`, { method: 'POST' });
-  }
-
-  rejectShare(shareId: string): Promise<void> {
-    return this.request(`/shares/${shareId}/reject`, { method: 'POST' });
-  }
-
-  listSharedWithMe(): Promise<{ items: Array<ShareInfo & { presentation: Presentation }> }> {
-    return this.request('/shared-with-me');
-  }
-
   // Search
   search(q: string): Promise<{ items: Array<Presentation & { ownerName: string; ownerAvatarUrl: string | null }> }> {
     return this.request(`/search?q=${encodeURIComponent(q)}`);
@@ -224,6 +230,29 @@ class ApiClient {
   getSystemStats(): Promise<{ totalUsers: number; pendingUsers: number; totalPresentations: number; totalStorageBytes: number }> {
     return this.request('/admin/stats');
   }
+
+  // GitHub import helpers
+  checkGitHubUpdate(id: string): Promise<GitHubCheckResult> {
+    return this.request(`/presentations/${id}/github-check`);
+  }
+
+  refreshFromGitHub(id: string): Promise<Presentation> {
+    return this.request(`/presentations/${id}/github-refresh`, { method: 'POST' });
+  }
+
+  // Shared with me
+  listSharedWithMe(): Promise<{ items: SharedPresentation[] }> {
+    return this.request('/shared-with-me');
+  }
+
+  acceptShare(shareId: string): Promise<void> {
+    return this.request(`/shares/${shareId}/accept`, { method: 'POST' });
+  }
+
+  rejectShare(shareId: string): Promise<void> {
+    return this.request(`/shares/${shareId}/reject`, { method: 'POST' });
+  }
 }
 
 export const apiClient = new ApiClient();
+

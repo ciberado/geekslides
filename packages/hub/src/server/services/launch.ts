@@ -19,7 +19,6 @@ export async function launchPresentation(
   userId: string,
   repoDir: string,
   serverBaseUrl: string,
-  viewerBaseUrl: string,
 ): Promise<LaunchResult | { error: string }> {
   const access = checkAccess(db, presentationId, userId);
   if (!access) return { error: 'Access denied' };

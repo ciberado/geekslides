@@ -7,10 +7,11 @@ import {
   getPresentationById,
   updatePresentationMetadata,
   updatePresentationFiles,
+  refreshFromGitHub,
   deletePresentation,
   generateSlug,
 } from '../services/presentation.ts';
-import { validateDeckFiles, extractZip, importFromGitHub } from '../services/upload.ts';
+import { validateDeckFiles, extractZip, importFromGitHub, fetchGitHubLatestSha } from '../services/upload.ts';
 import { checkAccess } from '../services/share.ts';
 import type { RepoFile } from '../services/git.ts';
 
@@ -28,6 +29,8 @@ export function registerPresentationRoutes(
 
       let files: RepoFile[];
       let title: string;
+      let githubUrl: string | undefined;
+      let githubSha: string | undefined;
 
       if (contentType.includes('application/json')) {
         // GitHub import
@@ -36,9 +39,12 @@ export function registerPresentationRoutes(
           await reply.status(400).send({ error: 'Missing githubUrl' });
           return;
         }
+        githubUrl = body.githubUrl;
         title = body.title ?? 'Imported presentation';
         try {
-          files = await importFromGitHub(body.githubUrl);
+          const result = await importFromGitHub(body.githubUrl);
+          files = result.files;
+          githubSha = result.sha;
         } catch (err) {
           await reply.status(400).send({
             error: err instanceof Error ? err.message : 'GitHub import failed',
@@ -108,6 +114,8 @@ export function registerPresentationRoutes(
           slug,
           files: validation.files,
           repoDir: options.repoDir,
+          ...(githubUrl !== undefined ? { githubUrl } : {}),
+          ...(githubSha !== undefined ? { githubSha } : {}),
         });
         await reply.status(201).send(presentation);
       } catch (err) {
@@ -240,6 +248,66 @@ export function registerPresentationRoutes(
         return;
       }
       await reply.status(204).send();
+    },
+  );
+
+  // Check if GitHub import has a newer commit available
+  fastify.get(
+    '/hub/api/presentations/:id/github-check',
+    { preHandler: [fastify.requireApproved] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const pres = getPresentationById(db, id);
+      if (!pres || pres.ownerId !== request.userId) {
+        await reply.status(404).send({ error: 'Not found' });
+        return;
+      }
+      if (!pres.githubUrl) {
+        await reply.status(400).send({ error: 'Not a GitHub import' });
+        return;
+      }
+      try {
+        const latestSha = await fetchGitHubLatestSha(pres.githubUrl);
+        await reply.send({
+          currentSha: pres.githubSha,
+          latestSha,
+          hasUpdate: latestSha !== null && latestSha !== pres.githubSha,
+        });
+      } catch (err) {
+        await reply.status(502).send({ error: err instanceof Error ? err.message : 'GitHub check failed' });
+      }
+    },
+  );
+
+  // Re-import files from GitHub (refresh)
+  fastify.post(
+    '/hub/api/presentations/:id/github-refresh',
+    { preHandler: [fastify.requireApproved] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const pres = getPresentationById(db, id);
+      if (!pres || pres.ownerId !== request.userId) {
+        await reply.status(404).send({ error: 'Not found' });
+        return;
+      }
+      if (!pres.githubUrl) {
+        await reply.status(400).send({ error: 'Not a GitHub import' });
+        return;
+      }
+      try {
+        const result = await importFromGitHub(pres.githubUrl);
+        const validation = validateDeckFiles(result.files);
+        if (!validation.valid) {
+          await reply.status(422).send({ error: validation.error });
+          return;
+        }
+        const updated = await refreshFromGitHub(db, id, request.userId, validation.files, result.sha, options.repoDir);
+        await reply.send(updated);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Refresh failed';
+        const status = message === 'Quota exceeded' ? 413 : 502;
+        await reply.status(status).send({ error: message });
+      }
     },
   );
 }

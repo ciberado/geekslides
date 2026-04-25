@@ -5,7 +5,9 @@ export default tseslint.config(
   {
     languageOptions: {
       parserOptions: {
-        projectService: true,
+        projectService: {
+          allowDefaultProject: ['packages/hub/tests/unit/helpers.ts'],
+        },
         tsconfigRootDir: import.meta.dirname,
       },
     },

@@ -12,6 +12,8 @@ export interface CreatePresentationInput {
   readonly slug: string;
   readonly files: readonly RepoFile[];
   readonly repoDir: string;
+  readonly githubUrl?: string;
+  readonly githubSha?: string;
 }
 
 export interface PresentationRow {
@@ -22,6 +24,8 @@ export interface PresentationRow {
   readonly slug: string;
   readonly visibility: 'private' | 'public';
   readonly sizeBytes: number;
+  readonly githubUrl: string | null;
+  readonly githubSha: string | null;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -82,6 +86,8 @@ export async function createPresentation(
     slug,
     visibility: 'private' as const,
     sizeBytes: size,
+    githubUrl: input.githubUrl ?? null,
+    githubSha: input.githubSha ?? null,
     createdAt: now,
     updatedAt: now,
   };
@@ -93,6 +99,47 @@ export async function createPresentation(
     .run();
 
   return row;
+}
+
+export async function refreshFromGitHub(
+  db: HubDatabase,
+  presentationId: string,
+  userId: string,
+  files: readonly RepoFile[],
+  newSha: string,
+  repoDir: string,
+): Promise<PresentationRow> {
+  const pres = db
+    .select()
+    .from(presentations)
+    .where(and(eq(presentations.id, presentationId), eq(presentations.ownerId, userId)))
+    .get();
+  if (!pres) throw new Error('Presentation not found or access denied');
+  if (!pres.githubUrl) throw new Error('Presentation was not imported from GitHub');
+
+  const user = db.select().from(users).where(eq(users.id, userId)).get();
+  if (!user) throw new Error('User not found');
+
+  const repoPath = path.join(repoDir, userId, pres.slug);
+  const oldSize = pres.sizeBytes;
+
+  await commitFiles(repoPath, files, `Refresh from GitHub ${newSha.slice(0, 7)}`);
+  const newSize = repoSize(repoPath);
+
+  const sizeDiff = newSize - oldSize;
+  if (user.usedBytes + sizeDiff > user.quotaBytes) throw new Error('Quota exceeded');
+
+  const now = new Date();
+  db.update(presentations)
+    .set({ sizeBytes: newSize, githubSha: newSha, updatedAt: now })
+    .where(eq(presentations.id, presentationId))
+    .run();
+  db.update(users)
+    .set({ usedBytes: user.usedBytes + sizeDiff, updatedAt: now })
+    .where(eq(users.id, userId))
+    .run();
+
+  return { ...pres, sizeBytes: newSize, githubSha: newSha, updatedAt: now };
 }
 
 export async function updatePresentationFiles(

@@ -1,6 +1,6 @@
 import { LitElement, html, css, type TemplateResult, nothing } from 'lit';
 import { customElement, state } from 'lit/decorators.js';
-import { apiClient, type Presentation, type LaunchResult } from '../services/api.ts';
+import { apiClient, type Presentation, type LaunchResult, type GitHubCheckResult } from '../services/api.ts';
 
 @customElement('hub-dashboard-page')
 export class DashboardPage extends LitElement {
@@ -162,6 +162,11 @@ export class DashboardPage extends LitElement {
   @state() private _error = '';
   @state() private _launchResult: LaunchResult | null = null;
   @state() private _replaceTarget: Presentation | null = null;
+  @state() private _editTarget: Presentation | null = null;
+  @state() private _editTitle = '';
+  @state() private _editDescription = '';
+  @state() private _editVisibility: 'private' | 'public' = 'private';
+  @state() private _githubStatus: Map<string, GitHubCheckResult | 'checking' | 'refreshing' | 'error'> = new Map();
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -247,10 +252,9 @@ export class DashboardPage extends LitElement {
                 </div>
                 <div class="card-actions">
                   <button class="present" @click=${() => void this._launch(p.id)}>Present</button>
-                  <button @click=${() => void this._toggleVisibility(p)}>
-                    ${p.visibility === 'public' ? 'Make Private' : 'Make Public'}
-                  </button>
-                  <button @click=${() => void this._replaceFiles(p)}>Replace Files</button>
+                  <button @click=${() => { this._openEdit(p); }}>Edit</button>
+                  <button @click=${() => { this._replaceFiles(p); }}>Replace Files</button>
+                  ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
                   <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
                 </div>
               </div>
@@ -260,6 +264,7 @@ export class DashboardPage extends LitElement {
 
       ${this._showUpload ? this._renderUploadModal() : nothing}
       ${this._replaceTarget ? this._renderReplaceModal() : nothing}
+      ${this._editTarget ? this._renderEditModal() : nothing}
       ${this._launchResult ? this._renderShareModal() : nothing}
     `;
   }
@@ -310,8 +315,54 @@ export class DashboardPage extends LitElement {
     `;
   }
 
-  private _renderReplaceModal(): TemplateResult {
+  private _renderGitHubAction(p: Presentation): TemplateResult {
+    const status = this._githubStatus.get(p.id);
+    if (!status) {
+      return html`<button @click=${() => void this._checkGitHub(p)}>Check GitHub</button>`;
+    }
+    if (status === 'checking') return html`<button disabled>Checking…</button>`;
+    if (status === 'refreshing') return html`<button disabled>Refreshing…</button>`;
+    if (status === 'error') {
+      return html`<button @click=${() => void this._checkGitHub(p)}>Retry</button>`;
+    }
+    if (status.hasUpdate) {
+      return html`<button @click=${() => void this._refreshGitHub(p)} title="New commit: ${status.latestSha?.slice(0, 7) ?? ''}">↑ Update</button>`;
+    }
+    return html`<button @click=${() => void this._checkGitHub(p)} title="Up to date (${status.currentSha?.slice(0, 7) ?? ''})">✓ Up to date</button>`;
+  }
+
+  private _renderEditModal(): TemplateResult {
     return html`
+      <div class="modal-overlay" @click=${(e: Event) => { if (e.target === e.currentTarget) this._editTarget = null; }}>
+        <div class="modal">
+          <h2>Edit — ${this._editTarget?.title}</h2>
+          ${this._error ? html`<div class="error">${this._error}</div>` : nothing}
+
+          <label>Title</label>
+          <input type="text" .value=${this._editTitle}
+            @input=${(e: Event) => { this._editTitle = (e.target as HTMLInputElement).value; }}>
+
+          <label>Description</label>
+          <input type="text" .value=${this._editDescription}
+            @input=${(e: Event) => { this._editDescription = (e.target as HTMLInputElement).value; }}>
+
+          <label>Visibility</label>
+          <select .value=${this._editVisibility}
+            @change=${(e: Event) => { this._editVisibility = (e.target as HTMLSelectElement).value as 'private' | 'public'; }}>
+            <option value="private">Private</option>
+            <option value="public">Public</option>
+          </select>
+
+          <div class="modal-actions">
+            <button class="tab" @click=${() => { this._editTarget = null; }}>Cancel</button>
+            <button class="btn-primary" @click=${(e: Event) => void this._saveEdit(e)}>Save</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  private _renderReplaceModal(): TemplateResult {    return html`
       <div class="modal-overlay" @click=${(e: Event) => { if (e.target === e.currentTarget) this._replaceTarget = null; }}>
         <div class="modal">
           <h2>Replace Files — ${this._replaceTarget?.title}</h2>
@@ -364,7 +415,7 @@ export class DashboardPage extends LitElement {
     }
   }
 
-  private async _replaceFiles(p: Presentation): Promise<void> {
+  private _replaceFiles(p: Presentation): void {
     this._replaceTarget = p;
   }
 
@@ -392,6 +443,56 @@ export class DashboardPage extends LitElement {
       visibility: p.visibility === 'public' ? 'private' : 'public',
     });
     await this._load();
+  }
+
+  private _openEdit(p: Presentation): void {
+    this._editTarget = p;
+    this._editTitle = p.title;
+    this._editDescription = p.description;
+    this._editVisibility = p.visibility;
+    this._error = '';
+  }
+
+  private async _saveEdit(e: Event): Promise<void> {
+    e.preventDefault();
+    if (!this._editTarget) return;
+    this._error = '';
+    try {
+      await apiClient.updatePresentation(this._editTarget.id, {
+        title: this._editTitle,
+        description: this._editDescription,
+        visibility: this._editVisibility,
+      });
+      this._editTarget = null;
+      await this._load();
+    } catch (err) {
+      this._error = err instanceof Error ? err.message : 'Update failed';
+    }
+  }
+
+  private async _checkGitHub(p: Presentation): Promise<void> {
+    this._githubStatus = new Map(this._githubStatus).set(p.id, 'checking');
+    try {
+      const result = await apiClient.checkGitHubUpdate(p.id);
+      this._githubStatus = new Map(this._githubStatus).set(p.id, result);
+    } catch {
+      this._githubStatus = new Map(this._githubStatus).set(p.id, 'error');
+    }
+  }
+
+  private async _refreshGitHub(p: Presentation): Promise<void> {
+    this._githubStatus = new Map(this._githubStatus).set(p.id, 'refreshing');
+    try {
+      await apiClient.refreshFromGitHub(p.id);
+      this._githubStatus = new Map(this._githubStatus).set(p.id, 'checking');
+      await this._load();
+      // Re-check after refresh to confirm up-to-date
+      const result = await apiClient.checkGitHubUpdate(p.id);
+      this._githubStatus = new Map(this._githubStatus).set(p.id, result);
+    } catch (err) {
+      this._error = err instanceof Error ? err.message : 'Refresh failed';
+      this._githubStatus = new Map(this._githubStatus).set(p.id, 'error');
+    }
   }
 
   private _formatSize(bytes: number): string {

@@ -1,4 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { createTestDatabase, insertTestUser, insertTestPresentation, type TestDatabase } from './helpers.ts';
 import {
   generateSlug,
@@ -6,6 +9,8 @@ import {
   updatePresentationMetadata,
   listPresentations,
   getPresentationById,
+  createPresentation,
+  refreshFromGitHub,
 } from '../../src/server/services/presentation.ts';
 
 describe('presentation service', () => {
@@ -119,6 +124,99 @@ describe('presentation service', () => {
 
     it('returns undefined when not found', () => {
       expect(getPresentationById(db, 'nonexistent')).toBeUndefined();
+    });
+  });
+
+  describe('createPresentation (with GitHub metadata)', () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hub-pres-test-'));
+    });
+
+    it('stores githubUrl and githubSha when provided', async () => {
+      const pres = await createPresentation(db, {
+        userId: 'user-1',
+        title: 'GitHub Deck',
+        slug: 'github-deck',
+        files: [
+          { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+          { path: 'README.md', data: Buffer.from('# Hello') },
+        ],
+        repoDir: tmpDir,
+        githubUrl: 'https://github.com/user/repo',
+        githubSha: 'abc123def456',
+      });
+      expect(pres.githubUrl).toBe('https://github.com/user/repo');
+      expect(pres.githubSha).toBe('abc123def456');
+    });
+
+    it('stores null for githubUrl/githubSha when not provided', async () => {
+      const pres = await createPresentation(db, {
+        userId: 'user-1',
+        title: 'Local Deck',
+        slug: 'local-deck',
+        files: [
+          { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+          { path: 'README.md', data: Buffer.from('# Hello') },
+        ],
+        repoDir: tmpDir,
+      });
+      expect(pres.githubUrl).toBeNull();
+      expect(pres.githubSha).toBeNull();
+    });
+  });
+
+  describe('refreshFromGitHub', () => {
+    let tmpDir: string;
+
+    beforeEach(() => {
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'hub-refresh-test-'));
+    });
+
+    async function createGitHubPresentation(): Promise<string> {
+      const pres = await createPresentation(db, {
+        userId: 'user-1',
+        title: 'GitHub Import',
+        slug: 'github-import',
+        files: [
+          { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+          { path: 'README.md', data: Buffer.from('# Version 1') },
+        ],
+        repoDir: tmpDir,
+        githubUrl: 'https://github.com/user/repo',
+        githubSha: 'sha-v1',
+      });
+      return pres.id;
+    }
+
+    it('updates files and githubSha', async () => {
+      const id = await createGitHubPresentation();
+      const updated = await refreshFromGitHub(
+        db, id, 'user-1',
+        [
+          { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+          { path: 'README.md', data: Buffer.from('# Version 2') },
+        ],
+        'sha-v2',
+        tmpDir,
+      );
+      expect(updated.githubSha).toBe('sha-v2');
+      expect(updated.githubUrl).toBe('https://github.com/user/repo');
+    });
+
+    it('throws when presentation was not imported from GitHub', async () => {
+      insertTestPresentation(db, { id: 'local-pres', slug: 'local-pres' });
+      await expect(
+        refreshFromGitHub(db, 'local-pres', 'user-1', [], 'sha-new', tmpDir),
+      ).rejects.toThrow('not imported from GitHub');
+    });
+
+    it('throws when called by the wrong owner', async () => {
+      const id = await createGitHubPresentation();
+      await expect(
+        refreshFromGitHub(db, id, 'other-user', [], 'sha-new', tmpDir),
+      ).rejects.toThrow('access denied');
     });
   });
 });

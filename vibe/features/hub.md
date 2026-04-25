@@ -43,7 +43,7 @@ users ──< presentations ──< shares
 ```
 
 - **users**: OAuth identity, role (user/admin), status (pending/approved/rejected), quota
-- **presentations**: metadata, slug, visibility, size tracking, FK to owner
+- **presentations**: metadata, slug, visibility, size tracking, FK to owner; `github_url` and `github_sha` (nullable) for GitHub-imported decks
 - **shares**: per-presentation access grants with role (viewer/copresenter) and status (pending/accepted/rejected)
 - **analytics_events**: launch tracking
 - **invite_codes**: admin-generated codes that auto-approve new users
@@ -87,7 +87,7 @@ It can also be forced with `HUB_DEV_MODE=true`.
 
 - **Multi-file picker**: Individual files from browser file input
 - **ZIP archive**: Extracted server-side with common prefix detection (adm-zip)
-- **GitHub URL**: Fetches tree via GitHub API, downloads blobs
+- **GitHub URL**: Fetches tree via GitHub API, downloads blobs. Stores the resolved HEAD SHA (`github_sha`) alongside the URL for update detection.
 
 All uploads are validated: must include `config.json` with a `content` field pointing to an existing file. Path traversal is rejected.
 
@@ -118,6 +118,8 @@ All uploads are validated: must include `config.json` with a `content` field poi
 | PUT | `/hub/api/presentations/:id/files` | approved | Update files |
 | DELETE | `/hub/api/presentations/:id` | approved | Delete presentation |
 | POST | `/hub/api/presentations/:id/launch` | approved | Launch to server |
+| GET | `/hub/api/presentations/:id/github-check` | approved | Compare stored SHA vs upstream HEAD |
+| POST | `/hub/api/presentations/:id/github-refresh` | approved | Re-import latest files from GitHub |
 | POST | `/hub/api/shares` | approved | Create share |
 | GET | `/hub/api/shares/:presentationId` | approved | List shares |
 | DELETE | `/hub/api/shares/:id` | approved | Revoke share |

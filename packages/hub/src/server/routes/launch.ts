@@ -19,7 +19,6 @@ export function registerLaunchRoutes(
         request.userId,
         options.repoDir,
         options.serverBaseUrl,
-        options.viewerBaseUrl,
       );
 
       if ('error' in result) {

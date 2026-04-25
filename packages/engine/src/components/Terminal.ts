@@ -314,7 +314,7 @@ export class Terminal extends HTMLElement {
   #onResizePointermove = (e: PointerEvent): void => {
     const delta = this.#dragStartY - e.clientY;
     const newHeight = Math.max(52, this.#dragStartHeight + delta);
-    this.style.height = `${newHeight}px`;
+    this.style.height = `${String(newHeight)}px`;
   };
 
   #onResizePointerup = (e: PointerEvent): void => {

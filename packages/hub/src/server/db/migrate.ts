@@ -44,6 +44,8 @@ export function migrate(db: HubDatabase): void {
       slug TEXT NOT NULL,
       visibility TEXT NOT NULL DEFAULT 'private' CHECK(visibility IN ('private', 'public')),
       size_bytes INTEGER NOT NULL DEFAULT 0,
+      github_url TEXT,
+      github_sha TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL
     )

@@ -131,9 +131,12 @@ Share the viewer URL with your audience — they get read-only access automatica
 | **Viewer** | Can launch and view the deck |
 | **Copresenter** | Can launch with presenter controls |
 
-3. The recipient sees a pending invitation on their dashboard and can accept or reject it
+3. The recipient sees the invitation under **Shared with Me** in the navigation bar
+4. They click **Accept** to add the deck to their library, or **Decline** to dismiss it
 
-You can also toggle a deck's **visibility** between private and public. Public decks appear in search results for all users.
+Accepted decks appear in a separate **Accepted Shares** section on the Shared with Me page, with a **Present** button that launches the deck immediately.
+
+You can also change a deck's visibility in the **Edit** modal — see [Edit Metadata](#edit-metadata) below.
 
 ## Search for Decks
 
@@ -151,11 +154,45 @@ Admins see an **Admin** link in the navigation. The panel has three tabs:
 
 > **Tip:** Invite codes let you pre-approve users — they skip the pending queue when they sign up with a valid code.
 
-## Update a Deck
+## Edit Metadata
 
-To update the title, description, or visibility, click the corresponding action on the deck card.
+Click **Edit** on a deck card to open the metadata modal. You can change:
 
-To replace all files in a deck, click **Replace Files** on the deck card. Select the updated deck folder — the upload must still contain a valid `config.json`. File replacements create a new git commit, so previous versions are preserved internally.
+| Field | Notes |
+|-------|-------|
+| **Title** | Shown on the dashboard and in search results |
+| **Description** | Optional. Displayed on the card and in search results |
+| **Visibility** | **Private** (only you and your shares) or **Public** (visible to all users in search) |
+
+Click **Save** to apply the changes immediately.
+
+## Replace Files
+
+Click **Replace Files** on a deck card to upload a new version of the entire deck. Select the updated folder — the upload must still contain a valid `config.json`. Replacements create a new git commit, so previous versions are preserved in the internal repository.
+
+## Keep a GitHub Import Up to Date
+
+Decks imported from GitHub show an extra action on their card for detecting and pulling in changes.
+
+### Check for updates
+
+Click **Check GitHub** on the card. The Hub compares the current HEAD SHA in the deck's repository against the latest commit SHA on the upstream GitHub branch:
+
+| Result | What you see |
+|--------|--------------|
+| Already current | **✓ Up to date** label (clears after a few seconds) |
+| New commits available | **↑ Update** button |
+
+### Pull the update
+
+Click **↑ Update** to re-import the deck from GitHub. The Hub:
+
+1. Fetches the latest file tree from the GitHub API
+2. Validates that a `config.json` with a `content` field is still present
+3. Commits the new files to the internal git repository
+4. Updates the stored SHA so the card reflects the current state
+
+> **Tip:** The GitHub check calls the public GitHub API — no authentication token is needed for public repositories. Rate limits apply to unauthenticated requests (60/hour per IP).
 
 ## Local Development
 

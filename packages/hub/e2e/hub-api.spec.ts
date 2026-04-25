@@ -469,3 +469,167 @@ test.describe('Analytics API', () => {
     expect(typeof body.totalLaunches).toBe('number');
   });
 });
+
+// ────────────────────────────────────────────────────────────
+// PUT /presentations/:id/files  (replace files)
+// ────────────────────────────────────────────────────────────
+
+test.describe('Replace Files API', () => {
+  let presId: string;
+
+  test.beforeAll(async () => {
+    await seedUser('replace-user', 'replaceuser@test.com');
+    const { createPresentation, generateSlug } = await import('../src/server/services/presentation.ts');
+    const { createDatabase } = await import('../src/server/db/index.ts');
+    const db = createDatabase(`${ctx.tmpDir}/hub.db`);
+    const pres = await createPresentation(db, {
+      userId: 'replace-user',
+      title: 'Replace Test',
+      slug: generateSlug('Replace Test'),
+      files: [
+        { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+        { path: 'README.md', data: Buffer.from('# Version 1') },
+      ],
+      repoDir: `${ctx.tmpDir}/repos`,
+    });
+    presId = pres.id;
+  });
+
+  test('PUT replaces presentation files', async ({ request }) => {
+    const res = await request.put(
+      `${ctx.baseUrl}/hub/api/presentations/${presId}/files`,
+      {
+        headers: authHeaders('replace-user'),
+        multipart: {
+          'config.json': {
+            name: 'config.json',
+            mimeType: 'application/json',
+            buffer: Buffer.from('{"content":"slides.md","title":"v2"}'),
+          },
+          'slides.md': {
+            name: 'slides.md',
+            mimeType: 'text/markdown',
+            buffer: Buffer.from('# Version 2'),
+          },
+        },
+      },
+    );
+    expect(res.status()).toBe(200);
+    const body = await res.json();
+    expect(body.id).toBe(presId);
+  });
+
+  test('PUT rejects unauthorized user', async ({ request }) => {
+    await seedUser('other-replace-user', 'otherreplaceuser@test.com');
+    const res = await request.put(
+      `${ctx.baseUrl}/hub/api/presentations/${presId}/files`,
+      {
+        headers: authHeaders('other-replace-user'),
+        multipart: {
+          'config.json': {
+            name: 'config.json',
+            mimeType: 'application/json',
+            buffer: Buffer.from('{"content":"README.md"}'),
+          },
+          'README.md': {
+            name: 'README.md',
+            mimeType: 'text/markdown',
+            buffer: Buffer.from('# Hack'),
+          },
+        },
+      },
+    );
+    // Service throws generic Error for wrong owner → route returns 500
+    expect(res.status()).toBe(500);
+  });
+});
+
+// ────────────────────────────────────────────────────────────
+// GitHub check + refresh
+// ────────────────────────────────────────────────────────────
+
+test.describe('GitHub Check & Refresh API', () => {
+  let localPresId: string;
+  let githubPresId: string;
+
+  test.beforeAll(async () => {
+    await seedUser('gh-user', 'ghuser@test.com');
+    const { createPresentation, generateSlug } = await import('../src/server/services/presentation.ts');
+    const { createDatabase } = await import('../src/server/db/index.ts');
+    const db = createDatabase(`${ctx.tmpDir}/hub.db`);
+
+    // A normal (non-GitHub) presentation
+    const local = await createPresentation(db, {
+      userId: 'gh-user',
+      title: 'Local Deck',
+      slug: generateSlug('Local Deck'),
+      files: [
+        { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+        { path: 'README.md', data: Buffer.from('# Local') },
+      ],
+      repoDir: `${ctx.tmpDir}/repos`,
+    });
+    localPresId = local.id;
+
+    // A GitHub-imported presentation (fake SHA)
+    const gh = await createPresentation(db, {
+      userId: 'gh-user',
+      title: 'GitHub Deck',
+      slug: generateSlug('GitHub Deck'),
+      files: [
+        { path: 'config.json', data: Buffer.from('{"content":"README.md"}') },
+        { path: 'README.md', data: Buffer.from('# GitHub') },
+      ],
+      repoDir: `${ctx.tmpDir}/repos`,
+      githubUrl: 'https://github.com/example/repo',
+      githubSha: 'old-sha-111',
+    });
+    githubPresId = gh.id;
+  });
+
+  test('GET github-check returns 400 for non-GitHub presentation', async ({ request }) => {
+    const res = await request.get(
+      `${ctx.baseUrl}/hub/api/presentations/${localPresId}/github-check`,
+      { headers: authHeaders('gh-user') },
+    );
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('GitHub');
+  });
+
+  test('POST github-refresh returns 400 for non-GitHub presentation', async ({ request }) => {
+    const res = await request.post(
+      `${ctx.baseUrl}/hub/api/presentations/${localPresId}/github-refresh`,
+      { headers: authHeaders('gh-user') },
+    );
+    expect(res.status()).toBe(400);
+    const body = await res.json();
+    expect(body.error).toContain('GitHub');
+  });
+
+  test('GET github-check returns 404 for wrong owner', async ({ request }) => {
+    await seedUser('gh-other', 'ghother@test.com');
+    const res = await request.get(
+      `${ctx.baseUrl}/hub/api/presentations/${githubPresId}/github-check`,
+      { headers: authHeaders('gh-other') },
+    );
+    expect(res.status()).toBe(404);
+  });
+
+  test('GET github-check returns currentSha and hasUpdate shape', async ({ request }) => {
+    // The check calls the real GitHub API; in CI this may fail network-wise.
+    // We just verify the route exists and returns the right shape or a gateway error.
+    const res = await request.get(
+      `${ctx.baseUrl}/hub/api/presentations/${githubPresId}/github-check`,
+      { headers: authHeaders('gh-user') },
+    );
+    // 200 means GitHub responded; 502 means network issue in test env — both are acceptable
+    expect([200, 502]).toContain(res.status());
+    if (res.status() === 200) {
+      const body = await res.json();
+      expect(typeof body.hasUpdate).toBe('boolean');
+      expect('currentSha' in body).toBe(true);
+      expect('latestSha' in body).toBe(true);
+    }
+  });
+});

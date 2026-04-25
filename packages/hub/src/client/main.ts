@@ -5,9 +5,10 @@ import './pages/login-page.ts';
 import './pages/pending-page.ts';
 import './pages/dashboard-page.ts';
 import './pages/search-page.ts';
+import './pages/shared-page.ts';
 import './pages/admin-page.ts';
 
-type AppView = 'login' | 'pending' | 'dashboard' | 'search' | 'admin';
+type AppView = 'login' | 'pending' | 'dashboard' | 'search' | 'shared' | 'admin';
 
 @customElement('hub-app')
 export class HubApp extends LitElement {
@@ -82,6 +83,8 @@ export class HubApp extends LitElement {
     const path = window.location.pathname;
     if (path.startsWith('/hub/search')) {
       this._view = 'search';
+    } else if (path.startsWith('/hub/shared')) {
+      this._view = 'shared';
     } else if (path.startsWith('/hub/admin') && this._user?.role === 'admin') {
       this._view = 'admin';
     } else {
@@ -96,6 +99,7 @@ export class HubApp extends LitElement {
       pending: '/hub/pending',
       dashboard: '/hub/',
       search: '/hub/search',
+      shared: '/hub/shared',
       admin: '/hub/admin',
     };
     window.history.pushState(null, '', pathMap[view]);
@@ -125,6 +129,7 @@ export class HubApp extends LitElement {
         <span class="logo">GeekSlides Hub</span>
         <button class=${this._view === 'dashboard' ? 'active' : ''} @click=${() => { this._navigate('dashboard'); }}>My Decks</button>
         <button class=${this._view === 'search' ? 'active' : ''} @click=${() => { this._navigate('search'); }}>Explore</button>
+        <button class=${this._view === 'shared' ? 'active' : ''} @click=${() => { this._navigate('shared'); }}>Shared with Me</button>
         ${this._user?.role === 'admin'
           ? html`<button class=${this._view === 'admin' ? 'active' : ''} @click=${() => { this._navigate('admin'); }}>Admin</button>`
           : ''}
@@ -134,6 +139,7 @@ export class HubApp extends LitElement {
       <main>
         ${this._view === 'dashboard' ? html`<hub-dashboard-page></hub-dashboard-page>` : ''}
         ${this._view === 'search' ? html`<hub-search-page></hub-search-page>` : ''}
+        ${this._view === 'shared' ? html`<hub-shared-page></hub-shared-page>` : ''}
         ${this._view === 'admin' ? html`<hub-admin-page></hub-admin-page>` : ''}
       </main>
     `;

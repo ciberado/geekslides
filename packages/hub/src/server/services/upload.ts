@@ -90,7 +90,12 @@ function findCommonPrefix(paths: string[]): string {
   return '';
 }
 
-export async function importFromGitHub(githubUrl: string): Promise<RepoFile[]> {
+export interface GitHubImportResult {
+  readonly files: RepoFile[];
+  readonly sha: string;
+}
+
+export async function importFromGitHub(githubUrl: string): Promise<GitHubImportResult> {
   const match = /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+)(?:\/(.+))?)?$/i.exec(githubUrl);
   if (!match) throw new Error('Invalid GitHub repository URL');
 
@@ -100,8 +105,26 @@ export async function importFromGitHub(githubUrl: string): Promise<RepoFile[]> {
 
   const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
 
-  // Try to get the tree recursively
-  const treeRes = await fetch(`${apiBase}/git/trees/${ref}?recursive=1`, {
+  // Resolve the ref to a commit SHA first
+  const refRes = await fetch(`${apiBase}/git/ref/heads/${ref}`, {
+    headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'GeekSlides-Hub' },
+  });
+  let sha: string;
+  if (refRes.ok) {
+    const refData = (await refRes.json()) as { object: { sha: string } };
+    sha = refData.object.sha;
+  } else {
+    // Fall back to commits API for tag/SHA refs
+    const commitRes = await fetch(`${apiBase}/commits/${ref}`, {
+      headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'GeekSlides-Hub' },
+    });
+    if (!commitRes.ok) throw new Error(`GitHub API error: ${String(commitRes.status)} — could not access ${owner}/${repo}`);
+    const commitData = (await commitRes.json()) as { sha: string };
+    sha = commitData.sha;
+  }
+
+  // Get the tree recursively using the resolved SHA
+  const treeRes = await fetch(`${apiBase}/git/trees/${sha}?recursive=1`, {
     headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'GeekSlides-Hub' },
   });
 
@@ -135,5 +158,28 @@ export async function importFromGitHub(githubUrl: string): Promise<RepoFile[]> {
     }
   }
 
-  return files;
+  return { files, sha };
+}
+
+export async function fetchGitHubLatestSha(githubUrl: string): Promise<string | null> {
+  const match = /github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?/i.exec(githubUrl);
+  if (!match) return null;
+  const [, owner, repo, branch] = match;
+  if (!owner || !repo) return null;
+  const ref = branch ?? 'main';
+
+  const apiBase = `https://api.github.com/repos/${owner}/${repo}`;
+  const refRes = await fetch(`${apiBase}/git/ref/heads/${ref}`, {
+    headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'GeekSlides-Hub' },
+  });
+  if (refRes.ok) {
+    const data = (await refRes.json()) as { object: { sha: string } };
+    return data.object.sha;
+  }
+  const commitRes = await fetch(`${apiBase}/commits/${ref}`, {
+    headers: { Accept: 'application/vnd.github.v3+json', 'User-Agent': 'GeekSlides-Hub' },
+  });
+  if (!commitRes.ok) return null;
+  const data = (await commitRes.json()) as { sha: string };
+  return data.sha;
 }

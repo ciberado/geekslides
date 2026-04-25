@@ -18,7 +18,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Sync Your Presentation](12-sync-your-presentation.md) | Set up real-time sync rooms, follow/unfollow, whiteboard sharing, and multi-device workflows |
 | [Add a Feature](13-add-a-feature.md) | Enable the whiteboard, load local or remote features, and configure per-deck |
 | [Create a Custom Feature](14-create-a-custom-feature.md) | Build a synced countdown timer feature from scratch with commands, UI, and lifecycle events |
-| [Use the Hub](15-use-the-hub.md) | Deploy the community hub, sign in with OAuth, upload decks, and share presentations |
+| [Use the Hub](15-use-the-hub.md) | Deploy the community hub, sign in with OAuth, upload decks, edit metadata, share presentations, and keep GitHub imports up to date |
 
 ## Screenshots
 

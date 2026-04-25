@@ -32,6 +32,8 @@ export const presentations = sqliteTable('presentations', {
   slug: text('slug').notNull(),
   visibility: text('visibility', { enum: ['private', 'public'] }).notNull().default('private'),
   sizeBytes: integer('size_bytes').notNull().default(0),
+  githubUrl: text('github_url'),
+  githubSha: text('github_sha'),
   createdAt: integer('created_at', { mode: 'timestamp_ms' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp_ms' }).notNull(),
 });
