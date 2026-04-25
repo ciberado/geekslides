@@ -243,4 +243,4 @@ To test with real OAuth locally, set the callback URLs to `http://localhost:3001
 
 ---
 
-← Previous: [Create a Custom Feature](14-create-a-custom-feature.md) | Back to [index →](README.md)
+← Previous: [Create a Custom Feature](14-create-a-custom-feature.md) | Next: [Deploy with Tailscale →](16-deploy-with-tailscale.md)

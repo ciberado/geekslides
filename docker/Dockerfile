@@ -34,12 +34,14 @@ RUN npm run build --workspace=@geekslides/server
 # ----- Stage 3: Runtime (Node + Caddy) -----
 FROM node:22-alpine
 
-RUN apk add --no-cache caddy
+RUN apk add --no-cache 'caddy~=2'
 
 WORKDIR /app
 
 COPY --from=app-builder /app/packages/cli/dist/app /srv/slides
 COPY --from=server-builder /app/packages/server/dist/index.cjs ./index.cjs
+# Bundle the welcome deck — shown when no CONTENT_DIR is mounted
+COPY docker/welcome-deck/ /srv/content/
 COPY docker/Caddyfile /etc/caddy/Caddyfile
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

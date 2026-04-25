@@ -19,6 +19,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Add a Feature](13-add-a-feature.md) | Enable the whiteboard, load local or remote features, and configure per-deck |
 | [Create a Custom Feature](14-create-a-custom-feature.md) | Build a synced countdown timer feature from scratch with commands, UI, and lifecycle events |
 | [Use the Hub](15-use-the-hub.md) | Deploy the community hub, sign in with OAuth, upload decks, edit metadata, share presentations, and keep GitHub imports up to date |
+| [Deploy with Tailscale](16-deploy-with-tailscale.md) | Run GeekSlides on a private Tailscale node with a public HTTPS proxy, full TLS at every hop, WebSocket sync, and Hub routing |
 
 ## Screenshots
 

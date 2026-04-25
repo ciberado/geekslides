@@ -1,0 +1,41 @@
+# Public machine Caddyfile — standalone Caddy 2, no Docker.
+# Deploy to /etc/caddy/Caddyfile on the public machine.
+#
+# Environment variables are read from /etc/caddy/environment
+# (loaded by the caddy.service systemd unit via EnvironmentFile):
+#
+#   PUBLIC_DOMAIN   — public HTTPS domain,  e.g. gs.aprender.cloud
+#   PRIVATE_DOMAIN  — ts.net FQDN of the private node, e.g. gs.snow-burbot.ts.net
+#   ACME_EMAIL      — Let's Encrypt notification email
+#
+# The private node must be reachable via Tailscale from this machine.
+# ts.net certs are issued by Tailscale's CA (Let's Encrypt backed) and are
+# publicly trusted, so Caddy verifies the upstream TLS without extra config.
+
+{
+	# Global options
+	email {$ACME_EMAIL}
+}
+
+{$PUBLIC_DOMAIN} {
+	# WebSocket sync — force HTTP/1.1 to the upstream because WebSocket uses
+	# the HTTP Upgrade mechanism, which is not available over HTTP/2.
+	# Caddy defaults to HTTP/2 for TLS upstreams, so we override it here.
+	handle /ws* {
+		reverse_proxy https://{$PRIVATE_DOMAIN} {
+			header_up Host {upstream_hostport}
+			header_up Upgrade {http.request.header.Upgrade}
+			header_up Connection {http.request.header.Connection}
+			transport http {
+				versions 1.1
+			}
+		}
+	}
+
+	# All other traffic (SPA, API, Hub, deck assets)
+	handle {
+		reverse_proxy https://{$PRIVATE_DOMAIN} {
+			header_up Host {upstream_hostport}
+		}
+	}
+}

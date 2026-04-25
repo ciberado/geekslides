@@ -1,0 +1,37 @@
+# Internal Caddyfile — used when Tailscale handles TLS termination.
+# Caddy listens on plain HTTP :80; Tailscale sidecar exposes HTTPS :443
+# and forwards traffic here via TS_SERVE_CONFIG.
+
+:80 {
+	# Deck content — served directly from mounted volume
+	handle /deck/* {
+		uri strip_prefix /deck
+		root * /srv/content
+		file_server
+	}
+
+	# WebSocket sync — local yjs-server
+	handle /ws* {
+		reverse_proxy localhost:1234 {
+			header_up Upgrade {http.request.header.Upgrade}
+			header_up Connection {http.request.header.Connection}
+		}
+	}
+
+	# Content proxy API — local yjs-server
+	handle /api/* {
+		reverse_proxy localhost:1234
+	}
+
+	# Hub — community platform
+	handle /hub/* {
+		reverse_proxy localhost:3000
+	}
+
+	# SPA shell
+	handle {
+		root * /srv/slides
+		file_server
+		try_files {path} /index.html
+	}
+}

@@ -1,0 +1,95 @@
+# Private machine deployment — GeekSlides + Hub behind Tailscale TLS.
+#
+# All three containers share a single network namespace owned by the
+# Tailscale sidecar (geekslides-ts).  Traffic flow:
+#
+#   Tailnet :443 (Tailscale TLS)
+#     → http://localhost:80  (Caddy, Caddyfile.internal)
+#       → localhost:1234     (yjs-server)
+#       → localhost:3000     (Hub)
+#
+# Expected directory layout on the host (relative to this file):
+#   ts-config/              — Tailscale serve config (from docker/ts-config/)
+#   Caddyfile.internal      — Internal Caddy config (from docker/Caddyfile.internal)
+#   .env                    — Filled-in copy of docker/.env-example
+#   data/tailscale/         — Tailscale state (created on first run)
+#   data/hub/               — Hub database + cloned repos (created on first run)
+#   content/                — Your deck files (read-only, set CONTENT_DIR)
+#
+# Prerequisites:
+#   1. Copy the files listed above to the deployment directory.
+#   2. Run: mkdir -p data/tailscale data/hub
+#   3. Copy docker/.env-example to .env and fill in all values.
+#   4. docker compose -f docker-compose.tailscale.yml up -d
+
+services:
+  geekslides-ts:
+    image: tailscale/tailscale:latest
+    container_name: geekslides_ts
+    hostname: ${TS_HOSTNAME:-gs}
+    environment:
+      TS_AUTHKEY: ${TS_AUTHKEY}
+      TS_HOSTNAME: ${TS_HOSTNAME:-gs}
+      TS_EXTRA_ARGS: --advertise-tags=tag:container
+      TS_STATE_DIR: /var/lib/tailscale
+      TS_SERVE_CONFIG: /config/geekslides.json
+    volumes:
+      - ./data/tailscale:/var/lib/tailscale
+      - /dev/net/tun:/dev/net/tun
+      - ./ts-config:/config:ro
+    cap_add:
+      - NET_ADMIN
+      - SYS_MODULE
+    restart: unless-stopped
+
+  geekslides:
+    image: ciberado/geekslides:latest
+    container_name: geekslides
+    restart: unless-stopped
+    network_mode: service:geekslides-ts
+    depends_on:
+      - geekslides-ts
+    environment:
+      # yjs-server
+      PORT: "1234"
+      HOST: "127.0.0.1"
+    volumes:
+      # Mount your deck directory to serve a specific presentation.
+      # Without this mount the built-in welcome deck is shown instead.
+      # Uncomment and set CONTENT_DIR in .env to enable:
+      # - ${CONTENT_DIR}:/srv/content:ro
+      - ./Caddyfile.internal:/etc/caddy/Caddyfile:ro
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://localhost:80/"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  hub:
+    image: ciberado/geekslides-hub:latest
+    container_name: geekslides_hub
+    restart: unless-stopped
+    network_mode: service:geekslides-ts
+    depends_on:
+      - geekslides-ts
+    environment:
+      PORT: "3000"
+      HOST: "127.0.0.1"
+      DB_PATH: /data/hub.db
+      REPO_DIR: /data/repos
+      # yjs-server is in the same network namespace
+      SERVER_BASE_URL: http://localhost:1234
+      # Public-facing URL that end users open in their browser
+      VIEWER_BASE_URL: ${VIEWER_BASE_URL}
+      # OAuth — leave empty to disable a provider
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      JWT_SECRET: ${JWT_SECRET}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-}
+      # Set to the root domain so the cookie is shared across subdomains
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+    volumes:
+      - ./data/hub:/data

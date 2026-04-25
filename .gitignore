@@ -9,6 +9,10 @@ archived/**/node_modules/
 notes.md
 *tmp*
 
+# Deployment secrets — never commit
+.env
+docker/.env
+
 # v2
 coverage/
 playwright-report/
