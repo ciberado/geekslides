@@ -105,7 +105,7 @@ export const THEMES: readonly ThemeInfo[] = [
   },
 ] as const;
 
-export const THEME_NAMES = THEMES.map((t) => t.name) as string[];
+export const THEME_NAMES: string[] = THEMES.map((t) => t.name);
 
 /**
  * Look up a theme by name. Returns undefined for unknown themes.
