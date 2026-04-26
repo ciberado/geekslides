@@ -27,8 +27,7 @@ It is displayed when no CONTENT_DIR is mounted at /srv/content.
 | `←` | Previous slide |
 | `Home` | First slide |
 | `End` | Last slide |
-| `t` | Open / close the terminal |
-| `Esc` | Close the terminal |
+| `Esc` | Open / close the terminal |
 | `f` | Toggle fullscreen |
 | `s` | Open speaker view in new tab |
 | `o` | Overview (slide grid) |

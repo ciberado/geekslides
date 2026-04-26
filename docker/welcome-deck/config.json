@@ -1,6 +1,7 @@
 {
   "title": "Welcome to GeekSlides",
   "content": "README.md",
+  "styles": ["theme.css"],
   "plugins": {
     "preprocessors": ["header"],
     "processors": []

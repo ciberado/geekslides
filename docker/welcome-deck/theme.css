@@ -1,0 +1,150 @@
+/* =============================================================================
+ * GeekSlides Welcome Deck — Theme
+ * Dark slate with an indigo accent.
+ * ========================================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─── Design tokens ─────────────────────────────────────────────────────── */
+
+:host {
+  --gs-font-family: "Inter", system-ui, sans-serif;
+  --gs-font-mono:   "JetBrains Mono", ui-monospace, monospace;
+  --gs-font-size-base: 28pt;
+  --gs-font-size-h2:   52pt;
+
+  --gs-color-bg:      #0f1117;
+  --gs-color-surface: #1a1d2e;
+  --gs-color-text:    #e2e8f0;
+  --gs-color-heading: #f0f4ff;
+  --gs-color-muted:   #94a3b8;
+  --gs-color-accent:  #818cf8;   /* indigo-400 */
+  --gs-color-border:  rgba(129, 140, 248, 0.2);
+
+  font-family: var(--gs-font-family);
+  font-size:   var(--gs-font-size-base);
+  color:       var(--gs-color-text);
+  background:  var(--gs-color-bg);
+}
+
+/* ─── Slide background ───────────────────────────────────────────────────── */
+
+section.content {
+  background: var(--gs-color-bg);
+  padding: 3em 4em;
+  box-sizing: border-box;
+}
+
+/* ─── Headings ───────────────────────────────────────────────────────────── */
+
+h1, h2, h3, h4 {
+  color: var(--gs-color-heading);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+h2 {
+  font-size: var(--gs-font-size-h2);
+  border-block-end: 2px solid var(--gs-color-accent);
+  padding-block-end: 0.2em;
+  margin-block-end: 0.6em;
+}
+
+/* ─── Blockquotes (used as subtitle on slide 1) ──────────────────────────── */
+
+blockquote {
+  border-inline-start: 4px solid var(--gs-color-accent);
+  padding-inline-start: 0.8em;
+  color: var(--gs-color-muted);
+  font-style: italic;
+  margin-block: 0.6em 1em;
+}
+
+blockquote strong {
+  color: var(--gs-color-accent);
+  font-style: normal;
+}
+
+/* ─── Tables ─────────────────────────────────────────────────────────────── */
+
+table {
+  font-size: 0.78em;
+  border-collapse: collapse;
+  width: 100%;
+
+  th, td {
+    padding: 0.4em 0.7em;
+    border-block-end: 1px solid var(--gs-color-border);
+    text-align: left;
+  }
+
+  thead th {
+    color: var(--gs-color-accent);
+    font-weight: 700;
+    background: rgba(129, 140, 248, 0.08);
+    border-block-end: 2px solid var(--gs-color-accent);
+  }
+
+  tbody tr:hover td {
+    background: rgba(129, 140, 248, 0.05);
+  }
+}
+
+/* ─── Inline code ────────────────────────────────────────────────────────── */
+
+code {
+  font-family: var(--gs-font-mono);
+  font-size: 0.85em;
+  background: rgba(129, 140, 248, 0.12);
+  color: var(--gs-color-accent);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+
+pre {
+  font-family: var(--gs-font-mono);
+  font-size: 0.7em;
+  background: var(--gs-color-surface);
+  border: 1px solid var(--gs-color-border);
+  border-radius: 8px;
+  padding: 1em;
+}
+
+pre code {
+  background: none;
+  color: var(--gs-color-text);
+  padding: 0;
+}
+
+/* ─── Horizontal rule ────────────────────────────────────────────────────── */
+
+hr {
+  border: none;
+  border-block-start: 1px solid var(--gs-color-border);
+  margin-block: 0.8em;
+}
+
+/* ─── Blinking next-arrow on the FIRST slide only ───────────────────────── */
+/*
+ * We inject a ::after pseudo-element on the first <geek-slide> host.
+ * The arrow sits at the vertical centre of the right edge and pulses to hint
+ * the user can navigate forward.
+ */
+
+:host(:first-of-type) section.content::after {
+  content: "▶";
+  position: absolute;
+  right: 1.2em;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1em;
+  color: var(--gs-color-accent);
+  animation: gs-blink 1.4s ease-in-out infinite;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes gs-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.1; }
+}
