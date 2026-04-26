@@ -119,11 +119,17 @@ async function fetchConfig() {
 }
 
 async function fetchMarkdown(config) {
-  const contentUrl = resolveUrl(config.content);
-  const res = await fetch(`${contentUrl}${contentUrl.includes('?') ? '&' : '?'}t=${Date.now()}`, {
-    cache: 'no-store',
-  });
-  return await res.text();
+  const contentPaths = Array.isArray(config.content) ? config.content : [config.content];
+  const parts = await Promise.all(
+    contentPaths.map(async (path) => {
+      const url = resolveUrl(path);
+      const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+        cache: 'no-store',
+      });
+      return await res.text();
+    }),
+  );
+  return parts.join('\n');
 }
 
 async function fetchStyles(config) {
@@ -165,7 +171,8 @@ function getTrackedStylePaths(activeConfig) {
 }
 
 function getHmrWatchFiles(activeConfig) {
-  const files = [configUrl, resolveUrl(activeConfig.content), ...getTrackedStylePaths(activeConfig)];
+  const contentPaths = Array.isArray(activeConfig.content) ? activeConfig.content : [activeConfig.content];
+  const files = [configUrl, ...contentPaths.map(resolveUrl), ...getTrackedStylePaths(activeConfig)];
   return [...new Set(files.map((file) => file.split('?')[0]))];
 }
 

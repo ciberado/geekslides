@@ -19,7 +19,7 @@ export interface PluginsConfig {
 
 export interface GeekSlidesConfig {
   readonly title: string;
-  readonly content: string;
+  readonly content: readonly string[];
   readonly styles: readonly string[];
   readonly plugins: PluginsConfig;
   readonly features: readonly string[];
@@ -31,7 +31,7 @@ export interface GeekSlidesConfig {
 
 const DEFAULT_CONFIG: GeekSlidesConfig = {
   title: 'Untitled Presentation',
-  content: 'README.md',
+  content: ['README.md'],
   styles: [],
   plugins: {
     preprocessors: ['header'],
@@ -57,11 +57,9 @@ function gcd(a: number, b: number): number {
  * All transformations are logged as warnings so authors know to update their config.
  */
 function normalizeLegacyConfig(obj: Record<string, unknown>): void {
-  // content: string[] → use first element
-  if (Array.isArray(obj['content'])) {
-    const first = (obj['content'] as unknown[])[0];
-    obj['content'] = typeof first === 'string' ? first : '';
-    log.warn('Legacy config: content array coerced to first element — use a single string path');
+  // content: string → [string]  (arrays are now valid and used as-is)
+  if (typeof obj['content'] === 'string') {
+    obj['content'] = [obj['content']];
   }
 
   // styles: string → string[]
@@ -147,8 +145,13 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
   normalizeLegacyConfig(obj);
   log.debug({ url }, 'config loaded');
 
-  if (typeof obj['content'] !== 'string' || obj['content'].length === 0) {
-    throw new Error("Config must include a non-empty 'content' field");
+  const rawContent = obj['content'];
+  if (
+    !Array.isArray(rawContent) ||
+    rawContent.length === 0 ||
+    (rawContent as unknown[]).some((c) => typeof c !== 'string' || (c as string).length === 0)
+  ) {
+    throw new Error("Config 'content' must be a non-empty string or array of non-empty strings");
   }
 
   const rawSync = typeof obj['sync'] === 'object' && obj['sync'] !== null
@@ -169,7 +172,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
 
   return {
     title: typeof obj['title'] === 'string' ? obj['title'] : DEFAULT_CONFIG.title,
-    content: obj['content'],
+    content: rawContent as string[],
     styles: Array.isArray(obj['styles']) ? (obj['styles'] as string[]) : [...DEFAULT_CONFIG.styles],
     plugins: {
       preprocessors,

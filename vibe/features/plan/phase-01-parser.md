@@ -23,10 +23,10 @@ speaker notes, style blocks, and partial counts.
 Typed configuration object mirroring `config.json`. Responsible for:
 
 - **Type definition**: `GeekSlidesConfig` interface with all fields from
-  [presentation-format](../../../archived/v1/vibe/v1/presentation-format.md): `title`, `content` (URL),
-  `styles` (array of CSS URLs), `plugins` (preprocessors/processors lists),
-  `aspectRatio` (default `"16/9"`), `sync` (object with `enabled`, `server`, `room`),
-  `background`, `class`.
+  [presentation-format](../../../archived/v1/vibe/v1/presentation-format.md): `title`, `content` (string or
+  array of strings — multiple files are concatenated in order), `styles` (array of CSS URLs),
+  `plugins` (preprocessors/processors lists), `aspectRatio` (default `"16/9"`), `sync`
+  (object with `enabled`, `server`, `room`), `background`, `class`.
 
 - **Defaults**: A `DEFAULT_CONFIG` constant with sensible defaults for every optional field.
 

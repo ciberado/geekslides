@@ -44,13 +44,15 @@ The configuration file tells GeekSlides how to load and render your deck:
 | Field | What it does |
 |---|---|
 | `title` | Page title shown in the browser tab |
-| `content` | Path to the Markdown file with your slides |
+| `content` | Path to the Markdown file with your slides — or an array of paths that are concatenated in order |
 | `styles` | Array of CSS files to load (order matters) |
 | `aspectRatio` | Slide aspect ratio — `"16/9"` or `"4/3"` |
 | `plugins.preprocessors` | Markdown transforms applied before parsing (empty = none) |
 | `plugins.processors` | Slide transforms applied after parsing |
 
 > **Tip:** The scaffolded deck uses explicit `[]()` slide markers (see below), so `preprocessors` is empty by default. You can add `"header"` to the array if you prefer to use bare Markdown headings as slide separators instead.
+
+> **Multi-file decks:** Split a large presentation across multiple Markdown files by passing an array: `"content": ["intro.md", "main.md", "closing.md"]`. GeekSlides concatenates them in order before parsing.
 
 ### README.md — Your slides
 

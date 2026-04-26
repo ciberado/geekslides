@@ -27,7 +27,7 @@ describe('Config', () => {
 
     const config = await loadConfig('config.json');
     expect(config.title).toBe(DEFAULT_CONFIG.title);
-    expect(config.content).toBe('slides.md');
+    expect(config.content).toEqual(['slides.md']);
     expect(config.aspectRatio).toBe('16/9');
     expect(config.sync.enabled).toBe(true);
     expect(config.plugins.preprocessors).toEqual(['header']);
@@ -68,10 +68,16 @@ describe('Config', () => {
     expect(config.plugins.processors).toEqual([]);
   });
 
-  it('coerces array content to the first element', async () => {
-    mockFetchJson({ content: ['README.md', 'extra.md'] });
+  it('accepts an array of content files', async () => {
+    mockFetchJson({ content: ['part1.md', 'part2.md', 'part3.md'] });
     const config = await loadConfig('config.json');
-    expect(config.content).toBe('README.md');
+    expect(config.content).toEqual(['part1.md', 'part2.md', 'part3.md']);
+  });
+
+  it('normalises a single string content to a one-element array', async () => {
+    mockFetchJson({ content: 'README.md' });
+    const config = await loadConfig('config.json');
+    expect(config.content).toEqual(['README.md']);
   });
 
   it('throws when content is an empty array', async () => {
@@ -124,7 +130,7 @@ describe('Config', () => {
   it('silently ignores liveReload and scripts fields', async () => {
     mockFetchJson({ content: 'README.md', liveReload: true, scripts: ['app.js'] });
     const config = await loadConfig('config.json');
-    expect(config.content).toBe('README.md');
+    expect(config.content).toEqual(['README.md']);
   });
 
   it('accepts full legacy v1 config shape', async () => {
@@ -139,7 +145,7 @@ describe('Config', () => {
       scripts: [],
     });
     const config = await loadConfig('config.json');
-    expect(config.content).toBe('README.md');
+    expect(config.content).toEqual(['README.md']);
     expect(config.styles).toEqual(['local.css']);
     expect(config.aspectRatio).toBe('16/9');
     expect(config.plugins.preprocessors).toEqual(['headerPreprocessor']);
