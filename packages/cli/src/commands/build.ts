@@ -60,10 +60,13 @@ export function registerBuildCommand(program: Command): void {
       await copyFile(configPath, join(outDir, 'config.json'));
       console.log('  Copied config.json');
 
-      const contentPath = resolve(configDir, config.content);
-      if (existsSync(contentPath)) {
-        await copyFile(contentPath, join(outDir, basename(contentPath)));
-        console.log(`  Copied ${basename(contentPath)}`);
+      const contentPaths = Array.isArray(config.content) ? config.content : [config.content];
+      for (const contentFile of contentPaths) {
+        const contentPath = resolve(configDir, contentFile);
+        if (existsSync(contentPath)) {
+          await copyFile(contentPath, join(outDir, basename(contentPath)));
+          console.log(`  Copied ${basename(contentPath)}`);
+        }
       }
 
       const imagesDir = resolve(configDir, 'images');

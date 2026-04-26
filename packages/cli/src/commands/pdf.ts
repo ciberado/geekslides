@@ -231,12 +231,17 @@ export function registerPdfCommand(program: Command): void {
       }
 
       // Load markdown (for slide data: details, notes, partial counts)
-      const contentPath = resolvePdfInputPath(opts.content ?? config.content, configDir);
+      // config.content is now string[], but --content CLI flag is a single path.
+      const contentPaths: string[] = opts.content != null
+        ? [resolvePdfInputPath(opts.content, configDir)]
+        : (Array.isArray(config.content) ? config.content : [config.content])
+            .map((p: string) => resolvePdfInputPath(p, configDir));
       let markdown: string;
       try {
-        markdown = await readFile(contentPath, 'utf-8');
+        const parts = await Promise.all(contentPaths.map((p) => readFile(p, 'utf-8')));
+        markdown = parts.join('\n');
       } catch {
-        console.error(`Could not read content file: ${contentPath}`);
+        console.error(`Could not read content file(s): ${contentPaths.join(', ')}`);
         process.exitCode = 1;
         return;
       }
