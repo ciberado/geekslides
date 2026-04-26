@@ -88,8 +88,10 @@ export async function createHubServer(
   return fastify;
 }
 
-// Direct execution
-const isDirectRun = process.argv[1]?.includes('hub') === true;
+// Direct execution — matches both dev (`hub/src/server/index.ts`) and
+// the bundled output (`index.cjs`) produced by the Docker build.
+const isDirectRun = process.argv[1]?.includes('hub') === true
+  || process.argv[1]?.endsWith('index.cjs') === true;
 if (isDirectRun) {
   void createHubServer({
     port: Number(process.env['PORT']) || 3000,

@@ -1,11 +1,18 @@
-## Welcome to GeekSlides
+## 🎞️ Welcome to GeekSlides
 
-A markdown-first, real-time presentation system.
+> **A markdown-first, real-time presentation engine for technical talks.**
 
-No deck is configured yet.  
-Load one with the terminal command below, or mount your deck directory.
+---
 
-Press **`t`** to open the terminal, then type `help` for a full command list.
+No deck is loaded yet. Here's how to get started:
+
+| Step | What to do |
+|---|---|
+| **1** | Press **`Escape`** to open the command terminal |
+| **2** | Type `load <config-url>` and press `Enter` to load any deck by URL |
+| **3** | Or mount your deck directory via `CONTENT_DIR` in `.env` |
+
+**Tip:** type `help` in the terminal for the full command list.
 
 ::: Notes
 This is the built-in welcome deck bundled with the GeekSlides Docker image.
