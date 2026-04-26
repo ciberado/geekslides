@@ -745,6 +745,7 @@ try {
 
     const keys = new KeyBindings(commands);
     keys.onTerminalToggle(() => terminal.toggle());
+    keys.onShortcutsToggle(() => slideshow.toggleShortcutsOverlay());
     keys.activate();
 
     const touch = new TouchInput(commands, slideshow);

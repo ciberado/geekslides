@@ -117,6 +117,20 @@ pre code {
   padding: 0;
 }
 
+/* ─── Links ──────────────────────────────────────────────────────────────── */
+
+a {
+  color: var(--gs-color-accent);
+  text-decoration: none;
+  border-block-end: 1px solid rgba(129, 140, 248, 0.4);
+  transition: border-color 0.15s, color 0.15s;
+}
+
+a:hover {
+  color: #a5b4fc;   /* indigo-300 */
+  border-block-end-color: #a5b4fc;
+}
+
 /* ─── Horizontal rule ────────────────────────────────────────────────────── */
 
 hr {
