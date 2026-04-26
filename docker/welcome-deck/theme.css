@@ -30,6 +30,7 @@
 /* ─── Slide background ───────────────────────────────────────────────────── */
 
 section.content {
+  position: relative;
   background: var(--gs-color-bg);
   padding: 3em 4em;
   box-sizing: border-box;
@@ -126,18 +127,19 @@ hr {
 
 /* ─── Blinking next-arrow on the FIRST slide only ───────────────────────── */
 /*
- * We inject a ::after pseudo-element on the first <geek-slide> host.
- * The arrow sits at the vertical centre of the right edge and pulses to hint
- * the user can navigate forward.
+ * A pulsing ▶ at the bottom-centre hints that the user can navigate forward.
+ * Positioned at the bottom to avoid overlapping the right-side toolbar.
  */
 
 :host(:first-of-type) section.content::after {
-  content: "▶";
+  content: "▶  next slide";
   position: absolute;
-  right: 1.2em;
-  top: 50%;
-  transform: translateY(-50%);
-  font-size: 1em;
+  bottom: 1.4em;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.45em;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
   color: var(--gs-color-accent);
   animation: gs-blink 1.4s ease-in-out infinite;
   pointer-events: none;

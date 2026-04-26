@@ -27,14 +27,12 @@ It is displayed when no CONTENT_DIR is mounted at /srv/content.
 | `←` | Previous slide |
 | `Home` | First slide |
 | `End` | Last slide |
-| `Esc` | Open / close the terminal |
-| `f` | Toggle fullscreen |
-| `s` | Open speaker view in new tab |
-| `o` | Overview (slide grid) |
+| `Esc` | Open / close the command terminal |
+| `?` | Show this shortcut reference |
 
 ## Terminal Commands
 
-Open the terminal with **`t`**, then type a command and press `Enter`.
+Press **`Escape`** to open the terminal, type a command and press `Enter`.
 
 | Command | Description |
 |---|---|
@@ -76,4 +74,4 @@ Then restart the stack:
 docker compose -f docker-compose.tailscale.yml up -d
 ```
 
-See [how-to/02-create-your-first-deck.md](https://github.com/ciberado/geekslides/blob/main/how-to/02-create-your-first-deck.md) for how to create a deck.
+See the [GeekSlides how-to guides](https://github.com/ciberado/geekslides/tree/main/how-to) for step-by-step instructions on creating and deploying decks.
