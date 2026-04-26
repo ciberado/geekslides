@@ -25,6 +25,7 @@ EXPOSE 1234
 
 ENV PORT=1234
 ENV HOST=0.0.0.0
+ENV GEEKSLIDES_LOG_FORMAT=json
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD node -e "const n=require('net');const c=n.connect(1234,'localhost');c.on('connect',()=>{c.end();process.exit(0)});c.on('error',()=>process.exit(1))"

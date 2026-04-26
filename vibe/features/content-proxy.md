@@ -101,7 +101,42 @@ Response: 404 Not Found (if room or file doesn't exist)
 - Individual file: no separate limit (bounded by total)
 - Enforced via `Content-Length` header check before reading body
 
+## Deck Proxy (Mixed-Content Bypass)
+
+When the slide engine is served over HTTPS and the deck URL is plain HTTP (e.g. a local
+server on the LAN), browsers block all `fetch()` calls and `<img src>` to that HTTP origin
+as **mixed content**. The deck proxy solves this server-side.
+
+### Endpoint
+
+```
+GET /api/deck-proxy?url=<percent-encoded-url>
+```
+
+The server fetches the requested URL (must be `http://` or `https://`) and streams the
+response body back to the browser. Max 50 MB per request.
+
+### Security (SSRF protection)
+
+- Only `http:` and `https:` schemes are allowed.
+- `169.254.169.254` (cloud metadata) and `0.0.0.0` are always blocked.
+- `localhost` / `127.0.0.1` / `::1` are blocked unless `DEV_PROXY=true` env var is set.
+- IPv4 link-local (`169.254.x.x`) is blocked.
+- Private LAN ranges (`10.x`, `172.16–31.x`, `192.168.x`) are intentionally **allowed** so
+  decks served from a local server can be proxied.
+
+### Client-Side Integration (`packages/cli/app/main.js`)
+
+- `proxyUrlIfNeeded(url)` — returns `/api/deck-proxy?url=...` when the URL is `http://` and
+  the page is on `https://`. Used for `config.json`, CSS, and the initial config fetch.
+- `rewriteMarkdownUrlsForProxy(markdown)` — after fetching markdown through the proxy,
+  rewrites all relative `![alt](relative-path)` image references to absolute proxied URLs
+  before the markdown is parsed. Prevents `<img src="http://...">` mixed-content blocks.
+- `updateDocumentBase` skips setting a `<base href="http://...">` tag when the page is on
+  HTTPS to avoid poisoning relative DOM resource resolution.
+
 ## Client-Side Flow
+
 
 ### Presenter (Uploader)
 

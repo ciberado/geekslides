@@ -95,15 +95,36 @@ function setCookies(
   accessToken: string,
   refreshToken: string,
   cookieDomain: string,
+  requestHost: string,
 ): void {
-  const secure = cookieDomain !== 'localhost';
+  // Strip port from request host for domain comparison.
+  const host = requestHost.split(':')[0] ?? requestHost;
+
+  // Determine the effective Domain= attribute and Secure flag:
+  //   - 'localhost' config → no Domain= attribute, Secure=false (local dev)
+  //   - valid config (host equals or is a subdomain of cookieDomain) → use cookieDomain, Secure=true
+  //   - misconfigured (COOKIE_DOMAIN doesn't match actual host) → no Domain= attribute,
+  //     Secure=true if not on localhost (graceful fallback; cookie scoped to exact host)
+  let effectiveDomain: string | undefined;
+  let secure: boolean;
+  if (cookieDomain === 'localhost') {
+    effectiveDomain = undefined;
+    secure = false;
+  } else if (host === cookieDomain || host.endsWith(`.${cookieDomain}`)) {
+    effectiveDomain = cookieDomain;
+    secure = true;
+  } else {
+    effectiveDomain = undefined;
+    secure = host !== 'localhost' && host !== '127.0.0.1';
+  }
+
   reply.setCookie('hub_access', accessToken, {
     path: '/hub',
     httpOnly: true,
     secure,
     sameSite: 'lax',
     maxAge: 15 * 60,
-    domain: cookieDomain === 'localhost' ? undefined : cookieDomain,
+    domain: effectiveDomain,
   });
   reply.setCookie('hub_refresh', refreshToken, {
     path: '/hub/api/auth',
@@ -111,7 +132,7 @@ function setCookies(
     secure,
     sameSite: 'lax',
     maxAge: 7 * 24 * 60 * 60,
-    domain: cookieDomain === 'localhost' ? undefined : cookieDomain,
+    domain: effectiveDomain,
   });
 }
 
@@ -166,7 +187,7 @@ export function registerAuthRoutes(
       }
 
       const tokens = issueTokens(fastify, user);
-      setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain);
+      setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain, request.hostname);
       await reply.send({ ok: true, redirect: '/hub/' });
     });
   }
@@ -223,7 +244,7 @@ export function registerAuthRoutes(
     const user = upsertUser(db, profile, options.adminEmail, state.invite || undefined);
 
     const tokens = issueTokens(fastify, user);
-    setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain);
+    setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain, request.hostname);
 
     const redirectPath = user.status === 'approved' ? '/hub/' : '/hub/pending';
     await reply.redirect(redirectPath);
@@ -284,7 +305,7 @@ export function registerAuthRoutes(
     const user = upsertUser(db, profile, options.adminEmail, state.invite || undefined);
 
     const tokens = issueTokens(fastify, user);
-    setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain);
+    setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain, request.hostname);
 
     const redirectPath = user.status === 'approved' ? '/hub/' : '/hub/pending';
     await reply.redirect(redirectPath);
@@ -312,7 +333,7 @@ export function registerAuthRoutes(
       }
 
       const tokens = issueTokens(fastify, user);
-      setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain);
+      setCookies(reply, tokens.accessToken, tokens.refreshToken, options.cookieDomain, request.hostname);
       await reply.send({ ok: true });
     } catch {
       await reply.status(401).send({ error: 'Invalid refresh token' });

@@ -31,13 +31,14 @@ export interface PresentationRow {
 }
 
 export function generateSlug(title: string): string {
-  return title
+  const slug = title
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '')
     .slice(0, 60);
+  return slug || 'deck';
 }
 
 export function ensureUniqueSlug(db: HubDatabase, ownerId: string, baseSlug: string): string {

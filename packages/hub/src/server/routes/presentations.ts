@@ -100,6 +100,9 @@ export function registerPresentationRoutes(
         return;
       }
 
+      // Ensure title is non-empty so the generated slug is never empty.
+      if (!title.trim()) title = 'Untitled';
+
       const validation = validateDeckFiles(files);
       if (!validation.valid) {
         await reply.status(400).send({ error: validation.error });

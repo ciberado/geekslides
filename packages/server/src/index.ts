@@ -14,6 +14,7 @@ import { WebSocketServer, type WebSocket } from 'ws';
 import { setupWSConnection } from 'y-websocket/bin/utils';
 import { handleContentApi } from './ContentApi.ts';
 import { handlePluginProxy } from './PluginProxy.ts';
+import { handleDeckProxy } from './DeckProxy.ts';
 import { RoomStore } from './RoomStore.ts';
 import { RateLimiter } from './RateLimiter.ts';
 import { createRoomApiHandler } from './RoomApi.ts';
@@ -26,6 +27,7 @@ const httpLog = createLogger('http');
 export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_UPLOAD_SIZE, startCleanup as startContentCleanup, stopCleanup as stopContentCleanup, cleanOrphanedRoomDirs } from './ContentStore.ts';
 export { handleContentApi } from './ContentApi.ts';
 export { handlePluginProxy } from './PluginProxy.ts';
+export { handleDeckProxy } from './DeckProxy.ts';
 export { RoomStore } from './RoomStore.ts';
 export { RateLimiter } from './RateLimiter.ts';
 export { createRoomApiHandler } from './RoomApi.ts';
@@ -152,6 +154,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
     void (async () => {
       const handled =
         await handlePluginProxy(req, res) ||
+        await handleDeckProxy(req, res) ||
         await handleRoomApi(req, res) ||
         await handleContentApi(req, res);
       if (!handled) {

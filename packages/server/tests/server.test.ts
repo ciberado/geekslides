@@ -382,3 +382,172 @@ describe('plugin proxy', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Deck proxy
+// ---------------------------------------------------------------------------
+
+describe('deck proxy', () => {
+  async function startServer(): Promise<{ baseUrl: string; close: () => Promise<void> }> {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) await once(server, 'listening');
+    const address = server.address();
+    if (!address || typeof address === 'string') { server.close(); throw new Error('no address'); }
+    const baseUrl = `http://127.0.0.1:${String(address.port)}`;
+    return { baseUrl, close: () => new Promise<void>((r) => { server.close(() => r()); }) };
+  }
+
+  async function startUpstream(
+    handler: (req: http.IncomingMessage, res: http.ServerResponse) => void,
+  ): Promise<{ url: string; close: () => Promise<void> }> {
+    const upstream = http.createServer(handler);
+    upstream.listen(0, '127.0.0.1');
+    if (!upstream.listening) await once(upstream, 'listening');
+    const addr = upstream.address();
+    if (!addr || typeof addr === 'string') { upstream.close(); throw new Error('no address'); }
+    return {
+      url: `http://127.0.0.1:${String(addr.port)}`,
+      close: () => new Promise<void>((r) => { upstream.close(() => r()); }),
+    };
+  }
+
+  it('returns 400 when url parameter is missing', async () => {
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(`${baseUrl}/api/deck-proxy`);
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('Missing required');
+    } finally { await close(); }
+  });
+
+  it('returns 400 for an invalid URL', async () => {
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(`${baseUrl}/api/deck-proxy?url=${encodeURIComponent('not-a-url')}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('Invalid URL');
+    } finally { await close(); }
+  });
+
+  it('returns 400 for non-http(s) protocols', async () => {
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(`${baseUrl}/api/deck-proxy?url=${encodeURIComponent('ftp://example.com/file.txt')}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('not allowed');
+    } finally { await close(); }
+  });
+
+  it('returns 400 for blocked link-local metadata address', async () => {
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(`${baseUrl}/api/deck-proxy?url=${encodeURIComponent('http://169.254.169.254/latest/meta-data/')}`);
+      expect(res.status).toBe(400);
+      expect(res.body).toContain('not allowed');
+    } finally { await close(); }
+  });
+
+  it('returns 405 for POST requests', async () => {
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/deck-proxy?url=${encodeURIComponent('http://example.com/config.json')}`,
+        { method: 'POST' },
+      );
+      expect(res.status).toBe(405);
+    } finally { await close(); }
+  });
+
+  it('proxies a config.json file and preserves content-type', async () => {
+    process.env['DEV_PROXY'] = 'true';
+    const configJson = JSON.stringify({ title: 'Test', content: 'README.md' });
+    const upstream = await startUpstream((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(configJson);
+    });
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/deck-proxy?url=${encodeURIComponent(`${upstream.url}/deck/config.json`)}`,
+      );
+      expect(res.status).toBe(200);
+      expect(res.body).toBe(configJson);
+    } finally {
+      delete process.env['DEV_PROXY'];
+      await close();
+      await upstream.close();
+    }
+  });
+
+  it('proxies a markdown file', async () => {
+    process.env['DEV_PROXY'] = 'true';
+    const markdown = '# Hello\n\n![Slide 1](slide_1.png)\n';
+    const upstream = await startUpstream((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'text/plain' });
+      res.end(markdown);
+    });
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/deck-proxy?url=${encodeURIComponent(`${upstream.url}/deck/README.md`)}`,
+      );
+      expect(res.status).toBe(200);
+      expect(res.body).toBe(markdown);
+    } finally {
+      delete process.env['DEV_PROXY'];
+      await close();
+      await upstream.close();
+    }
+  });
+
+  it('proxies a binary image file', async () => {
+    process.env['DEV_PROXY'] = 'true';
+    const fakeImage = Buffer.from([0x89, 0x50, 0x4e, 0x47]); // PNG magic bytes
+    const upstream = await startUpstream((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': String(fakeImage.length) });
+      res.end(fakeImage);
+    });
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/deck-proxy?url=${encodeURIComponent(`${upstream.url}/slide_1.png`)}`,
+      );
+      expect(res.status).toBe(200);
+    } finally {
+      delete process.env['DEV_PROXY'];
+      await close();
+      await upstream.close();
+    }
+  });
+
+  it('returns 502 when upstream returns an error status', async () => {
+    process.env['DEV_PROXY'] = 'true';
+    const upstream = await startUpstream((_req, res) => { res.writeHead(404); res.end(); });
+    const { baseUrl, close } = await startServer();
+    try {
+      const res = await httpRequest(
+        `${baseUrl}/api/deck-proxy?url=${encodeURIComponent(`${upstream.url}/missing.json`)}`,
+      );
+      expect(res.status).toBe(502);
+    } finally {
+      delete process.env['DEV_PROXY'];
+      await close();
+      await upstream.close();
+    }
+  });
+
+  it('returns 502 when upstream is unreachable', async () => {
+    process.env['DEV_PROXY'] = 'true';
+    const { baseUrl, close } = await startServer();
+    try {
+      // Port 19998 should be closed
+      const res = await httpRequest(
+        `${baseUrl}/api/deck-proxy?url=${encodeURIComponent('http://127.0.0.1:19998/config.json')}`,
+      );
+      expect(res.status).toBe(502);
+    } finally {
+      delete process.env['DEV_PROXY'];
+      await close();
+    }
+  });
+});

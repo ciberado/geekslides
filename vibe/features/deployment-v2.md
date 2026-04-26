@@ -87,6 +87,7 @@ Root `package.json` provides convenience scripts for building and pushing all im
 | `ACME_EMAIL` | `internal` | Email for Let's Encrypt. `internal` = self-signed |
 | `CONTENT_DIR` | `.` | Host path to presentation content (optional — see below) |
 | `PORT` | `1234` | y-websocket server port (internal, not exposed) |
+| `GEEKSLIDES_LOG_FORMAT` | `json` | Log format: `json` (structured, Docker-safe) or `pretty` (dev only). Default in Docker images is `json` to avoid pino-pretty runtime crash. |
 
 ## Local Development
 

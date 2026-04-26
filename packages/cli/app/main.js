@@ -95,6 +95,10 @@ function getConfigBase(url) {
 }
 
 function updateDocumentBase(baseHref) {
+  // Don't set an http:// base tag on an https:// page — that would cause the
+  // browser to resolve all relative resource URLs (img, link, …) as mixed
+  // content and block them.  Resource URLs are rewritten to the proxy instead.
+  if (baseHref.startsWith('http://') && window.location.protocol === 'https:') return;
   let base = document.querySelector('base[data-geekslides-base]');
   if (!base) {
     base = document.createElement('base');
@@ -106,6 +110,32 @@ function updateDocumentBase(baseHref) {
 
 let configUrl = normalizeConfigUrl(params.get('config') || '/deck/config.json');
 let configBase = getConfigBase(configUrl);
+
+/**
+ * Wrap a URL through the server-side deck proxy when the browser would block
+ * it as mixed content (http:// URL loaded from an https:// page).
+ */
+function proxyUrlIfNeeded(url) {
+  if (url.startsWith('http://') && window.location.protocol === 'https:') {
+    return `/api/deck-proxy?url=${encodeURIComponent(url)}`;
+  }
+  return url;
+}
+
+/**
+ * When configBase is http:// and the page is https://, rewrite relative image
+ * and link URLs in markdown to absolute proxied URLs so the browser never
+ * has to fetch http:// resources directly (mixed-content block).
+ */
+function rewriteMarkdownUrlsForProxy(markdown) {
+  if (!configBase.startsWith('http://') || window.location.protocol !== 'https:') return markdown;
+  // Match markdown image/link syntax: ![alt](url) or [text](url)
+  // Only rewrite relative paths (not http://, https://, /, #, data:)
+  return markdown.replace(
+    /(!?\[[^\]]*\])\((?!https?:\/\/|\/|#|data:)([^)]+)\)/g,
+    (_, prefix, path) => `${prefix}(${proxyUrlIfNeeded(configBase + path.trim())})`,
+  );
+}
 
 function resolveUrl(path) {
   if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('/')) {
@@ -122,11 +152,12 @@ async function fetchMarkdown(config) {
   const contentPaths = Array.isArray(config.content) ? config.content : [config.content];
   const parts = await Promise.all(
     contentPaths.map(async (path) => {
-      const url = resolveUrl(path);
+      const url = proxyUrlIfNeeded(resolveUrl(path));
       const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
         cache: 'no-store',
       });
-      return await res.text();
+      const text = await res.text();
+      return rewriteMarkdownUrlsForProxy(text);
     }),
   );
   return parts.join('\n');
@@ -137,7 +168,7 @@ async function fetchStyles(config) {
   const cssTexts = await Promise.all(
     styleUrls.map(async (url) => {
       try {
-        const resolvedUrl = resolveUrl(url);
+        const resolvedUrl = proxyUrlIfNeeded(resolveUrl(url));
         const separator = resolvedUrl.includes('?') ? '&' : '?';
         const res = await fetch(`${resolvedUrl}${separator}raw&t=${Date.now()}`, {
           cache: 'no-store',
@@ -611,7 +642,8 @@ try {
       showCmdOutput('Loading...');
       try {
         const resolvedConfigUrl = normalizeConfigUrl(newConfigUrl);
-        const newConfig = await loadConfig(resolvedConfigUrl);
+        const proxiedConfigUrl = proxyUrlIfNeeded(resolvedConfigUrl);
+        const newConfig = await loadConfig(proxiedConfigUrl);
 
         configUrl = resolvedConfigUrl;
         configBase = getConfigBase(resolvedConfigUrl);

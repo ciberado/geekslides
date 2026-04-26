@@ -137,6 +137,7 @@ geekslides/
 │   │   │   ├── index.ts          # y-websocket server entry + WS auth/write filtering
 │   │   │   ├── ContentApi.ts     # content proxy HTTP API
 │   │   │   ├── ContentStore.ts   # room-scoped file storage
+│   │   │   ├── DeckProxy.ts      # server-side deck proxy (mixed-content bypass)
 │   │   │   ├── PluginProxy.ts    # remote plugin proxy endpoint
 │   │   │   ├── RoomStore.ts      # in-memory protected room + token storage
 │   │   │   ├── RoomApi.ts        # room share/auth/role HTTP endpoints

@@ -396,7 +396,14 @@ export class DashboardPage extends LitElement {
 
           ${this._uploadTab === 'zip' ? html`
             <label>Select zip archive</label>
-            <input type="file" id="zip-input" accept=".zip">
+            <input type="file" id="zip-input" accept=".zip"
+              @change=${(e: Event) => {
+                const input = e.target as HTMLInputElement;
+                const file = input.files?.[0];
+                if (file && !this._titleManuallyEdited) {
+                  this._uploadTitle = file.name.replace(/\.zip$/i, '');
+                }
+              }}>
           ` : nothing}
 
           ${this._uploadTab === 'github' ? html`
