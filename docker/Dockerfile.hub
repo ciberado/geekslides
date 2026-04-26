@@ -45,11 +45,10 @@ COPY --from=server-builder /app/packages/hub/dist/server/index.cjs ./index.cjs
 # Client assets
 COPY --from=client-builder /app/packages/hub/dist/client ./dist/client
 
-# Runtime native dependencies (better-sqlite3 needs the .node binary)
-COPY --from=server-builder /app/node_modules/better-sqlite3 ./node_modules/better-sqlite3
-COPY --from=server-builder /app/node_modules/bindings ./node_modules/bindings
-COPY --from=server-builder /app/node_modules/prebuild-install ./node_modules/prebuild-install
-COPY --from=server-builder /app/node_modules/file-uri-to-path ./node_modules/file-uri-to-path
+# All runtime node_modules from the builder (includes better-sqlite3 native binary,
+# pino, pino-pretty, thread-stream and their transitive deps — all marked --external
+# in the esbuild bundle and therefore required at runtime).
+COPY --from=server-builder /app/node_modules ./node_modules
 
 USER node
 
