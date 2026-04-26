@@ -30,9 +30,8 @@
 /* ─── Slide background ───────────────────────────────────────────────────── */
 
 section.content {
-  position: relative;
   background: var(--gs-color-bg);
-  padding: 3em 4em;
+  padding: 60px 80px;
   box-sizing: border-box;
 }
 
