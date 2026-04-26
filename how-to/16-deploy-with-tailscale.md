@@ -228,7 +228,7 @@ handle /ws* {
 To verify sync works end-to-end:
 
 1. Open `https://gs.aprender.cloud` in two browser tabs.
-2. In one tab, open the terminal (`t`) and run `room mytest`.
+2. In one tab, open the terminal (`Escape`) and run `room mytest`.
 3. In the other tab, run `room mytest`.
 4. Navigate to the next slide in one tab — the other tab should follow.
 
@@ -467,7 +467,7 @@ handle /ws* {
 To verify sync works end-to-end:
 
 1. Open `https://gs.aprender.cloud` in two browser tabs.
-2. In one tab, open the terminal (`t`) and run `room mytest`.
+2. In one tab, open the terminal (`Escape`) and run `room mytest`.
 3. Switch to the other tab and run `room mytest`.
 4. Navigate to the next slide in one tab — the other tab should follow.
 

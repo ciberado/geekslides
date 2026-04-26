@@ -170,7 +170,7 @@ export default {
 geekslides dev
 ```
 
-Press `t` to open the terminal, then type:
+Press `Escape` to open the terminal, then type:
 
 ```
 countdown 90

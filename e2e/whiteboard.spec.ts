@@ -6,16 +6,21 @@ function uniqueRoom(prefix: string): string {
 
 test.describe('Whiteboard', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(`http://localhost:5173/?room=${uniqueRoom('whiteboard')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('whiteboard')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
+    });
+    // Wait for the whiteboard feature to activate (it loads asynchronously after slides)
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow');
+      return !!ss?.shadowRoot?.querySelector('geek-whiteboard');
     });
   });
 
   test('whiteboard command toggles canvas overlay', async ({ page }) => {
     // Open terminal and run whiteboard command
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -33,7 +38,7 @@ test.describe('Whiteboard', () => {
     expect(visible).toBe(true);
 
     // Toggle off via command
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -91,7 +96,7 @@ test.describe('Whiteboard', () => {
 
   test('draw strokes on canvas', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -136,7 +141,7 @@ test.describe('Whiteboard', () => {
 
   test('per-slide persistence across navigation', async ({ page }) => {
     // Activate whiteboard via command
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -235,7 +240,7 @@ test.describe('Whiteboard', () => {
     expect(currentSlide).toBeGreaterThanOrEqual(1);
 
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -322,7 +327,7 @@ test.describe('Whiteboard', () => {
     );
 
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -360,7 +365,7 @@ test.describe('Whiteboard', () => {
 
   test('drawing works on multiple slides without reload', async ({ page }) => {
     // Activate whiteboard on slide 0
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -428,7 +433,7 @@ test.describe('Whiteboard', () => {
     const page1 = await context.newPage();
     const page2 = await context.newPage();
     const room = uniqueRoom('wb-sync');
-    const url = `http://localhost:5173/?room=${room}`;
+    const url = `/?config=e2e/fixtures/layouts-deck/config.json&room=${room}`;
 
     await page1.goto(url);
     await page2.goto(url);
@@ -453,7 +458,7 @@ test.describe('Whiteboard', () => {
     }
 
     // Activate whiteboard and draw on page1
-    await page1.keyboard.press('t');
+    await page1.keyboard.press('Escape');
     await page1.waitForTimeout(200);
     await page1.keyboard.type('whiteboard');
     await page1.keyboard.press('Enter');
@@ -506,7 +511,7 @@ test.describe('Whiteboard', () => {
     const page1 = await context.newPage();
     const page2 = await context.newPage();
     const room = uniqueRoom('wb-live');
-    const url = `http://localhost:5173/?room=${room}`;
+    const url = `/?config=e2e/fixtures/layouts-deck/config.json&room=${room}`;
 
     await page1.goto(url);
     await page2.goto(url);
@@ -522,7 +527,7 @@ test.describe('Whiteboard', () => {
     await page1.waitForTimeout(1500);
 
     // Activate whiteboard via command on page1
-    await page1.keyboard.press('t');
+    await page1.keyboard.press('Escape');
     await page1.waitForTimeout(200);
     await page1.keyboard.type('whiteboard');
     await page1.keyboard.press('Enter');
@@ -592,7 +597,7 @@ test.describe('Whiteboard', () => {
 
   test('toolbar is present and has tool buttons and color swatches', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -626,7 +631,7 @@ test.describe('Whiteboard', () => {
 
   test('wb-toolbar command toggles toolbar collapsed state', async ({ page }) => {
     // Activate whiteboard first
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -635,7 +640,7 @@ test.describe('Whiteboard', () => {
     await page.waitForTimeout(200);
 
     // Collapse via command
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
     await page.keyboard.press('Enter');
@@ -652,7 +657,7 @@ test.describe('Whiteboard', () => {
     expect(collapsed).toBe(true);
 
     // Expand via command again
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
     await page.keyboard.press('Enter');
@@ -671,7 +676,7 @@ test.describe('Whiteboard', () => {
 
   test('wb-hide and wb-show commands control toolbar visibility', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -680,7 +685,7 @@ test.describe('Whiteboard', () => {
     await page.waitForTimeout(200);
 
     // Hide toolbar
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-hide');
     await page.keyboard.press('Enter');
@@ -697,7 +702,7 @@ test.describe('Whiteboard', () => {
     expect(hidden).toBe(true);
 
     // Show toolbar
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-show');
     await page.keyboard.press('Enter');
@@ -716,7 +721,7 @@ test.describe('Whiteboard', () => {
 
   test('wb-pen, wb-highlighter, wb-eraser commands switch tools', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -725,7 +730,7 @@ test.describe('Whiteboard', () => {
     await page.waitForTimeout(200);
 
     // Switch to highlighter
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-highlighter');
     await page.keyboard.press('Enter');
@@ -742,7 +747,7 @@ test.describe('Whiteboard', () => {
     expect(tool1).toBe('highlighter');
 
     // Switch to eraser
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-eraser');
     await page.keyboard.press('Enter');
@@ -759,7 +764,7 @@ test.describe('Whiteboard', () => {
     expect(tool2).toBe('eraser');
 
     // Switch back to pen
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-pen');
     await page.keyboard.press('Enter');
@@ -778,7 +783,7 @@ test.describe('Whiteboard', () => {
 
   test('clicking toolbar color swatch changes drawing color', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -807,7 +812,7 @@ test.describe('Whiteboard', () => {
 
   test('toolbar clear button requires double-click confirmation', async ({ page }) => {
     // Activate whiteboard and draw something
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -875,8 +880,8 @@ test.describe('Whiteboard', () => {
     const presenter = await context.newPage();
     const viewer = await context.newPage();
     const room = uniqueRoom('wb-nav-live');
-    const presenterUrl = `http://localhost:5173/?room=${room}`;
-    const viewerUrl = `http://localhost:5173/?room=${room}&readonly`;
+    const presenterUrl = `/?config=e2e/fixtures/layouts-deck/config.json&room=${room}`;
+    const viewerUrl = `/?config=e2e/fixtures/layouts-deck/config.json&room=${room}&readonly`;
 
     await presenter.goto(presenterUrl);
     await presenter.waitForFunction(() => {
@@ -961,7 +966,7 @@ test.describe('Whiteboard', () => {
     }
 
     // Activate whiteboard on presenter
-    await presenter.keyboard.press('t');
+    await presenter.keyboard.press('Escape');
     await presenter.waitForTimeout(200);
     await presenter.keyboard.type('whiteboard');
     await presenter.keyboard.press('Enter');
@@ -1016,7 +1021,7 @@ test.describe('Whiteboard', () => {
 
     // Presenter tab
     const presenter = await context.newPage();
-    await presenter.goto(`http://localhost:5173/?room=${room}`);
+    await presenter.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${room}`);
     await presenter.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as unknown as { slideCount: number } | null;
       return ss !== null && ss.slideCount > 0;
@@ -1027,7 +1032,7 @@ test.describe('Whiteboard', () => {
 
     // Readonly viewer tab
     const viewer = await context.newPage();
-    await viewer.goto(`http://localhost:5173/?room=${room}&readonly`);
+    await viewer.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${room}&readonly`);
     await viewer.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as unknown as { slideCount: number } | null;
       return ss !== null && ss.slideCount > 0;
@@ -1079,7 +1084,7 @@ test.describe('Whiteboard', () => {
 
     // --- Presenter draws a stroke → viewer should auto-show it ---
     // Activate whiteboard on presenter
-    await presenter.keyboard.press('t');
+    await presenter.keyboard.press('Escape');
     await presenter.waitForTimeout(200);
     await presenter.keyboard.type('whiteboard');
     await presenter.keyboard.press('Enter');
@@ -1137,7 +1142,7 @@ test.describe('Whiteboard', () => {
 
 test.describe('Whiteboard + Overview interaction', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(`http://localhost:5173/?room=${uniqueRoom('wb-overview')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('wb-overview')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
@@ -1146,7 +1151,7 @@ test.describe('Whiteboard + Overview interaction', () => {
 
   test('entering overview mode hides whiteboard canvas and toolbar', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -1162,7 +1167,7 @@ test.describe('Whiteboard + Overview interaction', () => {
     expect(visibleBefore).toBe(true);
 
     // Enter overview
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('overview');
     await page.keyboard.press('Enter');
@@ -1189,7 +1194,7 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.waitForTimeout(200);
 
     // Enter overview
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('overview');
     await page.keyboard.press('Enter');
@@ -1218,7 +1223,7 @@ test.describe('Whiteboard + Overview interaction', () => {
 
   test('whiteboard canvas pointer-events pass through when toolbar is collapsed', async ({ page }) => {
     // Activate whiteboard
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -1227,7 +1232,7 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.waitForTimeout(200);
 
     // Collapse toolbar
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
     await page.keyboard.press('Enter');
@@ -1254,7 +1259,7 @@ test.describe('Whiteboard + Overview interaction', () => {
 
   test('whiteboard does not auto-activate on drag during overview mode', async ({ page }) => {
     // Enter overview
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('overview');
     await page.keyboard.press('Enter');
@@ -1287,7 +1292,7 @@ test.describe('Whiteboard + Overview interaction', () => {
 
   test('whiteboard content still visible after slide navigation while toolbar collapsed', async ({ page }) => {
     // Activate whiteboard and draw
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -1311,7 +1316,7 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.waitForTimeout(200);
 
     // Collapse the toolbar
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
     await page.keyboard.press('Enter');
@@ -1350,7 +1355,7 @@ test.describe('Whiteboard + Overview interaction', () => {
 
   test('whiteboard resumes correctly after returning from overview', async ({ page }) => {
     // Activate whiteboard and draw
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
     await page.keyboard.press('Enter');
@@ -1374,7 +1379,7 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.waitForTimeout(200);
 
     // Enter and exit overview (click first thumbnail)
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('overview');
     await page.keyboard.press('Enter');

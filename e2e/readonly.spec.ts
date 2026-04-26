@@ -29,8 +29,8 @@ test.describe('Read-only viewer mode', () => {
     const badge = page.locator('text=VIEW ONLY');
     await expect(badge).toBeVisible();
 
-    // Pressing 't' should NOT open a terminal
-    await page.keyboard.press('t');
+    // Pressing Escape should NOT open a terminal (no terminal element in readonly mode)
+    await page.keyboard.press('Escape');
     await page.waitForTimeout(300);
     await expect(page.locator('geek-terminal')).toHaveCount(0);
 
@@ -103,7 +103,7 @@ test.describe('Read-only viewer mode', () => {
     await page.waitForTimeout(500);
 
     // Open terminal and run share command
-    await page.keyboard.press('t');
+    await page.keyboard.press('Escape');
     await page.waitForFunction(() => {
       const term = document.querySelector('geek-terminal') as HTMLElement | null;
       return term?.style.display === 'block';

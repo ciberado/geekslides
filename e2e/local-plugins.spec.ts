@@ -12,7 +12,7 @@ async function waitForSlideshow(page): Promise<void> {
 }
 
 async function openTerminal(page): Promise<void> {
-  await page.keyboard.press('t');
+  await page.keyboard.press('Escape');
   await page.waitForFunction(() => {
     const term = document.querySelector('geek-terminal') as HTMLElement | null;
     return term?.style.display === 'block';
@@ -30,9 +30,11 @@ async function runTerminalCommand(page, command: string): Promise<void> {
   }, command);
 }
 
+const DECK = 'e2e/fixtures/layouts-deck/config.json';
+
 test.describe('Local Plugins', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto(`/?room=${uniqueRoom('local-plugins')}`);
+    await page.goto(`/?config=${DECK}&room=${uniqueRoom('local-plugins')}`);
     await waitForSlideshow(page);
   });
 

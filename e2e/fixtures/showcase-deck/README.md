@@ -46,16 +46,16 @@ Everything before the h4 is column 1; everything after is column 2.
 
 ![Product screenshot](https://picsum.photos/seed/geekslides-product/800/600)
 
-- **15 built-in layouts** for any content type
-- **Theme system** separates color from structure
-- **Real-time sync** across devices via Yjs
-- **PDF export** with a single CLI command
+- **15 built-in layouts** for any content type [partial]
+- **Theme system** separates color from structure [partial]
+- **Real-time sync** across devices via Yjs [partial]
+- **PDF export** with a single CLI command [partial]
 
 [](.layout-big-stat#traction)
 
-# 42M+
+# 42M+ [partial]
 
-#### Slides rendered across 120 countries
+#### Slides rendered across 120 countries [partial]
 
 [](.layout-three-col#pillars)
 

@@ -724,6 +724,23 @@ try {
       window.open(`${location.pathname}?view=speaker&config=${configUrl}`, '_blank');
     }, category: 'view' });
 
+    // Activate keyboard and touch input early — before async feature loading —
+    // so that navigation is responsive as soon as the slideshow is ready.
+    terminal.setCommandSystem(commands);
+
+    const keys = new KeyBindings(commands);
+    keys.onTerminalToggle(() => terminal.toggle());
+    keys.activate();
+
+    const touch = new TouchInput(commands, slideshow);
+    touch.activate();
+
+    slideshow.addEventListener('geek:toolbar:command', (e) => {
+      commands.execute(e.detail.command);
+    });
+
+    terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
+
     // --- Feature system (presenter/peer mode) ---
     const featuresContainer = document.createElement('div');
     featuresContainer.className = 'gs-features';
@@ -883,22 +900,6 @@ try {
         })();
       }, category: 'sync' });
     }
-
-    terminal.setCommandSystem(commands);
-
-    const keys = new KeyBindings(commands);
-    keys.onTerminalToggle(() => terminal.toggle());
-    keys.activate();
-
-    const touch = new TouchInput(commands, slideshow);
-    touch.activate();
-
-    // Toolbar button clicks → execute command
-    slideshow.addEventListener('geek:toolbar:command', (e) => {
-      commands.execute(e.detail.command);
-    });
-
-    terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
 
     if (import.meta.hot) {
       registerHotClient(import.meta.hot, {

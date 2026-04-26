@@ -1,9 +1,11 @@
 import { test, expect } from '@playwright/test';
 
+const DECK = 'e2e/fixtures/layouts-deck/config.json';
+
 test.describe('Print Rendering', () => {
   test('print command generates correct HTML', async ({ page }) => {
     // This tests the PrintRenderer via the engine API, not via WeasyPrint
-    await page.goto('/');
+    await page.goto(`/?config=${DECK}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
@@ -27,7 +29,7 @@ test.describe('Print Rendering', () => {
   });
 
   test('slides-notes format includes notes', async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/?config=${DECK}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;

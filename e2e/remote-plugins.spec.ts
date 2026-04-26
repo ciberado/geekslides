@@ -14,7 +14,7 @@ async function waitForSlideshow(page): Promise<void> {
 }
 
 async function openTerminal(page): Promise<void> {
-  await page.keyboard.press('t');
+  await page.keyboard.press('Escape');
   await page.waitForFunction(() => {
     const term = document.querySelector('geek-terminal') as HTMLElement | null;
     return term?.style.display === 'block';
@@ -70,7 +70,7 @@ test.describe('Remote Plugins', () => {
 
   test('loads a remote plugin through the proxy and applies it', async ({ page }) => {
     // Navigate to default deck
-    await page.goto(`/?room=${uniqueRoom('remote-plugins')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('remote-plugins')}`);
     await waitForSlideshow(page);
 
     // Verify the proxy endpoint is accessible
@@ -103,7 +103,7 @@ test.describe('Remote Plugins', () => {
   });
 
   test('proxy rejects non-.js URLs', async ({ page }) => {
-    await page.goto(`/?room=${uniqueRoom('remote-plugins-reject')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('remote-plugins-reject')}`);
     await waitForSlideshow(page);
 
     const result = await page.evaluate(async () => {
@@ -116,7 +116,7 @@ test.describe('Remote Plugins', () => {
   });
 
   test('proxy rejects missing url parameter', async ({ page }) => {
-    await page.goto(`/?room=${uniqueRoom('remote-plugins-missing')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('remote-plugins-missing')}`);
     await waitForSlideshow(page);
 
     const result = await page.evaluate(async () => {

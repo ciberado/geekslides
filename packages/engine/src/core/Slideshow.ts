@@ -382,9 +382,11 @@ export class Slideshow extends HTMLElement {
     const scale = Math.min(scaleX, scaleY);
 
     container.style.setProperty('--gs-scale-factor', String(scale));
-    container.style.transform = `scale(${String(scale)})`;
+    container.style.transform = `translate(-50%, -50%) scale(${String(scale)})`;
     container.style.width = `${String(this.#designWidth)}px`;
     container.style.height = `${String(this.#designHeight)}px`;
+    container.style.left = '50%';
+    container.style.top = '50%';
   }
 
   #render(): void {
@@ -394,18 +396,25 @@ export class Slideshow extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = `
       :host {
-        display: block;
+        display: flex;
         width: 100vw;
         height: 100vh;
         overflow: hidden;
         position: relative;
         background: var(--gs-bg, #404040);
+        align-items: center;
+        justify-content: center;
       }
 
       .gs-container {
-        transform-origin: top left;
-        position: relative;
+        position: absolute;
         overflow: hidden;
+        transform-origin: center;
+        width: 1920px;
+        height: 1080px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
       }
 
       :host([mode="overview"]) {

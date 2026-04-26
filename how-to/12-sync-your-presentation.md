@@ -90,7 +90,7 @@ Share a **view-only** link so your audience can watch but not control the presen
 
 ### Create a share link
 
-1. Open the terminal (`t`)
+1. Open the terminal (`Escape`)
 2. Type `share`
 
 GeekSlides protects the room with a presenter token and prints a viewer URL:
@@ -126,7 +126,7 @@ By default, every viewer **follows the presenter** — when the presenter advanc
 
 A viewer can break away to browse independently:
 
-1. Open the terminal (`t`)
+1. Open the terminal (`Escape`)
 2. Type `sync-disconnect`
 3. Navigate freely — the presenter's movements are ignored
 
@@ -134,7 +134,7 @@ The status dot turns **orange** to remind you that you're off-leash.
 
 To re-attach to the presenter's position:
 
-1. Open the terminal (`t`)
+1. Open the terminal (`Escape`)
 2. Type `sync-follow`
 
 The view snaps to wherever the presenter is and the dot turns **green** again.
@@ -143,7 +143,7 @@ The view snaps to wherever the presenter is and the dot turns **green** again.
 
 Change rooms without reloading the page:
 
-1. Open the terminal (`t`)
+1. Open the terminal (`Escape`)
 2. Type `room new-room-name`
 
 The URL updates and you immediately join the new room. Useful when running multiple sessions from the same server.

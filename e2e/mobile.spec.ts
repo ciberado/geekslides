@@ -12,7 +12,7 @@ test.use({
 
 test.describe('Mobile Touch Navigation', () => {
   test('renders and loads slides on mobile viewport', async ({ page }) => {
-    await page.goto(`/?room=${uniqueRoom('mobile')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('mobile')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
@@ -25,7 +25,7 @@ test.describe('Mobile Touch Navigation', () => {
   });
 
   test('tap right advances slide', async ({ page }) => {
-    await page.goto(`/?room=${uniqueRoom('mobile')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('mobile')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
@@ -47,7 +47,7 @@ test.describe('Mobile Touch Navigation', () => {
   });
 
   test('tap left goes to previous slide', async ({ page }) => {
-    await page.goto(`/?room=${uniqueRoom('mobile')}`);
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${uniqueRoom('mobile')}`);
     await page.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;

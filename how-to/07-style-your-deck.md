@@ -226,7 +226,7 @@ The chosen theme's CSS is copied into `css/theme-aurora.css` (or whatever the th
 
 ### Switching themes at runtime
 
-While presenting, open the terminal (`t` key) and use the `theme` command:
+While presenting, open the terminal (`Escape` key) and use the `theme` command:
 
 ```
 theme aurora

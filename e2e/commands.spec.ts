@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const DECK = 'e2e/fixtures/layouts-deck/config.json';
+
 function uniqueRoom(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -14,7 +16,7 @@ async function waitForSlideshow(page: Parameters<typeof test>[0]['page']): Promi
 }
 
 async function openTerminal(page: Parameters<typeof test>[0]['page']): Promise<void> {
-  await page.keyboard.press('t');
+  await page.keyboard.press('Escape');
   await page.waitForFunction(() => {
     const term = document.querySelector('geek-terminal') as HTMLElement | null;
     return term?.style.display === 'block';
@@ -40,11 +42,11 @@ async function runTerminalCommand(
 
 test.describe('Terminal Command System', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/');
+    await page.goto(`/?config=${DECK}&room=${uniqueRoom('commands')}`);
     await waitForSlideshow(page);
   });
 
-  test('pressing t opens the terminal', async ({ page }) => {
+  test('pressing Escape opens the terminal', async ({ page }) => {
     await openTerminal(page);
 
     // Terminal should be visible in the DOM
@@ -160,8 +162,8 @@ test.describe('Terminal Command System', () => {
     const oldRoomPage = await context.newPage();
     const newRoomPage = await context.newPage();
 
-    await presenterPage.goto(`/?room=${originalRoom}`);
-    await oldRoomPage.goto(`/?room=${originalRoom}`);
+    await presenterPage.goto(`/?config=${DECK}&room=${originalRoom}`);
+    await oldRoomPage.goto(`/?config=${DECK}&room=${originalRoom}`);
 
     await waitForSlideshow(presenterPage);
     await waitForSlideshow(oldRoomPage);
@@ -190,7 +192,7 @@ test.describe('Terminal Command System', () => {
     );
     expect(oldRoomSlide).toBe(1);
 
-    await newRoomPage.goto(`/?room=${newRoom}`);
+    await newRoomPage.goto(`/?config=${DECK}&room=${newRoom}`);
     await waitForSlideshow(newRoomPage);
     await newRoomPage.waitForFunction(
       () => ((document.getElementById('slideshow') as { currentSlide?: number } | null)?.currentSlide ?? -1) === 2,

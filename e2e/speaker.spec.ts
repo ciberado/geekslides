@@ -6,7 +6,7 @@ function uniqueRoom(prefix: string): string {
 
 test.describe('Speaker View', () => {
   test('speaker view renders with timer and notes', async ({ page }) => {
-    await page.goto(`/?view=speaker&room=${uniqueRoom('speaker')}`);
+    await page.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${uniqueRoom('speaker')}`);
     await page.waitForFunction(() => {
       const sv = document.querySelector('geek-speaker-view') as any;
       return sv?.currentIndex !== undefined;
@@ -77,7 +77,7 @@ test.describe('Speaker View', () => {
   });
 
   test('arrow keys navigate in speaker view', async ({ page }) => {
-    await page.goto(`/?view=speaker&room=${uniqueRoom('speaker')}`);
+    await page.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${uniqueRoom('speaker')}`);
     await page.waitForFunction(() => {
       const sv = document.querySelector('geek-speaker-view') as any;
       return sv?.currentIndex !== undefined;
@@ -102,7 +102,7 @@ test.describe('Speaker View', () => {
   });
 
   test('slide counter updates on navigation', async ({ page }) => {
-    await page.goto(`/?view=speaker&room=${uniqueRoom('speaker')}`);
+    await page.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${uniqueRoom('speaker')}`);
     await page.waitForFunction(() => {
       const sv = document.querySelector('geek-speaker-view') as any;
       return sv?.currentIndex !== undefined;
@@ -134,7 +134,7 @@ test.describe('Speaker View', () => {
   });
 
   test('speaker previews show unrevealed partials as lighter content', async ({ page }) => {
-    await page.goto(`/?view=speaker&room=${uniqueRoom('speaker')}`);
+    await page.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${uniqueRoom('speaker')}`);
     await page.waitForFunction(() => {
       const sv = document.querySelector('geek-speaker-view') as any;
       return sv?.currentIndex !== undefined;
@@ -179,7 +179,7 @@ test.describe('Speaker View', () => {
     });
 
     expect(partialState).not.toBeNull();
-    expect(partialState!.titleColor).toBe('rgb(0, 0, 0)');
+    expect(partialState!.titleColor).toBe('rgb(15, 15, 35)');
     expect(partialState!.current.length).toBeGreaterThan(2);
     expect(partialState!.current[0]?.visibleClass).toBe(true);
     expect(partialState!.current[0]?.opacity).toBe('1');
@@ -195,7 +195,7 @@ test.describe('Speaker View', () => {
   });
 
   test('notes font controls and splitters resize the speaker layout while keeping slides centered', async ({ page }) => {
-    await page.goto(`/?view=speaker&room=${uniqueRoom('speaker')}`);
+    await page.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${uniqueRoom('speaker')}`);
     await page.waitForFunction(() => {
       const sv = document.querySelector('geek-speaker-view') as any;
       return sv?.currentIndex !== undefined;

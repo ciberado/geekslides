@@ -101,7 +101,7 @@ Start your deck:
 geekslides dev
 ```
 
-For the whiteboard: draw on a slide by clicking and dragging, or type `whiteboard` in the terminal (press `t`). Try `wb-pen`, `wb-highlighter`, `wb-eraser` for tools.
+For the whiteboard: draw on a slide by clicking and dragging, or type `whiteboard` in the terminal (press `Escape`). Try `wb-pen`, `wb-highlighter`, `wb-eraser` for tools.
 
 ## Troubleshooting
 
