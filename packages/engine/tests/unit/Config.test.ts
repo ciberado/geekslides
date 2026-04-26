@@ -68,25 +68,83 @@ describe('Config', () => {
     expect(config.plugins.processors).toEqual([]);
   });
 
-  it('rejects array content from the archived v1 config shape', async () => {
-    mockFetchJson({ content: ['README.md'] });
-    await expect(loadConfig('config.json')).rejects.toThrow("'content' must be a single string path");
+  it('coerces array content to the first element', async () => {
+    mockFetchJson({ content: ['README.md', 'extra.md'] });
+    const config = await loadConfig('config.json');
+    expect(config.content).toBe('README.md');
   });
 
-  it('rejects root-level legacy plugin fields', async () => {
-    mockFetchJson({
-      content: 'README.md',
-      preprocessors: ['headerPreprocessor'],
-    });
-    await expect(loadConfig('config.json')).rejects.toThrow("plugins.preprocessors");
+  it('throws when content is an empty array', async () => {
+    mockFetchJson({ content: [] });
+    await expect(loadConfig('config.json')).rejects.toThrow("'content'");
   });
 
-  it('rejects legacy resolution field', async () => {
+  it('coerces root-level preprocessors into plugins.preprocessors', async () => {
+    mockFetchJson({ content: 'README.md', preprocessors: ['headerPreprocessor'] });
+    const config = await loadConfig('config.json');
+    expect(config.plugins.preprocessors).toEqual(['headerPreprocessor']);
+  });
+
+  it('coerces root-level processors into plugins.processors', async () => {
+    mockFetchJson({ content: 'README.md', processors: ['myProcessor'] });
+    const config = await loadConfig('config.json');
+    expect(config.plugins.processors).toEqual(['myProcessor']);
+  });
+
+  it('converts legacy resolution field to aspectRatio', async () => {
+    mockFetchJson({ content: 'README.md', resolution: '1920x1080' });
+    const config = await loadConfig('config.json');
+    expect(config.aspectRatio).toBe('16/9');
+  });
+
+  it('converts 4:3 resolution to aspectRatio', async () => {
+    mockFetchJson({ content: 'README.md', resolution: '1024x768' });
+    const config = await loadConfig('config.json');
+    expect(config.aspectRatio).toBe('4/3');
+  });
+
+  it('coerces styles string to array', async () => {
+    mockFetchJson({ content: 'README.md', styles: 'styles.css' });
+    const config = await loadConfig('config.json');
+    expect(config.styles).toEqual(['styles.css']);
+  });
+
+  it('excludes whiteboard feature when slideWhiteBoards is false', async () => {
+    mockFetchJson({ content: 'README.md', slideWhiteBoards: false });
+    const config = await loadConfig('config.json');
+    expect(config.features).not.toContain('whiteboard');
+  });
+
+  it('keeps whiteboard feature when slideWhiteBoards is true', async () => {
+    mockFetchJson({ content: 'README.md', slideWhiteBoards: true });
+    const config = await loadConfig('config.json');
+    expect(config.features).toContain('whiteboard');
+  });
+
+  it('silently ignores liveReload and scripts fields', async () => {
+    mockFetchJson({ content: 'README.md', liveReload: true, scripts: ['app.js'] });
+    const config = await loadConfig('config.json');
+    expect(config.content).toBe('README.md');
+  });
+
+  it('accepts full legacy v1 config shape', async () => {
     mockFetchJson({
-      content: 'README.md',
+      content: ['README.md'],
+      styles: ['local.css'],
       resolution: '1920x1080',
+      liveReload: true,
+      slideWhiteBoards: false,
+      preprocessors: ['headerPreprocessor'],
+      processors: [],
+      scripts: [],
     });
-    await expect(loadConfig('config.json')).rejects.toThrow("'resolution'");
+    const config = await loadConfig('config.json');
+    expect(config.content).toBe('README.md');
+    expect(config.styles).toEqual(['local.css']);
+    expect(config.aspectRatio).toBe('16/9');
+    expect(config.plugins.preprocessors).toEqual(['headerPreprocessor']);
+    expect(config.plugins.processors).toEqual([]);
+    expect(config.features).not.toContain('whiteboard');
   });
 
   it('throws a clear error when the server returns HTML instead of JSON', async () => {

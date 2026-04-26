@@ -68,13 +68,14 @@ a single **CSS custom property** updated by a `ResizeObserver`:
 
 A private `#setupScaling()` method creates a `ResizeObserver` that watches the `<geek-slideshow>` element. On each resize callback, it computes the horizontal and vertical scale factors (viewport dimensions divided by design resolution), picks the smaller one (contain behavior), and sets `--gs-scale-factor` on the element's style.
 
-In the Shadow DOM CSS, `::slotted(geek-slide)` elements are absolutely positioned at the center (50%/50% + translate -50%/-50%) with fixed width/height from custom properties (`--gs-design-width: 1920px`, `--gs-design-height: 1080px`). The transform includes `scale(var(--gs-scale-factor))`, which reactively adapts as the custom property changes.
+The `:host` element uses `display: flex; align-items: center; justify-content: center` so the Shadow DOM fills the viewport and centres its content naturally. Inside, `.gs-container` is absolutely positioned at `left: 50%; top: 50%` and transformed with `translate(-50%, -50%) scale(<factor>)` so the fixed-resolution container remains visually centred at any viewport size. The `#rescale()` method updates this transform (and the `--gs-scale-factor` custom property) on every `ResizeObserver` callback.
 
 **Improvements over v1**:
 
 | Aspect | v1 | v2 |
 |--------|----|----|
 | Scale application | `cssRules[].style.transform = ...` | `--gs-scale-factor` custom property |
+| Centering | `position:absolute; top:50%; left:50%` on section | `:host` flexbox + `translate(-50%,-50%)` on `.gs-container` |
 | Resize detection | `window.addEventListener('resize')` | `ResizeObserver` (per-element, works in containers) |
 | Speaker view scale | Separate cssRule mutation | `--gs-scale-factor` inherited, halved in speaker CSS |
 | Testability | Requires real stylesheets | Property is readable/mockable |

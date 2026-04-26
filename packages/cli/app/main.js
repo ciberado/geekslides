@@ -65,6 +65,16 @@ const PROCESSORS = {
 const params = new URLSearchParams(window.location.search);
 const viewMode = params.get('view');
 
+function appendConfigJson(url) {
+  // Split off any query string before checking the path extension
+  const qIdx = url.indexOf('?');
+  const path = qIdx >= 0 ? url.slice(0, qIdx) : url;
+  const query = qIdx >= 0 ? url.slice(qIdx) : '';
+  if (path.endsWith('.json')) return url;
+  const sep = path.endsWith('/') ? '' : '/';
+  return `${path}${sep}config.json${query}`;
+}
+
 function normalizeConfigUrl(url) {
   // Transform GitHub repo URLs to raw.githubusercontent.com
   const ghMatch = url.match(/^https?:\/\/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/tree\/([^/]+))?\/?$/);
@@ -73,12 +83,10 @@ function normalizeConfigUrl(url) {
     return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/config.json`;
   }
   if (url.startsWith('http://') || url.startsWith('https://')) {
-    return url;
+    return appendConfigJson(url);
   }
-  if (url.startsWith('/')) {
-    return url;
-  }
-  return `/${url.replace(/^\.\//, '')}`;
+  const normalised = url.startsWith('/') ? url : `/${url.replace(/^\.\//, '')}`;
+  return appendConfigJson(normalised);
 }
 
 function getConfigBase(url) {

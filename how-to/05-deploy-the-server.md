@@ -50,6 +50,12 @@ Then open:
 https://slides.example.com/?config=https://other-host.com/my-talk/config.json
 ```
 
+The `?config=` parameter accepts a directory URL too — `config.json` is appended automatically:
+
+```
+https://slides.example.com/?config=https://other-host.com/my-talk
+```
+
 Or use the `load` command in the terminal to load any deck by URL.
 
 ## Environment variables

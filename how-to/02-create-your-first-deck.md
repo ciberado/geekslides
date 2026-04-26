@@ -112,7 +112,9 @@ Point the dev server at your deck:
 npx geekslides dev --config my-first-talk/config.json
 ```
 
-Open `http://localhost:5173` and you'll see your slides. Edit `README.md` in your editor and watch the changes appear in real time — the current slide position is preserved.
+Open `http://localhost:5173` and you'll see your slides.
+
+> **Tip:** The `?config=` URL parameter also accepts a directory path — `config.json` is appended automatically. So `?config=my-first-talk` and `?config=my-first-talk/config.json` are equivalent. Edit `README.md` in your editor and watch the changes appear in real time — the current slide position is preserved.
 
 ![HMR in action — editing triggers a live update](screenshots/hmr-update.png)
 

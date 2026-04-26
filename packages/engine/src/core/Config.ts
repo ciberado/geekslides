@@ -48,22 +48,69 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
   class: '',
 };
 
-function assertNoLegacyFields(obj: Record<string, unknown>): void {
+function gcd(a: number, b: number): number {
+  return b === 0 ? a : gcd(b, a % b);
+}
+
+/**
+ * Coerce legacy/alternative config shapes into the canonical form in-place.
+ * All transformations are logged as warnings so authors know to update their config.
+ */
+function normalizeLegacyConfig(obj: Record<string, unknown>): void {
+  // content: string[] → use first element
   if (Array.isArray(obj['content'])) {
-    throw new Error("Config field 'content' must be a single string path");
+    const first = (obj['content'] as unknown[])[0];
+    obj['content'] = typeof first === 'string' ? first : '';
+    log.warn('Legacy config: content array coerced to first element — use a single string path');
   }
 
-  if ('resolution' in obj) {
-    throw new Error("Config field 'resolution' is no longer supported; use 'aspectRatio'");
+  // styles: string → string[]
+  if (typeof obj['styles'] === 'string') {
+    obj['styles'] = [obj['styles']];
   }
 
-  if ('preprocessors' in obj) {
-    throw new Error("Use 'plugins.preprocessors' instead of root-level 'preprocessors'");
+  // resolution: "WxH" → aspectRatio: "W_r/H_r"
+  if (typeof obj['resolution'] === 'string') {
+    const m = /^(\d+)[xX](\d+)$/.exec(obj['resolution'] as string);
+    if (m) {
+      const w = parseInt(m[1] as string, 10);
+      const h = parseInt(m[2] as string, 10);
+      const d = gcd(w, h);
+      obj['aspectRatio'] = `${String(w / d)}/${String(h / d)}`;
+      log.warn(`Legacy config: resolution "${String(obj['resolution'])}" converted to aspectRatio "${String(obj['aspectRatio'])}"`);
+    }
+    delete obj['resolution'];
   }
 
-  if ('processors' in obj) {
-    throw new Error("Use 'plugins.processors' instead of root-level 'processors'");
+  // Root-level preprocessors / processors → plugins.*
+  if ('preprocessors' in obj || 'processors' in obj) {
+    const plugins =
+      typeof obj['plugins'] === 'object' && obj['plugins'] !== null
+        ? (obj['plugins'] as Record<string, unknown>)
+        : {};
+    if ('preprocessors' in obj && !Array.isArray(plugins['preprocessors'])) {
+      plugins['preprocessors'] = obj['preprocessors'];
+    }
+    if ('processors' in obj && !Array.isArray(plugins['processors'])) {
+      plugins['processors'] = obj['processors'];
+    }
+    obj['plugins'] = plugins;
+    delete obj['preprocessors'];
+    delete obj['processors'];
+    log.warn('Legacy config: root-level preprocessors/processors moved into plugins.*');
   }
+
+  // slideWhiteBoards: false → exclude whiteboard from default features
+  if (typeof obj['slideWhiteBoards'] === 'boolean') {
+    if (!(obj['slideWhiteBoards'] as boolean) && !Array.isArray(obj['features'])) {
+      obj['features'] = DEFAULT_CONFIG.features.filter((f) => f !== 'whiteboard');
+    }
+    delete obj['slideWhiteBoards'];
+  }
+
+  // Silently drop fields that were dev-server or runtime options in v1
+  delete obj['liveReload'];
+  delete obj['scripts'];
 }
 
 export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
@@ -97,7 +144,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
   }
 
   const obj = raw as Record<string, unknown>;
-  assertNoLegacyFields(obj);
+  normalizeLegacyConfig(obj);
   log.debug({ url }, 'config loaded');
 
   if (typeof obj['content'] !== 'string' || obj['content'].length === 0) {
