@@ -23,7 +23,12 @@
 		reverse_proxy localhost:1234
 	}
 
-	# Hub — community platform
+	# Hub — redirect bare /hub to /hub/ so the SPA base path resolves correctly,
+	# then proxy all /hub/* traffic to the hub server.
+	handle /hub {
+		redir /hub/ 301
+	}
+
 	handle /hub/* {
 		reverse_proxy localhost:3000
 	}
