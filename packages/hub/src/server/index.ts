@@ -53,8 +53,15 @@ export async function createHubServer(
 
   await fastify.register(authPlugin);
 
-  // Serve built Lit client
-  const clientDir = resolve(import.meta.dirname, '../../dist/client');
+  // Serve built Lit client.
+  // Use __dirname (CJS bundle) with a fallback to import.meta.dirname (native ESM / dev).
+  // In the CJS bundle __dirname === /app, and dist/client is at /app/dist/client.
+  // In dev (ESM), this file is packages/hub/src/server/index.ts → ../../dist/client is correct.
+  const _dirname: string = typeof __dirname !== 'undefined'
+    ? __dirname
+    : import.meta.dirname;
+  const clientRelPath = typeof __dirname !== 'undefined' ? 'dist/client' : '../../dist/client';
+  const clientDir = resolve(_dirname, clientRelPath);
   if (existsSync(clientDir)) {
     await fastify.register(fastifyStatic, {
       root: clientDir,
