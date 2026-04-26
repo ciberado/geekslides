@@ -7,6 +7,10 @@
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html, body { width: 100%; height: 100%; overflow: hidden; }
+    /* Anchor the slideshow to the viewport regardless of document flow or deck CSS.
+       External selectors override :host (higher specificity), so this is the
+       canonical guarantee even if the shadow-DOM :host rule gets overridden. */
+    geek-slideshow { position: fixed; inset: 0; }
 
     .gs-loading {
       position: fixed;

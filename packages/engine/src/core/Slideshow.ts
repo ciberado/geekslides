@@ -396,14 +396,11 @@ export class Slideshow extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = `
       :host {
-        display: flex;
-        width: 100vw;
-        height: 100vh;
+        display: block;
+        position: fixed;
+        inset: 0;
         overflow: hidden;
-        position: relative;
         background: var(--gs-bg, #404040);
-        align-items: center;
-        justify-content: center;
       }
 
       .gs-container {
