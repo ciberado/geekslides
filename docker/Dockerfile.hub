@@ -23,7 +23,10 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 COPY packages/hub/package.json packages/hub/
 
-RUN npm ci --workspace=@geekslides/hub
+# --ignore-scripts skips the root prepare hook (which needs other workspaces).
+# We then rebuild better-sqlite3 explicitly so the native .node binary is compiled.
+RUN npm ci --workspace=@geekslides/hub --ignore-scripts && \
+    npm rebuild better-sqlite3 --workspace=@geekslides/hub
 
 COPY packages/hub/ packages/hub/
 
