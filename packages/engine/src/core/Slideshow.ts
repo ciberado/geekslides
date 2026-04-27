@@ -419,6 +419,9 @@ export class Slideshow extends HTMLElement {
       }
 
       :host([mode="overview"]) .gs-container {
+        position: relative !important;
+        left: auto !important;
+        top: auto !important;
         transform: none !important;
         width: 100% !important;
         height: auto !important;
