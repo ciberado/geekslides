@@ -288,4 +288,64 @@ test.describe('Speaker View', () => {
     expect(after.centeredX!).toBeLessThanOrEqual(2);
     expect(after.centeredY!).toBeLessThanOrEqual(12);
   });
+
+  test('speaker view reloads deck when presenter switches decks via contentProxy', async ({ browser }) => {
+    const room = uniqueRoom('speaker-proxy');
+    const ctx = await browser.newContext();
+
+    // Open presenter first (they will upload the deck)
+    const presenterPage = await ctx.newPage();
+    await presenterPage.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await presenterPage.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, { timeout: 10000 });
+
+    // Navigate presenter to slide 3
+    await presenterPage.evaluate(() => {
+      (document.getElementById('slideshow') as any).goTo(3);
+    });
+
+    // Open speaker view in the same room
+    const speakerPage = await ctx.newPage();
+    await speakerPage.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await speakerPage.waitForFunction(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.currentIndex !== undefined;
+    }, { timeout: 10000 });
+
+    // Wait for speaker to sync to slide 3 (confirms Yjs is connected)
+    await speakerPage.waitForFunction(
+      () => (document.querySelector('geek-speaker-view') as any)?.currentIndex === 3,
+      { timeout: 10000 },
+    );
+
+    // Now presenter loads a different deck
+    await presenterPage.evaluate(() => {
+      const term = document.querySelector('geek-terminal') as any;
+      const input = term?.shadowRoot?.querySelector('input') as HTMLInputElement | null;
+      if (input) {
+        input.value = 'load e2e/fixtures/hmr-deck/config.json';
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      }
+    });
+
+    // Wait for presenter to show the new deck
+    await presenterPage.waitForFunction(() => document.title === 'HMR Fixture', { timeout: 15000 });
+
+    // Wait for speaker to reload to the new deck (contentProxy triggers reload)
+    await speakerPage.waitForFunction(
+      () => document.title === 'HMR Fixture',
+      { timeout: 25000 },
+    );
+
+    // Speaker counter should reflect new deck slide count (2 slides in hmr-deck)
+    const finalCounter = await speakerPage.evaluate(() => {
+      const sv = document.querySelector('geek-speaker-view');
+      return sv?.shadowRoot?.querySelector('.counter')?.textContent ?? '';
+    });
+    expect(finalCounter).toMatch(/1\s*\/\s*2/);
+
+    await ctx.close();
+  });
 });

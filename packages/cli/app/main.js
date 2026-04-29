@@ -301,7 +301,7 @@ try {
   }
 
   const processedMarkdown = await applyPreprocessors(markdown, config);
-  const slides = parse(processedMarkdown);
+  let slides = parse(processedMarkdown);
 
   if (viewMode === 'speaker') {
     document.body.innerHTML = '<geek-speaker-view id="speaker"></geek-speaker-view>';
@@ -339,12 +339,55 @@ try {
       }
     };
 
+    // Reload the speaker view when the presenter switches decks via contentProxy.
+    let lastSpeakerProxyRaw = '';
+    const reloadSpeakerFromProxy = async (proxyBaseUrl) => {
+      try {
+        const proxyConfigUrl = `${proxyBaseUrl}config.json`;
+        const newConfig = await loadConfig(proxyConfigUrl);
+        // Update configBase so resolveUrl() resolves relative paths against the
+        // proxy URL, not the original config URL.
+        configBase = proxyBaseUrl;
+        updateDocumentBase(proxyBaseUrl);
+        const newMarkdown = await fetchMarkdown(newConfig);
+        const newCss = await fetchStyles(newConfig);
+        const processedMd = await applyPreprocessors(newMarkdown, newConfig);
+        slides = parse(processedMd);
+        speaker.setAspectRatio(newConfig.aspectRatio);
+        if (newCss) speaker.loadStyles(newCss);
+        speaker.loadSlides(slides);
+        const activeProcessors = await getActiveProcessors(newConfig);
+        if (activeProcessors.length > 0) speaker.loadProcessors(activeProcessors, newConfig);
+        updateDocumentTitle(newConfig);
+        applySpeakerSyncState();
+        console.log('[speaker] Deck reloaded from proxy:', proxyBaseUrl);
+      } catch (err) {
+        console.warn('[speaker] Failed to reload deck from proxy:', err.message);
+      }
+    };
+
+    const checkSpeakerContentProxy = () => {
+      const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
+      if (typeof proxyRaw !== 'string' || proxyRaw === lastSpeakerProxyRaw) return;
+      lastSpeakerProxyRaw = proxyRaw;
+      try {
+        const proxy = JSON.parse(proxyRaw);
+        if (proxy.baseUrl) {
+          void reloadSpeakerFromProxy(proxy.baseUrl);
+        }
+      } catch {
+        // ignore invalid proxy data
+      }
+    };
+
     sync.doc.getMap('sessionState').observe(() => {
+      checkSpeakerContentProxy();
       applySpeakerSyncState();
     });
 
     // Apply current room state immediately so speaker view opens in sync,
     // even before the presenter navigates again.
+    checkSpeakerContentProxy();
     applySpeakerSyncState();
 
     document.addEventListener('keydown', (e) => {
@@ -450,7 +493,6 @@ try {
     const syncConfig = config.sync || {};
     const syncEnabled = syncConfig.enabled !== false;
     let sync = null;
-    let isContentUploader = false;
 
     if (syncEnabled) {
       try {
@@ -464,12 +506,6 @@ try {
         slideshow.addEventListener('geek:navigate', (e) => {
           sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
         });
-
-        // Mark as uploader immediately so checkContentProxy() never
-        // overwrites the locally-loaded deck with stale proxy data.
-        if (!isReadonly) {
-          isContentUploader = true;
-        }
 
         // Content proxy: upload deck assets to server so remote viewers can access them
         // Fire-and-forget — don't block the rest of initialization
@@ -744,6 +780,14 @@ try {
         config = newConfig;
         await applyProcessors(slideshow, newConfig);
         slideshow.setAspectRatio(newConfig.aspectRatio);
+
+        // Restore sync position after reloading slides
+        const state = sync.doc.getMap('sessionState');
+        const slide = state.get('slide');
+        const partial = state.get('partial');
+        if (typeof slide === 'number') {
+          slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
+        }
 
         console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
       } catch (err) {

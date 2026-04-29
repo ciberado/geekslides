@@ -137,18 +137,24 @@ export async function uploadDeck(
   // Deduplicate
   const uniquePaths = [...new Set(allPaths)];
 
-  for (const relativePath of uniquePaths) {
-    const url = configBase + relativePath;
-    try {
+  const fetchResults = await Promise.allSettled(
+    uniquePaths.map(async (relativePath) => {
+      const url = configBase + relativePath;
       const res = await fetchFn(url);
       if (res.ok) {
         const data = await res.arrayBuffer();
-        filesToUpload.push({ path: relativePath, data });
-      } else {
-        log.warn({ path: relativePath, status: res.status }, 'skipping file — fetch failed');
+        return { path: relativePath, data };
       }
-    } catch (err) {
-      log.warn({ path: relativePath, err }, 'failed to fetch file for upload');
+      log.warn({ path: relativePath, status: res.status }, 'skipping file — fetch failed');
+      return null;
+    }),
+  );
+
+  for (const result of fetchResults) {
+    if (result.status === 'fulfilled' && result.value !== null) {
+      filesToUpload.push(result.value);
+    } else if (result.status === 'rejected') {
+      log.warn({ err: result.reason }, 'failed to fetch file for upload');
     }
   }
 
