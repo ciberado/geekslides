@@ -330,14 +330,22 @@ try {
       }
     });
 
-    sync.doc.getMap('sessionState').observe(() => {
+    const applySpeakerSyncState = () => {
       const state = sync.doc.getMap('sessionState');
       const slide = state.get('slide');
       const partial = state.get('partial');
       if (typeof slide === 'number') {
         speaker.updateSlide(slide, typeof partial === 'number' ? partial : 0);
       }
+    };
+
+    sync.doc.getMap('sessionState').observe(() => {
+      applySpeakerSyncState();
     });
+
+    // Apply current room state immediately so speaker view opens in sync,
+    // even before the presenter navigates again.
+    applySpeakerSyncState();
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ') {

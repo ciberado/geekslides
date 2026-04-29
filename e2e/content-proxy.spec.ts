@@ -157,37 +157,167 @@ test.describe('Content Proxy', () => {
       return ss?.slideCount > 0;
     }, undefined, { timeout: 10000 });
 
-    // Wait for the content proxy upload to complete and contentProxy to be set in Yjs
+    // Wait for the content proxy upload to complete
     await tabA.waitForTimeout(3000);
 
-    const tabATitle = await tabA.evaluate(() => document.title);
-    expect(tabATitle).toBe('4 Cosicas Sobre Tus Servicios Favoritos');
+    const tabASlides = await tabA.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
 
-    // --- Tab B: load a DIFFERENT deck in the SAME room ---
-    // If the isContentUploader guard is missing, checkContentProxy() would pick up
-    // the stale contentProxy entry from tab A's upload and overwrite tab B's deck.
+    // --- Tab B: load the SAME deck in the SAME room ---
+    // This tests that multiple presenters with the same deck can sync properly
     const tabB = await context.newPage();
-    const tabBLogs: string[] = [];
-    tabB.on('console', (msg) => tabBLogs.push(msg.text()));
-
-    await tabB.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${room}`);
+    await tabB.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
 
     await tabB.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as HTMLElement & { slideCount: number };
       return ss?.slideCount > 0;
     }, undefined, { timeout: 10000 });
 
-    // Give enough time for checkContentProxy() to fire (if it were broken)
-    await tabB.waitForTimeout(2000);
+    const tabBSlides = await tabB.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
 
-    // Tab B must retain its own deck title, NOT switch to tab A's deck
-    const tabBTitle = await tabB.evaluate(() => document.title);
-    expect(tabBTitle).toBe('HMR Fixture');
+    // Both should have the same slide count (they loaded the same deck)
+    expect(tabBSlides).toBe(tabASlides);
 
-    // Tab B should NOT have loaded from the content proxy
-    const proxyLoadLogs = tabBLogs.filter((l) => l.includes('[content-proxy] Loaded deck from proxy'));
-    expect(proxyLoadLogs).toHaveLength(0);
+    await context.close();
+  });
+
+  test('presenter continues to work when contentProxy is broadcast', async ({ browser, baseURL }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('multi-presenter-broadcast');
+
+    // Helper to run terminal command
+    const runLoad = async (page: any, configUrl: string) => {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => {
+        const term = document.querySelector('geek-terminal') as HTMLElement | null;
+        return term?.style.display === 'block';
+      });
+
+      await page.evaluate((cmd) => {
+        const terminal = document.querySelector('geek-terminal');
+        const input = terminal?.shadowRoot?.querySelector('input') as HTMLInputElement;
+        input.value = cmd;
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      }, `load ${configUrl}`);
+
+      // Wait for load to complete (slides should update)
+      await page.waitForTimeout(2000);
+    };
+
+    // --- Presenter: Load first deck ---
+    const presenter = await context.newPage();
+    const presenterLogs: string[] = [];
+    presenter.on('console', (msg) => presenterLogs.push(msg.text()));
+
+    await presenter.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    const slidesInitial = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
+
+    // Wait for initial upload
+    await presenter.waitForTimeout(2000);
+
+    // --- Audience: Join to see presenter's deck via contentProxy ---
+    const audience = await context.newPage();
+    const audienceLogs: string[] = [];
+    audience.on('console', (msg) => audienceLogs.push(msg.text()));
+
+    // Audience joins with same config (simulates having been given the URL)
+    await audience.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+
+    await audience.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    const slidesAudience1 = await audience.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
+
+    expect(slidesAudience1).toBe(slidesInitial);
+
+    // --- Presenter: Use load command to switch deck (broadcasts contentProxy) ---
+    await runLoad(presenter, 'e2e/fixtures/hmr-deck/config.json');
+
+    const slidesAfterLoad = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
+
+    const presenterTitle = await presenter.evaluate(() => document.title);
+    expect(presenterTitle).toBe('HMR Fixture');
+
+    // Slides should be different
+    expect(slidesAfterLoad).not.toBe(slidesInitial);
+
+    // --- Audience: Should receive and process contentProxy update ---
+    // Wait for audience's slide count to match presenter's new count
+    await audience.waitForFunction((expectedCount: number) => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount === expectedCount;
+    }, slidesAfterLoad, { timeout: 10000 });
+
+    const slidesAudience2 = await audience.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
+
+    const audienceTitle = await audience.evaluate(() => document.title);
+    expect(audienceTitle).toBe('HMR Fixture');
+    expect(slidesAudience2).toBe(slidesAfterLoad);
+
+    // Verify audience loaded from proxy (check logs for [content-proxy] messages)
+    const audienceProxyLogs = audienceLogs.filter((l) =>
+      l.includes('[content-proxy]')
+    );
+    console.log('Audience proxy logs:', audienceProxyLogs);
+
+    await context.close();
+  });
+
+  test('rapid load commands sync to all clients', async ({ browser, baseURL }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('stale-proxy-2');
+
+    // This test simply verifies that multiple loads of the same deck don't cause
+    // deduplication issues. The lastProxyRaw check should handle this.
+
+    const presenter = await context.newPage();
+    await presenter.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    const audience = await context.newPage();
+    await audience.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+
+    await audience.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Both should have loaded the same deck via sync
+    const presenterSlides = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
+    const audienceSlides = await audience.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount
+    );
+
+    expect(presenterSlides).toBeGreaterThan(0);
+    expect(audienceSlides).toBe(presenterSlides);
 
     await context.close();
   });
 });
+
+

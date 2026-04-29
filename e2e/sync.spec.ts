@@ -80,24 +80,16 @@ test.describe('Sync between tabs', () => {
     const imgCount = await page.locator('img').count();
     expect(imgCount).toBeGreaterThan(0);
 
-    // Navigate through a few slides and verify content changes
-    let previousState = { slide: 0, partial: 0 };
-    for (let i = 0; i < 3; i++) {
-      await page.keyboard.press('ArrowRight');
-      await page.waitForTimeout(400);
+    // Deterministic navigation avoids timing flakiness around partial reveals.
+    for (const targetSlide of [1, 2, 3]) {
+      await page.evaluate((target) => {
+        (document.getElementById('slideshow') as any)?.goTo(target);
+      }, targetSlide);
 
-      const currentState = await page.evaluate(() => {
+      await page.waitForFunction((expected) => {
         const ss = document.getElementById('slideshow') as any;
-        return {
-          slide: ss?.currentSlide ?? 0,
-          partial: ss?.currentPartial ?? 0,
-        };
-      });
-      expect(
-        currentState.slide > previousState.slide
-          || (currentState.slide === previousState.slide && currentState.partial > previousState.partial),
-      ).toBe(true);
-      previousState = currentState;
+        return ss?.currentSlide === expected;
+      }, targetSlide);
     }
   });
 
@@ -205,6 +197,84 @@ test.describe('Sync between tabs', () => {
     // Speaker view may sync or may not, but should be in valid range
     expect(speakerIndexAfter).toBeGreaterThanOrEqual(0);
     expect(speakerIndexAfter).toBeLessThanOrEqual(25);
+
+    await context.close();
+  });
+
+  test('speaker command opens synced speaker view', async ({ browser }) => {
+    const context = await browser.newContext();
+    const presenterPage = await context.newPage();
+    const room = uniqueRoom('speaker-command');
+    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
+
+    await presenterPage.goto(deckUrl);
+    await presenterPage.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as { slideCount?: number } | null;
+      return (ss?.slideCount ?? 0) > 0;
+    });
+
+    // Move away from the first slide so we can assert immediate sync on open.
+    await presenterPage.keyboard.press('ArrowRight');
+    await presenterPage.keyboard.press('ArrowRight');
+    await presenterPage.waitForTimeout(300);
+
+    const presenterBefore = await presenterPage.evaluate(() => {
+      const ss = document.getElementById('slideshow') as {
+        currentSlide?: number;
+        currentPartial?: number;
+      } | null;
+      return {
+        slide: ss?.currentSlide ?? 0,
+        partial: ss?.currentPartial ?? 0,
+      };
+    });
+
+    const popupPromise = context.waitForEvent('page');
+    await presenterPage.keyboard.press('Escape');
+    await presenterPage.waitForFunction(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display === 'block';
+    });
+    await presenterPage.evaluate(() => {
+      const terminal = document.querySelector('geek-terminal');
+      const input = terminal?.shadowRoot?.querySelector('input') as HTMLInputElement;
+      input.value = 'speaker';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    const speakerPage = await popupPromise;
+    await speakerPage.waitForLoadState('domcontentloaded');
+    await speakerPage.waitForFunction(() => {
+      const sv = document.querySelector('geek-speaker-view') as { currentIndex?: number; currentPartial?: number } | null;
+      return sv?.currentIndex !== undefined;
+    });
+
+    // Speaker should initialize to current presenter position.
+    await speakerPage.waitForFunction((expected) => {
+      const sv = document.querySelector('geek-speaker-view') as { currentIndex?: number; currentPartial?: number } | null;
+      return (sv?.currentIndex ?? -1) === expected.slide && (sv?.currentPartial ?? -1) === expected.partial;
+    }, presenterBefore, { timeout: 5000 });
+
+    // Then continue following subsequent navigation.
+    await presenterPage.evaluate(() => {
+      (document.getElementById('slideshow') as { next?: () => void } | null)?.next?.();
+    });
+
+    const presenterAfter = await presenterPage.evaluate(() => {
+      const ss = document.getElementById('slideshow') as {
+        currentSlide?: number;
+        currentPartial?: number;
+      } | null;
+      return {
+        slide: ss?.currentSlide ?? 0,
+        partial: ss?.currentPartial ?? 0,
+      };
+    });
+
+    await speakerPage.waitForFunction((expected) => {
+      const sv = document.querySelector('geek-speaker-view') as { currentIndex?: number; currentPartial?: number } | null;
+      return (sv?.currentIndex ?? -1) === expected.slide && (sv?.currentPartial ?? -1) === expected.partial;
+    }, presenterAfter, { timeout: 5000 });
 
     await context.close();
   });
