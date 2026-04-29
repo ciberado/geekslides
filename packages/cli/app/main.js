@@ -340,6 +340,9 @@ try {
     };
 
     // Reload the speaker view when the presenter switches decks via contentProxy.
+    // Record when the speaker view opened so we can ignore stale Yjs data from
+    // previous sessions (their loadedAt will be older than speakerOpenedAt).
+    const speakerOpenedAt = Date.now();
     let lastSpeakerProxyRaw = '';
     const reloadSpeakerFromProxy = async (proxyBaseUrl) => {
       try {
@@ -372,9 +375,15 @@ try {
       lastSpeakerProxyRaw = proxyRaw;
       try {
         const proxy = JSON.parse(proxyRaw);
-        if (proxy.baseUrl) {
-          void reloadSpeakerFromProxy(proxy.baseUrl);
+        if (!proxy.baseUrl) return;
+        // Ignore stale data from previous sessions. Only reload when the presenter
+        // uploaded AFTER this speaker view was opened (loadedAt > speakerOpenedAt).
+        // If loadedAt is absent (old format) or in the past, treat as stale.
+        if (typeof proxy.loadedAt !== 'number' || proxy.loadedAt <= speakerOpenedAt) {
+          console.log('[speaker] Skipping stale contentProxy (loadedAt in the past)');
+          return;
         }
+        void reloadSpeakerFromProxy(proxy.baseUrl);
       } catch {
         // ignore invalid proxy data
       }
