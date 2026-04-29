@@ -164,6 +164,8 @@ Navigate from either window. Both stay in sync:
 - Advance in the **speaker view** → presenter tab follows
 - All connected viewers follow along
 
+When the presenter loads a different deck with the `load` command, the speaker view automatically reloads the new deck and restores the current slide position — no manual refresh needed.
+
 ## Whiteboard sync
 
 Every whiteboard stroke is shared with the room in real time:
@@ -237,7 +239,8 @@ All four devices stay in sync through the same room.
 | Viewers don't see slide changes | Verify everyone is using the same `room` parameter |
 | Whiteboard strokes don't appear remotely | Confirm sync is connected (green dot); check browser console for WebSocket errors |
 | Orange dot after reconnect | Type `sync-follow` in the terminal to re-attach to the presenter |
-| Content doesn't load for remote viewers | The content proxy may need a moment to upload; reload the viewer's page |
+| Content doesn't load for remote viewers | The content proxy uploads assets in the background; wait a few seconds after opening the presenter tab before viewers join |
+| Speaker view shows wrong deck after `load` | Ensure the presenter and speaker are in the same room — the speaker view reloads automatically when the presenter switches decks |
 
 ---
 
