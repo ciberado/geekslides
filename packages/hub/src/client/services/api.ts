@@ -215,6 +215,13 @@ class ApiClient {
     return this.request(`/admin/users/${id}/reject`, { method: 'POST' });
   }
 
+  setUserQuota(id: string, quotaBytes: number): Promise<void> {
+    return this.request(`/admin/users/${id}/quota`, {
+      method: 'PATCH',
+      body: JSON.stringify({ quotaBytes }),
+    });
+  }
+
   generateInviteCode(): Promise<{ code: string }> {
     return this.request('/admin/invite-codes', { method: 'POST' });
   }

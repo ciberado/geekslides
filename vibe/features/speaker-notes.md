@@ -118,7 +118,7 @@ It tracks a start time, accumulated elapsed milliseconds, and a running state. I
 
 ### Opening the Speaker View
 
-The `speaker` terminal command constructs a new URL from the current location with `?view=speaker` appended, then opens it via `window.open()` with suggested dimensions of 1200×800.
+The `speaker` terminal command constructs a new URL preserving the current `config`, `room`, and `token` query parameters alongside `view=speaker`, then opens it via `window.open()`. The speaker view's `SyncManager` also receives the `token` credential so it connects to the correct authenticated room.
 
 On initialization, the engine checks `URLSearchParams` for `view=speaker`. If present, it creates and appends a `<geek-speaker-view>` element instead of the normal `<geek-slideshow>`. The speaker view receives the same deck CSS, active processors, slide index, and partial index as the presentation view. Both connect to the same Yjs room, so they share state automatically.
 

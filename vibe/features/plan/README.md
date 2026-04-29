@@ -55,6 +55,13 @@ Phase 6: Rich Components (chart, video, whiteboard)
                            ▼
                     Phase 16: Toolbar, Mermaid
                              & Touch Tuning
+                           │
+                           ▼
+                    Phase 17: Structured Logging
+                           │
+                           ▼
+                    Phase 18: Enhanced Error
+                          Management & Diagnostics
 ```
 
 ## Phase Summary
@@ -78,6 +85,8 @@ Phase 6: Rich Components (chart, video, whiteboard)
 | [14](phase-14-cli-docker.md) | CLI Docker Image | 9, 11 | Dockerfile.cli, wrapper script, how-to guide | ~5 |
 | [15](phase-15-ux-enhancements.md) | UX Enhancements | 14 | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid | ~10 |
 | [16](phase-16-toolbar-mermaid-touch.md) | Toolbar, Mermaid & Touch | 15 | Toolbar component, mermaid processor, touch zone tuning, lint fixes | ~7 |
+| [17](phase-17-logging.md) | Structured Logging | all | pino loggers in engine/server/cli, namespace-scoped debug control | ~4 |
+| [18](phase-18-error-management.md) | Error Management & Diagnostics | 17 | Error response format, detailed error codes, user-facing hints, troubleshooting guide | ~6 |
 
 ## Principles
 
@@ -118,6 +127,8 @@ All decisions and specifications are in the sibling docs:
 | 14 | Implemented | CLI Docker image with Chromium, wrapper script, how-to guide |
 | 15 | Implemented | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid |
 | 16 | Implemented | Toolbar, mermaid processor, touch zone tuning |
+| 17 | 🔴 Not started | Structured logging infrastructure |
+| 18 | 🔴 Not started | Enhanced error messages and diagnostics |
 
 ## Future Improvements
 

@@ -145,7 +145,8 @@ function resolveUrl(path) {
 }
 
 async function fetchConfig() {
-  return await loadConfig(`${configUrl}${configUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
+  const proxiedUrl = proxyUrlIfNeeded(configUrl);
+  return await loadConfig(`${proxiedUrl}${proxiedUrl.includes('?') ? '&' : '?'}t=${Date.now()}`);
 }
 
 async function fetchMarkdown(config) {
@@ -173,6 +174,10 @@ async function fetchStyles(config) {
         const res = await fetch(`${resolvedUrl}${separator}raw&t=${Date.now()}`, {
           cache: 'no-store',
         });
+        if (!res.ok) {
+          console.warn(`Failed to load style: ${url} (HTTP ${res.status})`);
+          return '';
+        }
         let text = await res.text();
         // Vite wraps ?raw CSS as a JS module: export default "..."
         // with a sourcemap comment. Strip both to get actual CSS.
@@ -183,8 +188,8 @@ async function fetchStyles(config) {
           } catch { /* not a JS module, use as-is */ }
         }
         return text;
-      } catch {
-        console.warn(`Failed to load style: ${url}`);
+      } catch (err) {
+        console.warn(`Failed to load style: ${url}`, err);
         return '';
       }
     }),
@@ -314,9 +319,10 @@ try {
     const syncConfig = config.sync || {};
     const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
     const room = params.get('room') || syncConfig.room || 'default';
+    const token = params.get('token') || undefined;
 
     const sync = new SyncManager();
-    sync.connect(wsUrl, room);
+    sync.connect(wsUrl, room, { token });
 
     document.addEventListener('geek:sync:state', (e) => {
       if (e.detail?.connected) {
@@ -463,7 +469,11 @@ try {
           try {
             const serverBaseUrl = `${location.protocol}//${location.host}`;
             const manifest = buildManifest(configUrl, config, markdown, combinedCss);
-            await uploadDeck(serverBaseUrl, room, configBase, manifest);
+            // Use proxyUrlIfNeeded so HTTP deck assets are fetched via the deck
+            // proxy rather than directly — avoids mixed-content blocks when the
+            // SPA is served over HTTPS but the deck is on HTTP.
+            await uploadDeck(serverBaseUrl, room, configBase, manifest,
+              (url, init) => fetch(proxyUrlIfNeeded(url), init));
 
             // Publish proxy info so audience clients know where to find content
             const proxyBase = getProxyBaseUrl(serverBaseUrl, room);
@@ -768,7 +778,12 @@ try {
       slideshow.mode = slideshow.mode === 'overview' ? 'present' : 'overview';
     }, category: 'view' });
     commands.register({ name: 'speaker', label: 'Open speaker view', execute: () => {
-      window.open(`${location.pathname}?view=speaker&config=${configUrl}`, '_blank');
+      const speakerParams = new URLSearchParams({ view: 'speaker', config: configUrl });
+      const room = params.get('room');
+      const token = params.get('token');
+      if (room) speakerParams.set('room', room);
+      if (token) speakerParams.set('token', token);
+      window.open(`${location.pathname}?${speakerParams.toString()}`, '_blank');
     }, category: 'view' });
 
     // Activate keyboard and touch input early — before async feature loading —
@@ -981,7 +996,11 @@ try {
   }
 } catch (err) {
   const configLink = `<a href="${configUrl}" target="_blank" style="color: #c00;">${configUrl}</a>`;
-  const message = (err.stack || String(err)).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const errMsg = String(err);
+  const errStack = err.stack ? String(err.stack) : '';
+  // Firefox omits the error message from err.stack; show both when they differ
+  const fullMessage = errStack.startsWith(errMsg) ? errStack : (errMsg + (errStack ? '\n\n' + errStack : ''));
+  const message = fullMessage.replace(/</g, '&lt;').replace(/>/g, '&gt;');
   document.body.innerHTML =
     `<div style="padding: 2rem; font-family: system-ui, sans-serif;">` +
     `<h2 style="color: #c00; margin: 0 0 1rem;">Failed to load presentation</h2>` +

@@ -128,12 +128,17 @@ response body back to the browser. Max 50 MB per request.
 ### Client-Side Integration (`packages/cli/app/main.js`)
 
 - `proxyUrlIfNeeded(url)` — returns `/api/deck-proxy?url=...` when the URL is `http://` and
-  the page is on `https://`. Used for `config.json`, CSS, and the initial config fetch.
+  the page is on `https://`. Used for the initial `config.json` fetch (`fetchConfig`),
+  individual CSS files (`fetchStyles`), and markdown content (`fetchMarkdown`).
 - `rewriteMarkdownUrlsForProxy(markdown)` — after fetching markdown through the proxy,
   rewrites all relative `![alt](relative-path)` image references to absolute proxied URLs
   before the markdown is parsed. Prevents `<img src="http://...">` mixed-content blocks.
 - `updateDocumentBase` skips setting a `<base href="http://...">` tag when the page is on
   HTTPS to avoid poisoning relative DOM resource resolution.
+- During `uploadDeck`, asset fetches (CSS, images, etc.) are also wrapped with
+  `proxyUrlIfNeeded` so the presenter's browser never fetches HTTP assets directly when on
+  HTTPS. Without this, deck uploads from HTTP decks silently dropped all assets due to
+  mixed-content blocks, causing audience viewers to get 404 for stylesheets and images.
 
 ## Client-Side Flow
 

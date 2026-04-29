@@ -129,6 +129,21 @@ export class AdminPage extends LitElement {
     await this._loadTab();
   }
 
+  private async _increaseQuota(user: UserProfile): Promise<void> {
+    const input = window.prompt('Increase quota by MB', '50');
+    if (input === null) return;
+
+    const increaseMb = Number(input);
+    if (!Number.isFinite(increaseMb) || increaseMb <= 0) {
+      window.alert('Please enter a positive number of MB.');
+      return;
+    }
+
+    const nextQuotaBytes = user.quotaBytes + Math.floor(increaseMb * 1024 * 1024);
+    await apiClient.setUserQuota(user.id, nextQuotaBytes);
+    await this._loadTab();
+  }
+
   private async _generateCode(): Promise<void> {
     await apiClient.generateInviteCode();
     await this._loadTab();
@@ -156,7 +171,7 @@ export class AdminPage extends LitElement {
   private _renderUsers(): TemplateResult {
     return html`
       <table>
-        <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Actions</th></tr></thead>
+        <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Role</th><th>Quota</th><th>Actions</th></tr></thead>
         <tbody>
           ${this._users.map((u) => html`
             <tr>
@@ -164,11 +179,13 @@ export class AdminPage extends LitElement {
               <td>${u.email}</td>
               <td><span class="badge badge-${u.status}">${u.status}</span></td>
               <td>${u.role}</td>
+              <td>${this._formatSize(u.usedBytes)} / ${this._formatSize(u.quotaBytes)}</td>
               <td>
                 ${u.status === 'pending' ? html`
                   <button class="action approve" @click=${() => void this._approve(u.id)}>Approve</button>
                   <button class="action reject" @click=${() => void this._reject(u.id)}>Reject</button>
                 ` : nothing}
+                <button class="action" @click=${() => void this._increaseQuota(u)}>Increase quota</button>
               </td>
             </tr>
           `)}

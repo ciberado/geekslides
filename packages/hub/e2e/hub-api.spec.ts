@@ -416,6 +416,36 @@ test.describe('Admin API', () => {
     expect(body.ok).toBe(true);
   });
 
+  test('PATCH /hub/api/admin/users/:id/quota updates user quota', async ({ request }) => {
+    const listBeforeRes = await request.get(`${ctx.baseUrl}/hub/api/admin/users`, {
+      headers: adminAuth(),
+    });
+    expect(listBeforeRes.status()).toBe(200);
+    const listBeforeBody = await listBeforeRes.json() as { items: Array<{ id: string; quotaBytes: number }> };
+    const targetBefore = listBeforeBody.items.find((item) => item.id === 'regular-e2e');
+    expect(targetBefore).toBeDefined();
+
+    const nextQuota = (targetBefore?.quotaBytes ?? 0) + 25 * 1024 * 1024;
+    const patchRes = await request.patch(
+      `${ctx.baseUrl}/hub/api/admin/users/regular-e2e/quota`,
+      {
+        headers: { ...adminAuth(), 'Content-Type': 'application/json' },
+        data: { quotaBytes: nextQuota },
+      },
+    );
+    expect(patchRes.status()).toBe(200);
+    const patchBody = await patchRes.json();
+    expect(patchBody.ok).toBe(true);
+
+    const listAfterRes = await request.get(`${ctx.baseUrl}/hub/api/admin/users`, {
+      headers: adminAuth(),
+    });
+    expect(listAfterRes.status()).toBe(200);
+    const listAfterBody = await listAfterRes.json() as { items: Array<{ id: string; quotaBytes: number }> };
+    const targetAfter = listAfterBody.items.find((item) => item.id === 'regular-e2e');
+    expect(targetAfter?.quotaBytes).toBe(nextQuota);
+  });
+
   test('POST /hub/api/admin/invite-codes generates a code', async ({ request }) => {
     const res = await request.post(`${ctx.baseUrl}/hub/api/admin/invite-codes`, {
       headers: adminAuth(),
