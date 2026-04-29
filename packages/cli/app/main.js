@@ -557,8 +557,6 @@ try {
         featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
 
         // Content proxy observer
-        let proxyLoaded = false;
-
         async function reloadDeckFromProxy(proxyBaseUrl) {
           try {
             const proxyConfigUrl = `${proxyBaseUrl}config.json`;
@@ -596,15 +594,16 @@ try {
           }
         }
 
+        // Track the last contentProxy JSON seen so deck changes trigger reloads.
+        let lastProxyRaw = '';
         const checkContentProxy = () => {
-          if (proxyLoaded || isContentUploader) return;
           const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
-          if (typeof proxyRaw !== 'string') return;
+          if (typeof proxyRaw !== 'string' || proxyRaw === lastProxyRaw) return;
+          lastProxyRaw = proxyRaw;
 
           try {
             const proxy = JSON.parse(proxyRaw);
             if (proxy.baseUrl) {
-              proxyLoaded = true;
               void reloadDeckFromProxy(proxy.baseUrl);
             }
           } catch {
@@ -862,7 +861,6 @@ try {
       // Track the last contentProxy JSON seen so deck changes trigger reloads.
       let lastProxyRaw = '';
       const checkContentProxy = () => {
-        if (isContentUploader) return;
         const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
         if (typeof proxyRaw !== 'string' || proxyRaw === lastProxyRaw) return;
         lastProxyRaw = proxyRaw;
