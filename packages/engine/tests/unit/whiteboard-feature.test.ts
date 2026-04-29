@@ -90,6 +90,7 @@ function makeSyncManager(strokes: WhiteboardStroke[] = []): SyncManager {
     getStrokes: vi.fn(() => strokes),
     publishWhiteboardVisible: vi.fn(),
     clearStrokes: vi.fn(),
+    clearAllStrokes: vi.fn(),
   } as unknown as SyncManager;
 }
 

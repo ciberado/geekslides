@@ -481,6 +481,7 @@ try {
               sync.doc.getMap('sessionState').set('contentProxy', JSON.stringify({
                 room,
                 baseUrl: proxyBase,
+                loadedAt: Date.now(),
               }));
             });
 
@@ -677,7 +678,33 @@ try {
         slideshow.goTo(0);
 
         if (sync && sync.isConnected) {
+          // Clear whiteboard data from the previous deck for all clients
+          sync.clearAllStrokes();
+
           sync.publishState(0, 0, 'present');
+
+          // Re-upload the new deck and broadcast its location via contentProxy
+          // so all connected clients reload the new presentation automatically.
+          void (async () => {
+            try {
+              const serverBaseUrl = `${location.protocol}//${location.host}`;
+              const currentRoom = sync.currentRoom ?? 'default';
+              const manifest = buildManifest(configUrl, newConfig, newMarkdown, newCss);
+              await uploadDeck(serverBaseUrl, currentRoom, configBase, manifest,
+                (url, init) => fetch(proxyUrlIfNeeded(url), init));
+              const proxyBase = getProxyBaseUrl(serverBaseUrl, currentRoom);
+              sync.doc.transact(() => {
+                sync.doc.getMap('sessionState').set('contentProxy', JSON.stringify({
+                  room: currentRoom,
+                  baseUrl: proxyBase,
+                  loadedAt: Date.now(),
+                }));
+              });
+              console.log('[load] Deck re-uploaded and broadcast for room:', currentRoom);
+            } catch (err) {
+              console.warn('[load] Content proxy re-upload failed (remote clients may not reload):', err.message);
+            }
+          })();
         }
 
         showCmdOutput(`✓ Loaded: ${resolvedConfigUrl}`);
@@ -832,16 +859,17 @@ try {
     // Content proxy: watch for proxy info published by presenter
     // Skip if this client is the uploader (presenter already has content loaded)
     if (sync) {
-      let proxyLoaded = false;
+      // Track the last contentProxy JSON seen so deck changes trigger reloads.
+      let lastProxyRaw = '';
       const checkContentProxy = () => {
-        if (proxyLoaded || isContentUploader) return;
+        if (isContentUploader) return;
         const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
-        if (typeof proxyRaw !== 'string') return;
+        if (typeof proxyRaw !== 'string' || proxyRaw === lastProxyRaw) return;
+        lastProxyRaw = proxyRaw;
 
         try {
           const proxy = JSON.parse(proxyRaw);
           if (proxy.baseUrl) {
-            proxyLoaded = true;
             void reloadDeckFromProxy(proxy.baseUrl);
           }
         } catch {

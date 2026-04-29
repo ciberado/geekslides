@@ -357,6 +357,7 @@ export class DashboardPage extends LitElement {
                   <button @click=${() => { this._openEdit(p); }}>Edit</button>
                   <button @click=${() => { this._replaceFiles(p); }}>Replace Files</button>
                   ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
+                  <button title="Copy \`load\` command for this presentation" @click=${() => { this._copyLoadCmd(p.id); }}>Copy load cmd</button>
                   <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
                 </div>
               </div>
@@ -524,6 +525,11 @@ export class DashboardPage extends LitElement {
     }
   }
 
+  private _copyLoadCmd(id: string): void {
+    const cmd = `load /hub/api/presentations/${id}/content/config.json`;
+    void navigator.clipboard.writeText(cmd);
+  }
+
   private _replaceFiles(p: Presentation): void {
     this._replaceTarget = p;
   }
@@ -626,6 +632,7 @@ export class DashboardPage extends LitElement {
           <button @click=${() => { this._openEdit(p); }}>Edit</button>
           <button @click=${() => { this._replaceFiles(p); }}>Replace</button>
           ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
+          <button title="Copy \`load\` command for this presentation" @click=${() => { this._copyLoadCmd(p.id); }}>Copy load cmd</button>
           <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
         </div>
       </div>

@@ -190,6 +190,20 @@ export class SyncManager {
   }
 
   /**
+   * Clear all whiteboard strokes across every slide.
+   * Called when a new deck is loaded to discard drawings from the previous deck.
+   * No-op in readonly mode.
+   */
+  clearAllStrokes(): void {
+    if (this.#readonly) return;
+    const arr = this.#whiteboardStrokes;
+    if (arr.length === 0) return;
+    this.doc.transact(() => {
+      arr.delete(0, arr.length);
+    });
+  }
+
+  /**
    * Publish whiteboard canvas visibility to all connected sessions.
    * No-op in readonly mode.
    */

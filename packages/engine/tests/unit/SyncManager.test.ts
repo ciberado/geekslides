@@ -258,6 +258,38 @@ describe('SyncManager readonly mode', () => {
     expect(sm.getStrokes()).toHaveLength(1);
   });
 
+  it('clearAllStrokes removes all strokes across all slides', () => {
+    const sm = new SyncManager(new EventTarget());
+    sm.addStroke({ id: 'a', slideIndex: 0, points: [[0, 0]], color: '#f00', width: 2, clientId: 'x' });
+    sm.addStroke({ id: 'b', slideIndex: 1, points: [[0, 0]], color: '#0f0', width: 2, clientId: 'x' });
+    sm.addStroke({ id: 'c', slideIndex: 2, points: [[0, 0]], color: '#00f', width: 2, clientId: 'x' });
+
+    sm.clearAllStrokes();
+
+    expect(sm.getStrokes()).toHaveLength(0);
+  });
+
+  it('clearAllStrokes is a no-op when there are no strokes', () => {
+    const sm = new SyncManager(new EventTarget());
+    expect(() => sm.clearAllStrokes()).not.toThrow();
+    expect(sm.getStrokes()).toHaveLength(0);
+  });
+
+  it('clearAllStrokes is a no-op in readonly mode', () => {
+    const sm = new SyncManager(new EventTarget(), { readonly: true });
+
+    const remoteDoc = new Y.Doc();
+    remoteDoc.getArray('whiteboardStrokes').push([
+      { id: 'r1', slideIndex: 0, points: [[0, 0]], color: '#f00', width: 2, clientId: 'remote' },
+      { id: 'r2', slideIndex: 1, points: [[0, 0]], color: '#0f0', width: 2, clientId: 'remote' },
+    ]);
+    Y.applyUpdate(sm.doc, Y.encodeStateAsUpdate(remoteDoc));
+
+    sm.clearAllStrokes();
+
+    expect(sm.getStrokes()).toHaveLength(2);
+  });
+
   it('still receives remote state changes in readonly mode', () => {
     const sm = new SyncManager(new EventTarget(), { readonly: true });
     const target = createMockTarget();

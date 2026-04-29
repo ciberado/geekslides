@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import path from 'node:path';
 import type { HubDatabase } from '../db/index.ts';
 import type { HubServerOptions } from '../config.ts';
 import {
@@ -13,6 +14,7 @@ import {
 } from '../services/presentation.ts';
 import { validateDeckFiles, extractZip, importFromGitHub, fetchGitHubLatestSha } from '../services/upload.ts';
 import { checkAccess } from '../services/share.ts';
+import { checkoutFiles } from '../services/git.ts';
 import type { RepoFile } from '../services/git.ts';
 
 export function registerPresentationRoutes(
@@ -311,6 +313,65 @@ export function registerPresentationRoutes(
         const status = message === 'Quota exceeded' ? 413 : 502;
         await reply.status(status).send({ error: message });
       }
+    },
+  );
+
+  // Serve a file from the presentation's git repo — used by the `load` terminal command
+  // so presenters can load hub-hosted decks directly without launching a room first.
+  fastify.get(
+    '/hub/api/presentations/:id/content/*',
+    { preHandler: [fastify.requireApproved] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string; '*': string };
+      const filePath = (request.params as { '*': string })['*'] ?? '';
+
+      // Prevent path traversal attacks
+      if (filePath.includes('..') || path.isAbsolute(filePath)) {
+        await reply.status(400).send({ error: 'Invalid path' });
+        return;
+      }
+
+      const access = checkAccess(db, id, request.userId);
+      if (!access) {
+        await reply.status(404).send({ error: 'Not found' });
+        return;
+      }
+      const pres = getPresentationById(db, id);
+      if (!pres) {
+        await reply.status(404).send({ error: 'Not found' });
+        return;
+      }
+
+      const repoPath = path.join(options.repoDir, pres.ownerId, pres.slug);
+      let files: RepoFile[];
+      try {
+        files = await checkoutFiles(repoPath);
+      } catch {
+        await reply.status(500).send({ error: 'Failed to read presentation files' });
+        return;
+      }
+
+      const file = files.find((f) => f.path === filePath);
+      if (!file) {
+        await reply.status(404).send({ error: 'File not found' });
+        return;
+      }
+
+      const ext = filePath.split('.').pop()?.toLowerCase() ?? '';
+      const CONTENT_TYPES: Readonly<Record<string, string>> = {
+        json: 'application/json',
+        md: 'text/markdown; charset=utf-8',
+        css: 'text/css',
+        js: 'text/javascript',
+        png: 'image/png',
+        jpg: 'image/jpeg',
+        jpeg: 'image/jpeg',
+        gif: 'image/gif',
+        svg: 'image/svg+xml',
+        webp: 'image/webp',
+      };
+      const contentType = CONTENT_TYPES[ext] ?? 'application/octet-stream';
+      await reply.header('Content-Type', contentType).send(file.data);
     },
   );
 }
