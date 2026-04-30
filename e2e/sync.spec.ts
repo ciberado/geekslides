@@ -279,3 +279,195 @@ test.describe('Sync between tabs', () => {
     await context.close();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Room-change scenario tests
+// ---------------------------------------------------------------------------
+test.describe('Room change behaviour', () => {
+  /** Run a terminal command on a page */
+  async function runCommand(page: import('@playwright/test').Page, cmd: string): Promise<void> {
+    // If terminal is already open, close it first so the next Escape opens it fresh
+    const isOpen = await page.evaluate(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display === 'block';
+    });
+    if (isOpen) {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => {
+        const term = document.querySelector('geek-terminal') as HTMLElement | null;
+        return term?.style.display !== 'block';
+      });
+    }
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display === 'block';
+    });
+    await page.evaluate((c: string) => {
+      const input = document.querySelector('geek-terminal')
+        ?.shadowRoot?.querySelector('input') as HTMLInputElement | null;
+      if (input) {
+        input.value = c;
+        input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+      }
+    }, cmd);
+  }
+
+  test('joining a room with existing deck adopts that deck', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const room = uniqueRoom('room-adopt');
+
+    // Window A: load deck A and upload to room
+    const windowA = await ctx.newPage();
+    await windowA.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await windowA.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+
+    // Wait for A's upload to complete
+    await windowA.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return typeof ss?._sync?.doc?.getMap('sessionState')?.get('contentProxy') === 'string' ||
+        document.title === 'Test Showcase';
+    }, { timeout: 10000 });
+    await windowA.waitForTimeout(2000); // extra time for upload
+
+    const slideCountA = await windowA.evaluate(() => (document.getElementById('slideshow') as any)?.slideCount);
+
+    // Window B: load a DIFFERENT deck locally, then join room → should adopt A's deck
+    const windowB = await ctx.newPage();
+    await windowB.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${room}`);
+    await windowB.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+
+    // Wait for room contentProxy to arrive and override window B's local deck
+    await windowB.waitForFunction((expected: number) => {
+      return (document.getElementById('slideshow') as any)?.slideCount === expected;
+    }, slideCountA, { timeout: 15000 });
+
+    const finalCountB = await windowB.evaluate(() => (document.getElementById('slideshow') as any)?.slideCount);
+    expect(finalCountB).toBe(slideCountA);
+
+    await ctx.close();
+  });
+
+  test('room command with empty room uploads current deck to peers', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const roomA = uniqueRoom('room-cmd-src');
+    const roomB = uniqueRoom('room-cmd-dst'); // new empty room
+
+    // Presenter: load showcase deck
+    const presenter = await ctx.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${roomA}`);
+    await presenter.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+    await presenter.waitForTimeout(2500); // wait for initial upload
+
+    // Audience: join the presenter's new (empty) room before they do
+    const audience = await ctx.newPage();
+    await audience.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${roomB}`);
+    await audience.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+
+    // Presenter switches to the empty room
+    await runCommand(presenter, `room ${roomB}`);
+    await presenter.waitForTimeout(1000);
+
+    const presenterTitle = await presenter.evaluate(() => document.title);
+    // Presenter keeps their showcase deck (empty room = upload own)
+    expect(presenterTitle).toBe('Test Showcase');
+
+    // Audience in that room should eventually see presenter's deck
+    await audience.waitForFunction(() => document.title === 'Test Showcase', { timeout: 20000 });
+
+    await ctx.close();
+  });
+
+  test('room command with existing deck adopts that room deck', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const roomA = uniqueRoom('room-adopt-src');
+    const roomB = uniqueRoom('room-adopt-dst');
+
+    // Pre-populate roomB with the HMR deck
+    const seed = await ctx.newPage();
+    await seed.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${roomB}`);
+    await seed.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+    await seed.waitForTimeout(5000); // wait for upload + Yjs propagation
+
+    // Presenter: load showcase deck in a different room
+    const presenter = await ctx.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${roomA}`);
+    await presenter.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+    await presenter.waitForTimeout(500); // ensure terminal is ready
+
+    // Presenter switches to the existing room (which has HMR deck)
+    await runCommand(presenter, `room ${roomB}`);
+
+    // Presenter should now show the room's existing deck (HMR Fixture)
+    await presenter.waitForFunction(() => document.title === 'HMR Fixture', { timeout: 20000 });
+
+    await ctx.close();
+  });
+
+  test('speaker view follows presenter room change', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const roomA = uniqueRoom('speaker-room-src');
+    const roomB = uniqueRoom('speaker-room-dst');
+
+    // Presenter: load showcase deck in roomA
+    const presenter = await ctx.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${roomA}`);
+    await presenter.waitForFunction(() => document.title === 'Test Showcase', { timeout: 10000 });
+
+    // Open speaker view in same room
+    const speakerPage = await ctx.newPage();
+    await speakerPage.goto(`/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${roomA}`);
+    await speakerPage.waitForFunction(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.currentIndex !== undefined;
+    }, { timeout: 10000 });
+
+    // Pre-populate roomB with HMR deck so presenter adopts it on join
+    const seed = await ctx.newPage();
+    await seed.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${roomB}`);
+    await seed.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+    await seed.waitForTimeout(3000);
+
+    // Presenter switches to roomB
+    await runCommand(presenter, `room ${roomB}`);
+    await presenter.waitForFunction(() => document.title === 'HMR Fixture', { timeout: 20000 });
+
+    // Speaker should follow and show the new deck
+    await speakerPage.waitForFunction(() => document.title === 'HMR Fixture', { timeout: 25000 });
+    const counter = await speakerPage.evaluate(() => {
+      return document.querySelector('geek-speaker-view')?.shadowRoot?.querySelector('.counter')?.textContent ?? '';
+    });
+    expect(counter).toMatch(/\d+\s*\/\s*2/);
+
+    await ctx.close();
+  });
+
+  test('speaker command uses current room after room change', async ({ browser }) => {
+    const ctx = await browser.newContext();
+    const roomA = uniqueRoom('speaker-cmd-src');
+    const roomB = uniqueRoom('speaker-cmd-dst');
+
+    // Presenter: start in roomA
+    const presenter = await ctx.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${roomA}`);
+    await presenter.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+    await presenter.waitForTimeout(2500);
+
+    // Switch to roomB (empty → uploads showcase deck)
+    await runCommand(presenter, `room ${roomB}`);
+    await presenter.waitForTimeout(2000);
+
+    // Open speaker from terminal — should open in roomB, not roomA
+    const popupPromise = ctx.waitForEvent('page');
+    await runCommand(presenter, 'speaker');
+    const speakerPage = await popupPromise;
+    await speakerPage.waitForLoadState('domcontentloaded');
+
+    // Verify speaker URL includes roomB
+    const speakerUrl = speakerPage.url();
+    expect(speakerUrl).toContain(`room=${roomB}`);
+    expect(speakerUrl).not.toContain(`room=${roomA}`);
+
+    await ctx.close();
+  });
+});

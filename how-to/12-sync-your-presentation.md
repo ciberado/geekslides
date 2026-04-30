@@ -148,6 +148,13 @@ Change rooms without reloading the page:
 
 The URL updates and you immediately join the new room. Useful when running multiple sessions from the same server.
 
+**Room change behaviour:**
+
+- If `new-room-name` is **empty**, GeekSlides uploads your current deck into the room so all connected viewers receive it.
+- If `new-room-name` **already has a deck**, GeekSlides adopts that deck instead — your local slide content is replaced by the room's shared content.
+
+A second window (or the speaker view) that is already open will automatically follow the room change and load the appropriate deck.
+
 ## Speaker view with sync
 
 The speaker view connects to the same room as the presentation. Open it in a second tab or on a second monitor:
@@ -165,6 +172,8 @@ Navigate from either window. Both stay in sync:
 - All connected viewers follow along
 
 When the presenter loads a different deck with the `load` command, the speaker view automatically reloads the new deck and restores the current slide position — no manual refresh needed.
+
+When the presenter switches rooms with the `room` command, the speaker view automatically follows: it reconnects to the new room and loads whatever deck is in that room.
 
 ## Whiteboard sync
 

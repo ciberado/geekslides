@@ -161,6 +161,24 @@ response body back to the browser. Max 50 MB per request.
 3. Load deck from `/api/rooms/:room/content/config.json`
 4. All relative asset URLs resolve against the proxy base
 
+## Room Change and Deck Adoption
+
+When the presenter runs `room <name>` to switch rooms, the following happens:
+
+1. **Signal**: `sessionState.roomTransfer = { toRoom, at }` is set 300 ms before disconnect, so speaker views and other observers can react while the connection is still alive.
+2. **Disconnect / reconnect**: `sync.disconnect()` then `sync.connect(wsUrl, newRoom)`.
+3. **Room content check**: The presenter performs an HTTP `GET /api/rooms/<newRoom>/content/config.json`:
+   - **200 OK** → room already has a deck. The presenter adopts it via `reloadDeckFromProxy()` and sets `lastProxyRaw` to the new room's proxy sentinel to prevent re-uploading.
+   - **404** → room is empty. The presenter uploads its own deck to the new room via `uploadDeckToRoom(newRoom)`.
+
+### Initial Upload Race Guard
+
+When a new interactive client opens a room, it waits 600 ms for Yjs to sync. If `contentProxy` already exists in the shared state, it skips uploading — another presenter has already populated the room. This prevents the second window from overwriting the first presenter's deck.
+
+### Stale `contentProxy` Guard (`lastUploadStartedAt`)
+
+After a presenter starts an upload, the Yjs `contentProxy` from the *previous* room may still arrive via CRDT merge. `checkContentProxy()` skips any proxy whose `loadedAt` timestamp is earlier than `lastUploadStartedAt` to prevent briefly reloading the old deck.
+
 ## Shared State Extension
 
 The Yjs `sessionState` Y.Map gains a new field:

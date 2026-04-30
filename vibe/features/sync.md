@@ -55,13 +55,15 @@ the state converges without custom conflict handling.
 
 ### `sessionState` (Y.Map)
 
-Syncs the presentation state across all connected clients. The map contains five keys:
+Syncs the presentation state across all connected clients. The map contains the following keys:
 
 - **`slide`** (number) — current slide index, 0-based.
 - **`partial`** (number) — current partial index within the slide.
 - **`mode`** (string) — presentation mode: `'present'`, `'speaker'`, or `'overview'`.
 - **`presenterActive`** (boolean) — whether the presenter is actively controlling.
 - **`presenterId`** (string | null) — the Yjs client ID of the presenter (for authority).
+- **`contentProxy`** (object) — published by the presenter when a deck is uploaded to the server proxy. Shape: `{ room, baseUrl, loadedAt }`. Audience clients receive this and reload from the proxy URL. See [content-proxy.md](content-proxy.md).
+- **`roomTransfer`** (object) — published by the presenter when switching rooms via the `room` command. Shape: `{ toRoom, at }` where `at` is a UTC timestamp. The speaker view observes this key and follows the presenter to the new room, reconnecting its WebSocket and loading the new room's deck via HTTP. Set approximately 300 ms before the presenter disconnects so the observer fires while the connection is still alive.
 
 ### `whiteboardStrokes` (Y.Array)
 

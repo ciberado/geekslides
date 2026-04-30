@@ -118,9 +118,22 @@ It tracks a start time, accumulated elapsed milliseconds, and a running state. I
 
 ### Opening the Speaker View
 
-The `speaker` terminal command constructs a new URL preserving the current `config`, `room`, and `token` query parameters alongside `view=speaker`, then opens it via `window.open()`. The speaker view's `SyncManager` also receives the `token` credential so it connects to the correct authenticated room.
+The `speaker` terminal command constructs a new URL preserving the current `config`, `room` (taken from `sync.currentRoom` if sync is active, falling back to the URL parameter), and `token` query parameters alongside `view=speaker`, then opens it via `window.open()`. The speaker view's `SyncManager` also receives the `token` credential so it connects to the correct authenticated room.
 
 On initialization, the engine checks `URLSearchParams` for `view=speaker`. If present, it creates and appends a `<geek-speaker-view>` element instead of the normal `<geek-slideshow>`. The speaker view receives the same deck CSS, active processors, slide index, and partial index as the presentation view. Both connect to the same Yjs room, so they share state automatically.
+
+### Room Change Following
+
+When the presenter switches rooms via the `room` command, the speaker view automatically follows:
+
+1. The presenter sets `sessionState.roomTransfer = { toRoom, at }` in the Yjs shared state approximately 300 ms before disconnecting.
+2. The speaker view's `sessionState` observer calls `checkRoomTransfer()`, which detects the new `toRoom` value.
+3. The speaker disconnects, resets per-connection state, and calls `sync.connect(wsUrl, toRoom)`.
+4. It then performs an HTTP `GET /api/rooms/<toRoom>/content/config.json`:
+   - **200 OK** → loads deck directly from the new room's proxy URL.
+   - **404** → observes the `contentProxy` Yjs key for the new room's deck to arrive via upload.
+
+The per-connection state (`speakerConnectionStarted`, `speakerInitialCheckDone`, `lastSpeakerProxyRaw`) is reset on each room change to prevent stale-proxy logic from misfiring.
 
 ### Notes Authoring Format
 
