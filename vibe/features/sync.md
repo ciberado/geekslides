@@ -244,3 +244,22 @@ Protected rooms enforce a presenter/viewer split. The presenter can navigate and
 5. Updates the browser URL with `&token=` parameter
 
 **Security:** removing `&readonly` from the viewer URL does not grant write access. The server enforces role at WebSocket upgrade time — connections to a protected room without a valid `presenterToken` are rejected with HTTP 403. Viewer connections with `?readonly` have Yjs update messages silently dropped by `applyReadOnlyFilter` server-side.
+
+## Server Binding and Private Network Access
+
+The sync server (`@geekslides/server`) binds to `127.0.0.1` (loopback) by default. This means:
+
+- The server is **not** reachable from the local network or other machines
+- VS Code devcontainer will not auto-forward port 1234 to the host
+- The browser cannot directly connect to port 1234, even if port forwarding is active
+- Clients always connect through the reverse proxy (Caddy in production, Vite dev proxy in development)
+
+To override and bind to all interfaces (e.g. for a standalone server without a proxy), set the `HOST` environment variable:
+
+```bash
+HOST=0.0.0.0 node server/dist/index.cjs
+```
+
+### Private Network Access (PNA) header
+
+The server also adds `Access-Control-Allow-Private-Network: true` to all HTTP responses and WebSocket 101 upgrade responses. This prevents Chrome from showing the "Allow this page to access resources on your local network?" dialog in scenarios where a page on a private or public origin tries to connect to a server on a local address (e.g. when accessing the dev server via a LAN IP while the sync server is on localhost).

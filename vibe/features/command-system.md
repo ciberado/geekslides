@@ -128,7 +128,7 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `fullscreen` | Toggle fullscreen mode |
 | `whiteboard` | Toggle whiteboard overlay |
 | `whiteboard-clear` | Clear whiteboard strokes on current slide |
-| `wb-toolbar` | Toggle whiteboard toolbar collapsed/expanded |
+| `wb-toolbar` | Completely hide / show whiteboard toolbar (`toggleVisibility`) |
 | `wb-hide` | Hide whiteboard toolbar |
 | `wb-show` | Show whiteboard toolbar |
 | `wb-pen` | Switch to pen tool |

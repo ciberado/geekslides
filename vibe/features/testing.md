@@ -198,7 +198,7 @@ Tests in `e2e/whiteboard.spec.ts`:
 - **Per-slide persistence** — draws on slide 1, navigates to slide 2, navigates back, verifies slide 1 drawings remain.
 - **Stroke dispatches correct slideIndex** — draws on slide 2, inspects the dispatched event detail to confirm `slideIndex` matches.
 - **Toolbar presence** — verifies `<geek-whiteboard-toolbar>` has 3 tool buttons, 16 color swatches, and a collapse button.
-- **wb-toolbar command** — toggles collapsed/expanded state via terminal command.
+- **wb-toolbar command** — completely hides/shows the toolbar via `toggleVisibility()` (not collapse). The `≡` collapse button is still available for shrinking the toolbar in place.
 - **wb-hide / wb-show commands** — hides and restores toolbar visibility.
 - **Tool switching commands** — `wb-pen`, `wb-highlighter`, `wb-eraser` change the active tool.
 - **Color swatch click** — clicking a swatch in the palette changes the drawing color.

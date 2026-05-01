@@ -141,6 +141,36 @@ describe('WhiteboardToolbar', () => {
     expect(toolbar.isHidden).toBe(false);
   });
 
+  it('toggleVisibility hides when visible, shows when hidden', () => {
+    // Initially visible
+    expect(toolbar.isHidden).toBe(false);
+
+    toolbar.toggleVisibility();
+    expect(toolbar.isHidden).toBe(true);
+    expect(toolbar.style.display).toBe('none');
+
+    toolbar.toggleVisibility();
+    expect(toolbar.isHidden).toBe(false);
+    expect(toolbar.style.display).toBe('');
+  });
+
+  it('toggleVisibility is independent from collapse state', () => {
+    // Collapse the toolbar first
+    toolbar.toggleCollapse();
+    expect(toolbar.collapsed).toBe(true);
+    expect(toolbar.isHidden).toBe(false);
+
+    // Hide the collapsed toolbar
+    toolbar.toggleVisibility();
+    expect(toolbar.isHidden).toBe(true);
+    expect(toolbar.collapsed).toBe(true);
+
+    // Show it again — collapse state is preserved
+    toolbar.toggleVisibility();
+    expect(toolbar.isHidden).toBe(false);
+    expect(toolbar.collapsed).toBe(true);
+  });
+
   it('hide button dispatches hide-request event', () => {
     const handler = vi.fn();
     toolbar.addEventListener('geek:whiteboard:hide-request', handler);

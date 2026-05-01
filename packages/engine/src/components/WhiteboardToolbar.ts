@@ -98,6 +98,18 @@ export class WhiteboardToolbar extends HTMLElement {
     this.style.display = '';
   }
 
+  /**
+   * Toggle complete visibility of the toolbar.
+   * Unlike toggleCollapse(), this fully hides or restores the toolbar element.
+   */
+  toggleVisibility(): void {
+    if (this.#hidden) {
+      this.show();
+    } else {
+      this.hide();
+    }
+  }
+
   get isHidden(): boolean {
     return this.#hidden;
   }

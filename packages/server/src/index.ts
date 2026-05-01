@@ -55,7 +55,13 @@ export interface ServerOptions {
 
 const DEFAULT_OPTIONS: ServerOptions = {
   port: 1234,
-  host: '0.0.0.0',
+  // Bind to loopback only — the sync server is always reached through a reverse
+  // proxy (Caddy in production, Vite dev proxy in development).  Exposing port
+  // 1234 on 0.0.0.0 would allow direct browser connections that bypass the proxy,
+  // which triggers Chrome's Private Network Access (PNA) dialog and reduces the
+  // security perimeter.  Pass HOST=0.0.0.0 to override when a standalone
+  // (non-proxied) deployment is intentionally required.
+  host: '127.0.0.1',
 };
 
 function extractRoom(req: IncomingMessage): string | null {
@@ -151,6 +157,10 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
   const handleRoomApi = createRoomApiHandler(roomStore);
 
   const httpServer = createHttpServer((req, res) => {
+    // Always include the PNA header so HTTP API pre-flights succeed without
+    // showing a browser dialog.
+    res.setHeader('Access-Control-Allow-Private-Network', 'true');
+
     void (async () => {
       const handled =
         await handlePluginProxy(req, res) ||
@@ -166,6 +176,16 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
   });
 
   const wss = new WebSocketServer({ noServer: true });
+
+  // Respond to Chrome's Private Network Access (PNA) preflight so the browser
+  // does not show the "Allow this page to access resources on your local network?"
+  // prompt when the page origin and the server are on different network tiers
+  // (e.g. a private-IP page hitting a localhost server).
+  wss.on('headers', (headers: string[], req: IncomingMessage) => {
+    if (req.headers['access-control-request-private-network']) {
+      headers.push('Access-Control-Allow-Private-Network: true');
+    }
+  });
 
   httpServer.on('upgrade', (req: IncomingMessage, socket: Duplex, head: Buffer) => {
     const room = extractRoom(req);

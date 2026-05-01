@@ -127,8 +127,8 @@ export const whiteboardFeature: Feature = {
       const toolbar = whiteboard.toolbar;
       if (toolbar) {
         ctx.commands.register({
-          name: 'wb-toolbar', label: 'Toggle whiteboard toolbar',
-          execute: () => { toolbar.toggleCollapse(); },
+          name: 'wb-toolbar', label: 'Hide/show whiteboard toolbar',
+          execute: () => { toolbar.toggleVisibility(); },
           category: 'whiteboard',
         });
         ctx.commands.register({

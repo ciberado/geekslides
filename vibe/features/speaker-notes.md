@@ -87,6 +87,11 @@ A dedicated Web Component that renders the full speaker interface.
 
 The main notes/preview split and the current/next preview split are both draggable in desktop layouts. The notes card header also includes `A-` and `A+` controls to adjust notes font size without affecting slide previews.
 
+**Notes readability:** The notes body text uses a high-contrast colour (`#f1f5f9`) against the dark card background. Markdown formatting is visually distinct to aid fast scanning:
+
+- **Bold text (`**keyword**`)** renders with an inverse background (light fill, dark text) so keywords pop instantly under presentation lighting or screen glare.
+- *Italic text (`*term*`)* renders in amber (`#fbbf24`) — visually distinct from bold, indicating emphasis without a background block.
+
 The component no longer injects raw slide HTML into simple thumbnail divs. Instead, it renders real `geek-slide` instances in both preview panes, which means the speaker view now reuses:
 
 - slide Shadow DOM rendering

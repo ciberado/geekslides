@@ -629,7 +629,7 @@ test.describe('Whiteboard', () => {
     expect(toolbarInfo?.hasCollapseBtn).toBe(true);
   });
 
-  test('wb-toolbar command toggles toolbar collapsed state', async ({ page }) => {
+  test('wb-toolbar command completely hides toolbar (toggleVisibility)', async ({ page }) => {
     // Activate whiteboard first
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
@@ -639,7 +639,7 @@ test.describe('Whiteboard', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    // Collapse via command
+    // Hide via command — should set isHidden=true, not collapsed
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
@@ -648,15 +648,15 @@ test.describe('Whiteboard', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    const collapsed = await page.evaluate(() => {
+    const hidden = await page.evaluate(() => {
       const ss = document.getElementById('slideshow');
       const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
       const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
-      return toolbar?.collapsed;
+      return toolbar?.isHidden;
     });
-    expect(collapsed).toBe(true);
+    expect(hidden).toBe(true);
 
-    // Expand via command again
+    // Show via command again
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
@@ -665,13 +665,13 @@ test.describe('Whiteboard', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    const expanded = await page.evaluate(() => {
+    const visible = await page.evaluate(() => {
       const ss = document.getElementById('slideshow');
       const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
       const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
-      return toolbar?.collapsed;
+      return toolbar?.isHidden === false;
     });
-    expect(expanded).toBe(false);
+    expect(visible).toBe(true);
   });
 
   test('wb-hide and wb-show commands control toolbar visibility', async ({ page }) => {
@@ -1231,14 +1231,15 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    // Collapse toolbar
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-    await page.keyboard.type('wb-toolbar');
-    await page.keyboard.press('Enter');
+    // Collapse toolbar by clicking the ≡ collapse button in the toolbar shadow DOM
+    await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar');
+      const collapseBtn = toolbar?.shadowRoot?.querySelector<HTMLButtonElement>('.collapse-btn');
+      collapseBtn?.click();
+    });
     await page.waitForTimeout(300);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
 
     // Verify canvas has pointer-events:none
     const canvasPointerEvents = await page.evaluate(() => {
@@ -1315,11 +1316,14 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.mouse.up();
     await page.waitForTimeout(200);
 
-    // Collapse the toolbar
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-    await page.keyboard.type('wb-toolbar');
-    await page.keyboard.press('Enter');
+    // Collapse the toolbar via the ≡ collapse button (not wb-toolbar — that hides completely)
+    await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar');
+      const collapseBtn = toolbar?.shadowRoot?.querySelector<HTMLButtonElement>('.collapse-btn');
+      collapseBtn?.click();
+    });
     await page.waitForTimeout(300);
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
@@ -1409,5 +1413,61 @@ test.describe('Whiteboard + Overview interaction', () => {
       return false;
     });
     expect(hasContent).toBe(true);
+  });
+
+  test('wb-toolbar command completely hides and shows the toolbar', async ({ page }) => {
+    // Activate whiteboard so the toolbar is visible
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Verify toolbar is visible initially
+    const toolbarVisibleInitially = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar !== null && toolbar.style.display !== 'none';
+    });
+    expect(toolbarVisibleInitially).toBe(true);
+
+    // Run wb-toolbar to hide the toolbar
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Toolbar should now be completely hidden (display: none)
+    const toolbarHiddenAfterCommand = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.isHidden === true;
+    });
+    expect(toolbarHiddenAfterCommand).toBe(true);
+
+    // Run wb-toolbar again to show it
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Toolbar should be visible again
+    const toolbarShownAgain = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.isHidden === false;
+    });
+    expect(toolbarShownAgain).toBe(true);
   });
 });

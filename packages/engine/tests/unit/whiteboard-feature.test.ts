@@ -53,6 +53,7 @@ class StubWhiteboard extends HTMLElement {
 // --- Stub geek-whiteboard-toolbar element ---
 class StubToolbar extends HTMLElement {
   toggleCollapse = vi.fn();
+  toggleVisibility = vi.fn();
   hide = vi.fn();
   show = vi.fn();
   setTool = vi.fn();
@@ -242,6 +243,20 @@ describe('whiteboardFeature', () => {
     expect(names).toContain('wb-color');
     expect(names).toContain('wb-hide');
     expect(names).toContain('wb-show');
+  });
+
+  it('wb-toolbar command calls toggleVisibility (complete hide/show)', () => {
+    const { ctx, commands, container } = makeContext({ role: 'presenter' });
+    whiteboardFeature.activate(ctx);
+
+    const wbToolbarCall = (commands.mock.calls as Array<[{ name: string; execute: () => void }]>)
+      .find(([c]) => c.name === 'wb-toolbar');
+    expect(wbToolbarCall).toBeTruthy();
+
+    const toolbar = (container.querySelector('geek-whiteboard') as StubWhiteboard).toolbar as StubToolbar;
+    wbToolbarCall![0].execute();
+    expect(toolbar.toggleVisibility).toHaveBeenCalledOnce();
+    expect(toolbar.toggleCollapse).not.toHaveBeenCalled();
   });
 
   // --- Slide tracking ---

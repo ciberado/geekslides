@@ -31,6 +31,66 @@ describe('server', () => {
     expect(typeof createServer).toBe('function');
   });
 
+  it('binds to 127.0.0.1 by default (loopback only)', async () => {
+    const server = createServer({ port: 0 });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address();
+    server.close();
+    expect(address).toBeTruthy();
+    expect(typeof address).toBe('object');
+    expect((address as { address: string }).address).toBe('127.0.0.1');
+  });
+
+  it('includes Access-Control-Allow-Private-Network header in HTTP responses', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address() as { port: number };
+    try {
+      const res = await new Promise<http.IncomingMessage>((resolve) => {
+        http.get(`http://127.0.0.1:${String(address.port)}/unknown-path`, resolve);
+      });
+      expect(res.headers['access-control-allow-private-network']).toBe('true');
+    } finally {
+      server.close();
+    }
+  });
+
+  it('responds to Access-Control-Request-Private-Network in WebSocket upgrade with Access-Control-Allow-Private-Network header', async () => {
+    const server = createServer({ port: 0, host: '127.0.0.1' });
+    if (!server.listening) {
+      await once(server, 'listening');
+    }
+    const address = server.address() as { port: number };
+
+    // Use a raw HTTP upgrade request via http.request to capture the 101
+    // response headers (including the PNA header the server adds).
+    const responseHeaders = await new Promise<http.IncomingMessage>((resolve, reject) => {
+      const req = http.request({
+        hostname: '127.0.0.1',
+        port: address.port,
+        path: '/pna-test-room',
+        method: 'GET',
+        headers: {
+          Connection: 'Upgrade',
+          Upgrade: 'websocket',
+          'Sec-WebSocket-Key': 'dGhlIHNhbXBsZSBub25jZQ==',
+          'Sec-WebSocket-Version': '13',
+          'Access-Control-Request-Private-Network': 'true',
+        },
+      });
+      req.on('upgrade', (res) => resolve(res));
+      req.on('error', reject);
+      req.end();
+    });
+
+    server.close();
+    expect(responseHeaders.headers['access-control-allow-private-network']).toBe('true');
+  }, 10000);
+
   it('syncs documents for clients connected with path-based room names', async () => {
     const server = createServer({ port: 0, host: '127.0.0.1' });
     if (!server.listening) {

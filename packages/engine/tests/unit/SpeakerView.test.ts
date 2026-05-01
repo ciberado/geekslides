@@ -237,4 +237,25 @@ describe('SpeakerView', () => {
 
     document.body.removeChild(el);
   });
+
+  it('notes body CSS includes high-contrast text colour and bold/italic highlighting', () => {
+    const el = document.createElement('geek-speaker-view') as SpeakerView;
+    document.body.appendChild(el);
+
+    const styleEl = el.shadowRoot?.querySelector('style');
+    const css = styleEl?.textContent ?? '';
+
+    // High-contrast text colour for readability
+    expect(css).toContain('#f1f5f9');
+
+    // Bold text gets an inverse-background highlight
+    expect(css).toMatch(/\.notes-body\s+strong/);
+    expect(css).toContain('background');
+
+    // Italic text gets a distinct accent colour
+    expect(css).toMatch(/\.notes-body\s+em/);
+    expect(css).toContain('#fbbf24');
+
+    document.body.removeChild(el);
+  });
 });

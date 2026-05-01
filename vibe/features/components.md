@@ -86,7 +86,8 @@ Separate route/tab:
   - **Hide the whiteboard** (`⊘` button, `whiteboard` command, or `wb-hide`): hides
     the canvas via `display: none` and also controls `userDismissed` state. Restores
     click-through to links, sliders, and other interactive elements in the slide.
-  - **Collapse the toolbar** (click `≡` or run `wb-toolbar`): collapses the toolbar
+  - **Collapse the toolbar** (click `≡`): shrinks the toolbar to a collapsed strip, keeping it visible
+  - **Hide the toolbar** (run `wb-toolbar`): completely removes the toolbar from view (`display: none`)
     UI only. The canvas remains visible so annotations stay on screen, and the canvas
     is immediately given `pointer-events: none` / `touch-action: auto` so swipe
     gestures and tap-zone navigation pass straight through to the slide. Slide
@@ -148,7 +149,7 @@ pink, cyan, brown, lime, navy, maroon, teal, grey.
 
 | Command | Description |
 |---------|-------------|
-| `wb-toolbar` | Toggle toolbar collapsed/expanded state |
+| `wb-toolbar` | Completely hide/show the toolbar (`toggleVisibility()`) |
 | `wb-hide` | Hide toolbar entirely (remove from DOM display) |
 | `wb-show` | Show toolbar (restore DOM display) |
 | `wb-pen` | Switch to pen tool |

@@ -70,7 +70,7 @@ Or type `speaker` in the terminal to open it.
 
 The speaker view shows:
 
-- **Left pane**: Your speaker notes (scrollable, full Markdown rendering)
+- **Left pane**: Your speaker notes (scrollable, full Markdown rendering, high-contrast text — **bold** text is highlighted with an inverse background to let keywords jump out at a glance, and *italic* text is coloured amber for quick scanning)
 - **Right pane**: Current slide on top, next slide preview below
 - **Timer**: Elapsed time since the presentation started (top-right corner)
 - **Clock**: Current wall-clock time next to the timer
@@ -122,7 +122,7 @@ All toolbar actions are also available from the terminal:
 
 | Command | Action |
 |---|---|
-| `wb-toolbar` | Toggle toolbar collapsed / expanded |
+| `wb-toolbar` | **Completely hide / show** the toolbar |
 | `wb-hide` | Hide toolbar |
 | `wb-show` | Show toolbar |
 | `wb-pen` | Switch to pen |
@@ -130,6 +130,8 @@ All toolbar actions are also available from the terminal:
 | `wb-eraser` | Switch to eraser |
 | `wb-color <hex>` | Set colour, e.g. `wb-color #ff0000` |
 | `clear` | Clear whiteboard strokes on current slide |
+
+> **Tip:** `wb-toolbar` completely hides or restores the toolbar element (useful for screen-sharing or demo recording). The **≡** collapse button in the toolbar itself just collapses it to a smaller strip.
 
 ![Whiteboard annotations over a slide](screenshots/whiteboard.png)
 

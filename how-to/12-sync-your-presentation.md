@@ -49,7 +49,6 @@ Instead of relying on query parameters, declare sync settings in your deck's `co
   "content": "README.md",
   "sync": {
     "enabled": true,
-    "server": "ws://localhost:1234",
     "room": "my-talk"
   }
 }
@@ -58,8 +57,12 @@ Instead of relying on query parameters, declare sync settings in your deck's `co
 | Field | Type | Default | Purpose |
 |---|---|---|---|
 | `sync.enabled` | boolean | `true` | Enable or disable sync |
-| `sync.server` | string | `ws://localhost:1234` | WebSocket server URL |
+| `sync.server` | string | *(derived from page origin)* | WebSocket server URL — leave unset in dev mode; the dev server proxies `/ws` automatically |
 | `sync.room` | string | `"default"` | Default room name |
+
+> **Important:** Do **not** set `sync.server` to `ws://localhost:1234` in your deck's `config.json`. The dev server (`geekslides dev`) proxies the WebSocket through the same origin automatically, so no explicit server URL is needed. Setting it to `localhost:1234` directly causes browsers to bypass the proxy, which can trigger a "Private Network Access" security prompt in Chrome when accessed from a different machine or a forwarded URL.
+>
+> Only set `sync.server` when pointing at a production server with a real domain, e.g. `wss://my-server.example.com/ws`.
 
 The `?room=` query parameter always overrides `sync.room`, so you can hardcode a default and switch rooms on the fly.
 

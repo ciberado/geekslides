@@ -180,6 +180,8 @@ export const SPEAKER_STYLES = `
     padding: 1.25rem 1.5rem 1.5rem;
     font-size: var(--gs-speaker-notes-font-size);
     line-height: 1.6;
+    /* High-contrast text for readability under presentation lighting */
+    color: #f1f5f9;
   }
 
   .notes-body::-webkit-scrollbar {
@@ -193,9 +195,25 @@ export const SPEAKER_STYLES = `
 
   .notes-body p { margin: 0.5em 0; }
   .notes-body ul, .notes-body ol { margin: 0.5em 0; padding-left: 1.5em; }
-  .notes-body code { background: rgba(30, 41, 59, 0.9); padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; }
+  .notes-body code { background: rgba(30, 41, 59, 0.9); padding: 0.15em 0.4em; border-radius: 3px; font-size: 0.9em; color: #7dd3fc; }
   .notes-body pre { background: rgba(30, 41, 59, 0.9); padding: 1em; border-radius: 4px; overflow-x: auto; }
   .notes-body a { color: #4a9eff; }
+
+  /* Bold text: inverse-background highlight so keywords pop instantly */
+  .notes-body strong {
+    background: rgba(241, 245, 249, 0.88);
+    color: #0f172a;
+    padding: 0.05em 0.3em;
+    border-radius: 3px;
+    font-weight: 700;
+  }
+
+  /* Italic text: amber accent colour — visually distinct from bold */
+  .notes-body em {
+    color: #fbbf24;
+    font-style: italic;
+    font-weight: 500;
+  }
 
   .no-notes {
     color: #64748b;
