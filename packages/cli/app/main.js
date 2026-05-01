@@ -395,7 +395,14 @@ try {
         const proxy = JSON.parse(proxyRaw);
         if (!proxy.baseUrl) return;
 
-        console.log(`[speaker:checkProxy] baseUrl=${proxy.baseUrl} loadedAt=${proxy.loadedAt} isFirst=${isFirstCheck} configBase=${configBase} isRoomProxy=${speakerConfigIsRoomProxy}`);
+        console.log(`[speaker:checkProxy] baseUrl=${proxy.baseUrl} room=${proxy.room} loadedAt=${proxy.loadedAt} isFirst=${isFirstCheck} currentRoom=${sync.currentRoom}`);
+
+        // Block proxies from a different room — these are CRDT contamination
+        // from the Y.Doc being reused across room changes.
+        if (proxy.room && sync.currentRoom && proxy.room !== sync.currentRoom) {
+          console.log(`[speaker:checkProxy] IGNORED stale proxy from room=${proxy.room} (current=${sync.currentRoom})`);
+          return;
+        }
 
         // On the very first check after (re)connecting: skip if the speaker was
         // opened from a proxy URL that matches this contentProxy.  The browser
@@ -609,10 +616,21 @@ try {
             const serverBaseUrl = `${location.protocol}//${location.host}`;
             // Give Yjs ~600 ms to receive the room's existing state from the server.
             await new Promise((r) => setTimeout(r, 600));
-            const existingProxy = sync?.doc.getMap('sessionState').get('contentProxy');
-            if (typeof existingProxy === 'string') {
-              console.log('[initial-upload] Room has existing deck \u2014 skipping. existingProxy:', existingProxy);
-              return;
+            const existingProxyRaw = sync?.doc.getMap('sessionState').get('contentProxy');
+            if (typeof existingProxyRaw === 'string') {
+              try {
+                const existingProxy = JSON.parse(existingProxyRaw);
+                // Only skip if the existing proxy is for THIS room.
+                // A proxy from a different room is CRDT contamination and should
+                // be ignored (do not skip upload; let the correct proxy be set).
+                if (existingProxy.room === room) {
+                  console.log('[initial-upload] Room has existing deck \u2014 skipping. existingProxy:', existingProxyRaw);
+                  return;
+                }
+                console.log(`[initial-upload] Existing proxy is for room=${existingProxy.room}, not ${room} \u2014 proceeding with upload`);
+              } catch {
+                // malformed JSON — proceed with upload
+              }
             }
             console.log('[initial-upload] No existing proxy, uploading. configUrl:', configUrl, 'title:', config?.title);
             const manifest = buildManifest(configUrl, config, markdown, combinedCss);
@@ -979,9 +997,19 @@ try {
         if (roomHasDeck) {
           // 4a. Room has an existing deck — load it and adopt as the current deck.
           showCmdOutput('Loading room deck...');
-          // Prevent the upcoming contentProxy observe from double-reloading.
-          lastProxyRaw = JSON.stringify({ baseUrl: roomProxyBase, loadedAt: 0 });
+          // Build the correct contentProxy JSON for this room.
+          const correctProxyJson = JSON.stringify({ room: roomName, baseUrl: roomProxyBase, loadedAt: Date.now() });
+          // Pre-set lastProxyRaw so the observer on THIS window skips the
+          // subsequent Yjs event (dedup by exact string match).
+          lastProxyRaw = correctProxyJson;
           await reloadDeckFromProxy(roomProxyBase);
+          // Re-assert the correct contentProxy in Yjs.  This heals any CRDT
+          // contamination where the old room's proxy (higher clock) overwrote
+          // this room's proxy during Y.Doc merge on reconnect.  Other clients
+          // joining the room will now receive the correct room-scoped proxy.
+          sync.doc.transact(() => {
+            sync.doc.getMap('sessionState').set('contentProxy', correctProxyJson);
+          });
           sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
           showCmdOutput(`✓ Room changed: ${roomName} (loaded room deck)`);
         } else {
@@ -1102,7 +1130,14 @@ try {
           const proxy = JSON.parse(proxyRaw);
           if (!proxy.baseUrl) return;
 
-          console.log(`[checkContentProxy] proxy room=${proxy.room} baseUrl=${proxy.baseUrl} loadedAt=${proxy.loadedAt} lastUploadStartedAt=${lastUploadStartedAt}`);
+          console.log(`[checkContentProxy] proxy room=${proxy.room} baseUrl=${proxy.baseUrl} loadedAt=${proxy.loadedAt} lastUploadStartedAt=${lastUploadStartedAt} currentRoom=${sync?.currentRoom}`);
+
+          // Block proxies from a different room — CRDT contamination from
+          // the Y.Doc being reused across room changes.
+          if (proxy.room && sync?.currentRoom && proxy.room !== sync.currentRoom) {
+            console.log(`[checkContentProxy] IGNORED stale proxy from room=${proxy.room} (current=${sync.currentRoom})`);
+            return;
+          }
 
           // Skip proxies that were set BEFORE our own upload started.  This
           // prevents the old room's contentProxy from briefly replacing our deck
