@@ -291,7 +291,7 @@ async function applyProcessors(slideshow, config) {
 
 try {
   let config = await fetchConfig();
-  const markdown = await fetchMarkdown(config);
+  let markdown = await fetchMarkdown(config);
   let combinedCss = await fetchStyles(config);
   updateDocumentTitle(config);
   await registerHmrFiles(config);
@@ -353,9 +353,12 @@ try {
 
     // Reload the speaker view when the presenter switches decks via contentProxy.
     const reloadSpeakerFromProxy = async (proxyBaseUrl) => {
+      const spkId = Math.random().toString(36).slice(2, 8);
+      console.log(`[speakerReload:${spkId}] START proxyBaseUrl=${proxyBaseUrl}`);
       try {
         const proxyConfigUrl = `${proxyBaseUrl}config.json`;
         const newConfig = await loadConfig(proxyConfigUrl);
+        console.log(`[speakerReload:${spkId}] config loaded: title=${newConfig.title}`);
         // Update configBase so resolveUrl() resolves relative paths against the
         // proxy URL, not the original config URL.
         configBase = proxyBaseUrl;
@@ -371,15 +374,18 @@ try {
         if (activeProcessors.length > 0) speaker.loadProcessors(activeProcessors, newConfig);
         updateDocumentTitle(newConfig);
         applySpeakerSyncState();
-        console.log('[speaker] Deck reloaded from proxy:', proxyBaseUrl);
+        console.log(`[speakerReload:${spkId}] DONE title=${newConfig.title} slideCount=${slides.length}`);
       } catch (err) {
-        console.warn('[speaker] Failed to reload deck from proxy:', err.message);
+        console.warn(`[speakerReload:${spkId}] FAILED:`, err.message);
       }
     };
 
     const checkSpeakerContentProxy = () => {
       const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
-      if (typeof proxyRaw !== 'string' || proxyRaw === lastSpeakerProxyRaw) return;
+      const isSame = proxyRaw === lastSpeakerProxyRaw;
+      if (typeof proxyRaw !== 'string' || isSame) {
+        return;
+      }
 
       const isFirstCheck = !speakerInitialCheckDone;
       lastSpeakerProxyRaw = proxyRaw;
@@ -389,16 +395,19 @@ try {
         const proxy = JSON.parse(proxyRaw);
         if (!proxy.baseUrl) return;
 
+        console.log(`[speaker:checkProxy] baseUrl=${proxy.baseUrl} loadedAt=${proxy.loadedAt} isFirst=${isFirstCheck} configBase=${configBase} isRoomProxy=${speakerConfigIsRoomProxy}`);
+
         // On the very first check after (re)connecting: skip if the speaker was
         // opened from a proxy URL that matches this contentProxy.  The browser
         // already fetched the latest deck from that URL — no reload needed.
         // This prevents stale Yjs room state from overwriting a freshly opened
         // speaker view with an older version of the same proxy content.
         if (isFirstCheck && speakerConfigIsRoomProxy && configBase === proxy.baseUrl) {
-          console.log('[speaker] Initial contentProxy matches config URL — skipping redundant reload');
+          console.log('[speaker:checkProxy] SKIPPED initial (matches config URL)');
           return;
         }
 
+        console.log(`[speaker:checkProxy] → reloadSpeakerFromProxy(${proxy.baseUrl})`);
         void reloadSpeakerFromProxy(proxy.baseUrl);
       } catch {
         // ignore invalid proxy data
@@ -567,6 +576,16 @@ try {
     const syncEnabled = syncConfig.enabled !== false;
     let sync = null;
 
+    // --- Content-proxy tracking (hoisted to shared scope so both the initial
+    //     upload IIFE and the interactive block can access them) ---------------
+    // lastProxyRaw: deduplicates consecutive contentProxy Yjs values so we
+    //   don't trigger redundant deck reloads for the same proxy URL.
+    // lastUploadStartedAt: wall-clock ms when we last started an upload.
+    //   Used to skip stale contentProxy values that pre-date our upload, which
+    //   prevents a flicker where the old room proxy briefly replaces our deck.
+    let lastProxyRaw = '';
+    let lastUploadStartedAt = 0;
+
     if (syncEnabled) {
       try {
         sync = new SyncManager(document, { readonly: isReadonly });
@@ -586,28 +605,35 @@ try {
         // a second window joins an already-active room).
         void (async () => {
           try {
+            console.log('[initial-upload] waiting 600ms for Yjs sync...');
             const serverBaseUrl = `${location.protocol}//${location.host}`;
             // Give Yjs ~600 ms to receive the room's existing state from the server.
             await new Promise((r) => setTimeout(r, 600));
             const existingProxy = sync?.doc.getMap('sessionState').get('contentProxy');
             if (typeof existingProxy === 'string') {
-              console.log('[content-proxy] Room has existing deck \u2014 skipping initial upload');
+              console.log('[initial-upload] Room has existing deck \u2014 skipping. existingProxy:', existingProxy);
               return;
             }
+            console.log('[initial-upload] No existing proxy, uploading. configUrl:', configUrl, 'title:', config?.title);
             const manifest = buildManifest(configUrl, config, markdown, combinedCss);
+            lastUploadStartedAt = Date.now();
+            console.log(`[initial-upload] lastUploadStartedAt=${lastUploadStartedAt}`);
             await uploadDeck(serverBaseUrl, room, configBase, manifest,
               (url, init) => fetch(proxyUrlIfNeeded(url), init));
             const proxyBase = getProxyBaseUrl(serverBaseUrl, room);
-            sync?.doc.transact(() => {
-              sync?.doc.getMap('sessionState').set('contentProxy', JSON.stringify({
-                room,
-                baseUrl: proxyBase,
-                loadedAt: Date.now(),
-              }));
+            const proxyJson = JSON.stringify({
+              room,
+              baseUrl: proxyBase,
+              loadedAt: Date.now(),
             });
-            console.log('[content-proxy] Deck uploaded for room:', room);
+            // Pre-set lastProxyRaw so our own observer doesn't trigger a redundant reload
+            lastProxyRaw = proxyJson;
+            sync?.doc.transact(() => {
+              sync?.doc.getMap('sessionState').set('contentProxy', proxyJson);
+            });
+            console.log('[initial-upload] DONE. proxyBase:', proxyBase);
           } catch (err) {
-            console.warn('[content-proxy] Upload failed (remote viewers may not see content):', err.message);
+            console.warn('[initial-upload] FAILED:', err.message);
           }
         })();
 
@@ -753,15 +779,6 @@ try {
     // we append the new theme CSS on top so its :host tokens win by cascade.
     let activeThemeOverrideCss = '';
 
-    // --- Content-proxy tracking (hoisted so changeRoom can reset it) ---------
-    // lastProxyRaw: deduplicates consecutive contentProxy Yjs values so we
-    //   don't trigger redundant deck reloads for the same proxy URL.
-    // lastUploadStartedAt: wall-clock ms when we last started an upload.
-    //   Used to skip stale contentProxy values that pre-date our upload, which
-    //   prevents a flicker where the old room proxy briefly replaces our deck.
-    let lastProxyRaw = '';
-    let lastUploadStartedAt = 0;
-
     function showCmdOutput(msg) {
       terminal.setOutput(msg);
     }
@@ -780,32 +797,46 @@ try {
     // Upload the current deck to a specific room and publish contentProxy.
     // Called on initial connect (empty room) and after a room change (new room).
     async function uploadDeckToRoom(targetRoom) {
+      const uploadId = Math.random().toString(36).slice(2, 8);
+      console.log(`[upload:${uploadId}] START uploadDeckToRoom room=${targetRoom} configUrl=${configUrl} configBase=${configBase} title=${config?.title}`);
       try {
         const serverBaseUrl = `${location.protocol}//${location.host}`;
         const manifest = buildManifest(configUrl, config, markdown, combinedCss);
+        console.log(`[upload:${uploadId}] manifest: content=${manifest.contentPath} styles=${JSON.stringify(manifest.stylePaths)} images=${manifest.imagePaths.length}`);
         lastUploadStartedAt = Date.now();
+        console.log(`[upload:${uploadId}] lastUploadStartedAt=${lastUploadStartedAt}`);
         await uploadDeck(serverBaseUrl, targetRoom, configBase, manifest,
           (url, init) => fetch(proxyUrlIfNeeded(url), init));
+        console.log(`[upload:${uploadId}] upload HTTP complete`);
         const proxyBase = getProxyBaseUrl(serverBaseUrl, targetRoom);
-        sync.doc.transact(() => {
-          sync.doc.getMap('sessionState').set('contentProxy', JSON.stringify({
-            room: targetRoom,
-            baseUrl: proxyBase,
-            loadedAt: Date.now(),
-          }));
+        const proxyJson = JSON.stringify({
+          room: targetRoom,
+          baseUrl: proxyBase,
+          loadedAt: Date.now(),
         });
-        console.log('[content-proxy] Deck uploaded for room:', targetRoom);
+        // Pre-set lastProxyRaw so the observer on THIS window doesn't
+        // trigger a redundant reloadDeckFromProxy for our own upload.
+        lastProxyRaw = proxyJson;
+        console.log(`[upload:${uploadId}] pre-set lastProxyRaw to prevent self-trigger`);
+        sync.doc.transact(() => {
+          sync.doc.getMap('sessionState').set('contentProxy', proxyJson);
+        });
+        console.log(`[upload:${uploadId}] contentProxy set in Yjs, proxyBase=${proxyBase}`);
       } catch (err) {
-        console.warn('[content-proxy] Upload failed for room:', targetRoom, err.message);
+        console.warn(`[upload:${uploadId}] FAILED for room:`, targetRoom, err.message);
       }
     }
 
     async function reloadDeck(newConfigUrl) {
+      const reloadId = Math.random().toString(36).slice(2, 8);
+      console.log(`[reloadDeck:${reloadId}] START newConfigUrl=${newConfigUrl}`);
       showCmdOutput('Loading...');
       try {
         const resolvedConfigUrl = normalizeConfigUrl(newConfigUrl);
         const proxiedConfigUrl = proxyUrlIfNeeded(resolvedConfigUrl);
+        console.log(`[reloadDeck:${reloadId}] loading config from ${proxiedConfigUrl}`);
         const newConfig = await loadConfig(proxiedConfigUrl);
+        console.log(`[reloadDeck:${reloadId}] config loaded: title=${newConfig.title} content=${newConfig.content}`);
 
         configUrl = resolvedConfigUrl;
         configBase = getConfigBase(resolvedConfigUrl);
@@ -827,21 +858,28 @@ try {
 
         slideshow.setAspectRatio(newConfig.aspectRatio);
         slideshow.goTo(0);
+        console.log(`[reloadDeck:${reloadId}] slides loaded, goTo(0), slideCount=${slideshow.slideCount}`);
+
+        // Update the module-level markdown so buildManifest scans the
+        // correct images when uploading the new deck.
+        markdown = newMarkdown;
 
         if (sync && sync.isConnected) {
           // Clear whiteboard data from the previous deck for all clients
           sync.clearAllStrokes();
 
           sync.publishState(0, 0, 'present');
+          console.log(`[reloadDeck:${reloadId}] published state(0,0,present)`);
 
           // Re-upload the new deck and broadcast its location via contentProxy
           // so all connected clients reload the new presentation automatically.
           const currentRoom = sync.currentRoom ?? 'default';
+          console.log(`[reloadDeck:${reloadId}] starting uploadDeckToRoom(${currentRoom})`);
           void uploadDeckToRoom(currentRoom);
         }
 
         showCmdOutput(`✓ Loaded: ${resolvedConfigUrl}`);
-        console.log('[load] Switched to:', resolvedConfigUrl);
+        console.log(`[reloadDeck:${reloadId}] DONE title=${newConfig.title}`);
       } catch (err) {
         showCmdOutput(`✗ Failed to load: ${err.message}`);
         console.error('[load] Error:', err);
@@ -849,9 +887,12 @@ try {
     }
 
     async function reloadDeckFromProxy(proxyBaseUrl) {
+      const proxyId = Math.random().toString(36).slice(2, 8);
+      console.log(`[proxyReload:${proxyId}] START proxyBaseUrl=${proxyBaseUrl} currentTitle=${config?.title}`);
       try {
         const proxyConfigUrl = `${proxyBaseUrl}config.json`;
         const newConfig = await loadConfig(proxyConfigUrl);
+        console.log(`[proxyReload:${proxyId}] config loaded: title=${newConfig.title} content=${newConfig.content}`);
 
         configUrl = proxyConfigUrl;
         configBase = proxyBaseUrl;
@@ -861,6 +902,8 @@ try {
         const newCss = await fetchStyles(newConfig);
 
         combinedCss = newCss;
+        // Update module-level markdown for buildManifest
+        markdown = newMarkdown;
         updateDocumentTitle(newConfig);
         slideshow.loadStyles(newCss);
 
@@ -879,9 +922,9 @@ try {
           slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
         }
 
-        console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
+        console.log(`[proxyReload:${proxyId}] DONE title=${newConfig.title} slideCount=${slideshow.slideCount} slide=${slide}`);
       } catch (err) {
-        console.warn('[content-proxy] Failed to load from proxy:', err.message);
+        console.warn(`[proxyReload:${proxyId}] FAILED:`, err.message);
       }
     }
 
@@ -1048,12 +1091,18 @@ try {
     if (sync) {
       const checkContentProxy = () => {
         const proxyRaw = sync.doc.getMap('sessionState').get('contentProxy');
-        if (typeof proxyRaw !== 'string' || proxyRaw === lastProxyRaw) return;
+        console.log(`[checkContentProxy] called. proxyRaw type=${typeof proxyRaw} same=${proxyRaw === lastProxyRaw} lastUploadStartedAt=${lastUploadStartedAt}`);
+        if (typeof proxyRaw !== 'string' || proxyRaw === lastProxyRaw) {
+          console.log('[checkContentProxy] skipped (no change or not string)');
+          return;
+        }
         lastProxyRaw = proxyRaw;
 
         try {
           const proxy = JSON.parse(proxyRaw);
           if (!proxy.baseUrl) return;
+
+          console.log(`[checkContentProxy] proxy room=${proxy.room} baseUrl=${proxy.baseUrl} loadedAt=${proxy.loadedAt} lastUploadStartedAt=${lastUploadStartedAt}`);
 
           // Skip proxies that were set BEFORE our own upload started.  This
           // prevents the old room's contentProxy from briefly replacing our deck
@@ -1061,10 +1110,11 @@ try {
           if (lastUploadStartedAt > 0 &&
               typeof proxy.loadedAt === 'number' &&
               proxy.loadedAt < lastUploadStartedAt) {
-            console.log('[content-proxy] Skipping stale proxy (pre-dates our upload)');
+            console.log('[checkContentProxy] SKIPPED stale proxy (pre-dates our upload)');
             return;
           }
 
+          console.log(`[checkContentProxy] → reloadDeckFromProxy(${proxy.baseUrl}) currentTitle=${config?.title}`);
           void reloadDeckFromProxy(proxy.baseUrl);
         } catch {
           // ignore invalid proxy data
@@ -1072,6 +1122,10 @@ try {
       };
 
       sync.doc.getMap('sessionState').observe((event) => {
+        const keys = [...event.keysChanged];
+        if (keys.length > 0 && (keys.includes('contentProxy') || keys.includes('roomTransfer'))) {
+          console.log(`[sessionState:observe] keysChanged=${keys.join(',')} local=${event.transaction.local}`);
+        }
         if (event.keysChanged.has('contentProxy')) {
           checkContentProxy();
         }

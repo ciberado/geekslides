@@ -320,4 +320,257 @@ test.describe('Content Proxy', () => {
   });
 });
 
+test.describe('Load command deck switching', () => {
+  // Helper to run a terminal command
+  async function runCommand(page: any, cmd: string): Promise<void> {
+    // Close the terminal if already open, then re-open
+    const isOpen = await page.evaluate(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display === 'block';
+    });
+    if (isOpen) {
+      await page.keyboard.press('Escape');
+      await page.waitForFunction(() => {
+        const term = document.querySelector('geek-terminal') as HTMLElement | null;
+        return term?.style.display !== 'block';
+      });
+    }
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display === 'block';
+    });
+    await page.evaluate((command: string) => {
+      const terminal = document.querySelector('geek-terminal');
+      const input = terminal?.shadowRoot?.querySelector('input') as HTMLInputElement;
+      input.value = command;
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    }, cmd);
+  }
+
+  test('load command switches presenter deck and stays stable', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('load-stable');
+
+    const presenter = await context.newPage();
+    const presenterLogs: string[] = [];
+    presenter.on('console', (msg) => presenterLogs.push(msg.text()));
+
+    // Start with showcase-deck (16 slides, title "Test Showcase")
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Wait for initial upload to complete
+    await presenter.waitForTimeout(2000);
+
+    const initialTitle = await presenter.evaluate(() => document.title);
+    const initialSlides = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(initialTitle).toBe('Test Showcase');
+    expect(initialSlides).toBe(16);
+
+    // Switch to load-target-deck (3 slides, title "Load Target Deck")
+    await runCommand(presenter, 'load e2e/fixtures/load-target-deck/config.json');
+    await presenter.waitForTimeout(1000);
+
+    // Verify the deck switched
+    const newTitle = await presenter.evaluate(() => document.title);
+    const newSlides = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(newTitle).toBe('Load Target Deck');
+    expect(newSlides).toBe(3);
+
+    // CRITICAL: Wait and verify the deck stays stable (no revert to old deck)
+    await presenter.waitForTimeout(3000);
+
+    const stableTitle = await presenter.evaluate(() => document.title);
+    const stableSlides = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(stableTitle).toBe('Load Target Deck');
+    expect(stableSlides).toBe(3);
+
+    // Print proxy-related logs for debugging
+    const proxyLogs = presenterLogs.filter((l) =>
+      l.includes('[upload') || l.includes('[reloadDeck') ||
+      l.includes('[proxyReload') || l.includes('[checkContentProxy') ||
+      l.includes('[initial-upload') || l.includes('[sessionState'),
+    );
+    console.log('Presenter proxy logs:\n', proxyLogs.join('\n'));
+
+    await context.close();
+  });
+
+  test('load command propagates new deck to audience via contentProxy', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('load-audience');
+
+    // --- Presenter ---
+    const presenter = await context.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(2000);
+
+    // --- Audience ---
+    const audience = await context.newPage();
+    const audienceLogs: string[] = [];
+    audience.on('console', (msg) => audienceLogs.push(msg.text()));
+    await audience.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await audience.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Both start with showcase-deck
+    expect(await audience.evaluate(() => document.title)).toBe('Test Showcase');
+
+    // --- Presenter switches deck ---
+    await runCommand(presenter, 'load e2e/fixtures/load-target-deck/config.json');
+    await presenter.waitForTimeout(1500);
+
+    // Presenter should show new deck
+    expect(await presenter.evaluate(() => document.title)).toBe('Load Target Deck');
+
+    // Audience should follow via contentProxy
+    await audience.waitForFunction(() => document.title === 'Load Target Deck', undefined, { timeout: 10000 });
+    const audienceSlides = await audience.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(audienceSlides).toBe(3);
+
+    // Wait and verify stability
+    await audience.waitForTimeout(3000);
+    expect(await audience.evaluate(() => document.title)).toBe('Load Target Deck');
+
+    const proxyLogs = audienceLogs.filter((l) =>
+      l.includes('[checkContentProxy') || l.includes('[proxyReload'),
+    );
+    console.log('Audience proxy logs:\n', proxyLogs.join('\n'));
+
+    await context.close();
+  });
+
+  test('load command propagates new deck to speaker view', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('load-speaker');
+
+    // --- Presenter ---
+    const presenter = await context.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(2000);
+
+    // --- Speaker view ---
+    const speaker = await context.newPage();
+    const speakerLogs: string[] = [];
+    speaker.on('console', (msg) => speakerLogs.push(msg.text()));
+    await speaker.goto(
+      `/?view=speaker&config=e2e/fixtures/showcase-deck/config.json&room=${room}`,
+    );
+    await speaker.waitForFunction(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.currentIndex !== undefined;
+    }, undefined, { timeout: 10000 });
+
+    // Initial state: speaker shows showcase-deck
+    const initialCounter = await speaker.evaluate(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.shadowRoot?.querySelector('.counter')?.textContent;
+    });
+    expect(initialCounter).toContain('16');
+
+    // --- Presenter switches deck ---
+    await runCommand(presenter, 'load e2e/fixtures/load-target-deck/config.json');
+    await presenter.waitForTimeout(1500);
+
+    // Speaker should follow
+    await speaker.waitForFunction(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      const counter = sv?.shadowRoot?.querySelector('.counter')?.textContent;
+      return counter?.includes('3');
+    }, undefined, { timeout: 10000 });
+
+    const newCounter = await speaker.evaluate(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.shadowRoot?.querySelector('.counter')?.textContent;
+    });
+    expect(newCounter).toContain('3');
+
+    // Verify title updated
+    expect(await speaker.evaluate(() => document.title)).toBe('Load Target Deck');
+
+    // Wait and verify stability
+    await speaker.waitForTimeout(3000);
+    const stableCounter = await speaker.evaluate(() => {
+      const sv = document.querySelector('geek-speaker-view') as any;
+      return sv?.shadowRoot?.querySelector('.counter')?.textContent;
+    });
+    expect(stableCounter).toContain('3');
+
+    const proxyLogs = speakerLogs.filter((l) =>
+      l.includes('[speaker') || l.includes('[speakerReload'),
+    );
+    console.log('Speaker proxy logs:\n', proxyLogs.join('\n'));
+
+    await context.close();
+  });
+
+  test('load back and forth between two decks stays stable', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('load-bounce');
+
+    const presenter = await context.newPage();
+    const presenterLogs: string[] = [];
+    presenter.on('console', (msg) => presenterLogs.push(msg.text()));
+
+    // Start with showcase-deck
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(2000);
+
+    // Switch to load-target-deck
+    await runCommand(presenter, 'load e2e/fixtures/load-target-deck/config.json');
+    await presenter.waitForTimeout(2000);
+    expect(await presenter.evaluate(() => document.title)).toBe('Load Target Deck');
+    expect(await presenter.evaluate(() => (document.getElementById('slideshow') as any)?.slideCount)).toBe(3);
+
+    // Switch back to showcase-deck
+    await runCommand(presenter, 'load e2e/fixtures/showcase-deck/config.json');
+    await presenter.waitForTimeout(2000);
+    expect(await presenter.evaluate(() => document.title)).toBe('Test Showcase');
+    expect(await presenter.evaluate(() => (document.getElementById('slideshow') as any)?.slideCount)).toBe(16);
+
+    // Switch one more time to load-target-deck
+    await runCommand(presenter, 'load e2e/fixtures/load-target-deck/config.json');
+    await presenter.waitForTimeout(2000);
+    expect(await presenter.evaluate(() => document.title)).toBe('Load Target Deck');
+    expect(await presenter.evaluate(() => (document.getElementById('slideshow') as any)?.slideCount)).toBe(3);
+
+    // Wait for stability
+    await presenter.waitForTimeout(3000);
+    expect(await presenter.evaluate(() => document.title)).toBe('Load Target Deck');
+
+    const proxyLogs = presenterLogs.filter((l) =>
+      l.includes('[upload') || l.includes('[reloadDeck') ||
+      l.includes('[proxyReload') || l.includes('[checkContentProxy'),
+    );
+    console.log('Bounce test proxy logs:\n', proxyLogs.join('\n'));
+
+    await context.close();
+  });
+});
 
