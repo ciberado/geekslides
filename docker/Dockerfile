@@ -53,6 +53,6 @@ ENV HOST=127.0.0.1
 ENV GEEKSLIDES_LOG_FORMAT=json
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD wget -qO /dev/null http://localhost:2019/ || exit 1
+  CMD wget -qO /dev/null http://127.0.0.1:2019/config/ || exit 1
 
 ENTRYPOINT ["/entrypoint.sh"]

@@ -36,6 +36,7 @@ export function registerBuildCommand(program: Command): void {
         build: {
           outDir,
           emptyOutDir: true,
+          target: 'es2022',
         },
         base: opts.base,
         configFile: false,

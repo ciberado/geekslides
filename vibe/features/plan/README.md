@@ -121,13 +121,13 @@ All decisions and specifications are in the sibling docs:
 | Phase | Status | Notes |
 |-------|--------|-------|
 | 0–10 | Implemented | Core engine, parser, rendering, plugins, navigation, sync, rich components, speaker view, print, CLI, HMR |
-| 11 | In progress | Deployment assets are present; full Docker validation and root README Docker quick-start are still pending |
+| 11 | In progress | Deployment stack is implemented with a combined Caddy + server runtime image; remaining work is operational smoke testing and quick-start polish |
 | 12 | Implemented | Playwright E2E suite is in place and passing in local dev |
 | 13 | Implemented | `load` and `room` runtime commands are implemented, documented, and explicitly covered by Playwright |
-| 14 | Implemented | CLI Docker image with Chromium, wrapper script, how-to guide |
+| 14 | In progress | CLI Docker image builds (slim + chromium); wrapper/create/build/pdf are validated, but `dev` currently fails in-container with `EADDRINUSE` on `127.0.0.1:1234` |
 | 15 | Implemented | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid |
 | 16 | Implemented | Toolbar, mermaid processor, touch zone tuning |
-| 17 | 🔴 Not started | Structured logging infrastructure |
+| 17 | Implemented | Pino-based logging shipped in engine, server, and CLI with configurable namespace levels and unit coverage |
 | 18 | 🔴 Not started | Enhanced error messages and diagnostics |
 
 ## Future Improvements
