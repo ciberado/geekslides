@@ -124,7 +124,7 @@ All decisions and specifications are in the sibling docs:
 | 11 | In progress | Deployment stack is implemented with a combined Caddy + server runtime image; remaining work is operational smoke testing and quick-start polish |
 | 12 | Implemented | Playwright E2E suite is in place and passing in local dev |
 | 13 | Implemented | `load` and `room` runtime commands are implemented, documented, and explicitly covered by Playwright |
-| 14 | In progress | CLI Docker image builds (slim + chromium); wrapper/create/build/pdf are validated, but `dev` currently fails in-container with `EADDRINUSE` on `127.0.0.1:1234` |
+| 14 | Implemented | CLI Docker image builds (slim + chromium); wrapper, dev, create, build, and PDF commands are validated in container smoke tests |
 | 15 | Implemented | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid |
 | 16 | Implemented | Toolbar, mermaid processor, touch zone tuning |
 | 17 | Implemented | Pino-based logging shipped in engine, server, and CLI with configurable namespace levels and unit coverage |
