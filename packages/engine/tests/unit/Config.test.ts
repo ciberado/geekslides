@@ -175,4 +175,49 @@ describe('Config', () => {
     await expect(loadConfig('config.json')).rejects.toThrow('not valid JSON');
     await expect(loadConfig('config.json')).rejects.toThrow('config.json');
   });
+
+  it('preserves the JSON SyntaxError as the cause when JSON is invalid', async () => {
+    mockFetchText('{ broken json }', 'application/json');
+    const err = await loadConfig('config.json').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    const error = err as Error;
+    // The cause must be the original SyntaxError — not swallowed
+    expect(error.cause).toBeInstanceOf(SyntaxError);
+    // The wrapper message must include parse detail from the SyntaxError
+    expect(error.message).toContain('not valid JSON');
+    expect(error.message).toContain('config.json');
+  });
+
+  it('includes the JSON parse position/detail in the error message', async () => {
+    mockFetchText('{"title": "ok", "broken": }', 'application/json');
+    const err = await loadConfig('config.json').catch((e: unknown) => e);
+    const error = err as Error;
+    // SyntaxError.message typically mentions "Unexpected token" or position info
+    // — verify the detail surfaces in the wrapper message, not just "invalid JSON"
+    expect(error.message).toContain('not valid JSON');
+    expect(error.message.length).toBeGreaterThan(50);
+  });
+
+  it('preserves the network error as cause when fetch throws', async () => {
+    const networkError = new TypeError('Failed to fetch');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(networkError));
+    const err = await loadConfig('config.json').catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(Error);
+    const error = err as Error;
+    expect(error.cause).toBe(networkError);
+    expect(error.message).toContain('Network error');
+    expect(error.message).toContain('config.json');
+  });
+
+  it('includes actionable hint for 404 config fetch failures', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      statusText: 'Not Found',
+    }));
+    const err = await loadConfig('config.json').catch((e: unknown) => e);
+    const error = err as Error;
+    expect(error.message).toContain('404');
+    expect(error.message).toContain('geekslides create');
+  });
 });

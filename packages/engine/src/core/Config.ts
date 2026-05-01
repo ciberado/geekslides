@@ -112,9 +112,24 @@ function normalizeLegacyConfig(obj: Record<string, unknown>): void {
 }
 
 export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
-  const response = await fetch(url);
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (err) {
+    const cause = err instanceof Error ? err.message : String(err);
+    throw new Error(
+      `Network error loading config from ${url}: ${cause}\n\n` +
+      'Check that the dev server is running and the config path is correct.',
+      { cause: err },
+    );
+  }
   if (!response.ok) {
-    throw new Error(`Failed to load config from ${url}: ${String(response.status)} ${response.statusText}`);
+    throw new Error(
+      `Failed to load config from ${url}: HTTP ${String(response.status)} ${response.statusText}\n\n` +
+      (response.status === 404
+        ? 'The config file was not found. Run `geekslides create` to scaffold a new deck, or check that config.json exists in the deck directory.'
+        : 'Check that the server is running and the config path is correct.'),
+    );
   }
 
   const contentType = response.headers.get('content-type') ?? '';
@@ -131,9 +146,13 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
   let raw: unknown;
   try {
     raw = JSON.parse(text);
-  } catch {
+  } catch (err) {
+    // SyntaxError.message typically includes line/column info, e.g.
+    // "Unexpected token } in JSON at position 42" — preserve it.
+    const parseDetail = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Config is not valid JSON (${url}):\n${text.slice(0, 200)}`,
+      `Config is not valid JSON (${url}): ${parseDetail}\n\nFirst 200 chars of received content:\n${text.slice(0, 200)}`,
+      { cause: err },
     );
   }
 

@@ -82,6 +82,12 @@ export class SyncManager {
 
     this.#provider.on('status', (event: { status: string }) => {
       log.debug({ status: event.status, room }, 'sync connection status changed');
+      if (event.status === 'disconnected') {
+        log.warn(
+          { room, serverUrl },
+          'sync disconnected — check network connectivity and that the sync server is running',
+        );
+      }
       this.#eventTarget.dispatchEvent(new CustomEvent('geek:sync:state', {
         bubbles: true,
         detail: {
@@ -90,6 +96,25 @@ export class SyncManager {
           readonly: this.#readonly,
         },
       }));
+    });
+
+    // y-websocket surfaces connection errors as WebSocket close events.
+    // Log them with actionable hints so users know why sync failed.
+    this.#provider.ws?.addEventListener('close', (event: CloseEvent) => {
+      if (event.code === 1006) {
+        log.error(
+          { room, serverUrl, code: event.code },
+          'sync WebSocket closed abnormally — server may be unreachable or the URL is wrong. ' +
+          'Check the sync.server config value and verify the server is running.',
+        );
+      } else if (event.code === 4001 || event.code === 4003) {
+        log.error(
+          { room, serverUrl, code: event.code },
+          'sync WebSocket closed with auth rejection — check your presenter token or viewer token.',
+        );
+      } else if (!event.wasClean) {
+        log.warn({ room, serverUrl, code: event.code, reason: event.reason }, 'sync WebSocket closed unexpectedly');
+      }
     });
   }
 

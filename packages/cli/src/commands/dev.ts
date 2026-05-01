@@ -108,12 +108,28 @@ export function registerDevCommand(program: Command): void {
       const speakerUrl = buildDeckDevUrl(`http://localhost:${String(port)}`, browserConfigPath, true);
       const openTarget = new URL(presentationUrl);
 
-      await access(deckConfigPath);
+      await access(deckConfigPath).catch((err: unknown) => {
+        const cause = err instanceof Error ? err.message : String(err);
+        throw new Error(
+          `Config file not found: ${deckConfigPath}\n\n${cause}\n\n` +
+          'Run `geekslides create <name>` to scaffold a new deck, or pass --config <path> to point to an existing config.json.',
+          { cause: err },
+        );
+      });
 
       // Start y-websocket server if sync enabled
       if (opts.sync) {
         const { createServer: createWsServer } = await import('@geekslides/server');
-        createWsServer({ port: wsPort });
+        try {
+          createWsServer({ port: wsPort });
+        } catch (err) {
+          const cause = err instanceof Error ? err.message : String(err);
+          throw new Error(
+            `Failed to start sync server on port ${String(wsPort)}: ${cause}\n\n` +
+            `If port ${String(wsPort)} is already in use, stop the other process or use --ws-port <n> to choose a different port.`,
+            { cause: err },
+          );
+        }
         log.debug({ wsPort }, 'sync server started');
         console.log(`  Sync server running on ws://localhost:${String(wsPort)}`);
       }
@@ -141,7 +157,16 @@ export function registerDevCommand(program: Command): void {
         root: APP_ROOT,
       };
 
-      const server = await createServer(viteConfig);
+      const server = await createServer(viteConfig).catch((err: unknown) => {
+        const cause = err instanceof Error ? err.message : String(err);
+        const isPortInUse = cause.includes('EADDRINUSE');
+        throw new Error(
+          isPortInUse
+            ? `Port ${String(port)} is already in use.\n\nStop the process using that port or run with --port <n> to use a different one.`
+            : `Failed to start Vite dev server: ${cause}`,
+          { cause: err },
+        );
+      });
 
       // Eagerly watch the external deck directory so chokidar picks up
       // content changes without waiting for the browser POST registration.

@@ -43,21 +43,40 @@ export class PluginManager {
 
   /**
    * Run all preprocessors sequentially, threading output through each.
+   * Errors are re-thrown with the plugin name and a snippet of the input
+   * so the root cause is easy to locate.
    */
   preprocess(markdown: string, config: GeekSlidesConfig): string {
     let result = markdown;
-    for (const { fn } of this.#preprocessors) {
-      result = fn(result, config);
+    for (const { name, fn } of this.#preprocessors) {
+      try {
+        result = fn(result, config);
+      } catch (err) {
+        const snippet = result.slice(0, 120).replace(/\n/g, '↵');
+        throw new Error(
+          `Preprocessor from plugin "${name}" threw an error.\n` +
+          `Input snippet: ${snippet}${result.length > 120 ? '…' : ''}`,
+          { cause: err },
+        );
+      }
     }
     return result;
   }
 
   /**
    * Run all processors on a slide element.
+   * Errors are re-thrown with the plugin name and slide context.
    */
   process(slideElement: HTMLElement, context: ProcessorContext): void {
-    for (const { fn } of this.#processors) {
-      fn(slideElement, context);
+    for (const { name, fn } of this.#processors) {
+      try {
+        fn(slideElement, context);
+      } catch (err) {
+        throw new Error(
+          `Processor from plugin "${name}" threw an error on slide ${String(context.slideIndex + 1)} of ${String(context.slideCount)}.`,
+          { cause: err },
+        );
+      }
     }
   }
 

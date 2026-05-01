@@ -18,6 +18,7 @@
 
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { createLogger } from './logging.ts';
+import { sendErrorResponse } from './types/ErrorResponse.ts';
 
 const log = createLogger('deck-proxy');
 
@@ -56,13 +57,13 @@ function isBlockedIpv4(hostname: string): boolean {
   return false;
 }
 
-function sendProxyError(res: ServerResponse, status: number, message: string): void {
-  const body = JSON.stringify({ error: message });
-  res.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Content-Length': Buffer.byteLength(body),
+function sendProxyError(res: ServerResponse, status: number, code: string, message: string, hint?: string, details?: Record<string, unknown>): void {
+  sendErrorResponse(res, status, {
+    code,
+    message,
+    ...(hint !== undefined ? { hint } : {}),
+    ...(details !== undefined ? { details } : {}),
   });
-  res.end(body);
 }
 
 /**
@@ -88,7 +89,7 @@ export async function handleDeckProxy(req: IncomingMessage, res: ServerResponse)
   }
 
   if (req.method !== 'GET') {
-    sendProxyError(res, 405, 'Method not allowed');
+    sendProxyError(res, 405, 'METHOD_NOT_ALLOWED', 'Only GET requests are supported by the deck proxy');
     return true;
   }
 
@@ -96,27 +97,53 @@ export async function handleDeckProxy(req: IncomingMessage, res: ServerResponse)
   const targetUrl = params.get('url');
 
   if (!targetUrl) {
-    sendProxyError(res, 400, 'Missing required "url" query parameter');
+    sendProxyError(
+      res, 400,
+      'MISSING_URL',
+      'Missing required "url" query parameter',
+      'Append ?url=<encoded-url> to the request, e.g. /api/deck-proxy?url=https%3A%2F%2Fexample.com%2Fconfig.json',
+    );
     return true;
   }
 
   let parsed: URL;
   try {
     parsed = new URL(targetUrl);
-  } catch {
-    sendProxyError(res, 400, 'Invalid URL');
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    sendProxyError(
+      res, 400,
+      'INVALID_URL',
+      `URL could not be parsed: ${reason}`,
+      'The url parameter must be a fully-qualified URL starting with http:// or https://',
+      { url: targetUrl },
+    );
     return true;
   }
 
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    sendProxyError(res, 400, `Protocol "${parsed.protocol}" is not allowed`);
+    sendProxyError(
+      res, 400,
+      'BLOCKED_PROTOCOL',
+      `Protocol "${parsed.protocol}" is not allowed`,
+      'Only http: and https: URLs may be proxied',
+      { url: targetUrl, protocol: parsed.protocol },
+    );
     return true;
   }
 
   const hostname = parsed.hostname;
   if (isBlockedHostname(hostname) || isBlockedIpv4(hostname)) {
     log.warn({ url: targetUrl, hostname }, 'deck proxy blocked — hostname not allowed');
-    sendProxyError(res, 400, `Hostname "${hostname}" is not allowed`);
+    sendProxyError(
+      res, 400,
+      'BLOCKED_HOST',
+      `Host "${hostname}" is not allowed by the proxy security policy`,
+      hostname === 'localhost' || hostname === '127.0.0.1'
+        ? 'To load from localhost during development, set DEV_PROXY=true and restart the server'
+        : 'Private/link-local IP ranges and cloud metadata endpoints are blocked to prevent SSRF attacks',
+      { url: targetUrl, hostname },
+    );
     return true;
   }
 
@@ -133,20 +160,41 @@ export async function handleDeckProxy(req: IncomingMessage, res: ServerResponse)
     clearTimeout(timeout);
 
     if (!response.ok) {
-      sendProxyError(res, 502, `Remote server returned ${String(response.status)}`);
+      log.warn({ url: targetUrl, status: response.status }, 'upstream server returned error status');
+      sendProxyError(
+        res, 502,
+        'UPSTREAM_ERROR',
+        `Upstream server returned ${String(response.status)} for the requested URL`,
+        'Check that the URL is correct and the remote server is accessible',
+        { url: targetUrl, upstreamStatus: response.status },
+      );
       return true;
     }
 
     const contentLength = Number(response.headers.get('content-length') ?? 0);
     if (contentLength > MAX_PROXY_SIZE) {
-      sendProxyError(res, 502, `Remote resource exceeds maximum size of ${String(MAX_PROXY_SIZE)} bytes`);
+      log.warn({ url: targetUrl, contentLength }, 'upstream response too large (content-length header)');
+      sendProxyError(
+        res, 502,
+        'OVERSIZED_RESPONSE',
+        `Remote resource is too large (Content-Length: ${String(contentLength)} bytes, limit: ${String(MAX_PROXY_SIZE)} bytes)`,
+        'Split the resource into smaller files or host it on a CDN with range-request support',
+        { url: targetUrl, contentLength, limit: MAX_PROXY_SIZE },
+      );
       return true;
     }
 
     const bodyBuffer = Buffer.from(await response.arrayBuffer());
 
     if (bodyBuffer.length > MAX_PROXY_SIZE) {
-      sendProxyError(res, 502, `Remote resource exceeds maximum size of ${String(MAX_PROXY_SIZE)} bytes`);
+      log.warn({ url: targetUrl, bodyLength: bodyBuffer.length }, 'upstream response too large (body)');
+      sendProxyError(
+        res, 502,
+        'OVERSIZED_RESPONSE',
+        `Remote resource body exceeds the ${String(MAX_PROXY_SIZE)}-byte limit`,
+        'Split the resource into smaller files or host it on a CDN with range-request support',
+        { url: targetUrl, bodyLength: bodyBuffer.length, limit: MAX_PROXY_SIZE },
+      );
       return true;
     }
 
@@ -161,9 +209,20 @@ export async function handleDeckProxy(req: IncomingMessage, res: ServerResponse)
     log.info({ url: targetUrl, size: bodyBuffer.length }, 'deck file proxied');
     return true;
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Fetch failed';
+    const message = err instanceof Error ? err.message : String(err);
+    const isAbort = err instanceof Error && err.name === 'AbortError';
     log.error({ url: targetUrl, err: message }, 'deck proxy fetch failed');
-    sendProxyError(res, 502, `Proxy fetch failed: ${message}`);
+    sendProxyError(
+      res, 502,
+      isAbort ? 'FETCH_TIMEOUT' : 'FETCH_FAILED',
+      isAbort
+        ? `Request to upstream timed out after 15 seconds: ${targetUrl}`
+        : `Proxy fetch failed: ${message}`,
+      isAbort
+        ? 'The remote server did not respond in time. Check the server is up and reachable from the GeekSlides host.'
+        : 'Verify the URL is correct and the remote host is reachable from the GeekSlides server.',
+      { url: targetUrl, cause: message },
+    );
     return true;
   }
 }
