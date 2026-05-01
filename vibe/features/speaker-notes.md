@@ -129,11 +129,14 @@ When the presenter switches rooms via the `room` command, the speaker view autom
 1. The presenter sets `sessionState.roomTransfer = { toRoom, at }` in the Yjs shared state approximately 300 ms before disconnecting.
 2. The speaker view's `sessionState` observer calls `checkRoomTransfer()`, which detects the new `toRoom` value.
 3. The speaker disconnects, resets per-connection state, and calls `sync.connect(wsUrl, toRoom)`.
-4. It then performs an HTTP `GET /api/rooms/<toRoom>/content/config.json`:
+4. The speaker **updates the page URL** via `history.replaceState()` with the new room in the `?room=` query parameter. This ensures that if the speaker view is reloaded or bookmarked after a room change, it reconnects to the correct room rather than the original room it was opened with.
+5. It then performs an HTTP `GET /api/rooms/<toRoom>/content/config.json`:
    - **200 OK** → loads deck directly from the new room's proxy URL.
    - **404** → observes the `contentProxy` Yjs key for the new room's deck to arrive via upload.
 
 The per-connection state (`speakerConnectionStarted`, `speakerInitialCheckDone`, `lastSpeakerProxyRaw`) is reset on each room change to prevent stale-proxy logic from misfiring.
+
+The `proxy.room` guard in `checkSpeakerContentProxy` blocks CRDT-contaminated proxies (proxies whose `room` field does not match `sync.currentRoom`) from loading the wrong deck after a room change. This is important because the Y.Doc is reused across room changes, so the old room's `contentProxy` may persist in the document. See [sync.md — CRDT Contamination](sync.md#crdt-contamination-on-room-change).
 
 ### Notes Authoring Format
 

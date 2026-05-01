@@ -173,11 +173,36 @@ When the presenter runs `room <name>` to switch rooms, the following happens:
 
 ### Initial Upload Race Guard
 
-When a new interactive client opens a room, it waits 600 ms for Yjs to sync. If `contentProxy` already exists in the shared state, it skips uploading — another presenter has already populated the room. This prevents the second window from overwriting the first presenter's deck.
+When a new interactive client opens a room, it waits 600 ms for Yjs to sync. If `contentProxy` already exists in the shared state **and its `room` field matches the current room**, it skips uploading — another presenter has already populated the room. This prevents the second window from overwriting the first presenter's deck.
+
+Important: the check compares `existingProxy.room === currentRoom`. A `contentProxy` from a different room is CRDT contamination (see below) and must be ignored — the client must proceed with uploading the correct deck.
 
 ### Stale `contentProxy` Guard (`lastUploadStartedAt`)
 
 After a presenter starts an upload, the Yjs `contentProxy` from the *previous* room may still arrive via CRDT merge. `checkContentProxy()` skips any proxy whose `loadedAt` timestamp is earlier than `lastUploadStartedAt` to prevent briefly reloading the old deck.
+
+### Self-Trigger Guard (`lastProxyRaw` Pre-Set)
+
+When `uploadDeckToRoom()` sets `contentProxy` in the Yjs Y.Map, the same client's own `sessionState` observer fires immediately. Without a guard, `checkContentProxy()` would interpret this as a remote update and call `reloadDeckFromProxy()` — overwriting the freshly loaded deck with a proxy copy, causing a visible flicker and double-load.
+
+The fix: **pre-set `lastProxyRaw` to `proxyJson` before calling `sync.doc.transact()`**. When the observer fires, `proxyRaw === lastProxyRaw` causes an early return. This pattern is applied in both `uploadDeckToRoom()` and the initial-upload IIFE.
+
+```js
+lastProxyRaw = proxyJson;  // pre-set before transact
+sync.doc.transact(() => {
+  sync.doc.getMap('sessionState').set('contentProxy', proxyJson);
+});
+```
+
+### CRDT Contamination (Cross-Room)
+
+The Yjs Y.Doc is reused across room changes. Room A's `contentProxy` (set with clock N) stays in the Y.Doc when reconnecting to room B. If room B's server has clock < N for `contentProxy`, CRDT merge pushes room A's value to room B's server, corrupting room B's state.
+
+Three defences are in place — see [sync.md — CRDT Contamination on Room Change](sync.md#crdt-contamination-on-room-change) for full detail:
+
+1. `proxy.room` guard in `checkContentProxy` and `checkSpeakerContentProxy`
+2. Re-assert correct proxy in Yjs after adopting a room's existing deck
+3. Initial-upload skips only when `existingProxy.room === currentRoom`
 
 ## Shared State Extension
 

@@ -473,4 +473,52 @@ test.describe('Room change behaviour', () => {
 
     await ctx.close();
   });
+
+  test('CRDT contamination: stale proxy from old room is ignored after room change', async ({ browser }) => {
+    // When a presenter switches rooms their Y.Doc is reused, so the old room's
+    // contentProxy value (which may carry a higher Yjs logical clock) can bleed
+    // into the new room via CRDT merge.  The proxy.room guard must block it.
+    const ctx = await browser.newContext();
+    const roomA = uniqueRoom('crdt-src');
+    const roomB = uniqueRoom('crdt-dst');
+
+    // Presenter starts in roomA with showcase-deck (16 slides)
+    const presenter = await ctx.newPage();
+    await presenter.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${roomA}`);
+    await presenter.waitForFunction(() => document.title === 'Test Showcase', { timeout: 10000 });
+    await presenter.waitForTimeout(2500); // let initial upload complete
+
+    // Seed roomB with a different deck (HMR Fixture, 2 slides)
+    const seed = await ctx.newPage();
+    await seed.goto(`/?config=e2e/fixtures/hmr-deck/config.json&room=${roomB}`);
+    await seed.waitForFunction(() => document.title === 'HMR Fixture', { timeout: 10000 });
+    await seed.waitForTimeout(2500);
+
+    // Presenter switches to roomB → adopts HMR Fixture
+    await runCommand(presenter, `room ${roomB}`);
+    await presenter.waitForFunction(() => document.title === 'HMR Fixture', { timeout: 20000 });
+
+    // Wait a beat then verify the presenter stays on HMR Fixture and does NOT
+    // revert to showcase-deck (which would indicate the old room's contentProxy
+    // contaminated the new room's Yjs state).
+    await presenter.waitForTimeout(5000);
+    const stableTitle = await presenter.evaluate(() => document.title);
+    const stableSlides = await presenter.evaluate(
+      () => (document.getElementById('slideshow') as any)?.slideCount,
+    );
+    expect(stableTitle).toBe('HMR Fixture');
+    expect(stableSlides).toBe(2);
+
+    // A joiner arriving in roomB after all this should also get HMR Fixture, not showcase-deck.
+    const joiner = await ctx.newPage();
+    await joiner.goto(`/?config=e2e/fixtures/showcase-deck/config.json&room=${roomB}`);
+    await joiner.waitForFunction(() => (document.getElementById('slideshow') as any)?.slideCount > 0, { timeout: 10000 });
+    await joiner.waitForFunction(
+      () => (document.getElementById('slideshow') as any)?.slideCount === 2,
+      { timeout: 15000 },
+    );
+    expect(await joiner.evaluate(() => document.title)).toBe('HMR Fixture');
+
+    await ctx.close();
+  });
 });

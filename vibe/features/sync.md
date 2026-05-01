@@ -62,7 +62,7 @@ Syncs the presentation state across all connected clients. The map contains the 
 - **`mode`** (string) — presentation mode: `'present'`, `'speaker'`, or `'overview'`.
 - **`presenterActive`** (boolean) — whether the presenter is actively controlling.
 - **`presenterId`** (string | null) — the Yjs client ID of the presenter (for authority).
-- **`contentProxy`** (object) — published by the presenter when a deck is uploaded to the server proxy. Shape: `{ room, baseUrl, loadedAt }`. Audience clients receive this and reload from the proxy URL. See [content-proxy.md](content-proxy.md).
+- **`contentProxy`** (object) — published by the presenter when a deck is uploaded to the server proxy. Shape: `{ room, baseUrl, loadedAt }`. Audience clients receive this and reload from the proxy URL. The `room` field is critical: observers check `proxy.room === sync.currentRoom` before acting to guard against CRDT contamination (see below). See [content-proxy.md](content-proxy.md).
 - **`roomTransfer`** (object) — published by the presenter when switching rooms via the `room` command. Shape: `{ toRoom, at }` where `at` is a UTC timestamp. The speaker view observes this key and follows the presenter to the new room, reconnecting its WebSocket and loading the new room's deck via HTTP. Set approximately 300 ms before the presenter disconnects so the observer fires while the connection is still alive.
 
 ### `whiteboardStrokes` (Y.Array)
@@ -148,6 +148,50 @@ The audience can optionally break sync to navigate independently:
 | Aedes broker auth (username/password) | y-websocket `authCallback(room, token)` |
 | MQTT topic `rooms/<room>/state/<key>` | Y.Map keys: `slide`, `partial`, `mode` |
 | MQTT QoS / retain | Yjs automatic state sync on connect |
+
+## CRDT Contamination on Room Change
+
+### Problem
+
+Yjs `Y.Doc` instances are **reused** across room changes (the same in-memory document is reconnected to a new y-websocket room). When the presenter switches from room A to room B, the Y.Doc still carries all values set while in room A — including room A's `contentProxy`. Because CRDT logical clocks are cumulative, room A's `contentProxy` value may carry a **higher Yjs clock** than room B's existing value. When the Y.Doc reconnects to room B's y-websocket server, CRDT merge can overwrite room B's `contentProxy` with room A's stale value — causing all clients in room B (including the presenter and any speaker view) to reload the wrong deck.
+
+### Fixes Applied
+
+**1. `proxy.room` guard** — Both `checkContentProxy()` (interactive view) and `checkSpeakerContentProxy()` (speaker view) check:
+
+```js
+if (proxy.room && sync.currentRoom && proxy.room !== sync.currentRoom) {
+  // IGNORED — stale proxy from another room
+  return;
+}
+```
+
+This blocks any `contentProxy` whose `room` field does not match the client's current room.
+
+**2. Re-assert correct proxy after room adoption** — When `changeRoom()` adopts an existing room's deck (`roomHasDeck = true`), it writes the correct room-scoped `contentProxy` back to Yjs after loading:
+
+```js
+const correctProxyJson = JSON.stringify({ room: roomName, baseUrl: roomProxyBase, loadedAt: Date.now() });
+lastProxyRaw = correctProxyJson;  // prevent self-trigger
+await reloadDeckFromProxy(roomProxyBase);
+sync.doc.transact(() => {
+  sync.doc.getMap('sessionState').set('contentProxy', correctProxyJson);
+});
+```
+
+This heals server-side CRDT contamination: the correct value's new timestamp wins future merges, so subsequent joiners receive the right proxy.
+
+**3. Initial-upload CRDT skip fix** — The 600 ms initial-upload IIFE checks whether the existing `contentProxy` room matches the current room before skipping the upload:
+
+```js
+if (existingProxy.room === room) {
+  // Room already has a deck — skip upload
+  return;
+}
+// existingProxy is from a different room (contamination) — proceed with upload
+```
+
+Without this, a contaminated proxy from a previous session in a different room would suppress the upload, leaving the room permanently empty of the correct deck.
 
 ## Read-Only Rooms
 
