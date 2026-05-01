@@ -435,6 +435,12 @@ try {
         const newRoom = transfer.toRoom;
         console.log(`[speaker] Following presenter to room: ${newRoom}`);
 
+        // Update the URL so that reloading the speaker view reconnects to the
+        // new room instead of the original room the page was opened with.
+        const newParams = new URLSearchParams(location.search);
+        newParams.set('room', newRoom);
+        history.replaceState(null, '', `${location.pathname}?${newParams.toString()}`);
+
         // Reconnect to new room.  The same Y.Doc may retain stale state from the
         // old room (CRDT contamination), so we bypass it with a direct HTTP check.
         sync.disconnect();

@@ -439,6 +439,9 @@ test.describe('Room change behaviour', () => {
     });
     expect(counter).toMatch(/\d+\s*\/\s*2/);
 
+    // Speaker URL should be updated to the new room so a page reload reconnects correctly
+    expect(speakerPage.url()).toContain(`room=${roomB}`);
+
     await ctx.close();
   });
 
