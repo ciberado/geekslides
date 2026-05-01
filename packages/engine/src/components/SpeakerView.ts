@@ -154,9 +154,11 @@ export class SpeakerView extends HTMLElement {
       if (notes) {
         this.#notesBody.innerHTML = notes;
         this.#notesPanel.classList.remove('no-notes');
+        this.#notesBody.classList.remove('no-notes');
       } else {
         this.#notesBody.textContent = 'No notes for this slide';
         this.#notesPanel.classList.add('no-notes');
+        this.#notesBody.classList.add('no-notes');
       }
       this.#notesBody.scrollTop = 0;
     }
