@@ -15,14 +15,68 @@ export interface DeckFile {
   readonly data: Buffer;
 }
 
-export async function createRoom(serverBaseUrl: string, room: string): Promise<ServerRoomTokens> {
-  const res = await fetch(`${serverBaseUrl}/api/rooms/${encodeURIComponent(room)}/share`, {
-    method: 'POST',
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to create room: ${String(res.status)} ${res.statusText}`);
+function getServerBaseUrlCandidates(serverBaseUrl: string): string[] {
+  const seen = new Set<string>();
+  const candidates: string[] = [];
+
+  const add = (value: string): void => {
+    const normalized = value.trim().replace(/\/+$/, '');
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    candidates.push(normalized);
+  };
+
+  add(serverBaseUrl);
+
+  try {
+    const parsed = new URL(serverBaseUrl);
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+
+    // A common deployment mistake is setting SERVER_BASE_URL to .../hub.
+    // Room/content APIs are rooted at /api, so also try the origin path.
+    if (normalizedPath === '/hub') {
+      const withoutHub = new URL(parsed.toString());
+      withoutHub.pathname = '/';
+      add(withoutHub.toString());
+    }
+
+    add(parsed.origin);
+  } catch {
+    // Keep original candidate only when URL parsing fails.
   }
-  return (await res.json()) as ServerRoomTokens;
+
+  return candidates;
+}
+
+async function readErrorBody(res: Response): Promise<string> {
+  try {
+    const text = await res.text();
+    return text.slice(0, 500);
+  } catch {
+    return '';
+  }
+}
+
+export async function createRoom(serverBaseUrl: string, room: string): Promise<ServerRoomTokens> {
+  let lastError: Error | null = null;
+
+  for (const baseUrl of getServerBaseUrlCandidates(serverBaseUrl)) {
+    const res = await fetch(`${baseUrl}/api/rooms/${encodeURIComponent(room)}/share`, {
+      method: 'POST',
+    });
+
+    if (res.ok) {
+      return (await res.json()) as ServerRoomTokens;
+    }
+
+    const body = await readErrorBody(res);
+    const details = body ? ` - ${body}` : '';
+    lastError = new Error(
+      `Failed to create room via ${baseUrl}: ${String(res.status)} ${res.statusText}${details}`,
+    );
+  }
+
+  throw lastError ?? new Error('Failed to create room');
 }
 
 export async function uploadContent(
@@ -46,17 +100,28 @@ export async function uploadContent(
 
   const body = Buffer.concat(parts);
 
-  const res = await fetch(
-    `${serverBaseUrl}/api/rooms/${encodeURIComponent(room)}/content`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
-      body,
-    },
-  );
+  let lastError: Error | null = null;
 
-  if (!res.ok) {
-    throw new Error(`Failed to upload content: ${String(res.status)} ${res.statusText}`);
+  for (const baseUrl of getServerBaseUrlCandidates(serverBaseUrl)) {
+    const res = await fetch(
+      `${baseUrl}/api/rooms/${encodeURIComponent(room)}/content`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body,
+      },
+    );
+
+    if (res.ok) {
+      return (await res.json()) as ServerContentUploadResult;
+    }
+
+    const bodyText = await readErrorBody(res);
+    const details = bodyText ? ` - ${bodyText}` : '';
+    lastError = new Error(
+      `Failed to upload content via ${baseUrl}: ${String(res.status)} ${res.statusText}${details}`,
+    );
   }
-  return (await res.json()) as ServerContentUploadResult;
+
+  throw lastError ?? new Error('Failed to upload content');
 }

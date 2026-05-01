@@ -32,7 +32,7 @@ export async function launchPresentation(
   try {
     roomTokens = await createRoom(serverBaseUrl, room);
   } catch (err) {
-    return { error: `Failed to create room: ${err instanceof Error ? err.message : String(err)}` };
+    return { error: err instanceof Error ? err.message : `Failed to create room: ${String(err)}` };
   }
 
   const repoPath = path.join(repoDir, pres.ownerId, pres.slug);
@@ -41,7 +41,7 @@ export async function launchPresentation(
   try {
     await uploadContent(serverBaseUrl, room, files);
   } catch (err) {
-    return { error: `Failed to upload content: ${err instanceof Error ? err.message : String(err)}` };
+    return { error: err instanceof Error ? err.message : `Failed to upload content: ${String(err)}` };
   }
 
   const isPresenter = access === 'owner' || access === 'copresenter';

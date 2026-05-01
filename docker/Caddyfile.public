@@ -18,6 +18,11 @@
 }
 
 {$PUBLIC_DOMAIN} {
+	# Hub SPA base path requires trailing slash.
+	handle /hub {
+		redir /hub/ 301
+	}
+
 	# WebSocket sync — force HTTP/1.1 to the upstream because WebSocket uses
 	# the HTTP Upgrade mechanism, which is not available over HTTP/2.
 	# Caddy defaults to HTTP/2 for TLS upstreams, so we override it here.

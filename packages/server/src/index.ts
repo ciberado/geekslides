@@ -252,7 +252,8 @@ if (
   process.argv[1]?.endsWith('/packages/server/src/index.ts') ||
   process.argv[1]?.endsWith('/packages/server/dist/index.js') ||
   process.argv[1]?.endsWith('/packages/server/dist/index.cjs') ||
-  process.argv[1] === '/index.cjs'
+  process.argv[1] === '/index.cjs' ||
+  process.argv[1] === '/app/index.cjs'
 ) {
   const port = Number(process.env['PORT']) || DEFAULT_OPTIONS.port;
   const host = process.env['HOST'] ?? DEFAULT_OPTIONS.host;

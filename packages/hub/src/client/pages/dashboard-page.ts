@@ -231,6 +231,19 @@ export class DashboardPage extends LitElement {
     }
     .list-row-actions button.present:hover { background: var(--gs-accent-hover); }
     .no-results { text-align: center; padding: 2rem; color: var(--gs-text-muted); }
+    .notice {
+      margin-bottom: 1rem;
+      padding: 0.625rem 0.75rem;
+      border: 1px solid var(--gs-border);
+      border-radius: var(--gs-radius);
+      background: rgba(34,197,94,0.12);
+      color: var(--gs-success);
+      font-size: 0.8125rem;
+    }
+    .notice.error {
+      background: rgba(239,68,68,0.12);
+      color: var(--gs-danger);
+    }
   `;
 
   @state() private _presentations: Presentation[] = [];
@@ -250,10 +263,35 @@ export class DashboardPage extends LitElement {
   @state() private _githubStatus: Map<string, GitHubCheckResult | 'checking' | 'refreshing' | 'error'> = new Map();
   @state() private _layout: 'cards' | 'list' = 'cards';
   @state() private _filter = '';
+  @state() private _notice = '';
+  @state() private _noticeTone: 'success' | 'error' = 'success';
+
+  private _noticeTimer: ReturnType<typeof setTimeout> | null = null;
 
   override connectedCallback(): void {
     super.connectedCallback();
     void this._load();
+  }
+
+  override disconnectedCallback(): void {
+    super.disconnectedCallback();
+    if (this._noticeTimer) {
+      clearTimeout(this._noticeTimer);
+      this._noticeTimer = null;
+    }
+  }
+
+  private _setNotice(message: string, tone: 'success' | 'error' = 'success'): void {
+    this._notice = message;
+    this._noticeTone = tone;
+    if (this._noticeTimer) {
+      clearTimeout(this._noticeTimer);
+      this._noticeTimer = null;
+    }
+    this._noticeTimer = setTimeout(() => {
+      this._notice = '';
+      this._noticeTimer = null;
+    }, 2500);
   }
 
   private async _load(): Promise<void> {
@@ -308,10 +346,15 @@ export class DashboardPage extends LitElement {
     await this._load();
   }
 
-  private _copyShareUrl(): void {
+  private async _copyShareUrl(): Promise<void> {
     if (this._launchResult) {
       const full = new URL(this._launchResult.shareUrl, window.location.origin).href;
-      void navigator.clipboard.writeText(full);
+      try {
+        await navigator.clipboard.writeText(full);
+        this._setNotice('Share URL copied');
+      } catch {
+        this._setNotice('Could not copy share URL', 'error');
+      }
     }
   }
 
@@ -322,6 +365,8 @@ export class DashboardPage extends LitElement {
         <h1>My Presentations</h1>
         <button class="btn-primary" @click=${() => { this._showUpload = true; }}>New Presentation</button>
       </div>
+
+      ${this._notice ? html`<div class="notice ${this._noticeTone === 'error' ? 'error' : ''}">${this._notice}</div>` : nothing}
 
       ${this._presentations.length > 0 ? html`
         <div class="toolbar">
@@ -357,7 +402,7 @@ export class DashboardPage extends LitElement {
                   <button @click=${() => { this._openEdit(p); }}>Edit</button>
                   <button @click=${() => { this._replaceFiles(p); }}>Replace Files</button>
                   ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
-                  <button title="Copy \`load\` command for this presentation" @click=${() => { this._copyLoadCmd(p.id); }}>Copy load cmd</button>
+                  <button title="Copy \`load\` command for this presentation" @click=${() => { void this._copyLoadCmd(p.id); }}>Copy load cmd</button>
                   <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
                 </div>
               </div>
@@ -500,7 +545,7 @@ export class DashboardPage extends LitElement {
           <p style="font-size:0.875rem;color:var(--gs-text-muted)">Share this URL with your audience:</p>
           <div class="share-url">
             <span>${this._launchResult?.shareUrl}</span>
-            <button @click=${() => { this._copyShareUrl(); }}>Copy</button>
+            <button @click=${() => { void this._copyShareUrl(); }}>Copy</button>
           </div>
           <div class="modal-actions" style="margin-top:1rem">
             <button class="btn-primary" @click=${() => { this._launchResult = null; }}>Done</button>
@@ -525,9 +570,14 @@ export class DashboardPage extends LitElement {
     }
   }
 
-  private _copyLoadCmd(id: string): void {
+  private async _copyLoadCmd(id: string): Promise<void> {
     const cmd = `load /hub/api/presentations/${id}/content/config.json`;
-    void navigator.clipboard.writeText(cmd);
+    try {
+      await navigator.clipboard.writeText(cmd);
+      this._setNotice('Load command copied');
+    } catch {
+      this._setNotice('Could not copy load command', 'error');
+    }
   }
 
   private _replaceFiles(p: Presentation): void {
@@ -632,7 +682,7 @@ export class DashboardPage extends LitElement {
           <button @click=${() => { this._openEdit(p); }}>Edit</button>
           <button @click=${() => { this._replaceFiles(p); }}>Replace</button>
           ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
-          <button title="Copy \`load\` command for this presentation" @click=${() => { this._copyLoadCmd(p.id); }}>Copy load cmd</button>
+          <button title="Copy \`load\` command for this presentation" @click=${() => { void this._copyLoadCmd(p.id); }}>Copy load cmd</button>
           <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
         </div>
       </div>
