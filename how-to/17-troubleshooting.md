@@ -136,3 +136,7 @@ All log lines include a `ns` (namespace) field so you can filter by component:
 ```bash
 GEEKSLIDES_LOG=debug geekslides dev 2>&1 | grep '"ns":"deck-proxy"'
 ```
+
+---
+
+← Previous: [Deploy with Tailscale](16-deploy-with-tailscale.md) | Next: [Use the VS Code Extension →](18-use-the-vscode-extension.md)

@@ -25,6 +25,19 @@ export interface SlideData {
   readonly notesHtml: string | undefined;
   readonly detailsHtml: string | undefined;
   readonly partialCount: number;
+  readonly sourceLineStart?: number;
+  readonly sourceLineEnd?: number;
+}
+
+export interface SlideMapEntry {
+  readonly slideIndex: number;
+  readonly sourceLineStart: number;
+  readonly sourceLineEnd: number;
+  readonly id: string;
+}
+
+interface ParseOptions {
+  readonly lineMapping?: readonly number[];
 }
 
 /**
@@ -237,23 +250,57 @@ function getSeparatorHref(
  * Split markdown-it tokens on empty-link separators.
  * Empty links look like: [](.class#id,bgurl(...))
  */
-function splitOnSeparators(tokens: MarkdownToken[]): { href: string; tokens: MarkdownToken[] }[] {
-  const sections: { href: string; tokens: MarkdownToken[] }[] = [];
+function splitOnSeparators(tokens: MarkdownToken[]): Array<{
+  href: string;
+  tokens: MarkdownToken[];
+  startLine?: number;
+  endLine?: number;
+}> {
+  const sections: Array<{
+    href: string;
+    tokens: MarkdownToken[];
+    startLine?: number;
+    endLine?: number;
+  }> = [];
   let currentHref = '';
   let currentTokens: MarkdownToken[] = [];
+  let currentStartLine: number | undefined;
+  let currentEndLine: number | undefined;
 
-  const pushCurrentSection = () => {
+  const pushCurrentSection = (endLineOverride?: number) => {
     if (currentTokens.length > 0 || currentHref.length > 0) {
-      sections.push({ href: currentHref, tokens: [...currentTokens] });
+      const section: {
+        href: string;
+        tokens: MarkdownToken[];
+        startLine?: number;
+        endLine?: number;
+      } = {
+        href: currentHref,
+        tokens: [...currentTokens],
+      };
+
+      if (currentStartLine !== undefined) {
+        section.startLine = currentStartLine;
+      }
+      const resolvedEndLine = endLineOverride ?? currentEndLine;
+      if (resolvedEndLine !== undefined) {
+        section.endLine = resolvedEndLine;
+      }
+
+      sections.push(section);
     }
     currentTokens = [];
+    currentStartLine = undefined;
+    currentEndLine = undefined;
   };
 
   for (let index = 0; index < tokens.length; index++) {
     const href = getSeparatorHref(tokens[index], tokens[index + 1], tokens[index + 2]);
     if (href !== undefined) {
-      pushCurrentSection();
+      pushCurrentSection(tokens[index]?.map?.[0]);
       currentHref = href;
+      currentStartLine = tokens[index]?.map?.[0];
+      currentEndLine = tokens[index + 2]?.map?.[1] ?? tokens[index]?.map?.[1];
       index += 2;
       continue;
     }
@@ -261,11 +308,54 @@ function splitOnSeparators(tokens: MarkdownToken[]): { href: string; tokens: Mar
     const token = tokens[index];
     if (token) {
       currentTokens.push(token);
+      if (token.map) {
+        currentStartLine ??= token.map[0];
+        currentEndLine = Math.max(currentEndLine ?? token.map[1], token.map[1]);
+      }
     }
   }
 
   pushCurrentSection();
   return sections;
+}
+
+function getMappedOriginalLine(
+  processedLine: number,
+  lineMapping: readonly number[] | undefined,
+): number {
+  return lineMapping?.[processedLine] ?? processedLine + 1;
+}
+
+function getSectionSourceRange(
+  section: {
+    readonly startLine?: number;
+    readonly endLine?: number;
+  },
+  lineMapping: readonly number[] | undefined,
+): { sourceLineStart: number; sourceLineEnd: number } | undefined {
+  let start = Number.POSITIVE_INFINITY;
+  let endInclusive = Number.NEGATIVE_INFINITY;
+
+  const includeProcessedRange = (rangeStart: number, rangeEnd: number): void => {
+    for (let line = rangeStart; line < rangeEnd; line++) {
+      const originalLine = getMappedOriginalLine(line, lineMapping);
+      start = Math.min(start, originalLine);
+      endInclusive = Math.max(endInclusive, originalLine);
+    }
+  };
+
+  if (section.startLine !== undefined && section.endLine !== undefined) {
+    includeProcessedRange(section.startLine, section.endLine);
+  }
+
+  if (!Number.isFinite(start) || !Number.isFinite(endInclusive)) {
+    return undefined;
+  }
+
+  return {
+    sourceLineStart: start,
+    sourceLineEnd: endInclusive + 1,
+  };
 }
 
 function extractContainerTokens(
@@ -341,7 +431,7 @@ let autoId = 0;
 /**
  * Parse markdown into an array of SlideData objects.
  */
-export function parse(markdown: string): SlideData[] {
+export function parse(markdown: string, options?: ParseOptions): SlideData[] {
   autoId = 0;
   const tokens = md.parse(markdown, {});
   const sections = splitOnSeparators(tokens);
@@ -363,6 +453,7 @@ export function parse(markdown: string): SlideData[] {
         ? md.renderer.render(detailTokens, md.options, {}).trim()
         : undefined;
       const id = attrs.id || `slide-${String(++autoId)}`;
+      const sourceRange = getSectionSourceRange(section, options?.lineMapping);
 
       return {
         id,
@@ -374,7 +465,13 @@ export function parse(markdown: string): SlideData[] {
         notesHtml,
         detailsHtml,
         partialCount,
-      };
+        ...(sourceRange
+          ? {
+              sourceLineStart: sourceRange.sourceLineStart,
+              sourceLineEnd: sourceRange.sourceLineEnd,
+            }
+          : {}),
+      } satisfies SlideData;
     });
 
   // Warn about duplicate slide IDs
@@ -389,6 +486,19 @@ export function parse(markdown: string): SlideData[] {
   log.debug({ slideCount: slides.length }, 'parsed slides');
 
   return slides;
+}
+
+export function computeSlideMap(slides: readonly SlideData[]): SlideMapEntry[] {
+  return slides.flatMap((slide, slideIndex) => (
+    slide.sourceLineStart !== undefined && slide.sourceLineEnd !== undefined
+      ? [{
+          slideIndex,
+          sourceLineStart: slide.sourceLineStart,
+          sourceLineEnd: slide.sourceLineEnd,
+          id: slide.id,
+        }]
+      : []
+  ));
 }
 
 export type { MarkdownIt };

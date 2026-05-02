@@ -1,0 +1,85 @@
+{
+  "name": "@geekslides/vscode",
+  "version": "2.0.0-alpha.0",
+  "type": "module",
+  "displayName": "GeekSlides",
+  "description": "VS Code extension for authoring GeekSlides decks.",
+  "main": "./dist/extension.cjs",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:geekslides.startServer",
+    "onCommand:geekslides.stopServer",
+    "onCommand:geekslides.createDeck",
+    "onCommand:geekslides.openInBrowser",
+    "onCommand:geekslides.toggleCursorSync",
+    "workspaceContains:config.json"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "geekslides.startServer",
+        "title": "GeekSlides: Start Dev Server"
+      },
+      {
+        "command": "geekslides.stopServer",
+        "title": "GeekSlides: Stop Dev Server"
+      },
+      {
+        "command": "geekslides.createDeck",
+        "title": "GeekSlides: Create Deck"
+      },
+      {
+        "command": "geekslides.openInBrowser",
+        "title": "GeekSlides: Open in Browser"
+      },
+      {
+        "command": "geekslides.toggleCursorSync",
+        "title": "GeekSlides: Toggle Cursor Sync"
+      }
+    ],
+    "configuration": {
+      "title": "GeekSlides",
+      "properties": {
+        "geekslides.debounceMs": {
+          "type": "number",
+          "default": 300,
+          "minimum": 50,
+          "description": "Debounce delay for editor cursor to slide synchronization."
+        },
+        "geekslides.autoStartServer": {
+          "type": "boolean",
+          "default": false,
+          "description": "Start the GeekSlides dev server automatically when a deck workspace opens."
+        },
+        "geekslides.defaultPort": {
+          "type": "number",
+          "default": 5173,
+          "description": "Default Vite dev server port used by the extension."
+        },
+        "geekslides.wsPort": {
+          "type": "number",
+          "default": 1234,
+          "description": "Default Yjs websocket server port used by the extension."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "y-websocket": "^2.0.0",
+    "yjs": "^13.6.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.8.1",
+    "@types/vscode": "^1.96.0",
+    "esbuild": "^0.25.12"
+  }
+}

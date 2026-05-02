@@ -234,4 +234,17 @@ Second slide
       expect.stringContaining('duplicate slide ID'),
     );
   });
+
+  it('tracks source line ranges when explicit separators are present', () => {
+    const slides = parse([
+      '[](#intro)',
+      '',
+      '# Intro',
+      '',
+      'Hello',
+    ].join('\n'));
+
+    expect(slides[0]?.sourceLineStart).toBe(1);
+    expect(slides[0]?.sourceLineEnd).toBe(6);
+  });
 });

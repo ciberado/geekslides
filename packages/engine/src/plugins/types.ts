@@ -4,10 +4,19 @@
 
 import type { GeekSlidesConfig } from '../core/Config.ts';
 
+export interface PreprocessorOutput {
+  readonly content: string;
+  readonly lineMapping?: readonly number[];
+}
+
 /**
  * Transforms raw markdown before parsing into slides.
  */
-export type Preprocessor = (markdown: string, config: GeekSlidesConfig) => string;
+export type PreprocessorResult = string | PreprocessorOutput;
+export type Preprocessor = (
+  markdown: string,
+  config: GeekSlidesConfig,
+) => PreprocessorResult;
 
 /**
  * Transforms a rendered slide's DOM element after HTML insertion.

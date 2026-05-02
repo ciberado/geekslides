@@ -18,12 +18,14 @@ function slugify(title: string): string {
     .replace(/^-+|-+$/g, '');
 }
 
-export const headerPreprocessor: Preprocessor = (markdown: string): string => {
+export const headerPreprocessor: Preprocessor = (markdown: string) => {
   const lines = markdown.split('\n');
   const result: string[] = [];
+  const lineMapping: number[] = [];
   let insideContainer = 0;
 
-  for (const line of lines) {
+  for (const [index, line] of lines.entries()) {
+    const sourceLine = index + 1;
     // Track ::: container blocks (Notes, Details, …)
     if (/^:::\s*\S/.test(line)) {
       insideContainer++;
@@ -39,12 +41,17 @@ export const headerPreprocessor: Preprocessor = (markdown: string): string => {
         const anchor = slugify(title);
         result.push(`[](.slide#${anchor})`);
         result.push('');
+        lineMapping.push(sourceLine, sourceLine);
       }
     }
     result.push(line);
+    lineMapping.push(sourceLine);
   }
 
-  return result.join('\n');
+  return {
+    content: result.join('\n'),
+    lineMapping,
+  };
 };
 
 function findLastNonBlank(lines: string[]): string | undefined {

@@ -20,6 +20,25 @@ describe('PluginManager', () => {
     expect(result).toBe('input\n---first---\n---second---');
   });
 
+  it('composes line mappings across preprocessors', () => {
+    const pm = new PluginManager();
+
+    pm.register({
+      name: 'test',
+      preprocessors: [
+        (markdown) => ({
+          content: `[](#intro)\n\n${markdown}`,
+          lineMapping: [1, 1, 1],
+        }),
+      ],
+    });
+
+    const result = pm.preprocessWithLineMapping('# Intro', DEFAULT_CONFIG);
+
+    expect(result.content).toContain('[](#intro)');
+    expect(result.lineMapping).toEqual([1, 1, 1]);
+  });
+
   it('runs processors on slide elements', () => {
     const pm = new PluginManager();
     const calls: number[] = [];

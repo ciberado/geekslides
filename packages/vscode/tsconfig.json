@@ -6,23 +6,22 @@
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "lib": ["ES2022"],
+    "composite": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
+    "outDir": "dist-types",
+    "rootDir": "src",
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-    "isolatedModules": true
+    "isolatedModules": true,
+    "types": ["node", "vscode"]
   },
-  "references": [
-    { "path": "packages/engine" },
-    { "path": "packages/server" },
-    { "path": "packages/cli" },
-    { "path": "packages/hub" },
-    { "path": "packages/vscode" }
-  ],
-  "files": [],
-  "exclude": ["node_modules", "dist", "coverage", "e2e"]
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist", "dist-types", "tests"]
 }

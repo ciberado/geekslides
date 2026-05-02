@@ -5,8 +5,8 @@ export const VERSION = '2.0.0-alpha.0';
 // Phase 1: Core data pipeline
 export { loadConfig, DEFAULT_CONFIG } from './core/Config.ts';
 export type { GeekSlidesConfig, SyncConfig, PluginsConfig } from './core/Config.ts';
-export { parse } from './core/SlideParser.ts';
-export type { SlideData } from './core/SlideParser.ts';
+export { parse, computeSlideMap } from './core/SlideParser.ts';
+export type { SlideData, SlideMapEntry } from './core/SlideParser.ts';
 export { scope } from './core/StyleScoper.ts';
 
 // Phase 2: Web Components
@@ -19,9 +19,16 @@ export { Slide } from './core/Slide.ts';
 // Phase 3: Plugin System
 export { PluginManager } from './plugins/PluginManager.ts';
 export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
+export type { PreprocessorOutput, PreprocessorResult } from './plugins/types.ts';
 export { isLocalPluginPath, isRemotePluginUrl, importRemotePlugin, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { slideSourceNotesPreprocessor } from './plugins/builtins/slide-source-notes-preprocessor.ts';
+export {
+  applyPreprocessorResult,
+  composeLineMappings,
+  createIdentityLineMapping,
+  normalizePreprocessorResult,
+} from './plugins/preprocessor-utils.ts';
 export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
 export { chartProcessor } from './plugins/builtins/chart-processor.ts';
 export { videoProcessor } from './plugins/builtins/video-processor.ts';

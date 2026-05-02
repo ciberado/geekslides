@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { parse } from '../../src/core/SlideParser.ts';
 import { headerPreprocessor } from '../../src/plugins/builtins/header-preprocessor.ts';
+import { normalizePreprocessorResult, applyPreprocessorResult, createIdentityLineMapping } from '../../src/plugins/preprocessor-utils.ts';
+import type { PreprocessedMarkdown } from '../../src/plugins/preprocessor-utils.ts';
 
 interface SampleDeckConfig {
   readonly title: string;
@@ -19,17 +21,22 @@ async function loadAwsSampleSlides() {
   const configUrl = new URL('../../../../decks/slides-cuatro-cosas-aws/config.json', import.meta.url);
   const rawConfig = JSON.parse(await readFile(configUrl, 'utf8')) as SampleDeckConfig;
 
-  let markdown = await readFile(new URL(rawConfig.content, configUrl), 'utf8');
+  const rawMarkdown = await readFile(new URL(rawConfig.content, configUrl), 'utf8');
+  let state: PreprocessedMarkdown = {
+    content: rawMarkdown,
+    lineMapping: createIdentityLineMapping(rawMarkdown),
+  };
+
   for (const preprocessorName of rawConfig.plugins?.preprocessors ?? []) {
     const preprocessor = PREPROCESSORS[preprocessorName as keyof typeof PREPROCESSORS];
     if (preprocessor) {
-      markdown = preprocessor(markdown);
+      state = applyPreprocessorResult(state, normalizePreprocessorResult(preprocessor(state.content)));
     }
   }
 
   return {
     config: rawConfig,
-    slides: parse(markdown),
+    slides: parse(state.content, { lineMapping: state.lineMapping }),
   };
 }
 

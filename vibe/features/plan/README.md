@@ -62,6 +62,10 @@ Phase 6: Rich Components (chart, video, whiteboard)
                            ▼
                     Phase 18: Enhanced Error
                           Management & Diagnostics
+                           │
+                           ▼
+                     Phase 19: VS Code Extension
+                     (@geekslides/vscode)
 ```
 
 ## Phase Summary
@@ -87,6 +91,7 @@ Phase 6: Rich Components (chart, video, whiteboard)
 | [16](phase-16-toolbar-mermaid-touch.md) | Toolbar, Mermaid & Touch | 15 | Toolbar component, mermaid processor, touch zone tuning, lint fixes | ~7 |
 | [17](phase-17-logging.md) | Structured Logging | all | pino loggers in engine/server/cli, namespace-scoped debug control | ~4 |
 | [18](phase-18-error-management.md) | Error Management & Diagnostics | 17 | Error response format, detailed error codes, user-facing hints, troubleshooting guide | ~6 |
+| [19](phase-19-vscode-extension.md) | VS Code Extension | 5, 9, 10 | `@geekslides/vscode` package, dev server management, cursor↔slide sync via Yjs, slide-map API | ~15 |
 
 ## Principles
 
@@ -115,6 +120,7 @@ All decisions and specifications are in the sibling docs:
 - [testing.md](../testing.md) — Vitest + Playwright strategy
 - [print.md](../print.md) — browser-backed PDF export, print templates, CLI integration
 - [deployment-v2.md](../deployment-v2.md) — Docker, Caddy
+- [vscode-extension.md](../vscode-extension.md) — VS Code extension architecture
 
 ## Current Implementation Status
 
@@ -129,6 +135,7 @@ All decisions and specifications are in the sibling docs:
 | 16 | Implemented | Toolbar, mermaid processor, touch zone tuning |
 | 17 | Implemented | Pino-based logging shipped in engine, server, and CLI with configurable namespace levels and unit coverage |
 | 18 | 🔴 Not started | Enhanced error messages and diagnostics |
+| 19 | 🔴 Not started | VS Code extension with cursor↔slide sync |
 
 ## Future Improvements
 

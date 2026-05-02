@@ -36,6 +36,8 @@ export interface HotClientOptions {
   getSlideCount: () => number;
   /** Returns the currently tracked author stylesheet paths. */
   getStyleSheetPaths: () => string[];
+  /** Publish the latest slide map to the dev server. */
+  publishSlideMap?: () => void | Promise<void>;
 }
 
 /**
@@ -75,6 +77,7 @@ async function handleMarkdownUpdate(options: HotClientOptions): Promise<void> {
   const targetPartial = targetSlide === savedSlide ? savedPartial : 0;
 
   options.goTo(Math.max(0, targetSlide), Math.max(0, targetPartial));
+  await options.publishSlideMap?.();
 }
 
 async function handleConfigUpdate(

@@ -6,7 +6,10 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: {
-          allowDefaultProject: ['packages/hub/tests/unit/helpers.ts'],
+          allowDefaultProject: [
+            'packages/hub/tests/unit/helpers.ts',
+            'packages/vscode/esbuild.js',
+          ],
         },
         tsconfigRootDir: import.meta.dirname,
       },

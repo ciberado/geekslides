@@ -7,6 +7,11 @@
 import type { GeekSlidesConfig } from '../core/Config.ts';
 import type { Plugin, Preprocessor, Processor, ProcessorContext } from './types.ts';
 import { createLogger } from '../logging.ts';
+import {
+  applyPreprocessorResult,
+  createIdentityLineMapping,
+  type PreprocessedMarkdown,
+} from './preprocessor-utils.ts';
 
 const log = createLogger('plugins');
 
@@ -47,15 +52,22 @@ export class PluginManager {
    * so the root cause is easy to locate.
    */
   preprocess(markdown: string, config: GeekSlidesConfig): string {
-    let result = markdown;
+    return this.preprocessWithLineMapping(markdown, config).content;
+  }
+
+  preprocessWithLineMapping(markdown: string, config: GeekSlidesConfig): PreprocessedMarkdown {
+    let result: PreprocessedMarkdown = {
+      content: markdown,
+      lineMapping: createIdentityLineMapping(markdown),
+    };
     for (const { name, fn } of this.#preprocessors) {
       try {
-        result = fn(result, config);
+        result = applyPreprocessorResult(result, fn(result.content, config));
       } catch (err) {
-        const snippet = result.slice(0, 120).replace(/\n/g, '↵');
+        const snippet = result.content.slice(0, 120).replace(/\n/g, '↵');
         throw new Error(
           `Preprocessor from plugin "${name}" threw an error.\n` +
-          `Input snippet: ${snippet}${result.length > 120 ? '…' : ''}`,
+          `Input snippet: ${snippet}${result.content.length > 120 ? '…' : ''}`,
           { cause: err },
         );
       }

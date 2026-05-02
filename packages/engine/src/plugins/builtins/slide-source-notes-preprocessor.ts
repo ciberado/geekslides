@@ -51,23 +51,71 @@ function escapeForTildeFence(source: string): string {
   return source.replace(/^~~~/gm, '\\~~~');
 }
 
-export const slideSourceNotesPreprocessor: Preprocessor = (markdown: string): string => {
-  // Split just before each slide separator line: [](...) at start of line.
-  // The lookahead keeps the separator attached to its own chunk.
-  const chunks = markdown.split(/(?=^\[]\()/m);
+export const slideSourceNotesPreprocessor: Preprocessor = (markdown: string) => {
+  if (!markdown.trim()) {
+    return markdown;
+  }
 
-  return chunks
-    .map((chunk) => {
-      // Skip empty chunks and any preamble before the first slide separator.
-      if (!chunk.trim() || !chunk.startsWith('[](')) return chunk;
+  const inputLines = markdown.split('\n');
+  const outputLines: string[] = [];
+  const lineMapping: number[] = [];
+  const separatorIndexes = inputLines
+    .map((line, index) => (/^\[]\(/.test(line) ? index : -1))
+    .filter((index) => index >= 0);
 
-      // Derive the display source by stripping existing ::: Notes blocks.
-      const source = escapeForTildeFence(stripNotesBlocks(chunk).trimEnd());
+  const firstSeparator = separatorIndexes[0];
+  if (firstSeparator === undefined) {
+    return markdown;
+  }
 
-      // Use tilde fences (~~~) so any backtick fences in the slide source
-      // don't accidentally close the outer code block.
-      const autoNotes = `\n\n::: Notes\n~~~markdown\n${source}\n~~~\n:::`;
-      return chunk.trimEnd() + autoNotes + '\n';
-    })
-    .join('');
+  const pushLines = (lines: readonly string[], mappingLine: number): void => {
+    for (const line of lines) {
+      outputLines.push(line);
+      lineMapping.push(mappingLine);
+    }
+  };
+
+  const trimTrailingBlankLines = (lines: readonly string[]): string[] => {
+    const copy = [...lines];
+    while (copy.length > 0 && copy[copy.length - 1]?.trim() === '') {
+      copy.pop();
+    }
+    return copy;
+  };
+
+  const preambleLines = inputLines.slice(0, firstSeparator);
+  for (const [index, line] of preambleLines.entries()) {
+    outputLines.push(line);
+    lineMapping.push(index + 1);
+  }
+
+  for (const [chunkIndex, start] of separatorIndexes.entries()) {
+    const end = separatorIndexes[chunkIndex + 1] ?? inputLines.length;
+    const chunkLines = inputLines.slice(start, end);
+
+    if (!chunkLines[0]?.startsWith('[](')) {
+      pushLines(chunkLines, start + 1);
+      continue;
+    }
+
+    const trimmedChunkLines = trimTrailingBlankLines(chunkLines);
+    for (const [index, line] of trimmedChunkLines.entries()) {
+      outputLines.push(line);
+      lineMapping.push(start + index + 1);
+    }
+
+    const chunkText = chunkLines.join('\n');
+    const source = escapeForTildeFence(stripNotesBlocks(chunkText).trimEnd());
+    const sourceLines = source.split('\n');
+    const chunkTerminalLine = start + chunkLines.length;
+
+    pushLines(['', '', '::: Notes', '~~~markdown'], chunkTerminalLine);
+    pushLines(sourceLines, chunkTerminalLine);
+    pushLines(['~~~', ':::'], chunkTerminalLine);
+  }
+
+  return {
+    content: outputLines.join('\n'),
+    lineMapping,
+  };
 };

@@ -7,12 +7,12 @@
     "packages/*"
   ],
   "scripts": {
-    "prepare": "npm run build -w @geekslides/server && npm run build -w @geekslides/cli",
+    "prepare": "npm run build -w @geekslides/server && npm run build -w @geekslides/cli && npm run build -w @geekslides/vscode",
     "dev": "concurrently --kill-others \"tsx packages/server/src/index.ts\" \"vite --config vite.config.ts --host 0.0.0.0\"",
     "dev:hub": "npm run dev -w @geekslides/hub",
     "build:hub": "npm run build -w @geekslides/hub",
     "dev:nosync": "vite --config vite.config.ts --host 0.0.0.0",
-    "build": "npm run build -w @geekslides/engine && npm run build -w @geekslides/server && npm run build -w @geekslides/cli",
+    "build": "npm run build -w @geekslides/engine && npm run build -w @geekslides/server && npm run build -w @geekslides/cli && npm run build -w @geekslides/vscode",
     "test": "vitest run",
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "lint": "eslint .",

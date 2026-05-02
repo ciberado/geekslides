@@ -25,6 +25,7 @@ function createMockOptions(overrides: Partial<HotClientOptions> = {}): HotClient
     goTo: vi.fn(),
     getSlideCount: vi.fn().mockReturnValue(5),
     getStyleSheetPaths: vi.fn().mockReturnValue(['css/local.css']),
+    publishSlideMap: vi.fn(),
     ...overrides,
   };
 }
@@ -48,6 +49,7 @@ describe('hot-client', () => {
       await handleContentUpdate(payload, options);
 
       expect(options.goTo).toHaveBeenCalledWith(2, 1);
+      expect(options.publishSlideMap).toHaveBeenCalled();
     });
 
     it('clamps position if slides were removed', async () => {

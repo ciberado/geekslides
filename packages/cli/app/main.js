@@ -1,6 +1,7 @@
 import {
   loadConfig,
   parse,
+  computeSlideMap,
   headerPreprocessor,
   slideSourceNotesPreprocessor,
   CommandSystem,
@@ -20,6 +21,9 @@ import {
   importRemotePlugin,
   extractPreprocessor,
   extractProcessor,
+  createIdentityLineMapping,
+  normalizePreprocessorResult,
+  composeLineMappings,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -233,6 +237,7 @@ async function registerHmrFiles(activeConfig) {
 async function applyPreprocessors(markdown, config) {
   const ppNames = config.plugins.preprocessors;
   let result = markdown;
+  let lineMapping = createIdentityLineMapping(markdown);
   for (const name of ppNames) {
     let pp;
     if (isRemotePluginUrl(name)) {
@@ -246,10 +251,26 @@ async function applyPreprocessors(markdown, config) {
       pp = PREPROCESSORS[name];
     }
     if (pp) {
-      result = pp(result);
+      const next = normalizePreprocessorResult(pp(result, config));
+      result = next.content;
+      lineMapping = composeLineMappings(lineMapping, next.lineMapping);
     }
   }
-  return result;
+  return { content: result, lineMapping };
+}
+
+async function publishSlideMap(slideMap) {
+  try {
+    await fetch('/api/slide-map', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(slideMap),
+    });
+  } catch (error) {
+    console.warn('[hmr] Failed to publish slide map:', error);
+  }
 }
 
 async function getActiveProcessors(config) {
@@ -295,13 +316,18 @@ try {
   let combinedCss = await fetchStyles(config);
   updateDocumentTitle(config);
   await registerHmrFiles(config);
+  let currentSlideMap = [];
+  let currentLineMapping = createIdentityLineMapping(markdown);
 
   if (configBase) {
     updateDocumentBase(configBase);
   }
 
   const processedMarkdown = await applyPreprocessors(markdown, config);
-  let slides = parse(processedMarkdown);
+  currentLineMapping = processedMarkdown.lineMapping;
+  let slides = parse(processedMarkdown.content, { lineMapping: currentLineMapping });
+  currentSlideMap = computeSlideMap(slides);
+  await publishSlideMap(currentSlideMap);
 
   if (viewMode === 'speaker') {
     document.body.innerHTML = '<geek-speaker-view id="speaker"></geek-speaker-view>';
@@ -366,7 +392,7 @@ try {
         const newMarkdown = await fetchMarkdown(newConfig);
         const newCss = await fetchStyles(newConfig);
         const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-        slides = parse(processedMd);
+        slides = parse(processedMd.content, { lineMapping: processedMd.lineMapping });
         speaker.setAspectRatio(newConfig.aspectRatio);
         if (newCss) speaker.loadStyles(newCss);
         speaker.loadSlides(slides);
@@ -744,7 +770,9 @@ try {
             slideshow.loadStyles(newCss);
 
             const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-            const newSlides = parse(processedMd);
+            currentLineMapping = processedMd.lineMapping;
+            const newSlides = parse(processedMd.content, { lineMapping: currentLineMapping });
+            currentSlideMap = computeSlideMap(newSlides);
             slideshow.loadSlides(newSlides);
             config = newConfig;
             await applyProcessors(slideshow, newConfig);
@@ -874,7 +902,9 @@ try {
         slideshow.loadStyles(newCss);
 
         const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-        const newSlides = parse(processedMd);
+        currentLineMapping = processedMd.lineMapping;
+        const newSlides = parse(processedMd.content, { lineMapping: currentLineMapping });
+        currentSlideMap = computeSlideMap(newSlides);
         slideshow.loadSlides(newSlides);
         config = newConfig;
         await applyProcessors(slideshow, newConfig);
@@ -932,7 +962,9 @@ try {
         slideshow.loadStyles(newCss);
 
         const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-        const newSlides = parse(processedMd);
+        currentLineMapping = processedMd.lineMapping;
+        const newSlides = parse(processedMd.content, { lineMapping: currentLineMapping });
+        currentSlideMap = computeSlideMap(newSlides);
         slideshow.loadSlides(newSlides);
         config = newConfig;
         await applyProcessors(slideshow, newConfig);
@@ -1285,12 +1317,15 @@ try {
       registerHotClient(import.meta.hot, {
         fetchMarkdown: async () => {
           const md = await fetchMarkdown(config);
-          return await applyPreprocessors(md, config);
+          const processed = await applyPreprocessors(md, config);
+          currentLineMapping = processed.lineMapping;
+          return processed.content;
         },
         fetchStyles: async () => fetchStyles(config),
         fetchConfig,
         reloadSlides: async (md) => {
-          const newSlides = parse(md);
+          const newSlides = parse(md, { lineMapping: currentLineMapping });
+          currentSlideMap = computeSlideMap(newSlides);
           slideshow.loadSlides(newSlides);
           await applyProcessors(slideshow, config);
         },
@@ -1307,6 +1342,7 @@ try {
         goTo: (slide, partial) => slideshow.goTo(slide, partial),
         getSlideCount: () => slideshow.slideCount,
         getStyleSheetPaths: () => getTrackedStylePaths(config),
+        publishSlideMap: async () => publishSlideMap(currentSlideMap),
       });
     }
     } // end !isReadonly
