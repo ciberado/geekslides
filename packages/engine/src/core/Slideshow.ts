@@ -28,6 +28,7 @@ export class Slideshow extends HTMLElement {
   #designWidth = 1920;
   #designHeight = 1080;
   #externalStyles = '';
+  #previewState: { slideIndex: number; originalClasses: string[]; previewClass: string; timestamp: number } | null = null;
 
   constructor() {
     super();
@@ -726,6 +727,76 @@ export class Slideshow extends HTMLElement {
     }
 
     shadow.replaceChildren(style, container, progress, ariaLive, shortcutsOverlay, toolbar);
+  }
+
+  /**
+   * Apply a temporary preview class to a slide for real-time visual feedback.
+   * Used by VSCode extension to preview layout changes as user types.
+   */
+  applyPreviewClass(slideIndex: number, className: string): void {
+    // Validate slideIndex
+    if (slideIndex < 0 || slideIndex >= this.#slideElements.length) {
+      return;
+    }
+
+    const slideEl = this.#slideElements[slideIndex];
+    if (!slideEl) {
+      return;
+    }
+
+    // If already previewing a different slide, clear that first
+    if (this.#previewState && this.#previewState.slideIndex !== slideIndex) {
+      this.clearPreview();
+    }
+
+    // Store original classes if this is a new preview
+    if (!this.#previewState) {
+      this.#previewState = {
+        slideIndex,
+        originalClasses: Array.from(slideEl.classList),
+        previewClass: className,
+        timestamp: Date.now(),
+      };
+    }
+
+    // Remove all layout-* and mod-* classes
+    const classesToRemove = Array.from(slideEl.classList).filter(
+      (cls) => cls.startsWith('layout-') || cls.startsWith('mod-'),
+    );
+    slideEl.classList.remove(...classesToRemove);
+
+    // Add preview class
+    slideEl.classList.add(className);
+
+    // Mark as preview
+    slideEl.setAttribute('data-preview', 'true');
+
+    // Update preview state
+    this.#previewState.previewClass = className;
+    this.#previewState.timestamp = Date.now();
+  }
+
+  /**
+   * Clear any active preview and restore original classes.
+   */
+  clearPreview(): void {
+    if (!this.#previewState) {
+      return;
+    }
+
+    const slideEl = this.#slideElements[this.#previewState.slideIndex];
+    if (slideEl) {
+      // Remove all current classes
+      slideEl.classList.remove(...Array.from(slideEl.classList));
+
+      // Restore original classes
+      slideEl.classList.add(...this.#previewState.originalClasses);
+
+      // Remove preview marker
+      slideEl.removeAttribute('data-preview');
+    }
+
+    this.#previewState = null;
   }
 
   /**

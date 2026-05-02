@@ -74,6 +74,36 @@ corresponding slide, and navigating slides in the browser moves the editor curso
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
+## Features
+
+### 1. Bidirectional Cursor ↔ Slide Sync
+
+The extension synchronizes the editor cursor position with slide navigation in the browser:
+- Moving the cursor in the editor navigates the browser to the corresponding slide
+- Navigating slides in the browser moves the editor cursor to that slide's markdown
+
+### 2. Slide Class Autocomplete
+
+IntelliSense completion for slide marker syntax `[](.layout-title#id,bgurl())`:
+- **Layout classes**: `layout-title`, `layout-two-col`, etc.
+- **Modifier classes**: `mod-coverbg`, `mod-heading-center`, `mod-partial`, etc.
+- **Function helpers**: `bgurl(url)`, `bgcolor(color)`
+- **Slide IDs**: Suggests kebab-case IDs, warns on duplicates
+- **Dynamic CSS parsing**: Reads deck's `config.json` → `styles` array to discover custom classes
+
+Trigger characters: `.` (classes), `#` (IDs), `,` (functions)
+
+### 3. Live Class Preview
+
+Real-time preview of layout/modifier classes as you type:
+- Type `[](.layout-ti|)` → browser shows slide with `layout-title` applied
+- Fuzzy matching finds best class match from partial input
+- 150ms debounce to prevent excessive updates
+- Preview clears on blur, completion, or navigation
+- Only previews `layout-*` and `mod-*` classes (not IDs or functions)
+
+Uses Yjs `sessionState.classPreview` to sync preview state to browser.
+
 ## Data Flows
 
 ### Editor → Browser (cursor-driven navigation)
@@ -119,6 +149,50 @@ corresponding slide, and navigating slides in the browser moves the editor curso
        │
        ▼
 6. editor.revealRange() moves cursor to that line
+```
+
+### Live Preview (class-on-type)
+
+```
+1. User types in slide marker: [](.layout-ti|)
+       │
+       ▼
+2. ClassPreviewController extracts partial class: "layout-ti"
+       │
+       ▼
+3. Fuzzy matcher finds best match: "layout-title"
+       │
+       ▼
+4. Debouncer waits 150ms (cancels if user continues typing)
+       │
+       ▼
+5. YjsClient.setPreview() writes to sessionState.classPreview:
+   { slideIndex: 0, className: "layout-title", timestamp: 1234567890 }
+       │
+       ▼
+6. Yjs propagates to all room participants
+       │
+       ▼
+7. Browser SyncManager observes classPreview change
+       │
+       ▼
+8. Validates timestamp (<5s old) and class prefix (layout-/mod-)
+       │
+       ▼
+9. Slideshow.applyPreviewClass():
+   - Store original classes
+   - Remove conflicting layout-*/mod-* classes
+   - Add preview class
+   - Set data-preview="true" attribute
+       │
+       ▼
+10. Slide re-renders with new layout
+       │
+       ▼
+11. User continues typing → repeat cycle
+       │
+       ▼
+12. On blur/save: clearPreview() restores original classes
 ```
 
 ### Slide Map Lifecycle
@@ -247,13 +321,29 @@ packages/vscode/
 │   ├── status-bar.ts     # Status bar UI
 │   ├── deck-creator.ts   # Create Deck command
 │   ├── browser-opener.ts # Open in Browser command
+│   ├── completion/       # Autocomplete feature
+│   │   ├── slide-class-provider.ts   # CompletionItemProvider
+│   │   ├── class-registry.ts         # Static class registry
+│   │   ├── css-class-extractor.ts    # Dynamic CSS parsing
+│   │   ├── slide-marker-context.ts   # Cursor context detection
+│   │   └── slide-id-helper.ts        # ID duplicate detection
+│   ├── preview/          # Live preview feature
+│   │   ├── class-preview-controller.ts # Text change orchestration
+│   │   ├── fuzzy-matcher.ts          # Fuzzy string matching
+│   │   └── preview-debouncer.ts      # Debounce wrapper
 │   └── sync/
-│       ├── yjs-client.ts       # Yjs room connection
+│       ├── yjs-client.ts       # Yjs room connection + preview methods
 │       ├── slide-map-client.ts # HTTP client for /api/slide-map
 │       └── cursor-sync.ts      # Bidirectional sync controller
 └── tests/
     ├── slide-map-client.test.ts
-    └── cursor-sync.test.ts
+    ├── cursor-sync.test.ts
+    ├── slide-marker-context.test.ts
+    ├── css-class-extractor.test.ts
+    ├── slide-id-helper.test.ts
+    ├── class-registry.test.ts
+    ├── fuzzy-matcher.test.ts
+    └── preview-debouncer.test.ts
 ```
 
 ## Dependencies

@@ -43,6 +43,18 @@ export class YjsClient {
     this.#sessionState.set('partial', partial);
   }
 
+  setPreview(slideIndex: number, className: string): void {
+    this.#sessionState.set('classPreview', {
+      slideIndex,
+      className,
+      timestamp: Date.now(),
+    });
+  }
+
+  clearPreview(): void {
+    this.#sessionState.set('classPreview', null);
+  }
+
   onSlideChange(listener: (slide: number, partial: number) => void): () => void {
     const observer = (event: Y.YMapEvent<unknown>) => {
       if (event.transaction.local || !event.keysChanged.has('slide')) {

@@ -109,7 +109,7 @@ export class ServerManager {
     this.#trace(`  cwd: ${dirname(options.configPath)}`);
     this.#trace(`  command: ${cli.command}`);
     this.#trace(`  args: ${JSON.stringify(args)}`);
-    this.#trace(`  GEEKSLIDES_LOG: ${env['GEEKSLIDES_LOG'] ?? 'unset'}`);
+    this.#trace(`  GEEKSLIDES_LOG: ${env['GEEKSLIDES_LOG'] || 'unset'}`);
 
     const child = this.#spawnProcess(cli.command, args, {
       cwd: dirname(options.configPath),

@@ -2,10 +2,12 @@ import { dirname } from 'node:path';
 import * as vscode from 'vscode';
 import { openDeckInBrowser } from './browser-opener.ts';
 import { resolveGeekSlidesCli } from './cli-resolution.ts';
+import { BUILTIN_CLASSES } from './completion/class-registry.ts';
 import { SlideClassCompletionProvider } from './completion/slide-class-provider.ts';
 import { createDeck } from './deck-creator.ts';
 import { findNearestDeckConfig, loadDeckMetadata } from './deck-config.ts';
 import { pickAvailablePort } from './port-utils.ts';
+import { ClassPreviewController } from './preview/class-preview-controller.ts';
 import { ServerManager } from './server-manager.ts';
 import { getStatusBarPresentation } from './status-bar.ts';
 import { CursorSyncController } from './sync/cursor-sync.ts';
@@ -54,6 +56,7 @@ export function activate(context: vscode.ExtensionContext): void {
     },
   });
   let cursorSync: CursorSyncController | null = null;
+  let previewController: ClassPreviewController | null = null;
   let selectionDisposable: vscode.Disposable | null = null;
   let yjsClient: YjsClient | null = null;
 
@@ -70,6 +73,8 @@ export function activate(context: vscode.ExtensionContext): void {
     selectionDisposable = null;
     cursorSync?.stop();
     cursorSync = null;
+    previewController?.stop();
+    previewController = null;
     yjsClient?.disconnect();
     yjsClient = null;
   };
@@ -113,6 +118,15 @@ export function activate(context: vscode.ExtensionContext): void {
       },
     });
     cursorSync.start();
+
+    // Enable live preview controller
+    previewController = new ClassPreviewController({
+      yjsClient,
+      findDeckConfig: (documentPath) => findNearestDeckConfig(documentPath, getWorkspaceRoots()),
+      getSlideForLine: (line) => slideMapClient.getSlideForLine(line),
+      classRegistry: BUILTIN_CLASSES,
+    });
+    previewController.start();
 
     selectionDisposable = vscode.window.onDidChangeTextEditorSelection((event) => {
       const line = event.selections[0]?.active.line;

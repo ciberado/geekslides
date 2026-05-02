@@ -18,6 +18,8 @@ export interface SyncTarget {
   get currentSlide(): number;
   get currentPartial(): number;
   get mode(): string;
+  applyPreviewClass(slideIndex: number, className: string): void;
+  clearPreview(): void;
 }
 
 export class SyncManager {
@@ -293,6 +295,28 @@ export class SyncManager {
             bubbles: true,
             detail: { visible },
           }));
+        }
+      }
+
+      // Class preview is independent of follow-presenter mode.
+      if (event.keysChanged.has('classPreview')) {
+        const preview = this.#sessionState.get('classPreview') as
+          | { slideIndex: number; className: string; timestamp: number }
+          | null
+          | undefined;
+
+        if (preview === null || preview === undefined) {
+          // Clear preview
+          this.#target?.clearPreview();
+        } else if (typeof preview === 'object') {
+          // Validate timestamp (must be < 5000ms old)
+          const age = Date.now() - preview.timestamp;
+          if (age < 5000) {
+            // Validate className (must start with layout- or mod-)
+            if (preview.className.startsWith('layout-') || preview.className.startsWith('mod-')) {
+              this.#target?.applyPreviewClass(preview.slideIndex, preview.className);
+            }
+          }
         }
       }
 
