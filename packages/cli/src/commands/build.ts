@@ -19,6 +19,18 @@ import { createLogger } from '../logging.ts';
 
 const log = createLogger('build');
 
+function toStringArray(value: unknown, fallback: readonly string[]): string[] {
+  if (typeof value === 'string') {
+    return [value];
+  }
+
+  if (Array.isArray(value) && value.every((entry) => typeof entry === 'string')) {
+    return [...value];
+  }
+
+  return [...fallback];
+}
+
 export function registerBuildCommand(program: Command): void {
   program
     .command('build')
@@ -61,7 +73,7 @@ export function registerBuildCommand(program: Command): void {
       await copyFile(configPath, join(outDir, 'config.json'));
       console.log('  Copied config.json');
 
-      const contentPaths = Array.isArray(config.content) ? config.content : [config.content];
+      const contentPaths = toStringArray(config.content, DEFAULT_CONFIG.content);
       for (const contentFile of contentPaths) {
         const contentPath = resolve(configDir, contentFile);
         if (existsSync(contentPath)) {
@@ -76,7 +88,7 @@ export function registerBuildCommand(program: Command): void {
         console.log('  Copied images/');
       }
 
-      for (const stylePath of config.styles) {
+      for (const stylePath of toStringArray(config.styles, DEFAULT_CONFIG.styles)) {
         const src = resolve(configDir, stylePath);
         if (existsSync(src)) {
           const dest = join(outDir, stylePath);

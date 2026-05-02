@@ -323,7 +323,7 @@ export function registerPresentationRoutes(
     { preHandler: [fastify.requireApproved] },
     async (request, reply) => {
       const { id } = request.params as { id: string; '*': string };
-      const filePath = (request.params as { '*': string })['*'] ?? '';
+      const filePath = (request.params as { '*': string })['*'];
 
       // Prevent path traversal attacks
       if (filePath.includes('..') || path.isAbsolute(filePath)) {

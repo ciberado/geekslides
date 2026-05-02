@@ -69,13 +69,18 @@ function normalizeLegacyConfig(obj: Record<string, unknown>): void {
 
   // resolution: "WxH" → aspectRatio: "W_r/H_r"
   if (typeof obj['resolution'] === 'string') {
-    const m = /^(\d+)[xX](\d+)$/.exec(obj['resolution'] as string);
+    const m = /^(\d+)[xX](\d+)$/.exec(obj['resolution']);
     if (m) {
-      const w = parseInt(m[1] as string, 10);
-      const h = parseInt(m[2] as string, 10);
-      const d = gcd(w, h);
-      obj['aspectRatio'] = `${String(w / d)}/${String(h / d)}`;
-      log.warn(`Legacy config: resolution "${String(obj['resolution'])}" converted to aspectRatio "${String(obj['aspectRatio'])}"`);
+      const widthText = m[1];
+      const heightText = m[2];
+      if (widthText !== undefined && heightText !== undefined) {
+        const w = parseInt(widthText, 10);
+        const h = parseInt(heightText, 10);
+        const d = gcd(w, h);
+        const aspectRatio = `${String(w / d)}/${String(h / d)}`;
+        obj['aspectRatio'] = aspectRatio;
+        log.warn(`Legacy config: resolution "${obj['resolution']}" converted to aspectRatio "${aspectRatio}"`);
+      }
     }
     delete obj['resolution'];
   }
@@ -100,7 +105,7 @@ function normalizeLegacyConfig(obj: Record<string, unknown>): void {
 
   // slideWhiteBoards: false → exclude whiteboard from default features
   if (typeof obj['slideWhiteBoards'] === 'boolean') {
-    if (!(obj['slideWhiteBoards'] as boolean) && !Array.isArray(obj['features'])) {
+    if (!obj['slideWhiteBoards'] && !Array.isArray(obj['features'])) {
       obj['features'] = DEFAULT_CONFIG.features.filter((f) => f !== 'whiteboard');
     }
     delete obj['slideWhiteBoards'];
@@ -168,7 +173,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
   if (
     !Array.isArray(rawContent) ||
     rawContent.length === 0 ||
-    (rawContent as unknown[]).some((c) => typeof c !== 'string' || (c as string).length === 0)
+    rawContent.some((c) => typeof c !== 'string' || c.length === 0)
   ) {
     throw new Error("Config 'content' must be a non-empty string or array of non-empty strings");
   }
