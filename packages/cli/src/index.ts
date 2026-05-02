@@ -30,11 +30,14 @@ export function createProgram(): Command {
 }
 
 // Run when executed directly via bin entry point
+const entryArg = process.argv[1]?.replaceAll('\\', '/');
 const isDirectRun =
-  process.argv[1]?.endsWith('/geekslides') ||
-  process.argv[1]?.endsWith('/packages/cli/src/index.ts') ||
-  process.argv[1]?.endsWith('/dist/index.js') ||
-  process.argv[1]?.endsWith('/dist/index.cjs');
+  entryArg?.endsWith('/geekslides') === true ||
+  entryArg?.endsWith('/packages/cli/src/index.ts') === true ||
+  entryArg?.endsWith('/packages/cli/bin/geekslides.cjs') === true ||
+  entryArg?.endsWith('/bin/geekslides.cjs') === true ||
+  entryArg?.endsWith('/dist/index.js') === true ||
+  entryArg?.endsWith('/dist/index.cjs') === true;
 if (isDirectRun) {
   const program = createProgram();
   program.parse();

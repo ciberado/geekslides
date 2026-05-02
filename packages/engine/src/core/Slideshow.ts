@@ -10,6 +10,12 @@ import { Slide } from './Slide.ts';
 
 export type SlideshowMode = 'present' | 'speaker' | 'overview';
 
+interface LoadSlidesOptions {
+  readonly initialSlide?: number;
+  readonly initialPartial?: number;
+  readonly suppressTransition?: boolean;
+}
+
 export class Slideshow extends HTMLElement {
   #slides: SlideData[] = [];
   #slideElements: Slide[] = [];
@@ -172,10 +178,18 @@ export class Slideshow extends HTMLElement {
   /**
    * Load slides from parsed SlideData array.
    */
-  loadSlides(slides: SlideData[]): void {
+  loadSlides(slides: SlideData[], options?: LoadSlidesOptions): void {
     this.#slides = slides;
-    this.#currentSlide = 0;
-    this.#currentPartial = 0;
+    const requestedSlide = options?.initialSlide ?? 0;
+    const targetSlide = slides.length > 0
+      ? Math.max(0, Math.min(requestedSlide, slides.length - 1))
+      : 0;
+    const targetPartial = Math.max(
+      0,
+      Math.min(options?.initialPartial ?? 0, slides[targetSlide]?.partialCount ?? 0),
+    );
+    this.#currentSlide = targetSlide;
+    this.#currentPartial = targetPartial;
     this.#slideElements = [];
 
     const shadow = this.shadowRoot;
@@ -200,26 +214,30 @@ export class Slideshow extends HTMLElement {
       const slideEl = new Slide();
       container?.appendChild(slideEl);
 
-      const options: Parameters<Slide['loadContent']>[1] = {
+      const slideOptions: Parameters<Slide['loadContent']>[1] = {
         id: slideData.id,
         classes: slideData.classes,
         partialCount: slideData.partialCount,
       };
 
       if (slideData.backgroundImage !== undefined) {
-        options.backgroundImage = slideData.backgroundImage;
+        slideOptions.backgroundImage = slideData.backgroundImage;
       }
       if (slideData.backgroundColor !== undefined) {
-        options.backgroundColor = slideData.backgroundColor;
+        slideOptions.backgroundColor = slideData.backgroundColor;
       }
       if (slideData.rawCss !== undefined) {
-        options.rawCss = slideData.rawCss;
+        slideOptions.rawCss = slideData.rawCss;
       }
       if (slideData.notesHtml !== undefined) {
-        options.notesHtml = slideData.notesHtml;
+        slideOptions.notesHtml = slideData.notesHtml;
       }
 
-      slideEl.loadContent(slideData.html, options);
+      slideEl.loadContent(slideData.html, slideOptions);
+
+      if (options?.suppressTransition) {
+        slideEl.classList.add('transition-none');
+      }
 
       // Inject external presentation-wide styles into slide shadow DOM
       if (this.#externalStyles) {
@@ -231,7 +249,7 @@ export class Slideshow extends HTMLElement {
 
     // Activate first slide
     if (this.#slideElements.length > 0) {
-      this.#activateSlide(0);
+      this.#activateSlide(targetSlide);
     }
 
     this.#rescale();

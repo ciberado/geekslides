@@ -12,9 +12,10 @@ type SpawnProcess = (
     env: NodeJS.ProcessEnv;
     stdio: 'pipe';
   },
-) => {
+  ) => {
   readonly stdout?: NodeJS.ReadableStream | null;
   readonly stderr?: NodeJS.ReadableStream | null;
+  on(event: 'error', listener: (error: Error) => void): void;
   on(event: 'exit', listener: (code: number | null) => void): void;
 };
 
@@ -34,6 +35,10 @@ async function runProcess(
     let stderr = '';
     child.stderr?.on('data', (chunk: Buffer | string) => {
       stderr += chunk.toString();
+    });
+
+    child.on('error', (error) => {
+      rejectPromise(error);
     });
 
     child.on('exit', (code) => {

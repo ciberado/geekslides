@@ -1324,9 +1324,22 @@ try {
         fetchStyles: async () => fetchStyles(config),
         fetchConfig,
         reloadSlides: async (md) => {
+          const previousSlideCount = slideshow.slideCount;
+          const previousSlide = slideshow.currentSlide;
+          const previousPartial = slideshow.currentPartial;
           const newSlides = parse(md, { lineMapping: currentLineMapping });
           currentSlideMap = computeSlideMap(newSlides);
-          slideshow.loadSlides(newSlides);
+          const preservePosition = previousSlideCount === newSlides.length;
+          slideshow.loadSlides(
+            newSlides,
+            preservePosition
+              ? {
+                  initialSlide: previousSlide,
+                  initialPartial: previousPartial,
+                  suppressTransition: true,
+                }
+              : undefined,
+          );
           await applyProcessors(slideshow, config);
         },
         applyStyles: (css) => {

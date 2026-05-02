@@ -67,12 +67,17 @@ export async function handleContentUpdate(
 async function handleMarkdownUpdate(options: HotClientOptions): Promise<void> {
   const savedSlide = options.getCurrentSlide();
   const savedPartial = options.getCurrentPartial();
+  const savedSlideCount = options.getSlideCount();
 
   const markdown = await options.fetchMarkdown();
   options.reloadSlides(markdown);
 
   // Clamp position if slides were removed
   const slideCount = options.getSlideCount();
+  if (slideCount === savedSlideCount && savedSlide >= 0 && savedSlide < slideCount) {
+    await options.publishSlideMap?.();
+    return;
+  }
   const targetSlide = Math.min(savedSlide, slideCount - 1);
   const targetPartial = targetSlide === savedSlide ? savedPartial : 0;
 

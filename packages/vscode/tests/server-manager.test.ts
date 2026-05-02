@@ -5,6 +5,7 @@ import { ServerManager } from '../src/server-manager.ts';
 class MockChild extends EventEmitter {
   readonly stdout = new EventEmitter();
   readonly stderr = new EventEmitter();
+  readonly pid = 4242;
   kill = vi.fn(() => true);
 }
 
@@ -35,8 +36,15 @@ describe('ServerManager', () => {
     expect(spawnProcess).toHaveBeenCalledWith(
       'geekslides',
       ['--local', 'dev', '--config', '/repo/deck/config.json', '--port', '5173', '--ws-port', '1234'],
-      expect.objectContaining({ cwd: '/repo/deck' }),
+      expect.objectContaining({
+        cwd: '/repo/deck',
+        env: expect.objectContaining({ GEEKSLIDES_LOG: 'debug' }),
+      }),
     );
+    expect(output.appendLine).toHaveBeenCalledWith('  command: geekslides');
+    expect(output.appendLine).toHaveBeenCalledWith('  args: ["--local","dev","--config","/repo/deck/config.json","--port","5173","--ws-port","1234"]');
+    expect(output.appendLine).toHaveBeenCalledWith('  pid: 4242');
+    expect(output.appendLine).toHaveBeenCalledWith('[stdout]   Presentation:  http://localhost:5173/?config=%2Fdeck%2Fconfig.json');
     expect(manager.getState()).toEqual(expect.objectContaining({
       status: 'running',
       configPath: '/repo/deck/config.json',
@@ -66,5 +74,54 @@ describe('ServerManager', () => {
     manager.stop();
 
     expect(child.kill).toHaveBeenCalledWith('SIGTERM');
+  });
+
+  it('surfaces spawn errors while starting', async () => {
+    const child = new MockChild();
+    const output = { appendLine: vi.fn() };
+    const manager = new ServerManager({
+      spawnProcess: vi.fn(() => child),
+      output,
+      resolveCli: () => ({ command: 'geekslides', args: [] }),
+    });
+
+    const startPromise = manager.start({
+      workspaceRoot: '/repo/deck',
+      configPath: '/repo/deck/config.json',
+      port: 5173,
+      wsPort: 1234,
+    });
+
+    child.stderr.emit('data', 'debug line before failure\n');
+    child.emit('error', new Error('spawn geekslides ENOENT'));
+
+    await expect(startPromise).rejects.toThrow('Failed to start GeekSlides dev server: spawn geekslides ENOENT');
+    await expect(startPromise).rejects.toThrow('Recent output:');
+    await expect(startPromise).rejects.toThrow('[stderr] debug line before failure');
+    expect(manager.getState().status).toBe('stopped');
+    expect(output.appendLine).toHaveBeenCalledWith('Process error during startup: spawn geekslides ENOENT');
+  });
+
+  it('surfaces exit code and recent output when startup exits early', async () => {
+    const child = new MockChild();
+    const manager = new ServerManager({
+      spawnProcess: vi.fn(() => child),
+      resolveCli: () => ({ command: 'geekslides', args: [] }),
+    });
+
+    const startPromise = manager.start({
+      workspaceRoot: '/repo/deck',
+      configPath: '/repo/deck/config.json',
+      port: 5173,
+      wsPort: 1234,
+    });
+
+    child.stderr.emit('data', 'startup failure details\n');
+    child.emit('exit', 1, null);
+
+    await expect(startPromise).rejects.toThrow(
+      'GeekSlides dev server exited before it finished starting (code=1, signal=null).',
+    );
+    await expect(startPromise).rejects.toThrow('[stderr] startup failure details');
   });
 });

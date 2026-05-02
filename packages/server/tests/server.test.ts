@@ -1,4 +1,9 @@
 import { once } from 'node:events';
+import { existsSync } from 'node:fs';
+import { readFile as fsReadFile } from 'node:fs/promises';
+import { spawnSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect } from 'vitest';
 import * as Y from 'yjs';
 import WebSocket from 'ws';
@@ -21,6 +26,9 @@ async function waitFor(predicate: () => boolean, timeout = 3000): Promise<void> 
 
   throw new Error('Timed out waiting for condition');
 }
+
+const DIST_CJS = resolve(fileURLToPath(import.meta.url), '..', '..', 'dist', 'index.cjs');
+const BUNDLE_EXISTS = existsSync(DIST_CJS);
 
 describe('server', () => {
   it('exports version', () => {
@@ -123,6 +131,30 @@ describe('server', () => {
         server.close(() => resolve());
       });
     }
+  });
+});
+
+describe.skipIf(!BUNDLE_EXISTS)('server bundle integrity (dist/index.cjs)', () => {
+  it('resolves pino as an external require(), not inlined', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    expect(bundle).toMatch(/require\(["']pino["']\)/);
+  });
+
+  it('does not contain pino worker path that would break at runtime', async () => {
+    const bundle = await fsReadFile(DIST_CJS, 'utf8');
+    expect(bundle).not.toContain('pino-worker');
+  });
+
+  it('binary loads without MODULE_NOT_FOUND error', () => {
+    const result = spawnSync(process.execPath, ['-e', `require(${JSON.stringify(DIST_CJS)})`], {
+      timeout: 10_000,
+      encoding: 'utf8',
+      env: { ...process.env, GEEKSLIDES_LOG: 'silent' },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stderr).not.toContain('dist/lib/worker.js');
+    expect(result.stderr).not.toContain('MODULE_NOT_FOUND');
   });
 });
 

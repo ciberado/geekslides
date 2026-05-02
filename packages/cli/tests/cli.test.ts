@@ -163,6 +163,7 @@ describe('cli', () => {
 // ---------------------------------------------------------------------------
 
 const DIST_CJS = resolve(fileURLToPath(import.meta.url), '..', '..', 'dist', 'index.cjs');
+const BIN_CJS = resolve(fileURLToPath(import.meta.url), '..', '..', 'bin', 'geekslides.cjs');
 const BUNDLE_EXISTS = existsSync(DIST_CJS);
 
 describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
@@ -203,5 +204,40 @@ describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
     // stderr should not contain the worker path or MODULE_NOT_FOUND
     expect(result.stderr).not.toContain('dist/lib/worker.js');
     expect(result.stderr).not.toContain('MODULE_NOT_FOUND');
+  });
+
+  it('bin/geekslides.cjs runs the bundled CLI when launched with node', () => {
+    const result = spawnSync(process.execPath, [BIN_CJS, '--version'], {
+      timeout: 10_000,
+      encoding: 'utf8',
+      env: { ...process.env, GEEKSLIDES_LOG: 'silent' },
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain(CLI_VERSION);
+  });
+
+  it('bin/geekslides.cjs can scaffold a deck when launched with node', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'geekslides-bin-create-'));
+
+    try {
+      const result = spawnSync(
+        process.execPath,
+        [BIN_CJS, 'create', '--title', 'Bin Deck', '--dir', dir, '--no-git'],
+        {
+          timeout: 10_000,
+          encoding: 'utf8',
+          env: { ...process.env, GEEKSLIDES_LOG: 'silent' },
+        },
+      );
+
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+      expect(existsSync(join(dir, 'config.json'))).toBe(true);
+      expect(existsSync(join(dir, 'README.md'))).toBe(true);
+      expect(existsSync(join(dir, 'css', 'layouts.css'))).toBe(true);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });

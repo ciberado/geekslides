@@ -40,9 +40,13 @@ To test it in VS Code:
 
 1. Open the `geekslides` repository in VS Code.
 2. Open the **Run and Debug** view.
-3. Start **Run Extension** (or press `F5`).
+3. Start **Run GeekSlides Extension** (or press `F5`).
 4. In the new **Extension Development Host** window, open a deck workspace that contains `config.json`.
 5. Rebuild and restart the extension host after code changes when needed.
+
+The repository ships with `.vscode/launch.json` and `.vscode/tasks.json`, so `F5`
+builds `@geekslides/vscode` and launches the extension directly from
+`packages/vscode`.
 
 > **Tip:** If you are developing the extension inside this monorepo, the extension prefers a local GeekSlides CLI binary first and only falls back to a global `geekslides` install if no local binary is available.
 
@@ -85,7 +89,8 @@ To scaffold a fresh deck:
 
 The extension reuses the CLI scaffolder, so the generated output matches `geekslides create`.
 
-The new deck opens its `README.md` automatically after creation.
+After creation, VS Code automatically switches the current window to the new deck
+folder so you can start using GeekSlides commands there immediately.
 
 ## Verify cursor-to-slide sync
 

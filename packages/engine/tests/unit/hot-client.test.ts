@@ -48,7 +48,7 @@ describe('hot-client', () => {
 
       await handleContentUpdate(payload, options);
 
-      expect(options.goTo).toHaveBeenCalledWith(2, 1);
+      expect(options.goTo).not.toHaveBeenCalled();
       expect(options.publishSlideMap).toHaveBeenCalled();
     });
 
@@ -56,7 +56,9 @@ describe('hot-client', () => {
       const options = createMockOptions({
         getCurrentSlide: vi.fn().mockReturnValue(10),
         getCurrentPartial: vi.fn().mockReturnValue(3),
-        getSlideCount: vi.fn().mockReturnValue(5),
+        getSlideCount: vi.fn()
+          .mockReturnValueOnce(11)
+          .mockReturnValueOnce(5),
       });
       const payload: ContentUpdatePayload = { file: 'README.md', type: 'markdown', timestamp: 1 };
 
@@ -64,6 +66,21 @@ describe('hot-client', () => {
 
       // Should clamp to last slide (index 4), partial reset to 0
       expect(options.goTo).toHaveBeenCalledWith(4, 0);
+    });
+
+    it('preserves slide position without navigating when slide count is unchanged', async () => {
+      const options = createMockOptions({
+        getSlideCount: vi.fn()
+          .mockReturnValueOnce(5)
+          .mockReturnValueOnce(5),
+      });
+      const payload: ContentUpdatePayload = { file: 'README.md', type: 'markdown', timestamp: 1 };
+
+      await handleContentUpdate(payload, options);
+
+      expect(options.reloadSlides).toHaveBeenCalledWith('# Updated\n\n---\n\n## Slide 2');
+      expect(options.goTo).not.toHaveBeenCalled();
+      expect(options.publishSlideMap).toHaveBeenCalled();
     });
   });
 

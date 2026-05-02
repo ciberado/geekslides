@@ -1,12 +1,15 @@
 import { dirname } from 'node:path';
 import * as vscode from 'vscode';
 import { openDeckInBrowser } from './browser-opener.ts';
+import { resolveGeekSlidesCli } from './cli-resolution.ts';
 import { createDeck } from './deck-creator.ts';
 import { findNearestDeckConfig, loadDeckMetadata } from './deck-config.ts';
+import { pickAvailablePort } from './port-utils.ts';
 import { ServerManager } from './server-manager.ts';
 import { getStatusBarPresentation } from './status-bar.ts';
 import { CursorSyncController } from './sync/cursor-sync.ts';
 import { SlideMapClient } from './sync/slide-map-client.ts';
+import { openCreatedDeckWorkspace } from './workspace-opener.ts';
 import { YjsClient } from './sync/yjs-client.ts';
 
 function getWorkspaceRoots(): string[] {
@@ -35,10 +38,17 @@ function getSettings(): { debounceMs: number; autoStartServer: boolean; defaultP
 export function activate(context: vscode.ExtensionContext): void {
   const output = vscode.window.createOutputChannel('GeekSlides');
   const statusBar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left);
+  const resolveCli = (workspaceRoot: string) => resolveGeekSlidesCli(workspaceRoot, {
+    extensionRoot: context.extensionPath,
+  });
   const serverManager = new ServerManager({
+    resolveCli,
     output: {
       appendLine: (message) => {
         output.appendLine(message);
+      },
+      show: (preserveFocus) => {
+        output.show(preserveFocus);
       },
     },
   });
@@ -116,15 +126,23 @@ export function activate(context: vscode.ExtensionContext): void {
       const configPath = resolveActiveDeckConfig();
       const workspaceRoot = dirname(configPath);
       const settings = getSettings();
+      const wsPort = await pickAvailablePort(settings.wsPort);
+      if (wsPort !== settings.wsPort) {
+        output.appendLine(
+          `[extension] ws port ${String(settings.wsPort)} is busy, using ${String(wsPort)} instead.`,
+        );
+      }
       await serverManager.start({
         workspaceRoot,
         configPath,
         port: settings.defaultPort,
-        wsPort: settings.wsPort,
+        wsPort,
       });
       await enableCursorSync(configPath);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
+      output.appendLine(`[extension] startServer failed: ${message}`);
+      output.show(false);
       void vscode.window.showErrorMessage(message);
     }
   });
@@ -159,16 +177,16 @@ export function activate(context: vscode.ExtensionContext): void {
       canSelectMany: false,
       openLabel: 'Create Deck Here',
     });
-    const targetDir = folderSelection?.[0]?.fsPath;
-    if (!targetDir) {
+    const targetFolder = folderSelection?.[0];
+    const targetDir = targetFolder?.fsPath;
+    if (!targetFolder || !targetDir) {
       return;
     }
 
     try {
       const workspaceRoot = getWorkspaceRoots()[0] ?? targetDir;
-      const readmePath = await createDeck(workspaceRoot, targetDir, title);
-      const document = await vscode.workspace.openTextDocument(readmePath);
-      await vscode.window.showTextDocument(document);
+      await createDeck(workspaceRoot, targetDir, title, { resolveCli });
+      await openCreatedDeckWorkspace(targetFolder, vscode.commands.executeCommand);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       void vscode.window.showErrorMessage(message);

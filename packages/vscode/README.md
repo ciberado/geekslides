@@ -5,7 +5,7 @@ VS Code extension for authoring GeekSlides decks.
 ## MVP features
 
 1. **Start/stop dev server** from the command palette
-2. **Create a deck** with the existing CLI scaffolder
+2. **Create a deck** with the existing CLI scaffolder and switch to it immediately
 3. **Open the deck in the browser**
 4. **Bidirectional cursor sync** between the editor and the active browser slide
 
@@ -15,7 +15,7 @@ VS Code extension for authoring GeekSlides decks.
 | --- | --- |
 | `GeekSlides: Start Dev Server` | Launch `geekslides dev` for the active deck |
 | `GeekSlides: Stop Dev Server` | Stop the running dev server |
-| `GeekSlides: Create Deck` | Scaffold a new deck in a selected directory |
+| `GeekSlides: Create Deck` | Scaffold a new deck in a selected directory and open it as the current workspace |
 | `GeekSlides: Open in Browser` | Open the current deck URL |
 | `GeekSlides: Toggle Cursor Sync` | Enable/disable editor/browser synchronization |
 
@@ -41,8 +41,11 @@ For local QA in VS Code:
 
 1. Open the `geekslides` repository in VS Code.
 2. Open the **Run and Debug** view.
-3. Start **Run Extension** (or press `F5`).
+3. Start **Run GeekSlides Extension** (or press `F5`).
 4. In the new **Extension Development Host** window, open a GeekSlides deck workspace.
+
+The repository now includes `.vscode/launch.json` and `.vscode/tasks.json`, so `F5`
+builds `@geekslides/vscode` and launches the extension host automatically.
 
 ## Manual QA
 
@@ -57,3 +60,4 @@ For local QA in VS Code:
 
 - The extension resolves a local GeekSlides CLI first, then falls back to a global install.
 - Room sync uses `config.sync.room`, matching the browser runtime.
+- After **GeekSlides: Create Deck**, VS Code switches the current window to the new deck folder automatically.

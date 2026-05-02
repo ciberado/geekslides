@@ -5,6 +5,7 @@ import { resolveGeekSlidesCli, type CliCommand } from './cli-resolution.ts';
 
 export interface ServerOutputSink {
   appendLine(message: string): void;
+  show?(preserveFocus?: boolean): void;
 }
 
 interface ChildProcessLike extends EventEmitter {
@@ -52,6 +53,7 @@ export class ServerManager {
     wsUrl: undefined,
   };
   #child: ChildProcessLike | null = null;
+  #recentOutput: string[] = [];
   readonly #events = new EventEmitter();
   readonly #spawnProcess: SpawnProcess;
   readonly #resolveCli: (workspaceRoot: string) => CliCommand;
@@ -96,14 +98,27 @@ export class ServerManager {
       '--ws-port',
       String(options.wsPort),
     ];
+    const env = {
+      ...process.env,
+      GEEKSLIDES_LOG: process.env['GEEKSLIDES_LOG'] ?? 'debug',
+    };
+
+    this.#trace(`Starting GeekSlides dev server`);
+    this.#trace(`  workspaceRoot: ${options.workspaceRoot}`);
+    this.#trace(`  configPath: ${options.configPath}`);
+    this.#trace(`  cwd: ${dirname(options.configPath)}`);
+    this.#trace(`  command: ${cli.command}`);
+    this.#trace(`  args: ${JSON.stringify(args)}`);
+    this.#trace(`  GEEKSLIDES_LOG: ${env['GEEKSLIDES_LOG'] ?? 'unset'}`);
 
     const child = this.#spawnProcess(cli.command, args, {
       cwd: dirname(options.configPath),
-      env: process.env,
+      env,
       stdio: 'pipe',
     });
 
     this.#child = child;
+    this.#trace(`  pid: ${String(child.pid ?? 'unknown')}`);
     this.#setState({
       status: 'starting',
       configPath: options.configPath,
@@ -114,13 +129,15 @@ export class ServerManager {
       wsUrl: undefined,
     });
 
-    this.#attachStream(child.stdout);
-    this.#attachStream(child.stderr);
+    this.#attachStream('stdout', child.stdout);
+    this.#attachStream('stderr', child.stderr);
 
     return await new Promise<ServerState>((resolvePromise, rejectPromise) => {
       const timeout = setTimeout(() => {
         this.#events.off('state', handleState);
-        rejectPromise(new Error('Timed out waiting for the GeekSlides dev server to start.'));
+        rejectPromise(new Error(this.#buildStartupError(
+          'Timed out waiting for the GeekSlides dev server to start.',
+        )));
       }, 15_000);
 
       const handleState = (state: ServerState): void => {
@@ -131,10 +148,11 @@ export class ServerManager {
         }
       };
 
-      child.once('exit', () => {
+      child.once('exit', (code: number | null, signal: NodeJS.Signals | null) => {
         clearTimeout(timeout);
         this.#events.off('state', handleState);
         this.#child = null;
+        this.#trace(`Process exited during startup (code=${String(code)}, signal=${String(signal)})`);
         this.#setState({
           status: 'stopped',
           configPath: undefined,
@@ -144,7 +162,28 @@ export class ServerManager {
           speakerUrl: undefined,
           wsUrl: undefined,
         });
-        rejectPromise(new Error('GeekSlides dev server exited before it finished starting.'));
+        rejectPromise(new Error(this.#buildStartupError(
+          `GeekSlides dev server exited before it finished starting (code=${String(code)}, signal=${String(signal)}).`,
+        )));
+      });
+
+      child.once('error', (error: Error) => {
+        clearTimeout(timeout);
+        this.#events.off('state', handleState);
+        this.#child = null;
+        this.#trace(`Process error during startup: ${error.message}`);
+        this.#setState({
+          status: 'stopped',
+          configPath: undefined,
+          port: undefined,
+          wsPort: undefined,
+          presentationUrl: undefined,
+          speakerUrl: undefined,
+          wsUrl: undefined,
+        });
+        rejectPromise(new Error(this.#buildStartupError(
+          `Failed to start GeekSlides dev server: ${error.message}`,
+        )));
       });
 
       this.#events.on('state', handleState);
@@ -155,7 +194,7 @@ export class ServerManager {
     this.#child?.kill('SIGTERM');
   }
 
-  #attachStream(stream: NodeJS.ReadableStream | null | undefined): void {
+  #attachStream(source: 'stdout' | 'stderr', stream: NodeJS.ReadableStream | null | undefined): void {
     if (!stream) {
       return;
     }
@@ -166,13 +205,13 @@ export class ServerManager {
       const lines = buffer.split(/\r?\n/);
       buffer = lines.pop() ?? '';
       for (const line of lines) {
-        this.#handleOutputLine(line);
+        this.#handleOutputLine(source, line);
       }
     });
   }
 
-  #handleOutputLine(line: string): void {
-    this.#output?.appendLine(line);
+  #handleOutputLine(source: 'stdout' | 'stderr', line: string): void {
+    this.#trace(`[${source}] ${line}`);
 
     const presentationMatch = /^ {2}Presentation:\s+(https?:\/\/\S+)/.exec(line);
     if (presentationMatch?.[1]) {
@@ -211,5 +250,20 @@ export class ServerManager {
   #setState(state: ServerState): void {
     this.#state = state;
     this.#events.emit('state', state);
+  }
+
+  #trace(message: string): void {
+    this.#output?.appendLine(message);
+    this.#recentOutput.push(message);
+    if (this.#recentOutput.length > 40) {
+      this.#recentOutput.shift();
+    }
+  }
+
+  #buildStartupError(summary: string): string {
+    const tail = this.#recentOutput.length > 0
+      ? `\n\nRecent output:\n${this.#recentOutput.slice(-12).join('\n')}`
+      : '';
+    return `${summary}${tail}`;
   }
 }
