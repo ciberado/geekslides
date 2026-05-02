@@ -37,7 +37,7 @@
 - Key point two
 - Key point three
 
-[](.layout-cover.coverbg#full-bleed,bgurl(placeholder.svg))
+[](.layout-cover.mod-coverbg#full-bleed,bgurl(placeholder.svg))
 
 # Full-Bleed Image
 

@@ -31,7 +31,7 @@ function buildReadme(title: string): string {
 Markdown: \`[](.layout-title#id,bgurl(image.jpg))\` then \`# Heading\` + \`## Subtitle\`.
 :::
 
-[](.layout-cover.coverbg#vision,bgurl(https://picsum.photos/seed/geekslides-cover/1920/1080))
+[](.layout-cover.mod-coverbg#vision,bgurl(https://picsum.photos/seed/geekslides-cover/1920/1080))
 
 # Think Bold, Ship Fast
 
@@ -39,7 +39,7 @@ Empowering teams to communicate ideas that matter.
 
 ::: Notes
 **layout-cover** — full-bleed background with a gradient overlay.
-Content sits at the bottom. Add \`.coverbg\` so the parser treats the
+Content sits at the bottom. Add \`.mod-coverbg\` so the parser treats the
 marker's bgurl as a full-bleed background.
 :::
 
@@ -300,7 +300,7 @@ image+text, and text+image+text patterns.
 and a connecting line. Each \`li\` starts with a \`**bold label**\`.
 :::
 
-[](.partial#partial-list)
+[](.mod-partial#partial-list)
 
 ### Key Benefits
 
@@ -311,10 +311,10 @@ and a connecting line. Each \`li\` starts with a \`**bold label**\`.
 
 ::: Notes
 **Partial reveal (list)** — add \`[partial]\` after each \`li\` to reveal
-bullets one at a time. The slide class \`.partial\` enables the feature.
+bullets one at a time. The slide class \`.mod-partial\` enables the feature.
 :::
 
-[](.partial.layout-two-col#partial-cols)
+[](.mod-partial.layout-two-col#partial-cols)
 
 ### Markdown vs Design Tools
 
@@ -450,7 +450,7 @@ so both panels line up perfectly.
 Images grow to fill horizontal space; works with any count.
 :::
 
-[](.layout-team.heading-center#team-pair)
+[](.layout-team.mod-heading-center#team-pair)
 
 ### Co-Founders
 
@@ -459,7 +459,7 @@ Images grow to fill horizontal space; works with any count.
 ![Bob Martinez](https://picsum.photos/seed/geekslides-bob/400/400)
 
 ::: Notes
-**layout-team.heading-center** — modifier that centres the heading
+**layout-team.mod-heading-center** — modifier that centres the heading
 vertically with the images. Good for small groups (2–3 people).
 :::
 
@@ -482,7 +482,7 @@ vertically with the images. Good for small groups (2–3 people).
 item contains image + name + short description.
 :::
 
-[](.layout-grid.cols-2#gallery-two-col)
+[](.layout-grid.mod-cols-2#gallery-two-col)
 
 ### Product Gallery — 2 Columns
 
@@ -495,7 +495,7 @@ item contains image + name + short description.
 ![Mobile sync](https://picsum.photos/seed/geekslides-mobile/800/600)
 
 ::: Notes
-**layout-grid.cols-2** — explicit two-column layout for wider tiles.
+**layout-grid.mod-cols-2** — explicit two-column layout for wider tiles.
 :::
 
 [](.layout-grid#gallery-four)
@@ -534,7 +534,7 @@ item contains image + name + short description.
 **layout-grid.cols-3** — explicit three-column grid.
 :::
 
-[](.layout-grid.cols-4#gallery-four-col)
+[](.layout-grid.mod-cols-4#gallery-four-col)
 
 ### Product Gallery — 4 Columns
 
@@ -547,7 +547,7 @@ item contains image + name + short description.
 ![CLI](https://picsum.photos/seed/geekslides-cli2/800/600)
 
 ::: Notes
-**layout-grid.cols-4** — four-column variation for denser galleries.
+**layout-grid.mod-cols-4** — four-column variation for denser galleries.
 :::
 
 [](.layout-grid.cols-3#gallery-three)
@@ -565,7 +565,7 @@ item contains image + name + short description.
 of the three columns.
 :::
 
-[](.layout-grid.cols-2#gallery-two)
+[](.layout-grid.mod-cols-2#gallery-two)
 
 ### Side by Side
 
@@ -574,7 +574,7 @@ of the three columns.
 ![After](https://picsum.photos/seed/geekslides-after/800/600)
 
 ::: Notes
-**layout-grid.cols-2 (2 images)** — two images fill the entire row.
+**layout-grid.mod-cols-2 (2 images)** — two images fill the entire row.
 :::
 
 [](.layout-team#team-six)

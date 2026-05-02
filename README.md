@@ -185,12 +185,12 @@ Details text for book mode; hidden in normal presentation view.
 GeekSlides v2 supports two ways to author partials:
 
 - Inline markers with `[partial]`
-- Slide-level `.partial` class on the separator, which turns list items and table rows into progressive reveals
+- Slide-level `.mod-partial` class on the separator, which turns list items and table rows into progressive reveals
 
 Example:
 
 ```markdown
-[](.partial#agenda)
+[](.mod-partial#agenda)
 
 ## Agenda
 

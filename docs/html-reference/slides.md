@@ -631,11 +631,11 @@ Partial reveal marks elements with `partial=""` attribute. The `Slide` component
 
 ---
 
-### H1 + list with `.partial` class (auto-reveal)
+### H1 + list with `.mod-partial` class (auto-reveal)
 
 **Markdown**
 ```markdown
-[](.partial#auto-partial)
+[](.mod-partial#auto-partial)
 
 # Title
 
@@ -656,7 +656,7 @@ Partial reveal marks elements with `partial=""` attribute. The `Slide` component
 
 `partialCount: 3`, `classes: [partial]`, `id: auto-partial`
 
-> Adding the `.partial` class to the slide separator automatically marks every
+> Adding the `.mod-partial` class to the slide separator automatically marks every
 > `<li>` (and `<tr>`) as partial — no need for per-item `[partial]` markers.
 
 ---
@@ -795,7 +795,7 @@ Slide attributes are set with the empty-link separator: `[](.class1.class2#id,bg
 
 **Markdown**
 ```markdown
-[](.coverbg#bg-slide,bgurl(hero.jpg))
+[](.mod-coverbg#bg-slide,bgurl(hero.jpg))
 
 # Title on Background
 ```
@@ -805,7 +805,7 @@ Slide attributes are set with the empty-link separator: `[](.class1.class2#id,bg
 <h1>Title on Background</h1>
 ```
 
-`classes: [coverbg]`, `id: bg-slide`, `backgroundImage: hero.jpg`
+`classes: [mod-coverbg]`, `id: bg-slide`, `backgroundImage: hero.jpg`
 
 The `backgroundImage` value is applied as `style="background-image: url(hero.jpg); background-size: cover; background-position: center;"` on the `<geek-slide>` element.
 
@@ -1487,6 +1487,6 @@ Notes about this slide.
 | `::: Notes … :::` | Removed from `html`; available in `notesHtml` |
 | `::: Details … :::` | Kept in `html` as `<div class="gs-details">`; also in `detailsHtml` |
 | `[partial]` marker | Strips text; sets `partial=""` on containing `<li>`/`<tr>`/`<p>` |
-| `.partial` slide class | Auto-adds `partial=""` to every `<li>` / `<tr>` |
+| `.mod-partial` slide class | Auto-adds `partial=""` to every `<li>` / `<tr>` |
 | `<style>` block | Removed from `html`; stored in `rawCss` (scoped by `StyleScoper`) |
 | Raw HTML | Passed through as-is |

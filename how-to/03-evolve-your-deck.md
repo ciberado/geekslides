@@ -4,10 +4,10 @@ You have a working deck. Now let's turn it into something worth presenting — p
 
 ## Progressive reveals with partials
 
-Partials let you reveal content step by step. Add the `.partial` class to a slide marker and each list item becomes a reveal step:
+Partials let you reveal content step by step. Add the `.mod-partial` class to a slide marker and each list item becomes a reveal step:
 
 ```markdown
-[](.partial#benefits)
+[](.mod-partial#benefits)
 ## Why GeekSlides?
 
 - Markdown-first workflow
@@ -22,7 +22,7 @@ Press `→` or `Space` to reveal one item at a time. Already-revealed items stay
 
 ### Inline partials
 
-For finer control, use inline syntax inside any slide (no `.partial` class needed):
+For finer control, use inline syntax inside any slide (no `.mod-partial` class needed):
 
 ```markdown
 [](#timeline)
@@ -99,10 +99,10 @@ This won't affect any other slide in your deck.
 
 ## Background images
 
-Use the `.coverbg` class to set a full-bleed background image:
+Use the `.mod-coverbg` class to set a full-bleed background image:
 
 ```markdown
-[](.coverbg#hero)
+[](.mod-coverbg#hero)
 
 ![](images/hero-background.jpg)
 
@@ -194,7 +194,7 @@ With the `header` preprocessor enabled every heading (`#`, `##`, `###`, …) aut
 | `##`    | Section divider |
 | `###`   | Regular content slide |
 
-You can still place an explicit marker **before** a heading when you need extra classes (`.partial`, `.coverbg`, …):
+You can still place an explicit marker **before** a heading when you need extra classes (`.mod-partial`, `.mod-coverbg`, …):
 
 ```markdown
 # Scaling on AWS
@@ -207,7 +207,7 @@ You can still place an explicit marker **before** a heading when you need extra 
 
 <!-- ───────────── Section: Storage ───────────── -->
 
-[](.partial)
+[](.mod-partial)
 ## Amazon S3
 - Object storage for any workload
 - 99.999999999% durability
@@ -224,7 +224,7 @@ Emphasize the eleven nines of durability.
 
 <!-- ───────────── Section: Compute ───────────── -->
 
-[](.partial)
+[](.mod-partial)
 ## Auto Scaling Groups
 - Launch templates define instance config
 - Scaling policies react to CloudWatch alarms

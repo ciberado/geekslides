@@ -147,7 +147,7 @@ section.content.layout-title {
  * Background image fills the slide. Content sits at the bottom.
  * The ::before pseudo-element provides an overlay area for theming.
  *
- *   [](.layout-cover.coverbg#id,bgurl(hero.jpg))
+ *   [](.layout-cover.mod-coverbg#id,bgurl(hero.jpg))
  *   # Headline
  *   Optional paragraph
  * ─────────────────────────────────────────────────────────────────────────── */
@@ -628,7 +628,7 @@ section.content.layout-team {
 }
 
 /* Modifier: centre everything vertically (heading + images) */
-section.content.layout-team.heading-center {
+section.content.layout-team.mod-heading-center {
   align-content: center;
 
   > h3 {
@@ -655,8 +655,8 @@ section.content.layout-grid {
   row-gap: var(--gs-gap);
   align-content: start;
 
-  &.cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  &.cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  &.mod-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  &.mod-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
   > h3 { grid-column: 1 / -1; }
 

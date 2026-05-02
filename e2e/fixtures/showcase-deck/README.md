@@ -4,7 +4,7 @@
 
 ## A modern slide deck
 
-[](.layout-cover.coverbg#vision,bgurl(https://picsum.photos/seed/geekslides-cover/1920/1080))
+[](.layout-cover.mod-coverbg#vision,bgurl(https://picsum.photos/seed/geekslides-cover/1920/1080))
 
 # Think Bold, Ship Fast
 

@@ -160,7 +160,7 @@ function normalizePartialMarkers(
     }
   }
 
-  if (slideClasses.includes('partial')) {
+  if (slideClasses.includes('mod-partial')) {
     let detailDepth = 0;
     for (const token of tokens) {
       if (token.type === 'container_Details_open') {

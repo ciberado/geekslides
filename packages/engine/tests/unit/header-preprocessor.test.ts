@@ -81,11 +81,11 @@ describe('header-preprocessor', () => {
   });
 
   it('skips heading when an explicit marker already precedes it', () => {
-    const md = '[](.coverbg#hero)\n\n### My Slide\n\nContent';
+    const md = '[](.mod-coverbg#hero)\n\n### My Slide\n\nContent';
     const result = preprocess(md);
 
     expect(result.content).not.toContain('[](.slide#my-slide)');
-    expect(result.content).toContain('[](.coverbg#hero)');
+    expect(result.content).toContain('[](.mod-coverbg#hero)');
     expect(result.content).toContain('### My Slide');
   });
 

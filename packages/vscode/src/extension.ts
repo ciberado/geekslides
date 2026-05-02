@@ -2,6 +2,7 @@ import { dirname } from 'node:path';
 import * as vscode from 'vscode';
 import { openDeckInBrowser } from './browser-opener.ts';
 import { resolveGeekSlidesCli } from './cli-resolution.ts';
+import { SlideClassCompletionProvider } from './completion/slide-class-provider.ts';
 import { createDeck } from './deck-creator.ts';
 import { findNearestDeckConfig, loadDeckMetadata } from './deck-config.ts';
 import { pickAvailablePort } from './port-utils.ts';
@@ -209,6 +210,10 @@ export function activate(context: vscode.ExtensionContext): void {
     updateStatusBar();
   });
 
+  const completionProvider = new SlideClassCompletionProvider({
+    findDeckConfig: (documentPath) => findNearestDeckConfig(documentPath, getWorkspaceRoots()),
+  });
+
   context.subscriptions.push(
     output,
     statusBar,
@@ -217,6 +222,11 @@ export function activate(context: vscode.ExtensionContext): void {
     openInBrowserCommand,
     createDeckCommand,
     toggleCursorSyncCommand,
+    vscode.languages.registerCompletionItemProvider(
+      { language: 'markdown', scheme: 'file' },
+      completionProvider,
+      '.', '#', ',',
+    ),
     new vscode.Disposable(() => {
       unsubscribeState();
     }),

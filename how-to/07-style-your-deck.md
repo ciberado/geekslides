@@ -90,7 +90,7 @@ Add a layout class to a slide's marker to activate its layout:
 | `layout-timeline` | Horizontal steps with numbered circles; steps support images |
 | `layout-chart` | Heading + full-height data table |
 | `layout-compare` | Two panels with a bold VS divider in the centre |
-| `layout-team` | Row of circular headshots (add `.heading-center` to centre heading with images) |
+| `layout-team` | Row of circular headshots (add `.mod-heading-center` to centre heading with images) |
 | `layout-grid` | Responsive image grid / mood board |
 | `layout-table` | Heading + full-width feature matrix table |
 | `layout-agenda` | Numbered session agenda with accent circles |

@@ -75,7 +75,7 @@ duplicating layout rules.
 | `.layout-timeline` | `[](.layout-timeline#id)` | `ol` → CSS Grid auto-columns + `::before` line; steps support images |
 | `.layout-chart` | `[](.layout-chart#id)` | `flex` column; `table` gets `flex: 1` |
 | `.layout-compare` | `[](.layout-compare#id)` | 3-col grid (`1fr auto 1fr`); `h4` is VS badge in centre column |
-| `.layout-team` | `[](.layout-team#id)` | `flex` wrap, space-evenly; add `.heading-center` to centre heading with images |
+| `.layout-team` | `[](.layout-team#id)` | `flex` wrap, space-evenly; add `.mod-heading-center` to centre heading with images |
 | `.layout-grid` | `[](.layout-grid#id)` | `auto-fit` grid with `minmax(350px, 1fr)` |
 | `.layout-table` | `[](.layout-table#id)` | `flex` column; `table` gets `flex: 1` |
 | `.layout-agenda` | `[](.layout-agenda#id)` | 2-row grid; `ol` items flex-column with accent circles |

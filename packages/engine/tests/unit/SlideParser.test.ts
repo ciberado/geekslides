@@ -124,8 +124,8 @@ Some content
     expect(slides[0]!.html).not.toContain('[partial]');
   });
 
-  it('treats slide-level .partial as implicit list partials', () => {
-    const md = `[](.partial)
+  it('treats slide-level .mod-partial as implicit list partials', () => {
+    const md = `[](.mod-partial)
 
 # Slide
 
@@ -136,11 +136,11 @@ Some content
     const slides = parse(md);
 
     expect(slides[0]!.partialCount).toBe(3);
-    expect(slides[0]!.classes).toContain('partial');
+    expect(slides[0]!.classes).toContain('mod-partial');
   });
 
-  it('does not double-count explicit [partial] markers on .partial slides', () => {
-    const md = `[](.partial)
+  it('does not double-count explicit [partial] markers on .mod-partial slides', () => {
+    const md = `[](.mod-partial)
 
 # Slide
 

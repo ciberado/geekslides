@@ -233,7 +233,7 @@ npm run dev
   },
   {
     name: 'H1 + list (class partial – auto-reveal)',
-    markdown: `[](.partial#auto-partial)
+    markdown: `[](.mod-partial#auto-partial)
 
 # Title
 
@@ -288,7 +288,7 @@ Book-mode details text.
   },
   {
     name: 'Slide with background image',
-    markdown: `[](.coverbg#bg-slide,bgurl(hero.jpg))
+    markdown: `[](.mod-coverbg#bg-slide,bgurl(hero.jpg))
 
 # Title on Background`,
   },

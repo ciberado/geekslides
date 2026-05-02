@@ -160,7 +160,7 @@ export const SLIDES_CSS = `
 }
 
 .gs-slide:has(h1, h2) .block-image:first-of-type img,
-.gs-slide.coverbg .block-image:first-of-type img,
+.gs-slide.mod-coverbg .block-image:first-of-type img,
 .gs-slide.illustration .block-image:first-of-type img {
   max-width: none;
   max-height: none;

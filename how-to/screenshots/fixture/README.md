@@ -9,7 +9,7 @@ This is the opening slide. Mention that GeekSlides is designed
 for developers who want to focus on content, not slide design.
 :::
 
-[](.partial#features)
+[](.mod-partial#features)
 
 ## Key Features
 

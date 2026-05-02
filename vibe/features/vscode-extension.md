@@ -49,7 +49,7 @@ corresponding slide, and navigating slides in the browser moves the editor curso
 │  │  /api/slide-map    │    │  Room: "deck-name"  │                  │
 │  │  (GET/POST)        │    │  └─ sessionState    │                  │
 │  │                    │    │     .slide           │                  │
-│  │  HMR websocket ────┼──►│     .partial         │                  │
+│  │  HMR websocket ────┼──►│     .mod-partial         │                  │
 │  │                    │    │     .mode            │                  │
 │  └────────────────────┘    └─────────────────────┘                  │
 │                                       ▲                             │
@@ -313,5 +313,64 @@ repositories.
 - [plugin-system.md](plugin-system.md) — preprocessor/processor pipeline
 - [architecture-v2.md](architecture-v2.md) — system architecture
 - [command-system.md](command-system.md) — navigation commands
+- [css-layouts-theme.md](css-layouts-theme.md) — layout and theme CSS system
 - [plan/phase-10-hmr.md](plan/phase-10-hmr.md) — HMR plugin
 - [plan/phase-19-vscode-extension.md](plan/phase-19-vscode-extension.md) — implementation plan
+
+---
+
+## Slide Class Autocomplete
+
+### Overview
+
+The extension provides context-aware autocompletion inside GeekSlides slide marker
+syntax (`[](.class#id,bgurl(url))`). It activates only in `.md` files within a deck
+(detected by `config.json` presence) and offers completions for layout classes, modifier
+classes, special functions, and slide IDs.
+
+### Architecture
+
+```
+packages/vscode/src/completion/
+  class-registry.ts         — Static registry of all built-in classes with metadata
+  slide-marker-context.ts   — Cursor-position parser for []() syntax
+  css-class-extractor.ts    — Dynamic class discovery from deck CSS files
+  slide-id-helper.ts        — Document scan for existing IDs + duplicate detection
+  slide-class-provider.ts   — CompletionItemProvider that wires everything together
+```
+
+### Trigger Characters
+
+The provider is registered with trigger characters `.`, `#`, and `,`:
+
+| Trigger | Context | Completions offered |
+|---------|---------|---------------------|
+| `.` | After `[](` or after another class | Layout classes (`layout-*`) and modifiers (`mod-*`) |
+| `#` | After classes | Existing slide IDs (with duplicate warnings) |
+| `,` | After `#id` | Functions: `bgurl()`, `bgcolor()` |
+
+### Class Taxonomy
+
+All user-facing slide classes follow a prefix convention:
+
+| Category | Prefix | Examples |
+|----------|--------|----------|
+| Layouts | `layout-` | `layout-title`, `layout-two-col`, `layout-cover` |
+| Modifiers | `mod-` | `mod-coverbg`, `mod-heading-center`, `mod-partial` |
+| Functions | — | `bgurl(url)`, `bgcolor(color)` |
+
+### Data Sources
+
+1. **Static registry** (`class-registry.ts`) — All 16 built-in layouts, 5 modifiers, and
+   2 functions with descriptions and documentation.
+
+2. **Dynamic CSS parsing** (`css-class-extractor.ts`) — Reads `config.json` → `styles`
+   array → resolves CSS file paths → extracts `.layout-*` and `.mod-*` selectors. This
+   discovers custom layouts defined in `local.css` or custom theme files.
+
+### Slide ID Suggestions
+
+When the cursor is after `#`, the provider scans the document for existing slide IDs and:
+- Shows them as reference items
+- Marks duplicate IDs with a ⚠ warning
+- Validates kebab-case format
