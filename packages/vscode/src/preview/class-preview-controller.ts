@@ -160,7 +160,8 @@ export class ClassPreviewController {
       return;
     }
 
-    const lineText = document.lineAt(position.line).text;
+    const line = position.line;
+    const lineText = document.lineAt(line).text;
     const ctx = getMarkerContext(lineText, position.character);
 
     // If cursor moved outside class context, clear preview
@@ -168,6 +169,28 @@ export class ClassPreviewController {
       if (this.#lastPreviewSlide !== null) {
         this.#sendClear.call();
       }
+      return;
+    }
+
+    // Filter to layout-* and mod-* prefixes only
+    if (!ctx.prefix.startsWith('layout-') && !ctx.prefix.startsWith('mod-')) {
+      if (this.#lastPreviewSlide !== null) {
+        this.#sendClear.call();
+      }
+      return;
+    }
+
+    // Check if we're still in a class context - trigger preview update
+    // This handles the case where autocomplete was accepted or cursor moved
+    const matchedClass = fuzzyMatchClass(ctx.prefix, this.#validClassNames);
+    if (matchedClass) {
+      void this.#deps.refreshSlideMap().then(() => {
+        const slideIndex = this.#deps.getSlideForLine(line);
+        if (slideIndex !== undefined &&
+            (slideIndex !== this.#lastPreviewSlide || matchedClass !== this.#lastPreviewClass)) {
+          this.#sendPreview.call(slideIndex, matchedClass);
+        }
+      });
     }
   }
 }
