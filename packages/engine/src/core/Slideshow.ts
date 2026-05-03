@@ -786,11 +786,17 @@ export class Slideshow extends HTMLElement {
 
     const slideEl = this.#slideElements[this.#previewState.slideIndex];
     if (slideEl) {
-      // Remove all current classes
-      slideEl.classList.remove(...Array.from(slideEl.classList));
+      // Remove only layout-* and mod-* classes (the ones we may have added)
+      const classesToRemove = Array.from(slideEl.classList).filter(
+        (cls) => cls.startsWith('layout-') || cls.startsWith('mod-'),
+      );
+      slideEl.classList.remove(...classesToRemove);
 
-      // Restore original classes
-      slideEl.classList.add(...this.#previewState.originalClasses);
+      // Restore original layout-* and mod-* classes
+      const originalLayoutClasses = this.#previewState.originalClasses.filter(
+        (cls) => cls.startsWith('layout-') || cls.startsWith('mod-'),
+      );
+      slideEl.classList.add(...originalLayoutClasses);
 
       // Remove preview marker
       slideEl.removeAttribute('data-preview');
