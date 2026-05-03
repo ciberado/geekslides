@@ -17,6 +17,7 @@ export interface ClassPreviewControllerDeps {
   readonly yjsClient: YjsClient;
   readonly findDeckConfig: (documentPath: string) => string | null;
   readonly getSlideForLine: (line: number) => number | undefined;
+  readonly refreshSlideMap: () => Promise<unknown>;
   readonly classRegistry: readonly ClassEntry[];
 }
 
@@ -122,21 +123,23 @@ export class ClassPreviewController {
       return;
     }
 
-    // Determine slide index from cursor line
-    const slideIndex = this.#deps.getSlideForLine(line);
-    if (slideIndex === undefined) {
-      // Can't determine slide — clear preview
-      if (this.#lastPreviewSlide !== null) {
-        this.#sendClear.call();
+    // Refresh slide map and determine slide index from cursor line
+    void this.#deps.refreshSlideMap().then(() => {
+      const slideIndex = this.#deps.getSlideForLine(line);
+      if (slideIndex === undefined) {
+        // Can't determine slide — clear preview
+        if (this.#lastPreviewSlide !== null) {
+          this.#sendClear.call();
+        }
+        return;
       }
-      return;
-    }
 
-    // Send preview update (debounced)
-    // Skip if same as last preview to avoid redundant updates
-    if (slideIndex !== this.#lastPreviewSlide || matchedClass !== this.#lastPreviewClass) {
-      this.#sendPreview.call(slideIndex, matchedClass);
-    }
+      // Send preview update (debounced)
+      // Skip if same as last preview to avoid redundant updates
+      if (slideIndex !== this.#lastPreviewSlide || matchedClass !== this.#lastPreviewClass) {
+        this.#sendPreview.call(slideIndex, matchedClass);
+      }
+    });
   }
 
   #handleSelectionChange(event: vscode.TextEditorSelectionChangeEvent): void {

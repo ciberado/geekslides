@@ -124,6 +124,9 @@ export function activate(context: vscode.ExtensionContext): void {
       yjsClient,
       findDeckConfig: (documentPath) => findNearestDeckConfig(documentPath, getWorkspaceRoots()),
       getSlideForLine: (line) => slideMapClient.getSlideForLine(line),
+      refreshSlideMap: async () => {
+        await slideMapClient.refresh(baseUrl);
+      },
       classRegistry: BUILTIN_CLASSES,
     });
     previewController.start();

@@ -11,6 +11,7 @@ export interface ClassPreviewControllerDeps {
     readonly yjsClient: YjsClient;
     readonly findDeckConfig: (documentPath: string) => string | null;
     readonly getSlideForLine: (line: number) => number | undefined;
+    readonly refreshSlideMap: () => Promise<unknown>;
     readonly classRegistry: readonly ClassEntry[];
 }
 export declare class ClassPreviewController {
