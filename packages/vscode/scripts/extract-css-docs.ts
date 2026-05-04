@@ -267,7 +267,7 @@ function main(): void {
 
     // Extract and parse comments
     const blocks = extractLayoutComments(cssContent);
-    console.log(`[extract-css-docs] Found ${blocks.length} layout comment blocks`);
+    console.log(`[extract-css-docs] Found ${blocks.length.toString()} layout comment blocks`);
 
     const layouts: ParsedLayout[] = [];
     const allModifiers: ParsedModifier[] = [];
@@ -283,7 +283,7 @@ function main(): void {
         allModifiers.push(...modifiers);
 
         if (modifiers.length > 0) {
-          console.log(`[extract-css-docs] Found ${modifiers.length} modifiers in ${layout.name}`);
+          console.log(`[extract-css-docs] Found ${modifiers.length.toString()} modifiers in ${layout.name}`);
         }
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
@@ -309,8 +309,8 @@ function main(): void {
       modifierNames.add(key);
     }
 
-    console.log(`[extract-css-docs] Parsed ${layouts.length} layouts successfully`);
-    console.log(`[extract-css-docs] Parsed ${allModifiers.length} modifiers successfully`);
+    console.log(`[extract-css-docs] Parsed ${layouts.length.toString()} layouts successfully`);
+    console.log(`[extract-css-docs] Parsed ${allModifiers.length.toString()} modifiers successfully`);
 
     // Generate TypeScript
     const tsCode = generateTypeScript(layouts, allModifiers);

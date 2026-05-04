@@ -97,7 +97,7 @@ export function activate(context: vscode.ExtensionContext): void {
     // Initial slide map refresh with error reporting
     try {
       await slideMapClient.refresh(baseUrl);
-      output.appendLine(`[extension] Initial slide map loaded: ${slideMapClient.entries.length} slides`);
+      output.appendLine(`[extension] Initial slide map loaded: ${slideMapClient.entries.length.toString()} slides`);
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       output.appendLine(`[extension] Warning: Failed to load initial slide map: ${message}`);

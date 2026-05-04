@@ -9,6 +9,7 @@ export default tseslint.config(
           allowDefaultProject: [
             'packages/hub/tests/unit/helpers.ts',
             'packages/vscode/esbuild.js',
+            'packages/vscode/scripts/extract-css-docs.ts',
           ],
         },
         tsconfigRootDir: import.meta.dirname,
