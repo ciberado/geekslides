@@ -102,6 +102,17 @@ duplicating layout rules.
    section.content.layout-my-name {
      display: flex;
      /* ... */
+
+     /**
+      * @modifier mod-variant
+      * @detail Brief modifier description
+      * @usage
+      * [](.layout-my-name.mod-variant#id)
+      * When to use this variation.
+      */
+     &.mod-variant {
+       /* modifier styles */
+     }
    }
    ```
 3. Add theme overrides for it in `packages/cli/src/templates/theme-default.css` under
@@ -111,11 +122,14 @@ duplicating layout rules.
    - The prebuild script automatically extracts CSS documentation
    - Generates `src/completion/class-registry-generated.ts`
    - Autocomplete will show your layout with full documentation
+   - Layout-specific modifiers (nested with `&.mod-*`) are extracted automatically
 6. If the new layout is part of a per-deck customisation (not the engine template), add
    the CSS to your deck's `css/layouts.css` instead of the template.
 
 **Documentation format**: See `packages/vscode/src/completion/css-doc-format.md` for complete specification.
 The CSS comment is the **single source of truth** — no manual TypeScript updates needed!
+
+**Layout modifiers**: Use CSS nesting (`&.mod-name { }`) to define layout-specific modifier variations. These are automatically extracted and appear in VSCode autocomplete with the parent layout context. Global modifiers like `mod-partial` remain top-level.
 
 ---
 

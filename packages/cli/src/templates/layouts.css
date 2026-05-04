@@ -214,6 +214,18 @@ section.content.layout-cover {
   > h1 {
     margin-block-end: 0.1em;
   }
+
+  /**
+   * @modifier mod-coverbg
+   * @detail Apply background image to the slide (full-bleed)
+   * @usage
+   * [](.layout-cover.mod-coverbg#id,bgurl(hero.jpg))
+   * Use with bgurl() function to set the background image.
+   */
+  &.mod-coverbg {
+    background-size: cover;
+    background-position: center;
+  }
 }
 
 
@@ -845,15 +857,21 @@ section.content.layout-team {
       }
     }
   }
-}
 
-/* Modifier: centre everything vertically (heading + images) */
-section.content.layout-team.mod-heading-center {
-  align-content: center;
+  /**
+   * @modifier mod-heading-center
+   * @detail Center heading and images vertically
+   * @usage
+   * [](.layout-team.mod-heading-center#id)
+   * Centers the h3 heading and aligns content vertically in the middle.
+   */
+  &.mod-heading-center {
+    align-content: center;
 
-  > h3 {
-    text-align: center;
-    margin-block-end: 0;
+    > h3 {
+      text-align: center;
+      margin-block-end: 0;
+    }
   }
 }
 

@@ -1,11 +1,13 @@
 /**
  * Static registry of all built-in GeekSlides slide classes, modifiers, and functions.
  *
- * Layout classes are auto-generated from layouts.css by scripts/extract-css-docs.ts.
- * Modifier and function entries are maintained manually here.
+ * - Layout classes: auto-generated from layouts.css by scripts/extract-css-docs.ts
+ * - Layout-specific modifiers: auto-generated (nested in layout blocks with @modifier tags)
+ * - Global modifiers: manually maintained here (mod-partial, mod-cols-4)
+ * - Functions: manually maintained here (bgurl, bgcolor)
  */
 
-import { LAYOUT_ENTRIES } from './class-registry-generated.js';
+import { LAYOUT_ENTRIES, LAYOUT_MODIFIER_ENTRIES } from './class-registry-generated.js';
 
 export type ClassCategory = 'layout' | 'modifier' | 'function';
 
@@ -18,31 +20,14 @@ export interface ClassEntry {
   readonly insertText?: string;
 }
 
-// ── Modifiers ────────────────────────────────────────────────────────
-const MODIFIER_ENTRIES: readonly ClassEntry[] = [
-  {
-    name: 'mod-coverbg',
-    category: 'modifier',
-    detail: 'Full-bleed background image treatment',
-    documentation: '```md\n[](.layout-cover.mod-coverbg#id,bgurl(hero.jpg))\n```\nFirst image fills the slide background. Typically used with `layout-cover`.',
-  },
-  {
-    name: 'mod-heading-center',
-    category: 'modifier',
-    detail: 'Centre heading with team images',
-    documentation: '```md\n[](.layout-team.mod-heading-center#team)\n```\nCentres the heading above team member images.',
-  },
+// ── Global Modifiers ─────────────────────────────────────────────────
+// These modifiers apply to any layout/slide, not specific to one layout.
+const GLOBAL_MODIFIER_ENTRIES: readonly ClassEntry[] = [
   {
     name: 'mod-partial',
     category: 'modifier',
     detail: 'Progressive reveal for list items',
     documentation: '```md\n[](.mod-partial#benefits)\n```\nAll `li` and `tr` elements become reveal steps. Navigate with arrow keys.',
-  },
-  {
-    name: 'mod-cols-2',
-    category: 'modifier',
-    detail: 'Force 2-column grid layout',
-    documentation: '```md\n[](.layout-grid.mod-cols-2#gallery)\n```\nOverrides auto-fit with explicit 2-column grid.',
   },
   {
     name: 'mod-cols-4',
@@ -71,11 +56,16 @@ const FUNCTION_ENTRIES: readonly ClassEntry[] = [
 ] as const;
 
 /**
- * Combined registry: generated layouts + manual modifiers + functions.
+ * Combined registry:
+ * - Generated layouts (from CSS @layout tags)
+ * - Generated layout-specific modifiers (from CSS @modifier tags)
+ * - Manual global modifiers (mod-partial, mod-cols-4)
+ * - Manual functions (bgurl, bgcolor)
  */
 export const BUILTIN_CLASSES: readonly ClassEntry[] = [
   ...LAYOUT_ENTRIES,
-  ...MODIFIER_ENTRIES,
+  ...LAYOUT_MODIFIER_ENTRIES,
+  ...GLOBAL_MODIFIER_ENTRIES,
   ...FUNCTION_ENTRIES,
 ] as const;
 

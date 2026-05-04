@@ -1,8 +1,10 @@
 /**
  * Static registry of all built-in GeekSlides slide classes, modifiers, and functions.
  *
- * Layout classes are auto-generated from layouts.css by scripts/extract-css-docs.ts.
- * Modifier and function entries are maintained manually here.
+ * - Layout classes: auto-generated from layouts.css by scripts/extract-css-docs.ts
+ * - Layout-specific modifiers: auto-generated (nested in layout blocks with @modifier tags)
+ * - Global modifiers: manually maintained here (mod-partial, mod-cols-4)
+ * - Functions: manually maintained here (bgurl, bgcolor)
  */
 export type ClassCategory = 'layout' | 'modifier' | 'function';
 export interface ClassEntry {
@@ -14,7 +16,11 @@ export interface ClassEntry {
     readonly insertText?: string;
 }
 /**
- * Combined registry: generated layouts + manual modifiers + functions.
+ * Combined registry:
+ * - Generated layouts (from CSS @layout tags)
+ * - Generated layout-specific modifiers (from CSS @modifier tags)
+ * - Manual global modifiers (mod-partial, mod-cols-4)
+ * - Manual functions (bgurl, bgcolor)
  */
 export declare const BUILTIN_CLASSES: readonly ClassEntry[];
 /** Lookup map by name for fast access. */

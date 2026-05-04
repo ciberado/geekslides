@@ -86,7 +86,8 @@ The extension synchronizes the editor cursor position with slide navigation in t
 
 IntelliSense completion for slide marker syntax `[](.layout-title#id,bgurl())`:
 - **Layout classes**: `layout-title`, `layout-two-col`, etc. with ASCII structure diagrams
-- **Modifier classes**: `mod-coverbg`, `mod-heading-center`, `mod-partial`, etc.
+- **Layout-specific modifiers**: `mod-coverbg` (for layout-cover), `mod-heading-center` (for layout-team), etc.
+- **Global modifiers**: `mod-partial` (progressive reveal), `mod-cols-4` (force 4-column grid)
 - **Function helpers**: `bgurl(url)`, `bgcolor(color)`
 - **Slide IDs**: Suggests kebab-case IDs, warns on duplicates
 - **Dynamic CSS parsing**: Reads deck's `config.json` → `styles` array to discover custom classes
@@ -95,22 +96,25 @@ Trigger characters: `.` (classes), `#` (IDs), `,` (functions)
 
 **Documentation Architecture (CSS-Driven)**:
 
-Layout documentation is **automatically generated** from structured comments in `layouts.css`:
+Layout and modifier documentation is **automatically generated** from structured comments in `layouts.css`:
 
 1. **Source**: `packages/cli/src/templates/layouts.css`
    - 16 layouts with JSDoc-style `/** @layout ... */` comments
-   - Each includes: `@detail`, `@markdown`, `@structure` (ASCII), `@usage` tags
+   - Layout-specific modifiers nested inside layouts with `/** @modifier ... */` comments
+   - Each includes: `@detail`, `@markdown` (layouts only), `@structure` (layouts only), `@usage` tags
    - CSS file is the single source of truth
 
 2. **Build-time extraction**: `packages/vscode/scripts/extract-css-docs.ts`
    - Runs as `prebuild` script during `npm run build`
    - Parses structured comments with regex
+   - Extracts nested `&.mod-*` rules within layout blocks
    - Validates required fields (build fails if malformed)
    - Generates: `src/completion/class-registry-generated.ts`
 
 3. **Registry composition**: `src/completion/class-registry.ts`
    - Imports generated `LAYOUT_ENTRIES` (16 layouts)
-   - Manually maintains `MODIFIER_ENTRIES` (5 modifiers)
+   - Imports generated `LAYOUT_MODIFIER_ENTRIES` (3 layout-specific modifiers)
+   - Manually maintains `GLOBAL_MODIFIER_ENTRIES` (2 global modifiers)
    - Manually maintains `FUNCTION_ENTRIES` (2 functions)
    - Combines into `BUILTIN_CLASSES` array
 
@@ -119,12 +123,13 @@ Layout documentation is **automatically generated** from structured comments in 
    - Adds dynamic CSS classes from deck stylesheets
    - Provides IntelliSense with full markdown documentation
 
-**Adding a new layout**:
+**Adding a new layout with modifiers**:
 1. Add CSS with `/** @layout ... */` comment to `layouts.css`
-2. Run `npm run build` in `packages/vscode`
-3. Done — autocomplete automatically updated!
+2. Nest layout-specific modifiers with `&.mod-variant { }` and `/** @modifier ... */` comments
+3. Run `npm run build` in `packages/vscode`
+4. Done — autocomplete automatically updated with layout and all its modifiers!
 
-No manual sync needed. Documentation stays current with CSS.
+No manual sync needed. Documentation stays current with CSS. See `how-to/19-create-layout-with-modifiers.md` for detailed guide.
 
 ## Data Flows
 

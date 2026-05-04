@@ -400,6 +400,22 @@ Ordered list items displayed in 2-row grid with decorative circles.`,
 
 export const LAYOUT_MODIFIER_ENTRIES: readonly ClassEntry[] = [
   {
+    name: 'mod-coverbg',
+    category: 'modifier' as const,
+    detail: 'Apply background image to the slide (full-bleed)',
+    documentation: `Combine with parent layout: [](.layout-cover.mod-coverbg#id)
+[](.layout-cover.mod-coverbg#id,bgurl(hero.jpg))
+Use with bgurl() function to set the background image.`,
+  },
+  {
+    name: 'mod-heading-center',
+    category: 'modifier' as const,
+    detail: 'Center heading and images vertically',
+    documentation: `Combine with parent layout: [](.layout-team.mod-heading-center#id)
+[](.layout-team.mod-heading-center#id)
+Centers the h3 heading and aligns content vertically in the middle.`,
+  },
+  {
     name: 'mod-cols-2',
     category: 'modifier' as const,
     detail: 'Force 2-column grid',
