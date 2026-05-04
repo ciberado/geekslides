@@ -80,6 +80,7 @@ export function activate(context: vscode.ExtensionContext): void {
     const metadata = await loadDeckMetadata(configPath);
     const state = serverManager.getState();
     if (!state.presentationUrl) {
+      output.appendLine('[extension] Cannot enable cursor sync: no presentation URL available');
       return;
     }
 
@@ -87,7 +88,22 @@ export function activate(context: vscode.ExtensionContext): void {
     yjsClient = new YjsClient();
     yjsClient.connect(state.wsUrl ?? `ws://localhost:${String(getSettings().wsPort)}`, metadata.room);
 
+    output.appendLine(`[extension] Connecting to room: ${metadata.room}`);
+    output.appendLine(`[extension] WebSocket URL: ${state.wsUrl ?? `ws://localhost:${String(getSettings().wsPort)}`}`);
+
     const baseUrl = new URL(state.presentationUrl).origin;
+    output.appendLine(`[extension] Slide map URL: ${baseUrl}/api/slide-map`);
+    
+    // Initial slide map refresh with error reporting
+    try {
+      await slideMapClient.refresh(baseUrl);
+      output.appendLine(`[extension] Initial slide map loaded: ${slideMapClient.entries.length} slides`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      output.appendLine(`[extension] Warning: Failed to load initial slide map: ${message}`);
+      output.appendLine('[extension] Cursor sync will work once the slide map becomes available');
+    }
+
     cursorSync = new CursorSyncController({
       deckContentPath: metadata.contentPath,
       debounceMs: getSettings().debounceMs,

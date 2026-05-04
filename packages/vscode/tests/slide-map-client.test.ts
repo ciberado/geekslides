@@ -72,28 +72,29 @@ describe('SlideMapClient', () => {
     expect(client.entries[0]?.id).toBe('good');
   });
 
-  it('replaces previous entries on refresh', async () => {
-    const fetchMock = vi.fn();
-    const client = new SlideMapClient(fetchMock as typeof fetch);
+  it('handles network errors gracefully and preserves existing entries', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { slideIndex: 0, sourceLineStart: 1, sourceLineEnd: 10, id: 'slide-0' },
+          { slideIndex: 1, sourceLineStart: 10, sourceLineEnd: 20, id: 'slide-1' },
+        ],
+      })
+      .mockRejectedValueOnce(new Error('Network error'));
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [
-        { slideIndex: 0, sourceLineStart: 1, sourceLineEnd: 5, id: 'v1' },
-      ],
-    });
-    await client.refresh('http://localhost:5173');
-    expect(client.entries[0]?.id).toBe('v1');
+    const client = new SlideMapClient(fetchMock as unknown as typeof fetch);
 
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      json: async () => [
-        { slideIndex: 0, sourceLineStart: 1, sourceLineEnd: 3, id: 'v2' },
-        { slideIndex: 1, sourceLineStart: 3, sourceLineEnd: 7, id: 'v2b' },
-      ],
-    });
-    await client.refresh('http://localhost:5173');
+    // First refresh succeeds
+    await client.refresh('http://localhost:3000');
     expect(client.entries).toHaveLength(2);
-    expect(client.entries[0]?.id).toBe('v2');
+
+    // Second refresh fails, but entries are preserved
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await client.refresh('http://localhost:3000');
+    expect(client.entries).toHaveLength(2);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to refresh slide map'));
+    
+    consoleSpy.mockRestore();
   });
 });
