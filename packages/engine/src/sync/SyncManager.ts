@@ -18,8 +18,6 @@ export interface SyncTarget {
   get currentSlide(): number;
   get currentPartial(): number;
   get mode(): string;
-  applyPreviewClass(slideIndex: number, className: string): void;
-  clearPreview(): void;
 }
 
 export class SyncManager {
