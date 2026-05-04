@@ -22,61 +22,245 @@ export const BUILTIN_CLASSES: readonly ClassEntry[] = [
     name: 'layout-title',
     category: 'layout',
     detail: 'Centered title slide — flex column, center/center',
-    documentation: '```md\n[](.layout-title#my-slide)\n```\nFull-screen centered title with optional subtitle.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-title#my-slide)
+# Big Title
+## Subtitle
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│                         │
+│      # BIG TITLE        │  ← h1, centered
+│      ## Subtitle        │  ← h2, optional
+│                         │
+└─────────────────────────┘
+\`\`\`
+
+Full-screen centered title with optional subtitle. Perfect for opening slides or section dividers.`,
   },
   {
     name: 'layout-cover',
     category: 'layout',
     detail: 'Cover slide with background image overlay',
-    documentation: '```md\n[](.layout-cover#id,bgurl(hero.jpg))\n```\nContent at bottom with `::before` gradient overlay. Combine with `.mod-coverbg` for full-bleed images.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-cover#id,bgurl(hero.jpg))
+# Hero Title
+## Tagline
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│  [BACKGROUND IMAGE]     │
+│         with            │
+│    gradient overlay     │
+│                         │
+│  ┌───────────────────┐  │
+│  │ # Title           │  │  ← content at bottom
+│  │ ## Subtitle       │  │
+│  └───────────────────┘  │
+└─────────────────────────┘
+\`\`\`
+
+Combine with \`.mod-coverbg\` for full-bleed background images.`,
   },
   {
     name: 'layout-section',
     category: 'layout',
     detail: 'Section divider — h2 + optional h3',
-    documentation: '```md\n[](.layout-section#chapter)\n```\nFlex column, centered. Use for chapter breaks.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-section#chapter-2)
+## Chapter 2
+### Advanced Topics
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│                         │
+│    ## Chapter Name      │  ← h2, large
+│    ### Subtitle         │  ← h3, optional
+│                         │
+└─────────────────────────┘
+\`\`\`
+
+Use for chapter breaks or section transitions.`,
   },
   {
     name: 'layout-big-stat',
     category: 'layout',
     detail: 'Big statistic — h3 + p centered',
-    documentation: '```md\n[](.layout-big-stat#stat)\n```\nFlex column, center/center. Perfect for highlighting a single number.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-big-stat#growth)
+### 247%
+Growth this quarter
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│                         │
+│      ### 247%           │  ← h3, huge number
+│   Growth this quarter   │  ← p, description
+│                         │
+└─────────────────────────┘
+\`\`\`
+
+Perfect for highlighting a single key metric.`,
   },
   {
     name: 'layout-two-col',
     category: 'layout',
     detail: 'Two-column grid layout',
-    documentation: '```md\n[](.layout-two-col#cols)\n```\n2-col grid. Use `#### Heading` (h4) as a hidden column break.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-two-col#comparison)
+### Features
+- Item 1
+- Item 2
+#### (column break)
+- Item 3
+- Item 4
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌───────────┬───────────┐
+│ ### Left  │ ### Right │
+│ - Item 1  │ - Item 3  │
+│ - Item 2  │ - Item 4  │
+└───────────┴───────────┘
+\`\`\`
+
+**Key:** Use \`#### Heading\` (h4) as a hidden column break marker.`,
   },
   {
     name: 'layout-img-text',
     category: 'layout',
     detail: 'Image left, text right — 2-col grid',
-    documentation: '```md\n[](.layout-img-text#product)\n```\nImage in left column, text/list in right column.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-img-text#product)
+![Product](img.jpg)
+#### Details
+- Feature 1
+- Feature 2
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────┬─────────────┐
+│         │ #### Title  │
+│  IMAGE  │ - Feature 1 │
+│         │ - Feature 2 │
+└─────────┴─────────────┘
+\`\`\`
+
+Image in left column, text/list in right column.`,
   },
   {
     name: 'layout-img-text-bleed',
     category: 'layout',
     detail: 'Full-height image left — 2-col grid',
-    documentation: '```md\n[](.layout-img-text-bleed#hero)\n```\nImage spans full height of left half.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-img-text-bleed#hero)
+![Hero](bg.jpg)
+#### Story
+Content here...
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌───────┬───────────────┐
+│ IMAGE │ #### Heading  │
+│ FULL  │               │
+│ BLEED │ Content...    │
+└───────┴───────────────┘
+\`\`\`
+
+Image spans full height of left half. More dramatic than \`layout-img-text\`.`,
   },
   {
     name: 'layout-three-col',
     category: 'layout',
     detail: 'Three-column grid layout',
-    documentation: '```md\n[](.layout-three-col#pillars)\n```\n3-col grid. `#### Heading` (h4) heads each card.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-three-col#pillars)
+#### Column 1
+Content
+#### Column 2
+Content
+#### Column 3
+Content
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌───────┬───────┬───────┐
+│ ####  │ ####  │ ####  │
+│ Col 1 │ Col 2 │ Col 3 │
+└───────┴───────┴───────┘
+\`\`\`
+
+Use \`#### Heading\` (h4) to head each card.`,
   },
   {
     name: 'layout-timeline',
     category: 'layout',
     detail: 'Timeline with ordered list steps',
-    documentation: '```md\n[](.layout-timeline#roadmap)\n```\n`ol` → CSS Grid auto-columns with `::before` line. Steps support images.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-timeline#roadmap)
+1. **Q1** — Launch
+2. **Q2** — Growth
+3. **Q3** — Scale
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│ 1 ──── 2 ──── 3 ────    │  ← CSS Grid auto-columns
+│ Q1     Q2     Q3        │     with ::before line
+│ Launch Growth Scale     │
+└─────────────────────────┘
+\`\`\`
+
+Ordered list rendered as horizontal timeline. Steps support images.`,
   },
   {
     name: 'layout-chart',
     category: 'layout',
     detail: 'Chart layout — table gets flex: 1',
-    documentation: '```md\n[](.layout-chart#revenue)\n```\nFlex column; `table` stretches to fill available space.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-chart#revenue)
+### Revenue Growth
+| Q  | Revenue |
+|----|---------|
+| Q1 | $1.2M   |
+| Q2 | $2.4M   |
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│ ### Heading             │
+│ ┌─────────────────────┐ │
+│ │  TABLE (stretches)  │ │  ← flex: 1
+│ │                     │ │
+│ └─────────────────────┘ │
+└─────────────────────────┘
+\`\`\`
+
+Table stretches to fill available space.`,
   },
   {
     name: 'layout-compare',

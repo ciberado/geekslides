@@ -12,7 +12,6 @@ export declare class YjsClient {
     connect(serverUrl: string, room: string): void;
     disconnect(): void;
     setSlide(slide: number, partial?: number): void;
-    setPreview(slideIndex: number, className: string): void;
     clearPreview(): void;
     onSlideChange(listener: (slide: number, partial: number) => void): () => void;
 }

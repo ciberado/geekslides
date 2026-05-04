@@ -43,14 +43,6 @@ export class YjsClient {
     this.#sessionState.set('partial', partial);
   }
 
-  setPreview(slideIndex: number, className: string): void {
-    this.#sessionState.set('classPreview', {
-      slideIndex,
-      className,
-      timestamp: Date.now(),
-    });
-  }
-
   clearPreview(): void {
     this.#sessionState.set('classPreview', null);
   }
