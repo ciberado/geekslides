@@ -77,6 +77,22 @@ Add a layout class to a slide's marker to activate its layout:
 - Point 2
 ```
 
+If you're using the VSCode extension, class autocomplete will show:
+- Full markdown syntax examples
+- ASCII diagrams showing the visual structure
+- Usage tips and compatible modifiers
+
+Press `.` after `[](` to trigger autocomplete and browse available layouts.
+
+**For developers adding new layouts:**
+When you add a layout class to `css/layouts.css`, update the VSCode autocomplete registry at `packages/vscode/src/completion/class-registry.ts`:
+1. Add entry with name, category, detail
+2. Include complete markdown example
+3. Draw ASCII box diagram showing visual structure
+4. Document column breaks, special elements, and compatible modifiers
+
+This keeps the autocomplete documentation in sync with available layouts.
+
 | Class | Description |
 |---|---|
 | `layout-title` | Centered hero — use for the opening slide (`h1` + `h2`) |

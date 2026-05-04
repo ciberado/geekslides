@@ -89,7 +89,12 @@ duplicating layout rules.
 3. Add theme overrides for it in `packages/cli/src/templates/theme-default.css` under
    section 3 (layout-specific theme overrides).
 4. Update the `how-to/07-style-your-deck.md` layout class table.
-5. If the new layout is part of a per-deck customisation (not the engine template), add
+5. **Update VSCode autocomplete:** Add entry to `packages/vscode/src/completion/class-registry.ts` with:
+   - Complete markdown example
+   - ASCII box drawing diagram showing visual structure
+   - Usage notes (column breaks, special elements, compatible modifiers)
+   - This ensures developers get rich IntelliSense documentation
+6. If the new layout is part of a per-deck customisation (not the engine template), add
    the CSS to your deck's `css/layouts.css` instead of the template.
 
 ---

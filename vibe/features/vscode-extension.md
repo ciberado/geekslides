@@ -85,7 +85,7 @@ The extension synchronizes the editor cursor position with slide navigation in t
 ### 2. Slide Class Autocomplete
 
 IntelliSense completion for slide marker syntax `[](.layout-title#id,bgurl())`:
-- **Layout classes**: `layout-title`, `layout-two-col`, etc.
+- **Layout classes**: `layout-title`, `layout-two-col`, etc. with ASCII structure diagrams
 - **Modifier classes**: `mod-coverbg`, `mod-heading-center`, `mod-partial`, etc.
 - **Function helpers**: `bgurl(url)`, `bgcolor(color)`
 - **Slide IDs**: Suggests kebab-case IDs, warns on duplicates
@@ -93,16 +93,42 @@ IntelliSense completion for slide marker syntax `[](.layout-title#id,bgurl())`:
 
 Trigger characters: `.` (classes), `#` (IDs), `,` (functions)
 
-### 3. Live Class Preview
+**Documentation Structure:**
+Each layout class in the autocomplete registry includes:
+1. **Markdown example**: Complete slide marker syntax with content
+2. **ASCII diagram**: Visual box drawing showing layout structure
+3. **Usage notes**: Key features, modifiers, and best practices
 
-Real-time preview of layout/modifier classes as you type:
-- Type `[](.layout-ti|)` → browser shows slide with `layout-title` applied
-- Fuzzy matching finds best class match from partial input
-- 150ms debounce to prevent excessive updates
-- Preview clears on blur, completion, or navigation
-- Only previews `layout-*` and `mod-*` classes (not IDs or functions)
+**Maintenance:** When adding new layouts to `packages/cli/src/templates/layouts.css`:
+1. Add corresponding entry to `packages/vscode/src/completion/class-registry.ts`
+2. Include complete markdown example with slide marker
+3. Draw ASCII diagram showing visual layout structure
+4. Document any special behaviors (column breaks, h4 usage, etc.)
+5. Mention compatible modifiers
 
-Uses Yjs `sessionState.classPreview` to sync preview state to browser.
+Example structure:
+```typescript
+{
+  name: 'layout-example',
+  category: 'layout',
+  detail: 'Brief one-line description',
+  documentation: `**Markdown:**
+\`\`\`md
+[](.layout-example#id)
+# Content
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│ Visual representation   │
+│ of the layout          │
+└─────────────────────────┘
+\`\`\`
+
+Usage notes and tips.`,
+}
+```
 
 ## Data Flows
 
@@ -151,49 +177,16 @@ Uses Yjs `sessionState.classPreview` to sync preview state to browser.
 6. editor.revealRange() moves cursor to that line
 ```
 
-### Live Preview (class-on-type)
+### Autocomplete Documentation Preview
 
-```
-1. User types in slide marker: [](.layout-ti|)
-       │
-       ▼
-2. ClassPreviewController extracts partial class: "layout-ti"
-       │
-       ▼
-3. Fuzzy matcher finds best match: "layout-title"
-       │
-       ▼
-4. Debouncer waits 150ms (cancels if user continues typing)
-       │
-       ▼
-5. YjsClient.setPreview() writes to sessionState.classPreview:
-   { slideIndex: 0, className: "layout-title", timestamp: 1234567890 }
-       │
-       ▼
-6. Yjs propagates to all room participants
-       │
-       ▼
-7. Browser SyncManager observes classPreview change
-       │
-       ▼
-8. Validates timestamp (<5s old) and class prefix (layout-/mod-)
-       │
-       ▼
-9. Slideshow.applyPreviewClass():
-   - Store original classes
-   - Remove conflicting layout-*/mod-* classes
-   - Add preview class
-   - Set data-preview="true" attribute
-       │
-       ▼
-10. Slide re-renders with new layout
-       │
-       ▼
-11. User continues typing → repeat cycle
-       │
-       ▼
-12. On blur/save: clearPreview() restores original classes
-```
+When user selects a class from autocomplete, VSCode displays:
+1. **Detail line**: Brief description of the class
+2. **Documentation panel**: Full markdown with:
+   - Complete slide marker example
+   - ASCII box drawing showing layout structure
+   - Usage tips and compatible modifiers
+
+Classes are applied to slides on file save, triggering HMR update in browser.
 
 ### Slide Map Lifecycle
 

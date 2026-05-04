@@ -46,13 +46,32 @@ describe('SlideMapClient', () => {
     expect(client.getLineForSlide(99)).toBeUndefined();
   });
 
-  it('throws on HTTP error', async () => {
-    const client = new SlideMapClient(vi.fn().mockResolvedValue({
-      ok: false,
-      status: 500,
-    }) as typeof fetch);
+  it('handles HTTP errors gracefully and preserves existing entries', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [
+          { slideIndex: 0, sourceLineStart: 1, sourceLineEnd: 10, id: 'slide-0' },
+        ],
+      })
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 500,
+      });
 
-    await expect(client.refresh('http://localhost:5173')).rejects.toThrow('HTTP 500');
+    const client = new SlideMapClient(fetchMock as unknown as typeof fetch);
+
+    // First refresh succeeds
+    await client.refresh('http://localhost:5173');
+    expect(client.entries).toHaveLength(1);
+
+    // Second refresh fails with HTTP error, but entries are preserved
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    await client.refresh('http://localhost:5173');
+    expect(client.entries).toHaveLength(1);
+    expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to refresh slide map'));
+    
+    consoleSpy.mockRestore();
   });
 
   it('filters out malformed entries', async () => {

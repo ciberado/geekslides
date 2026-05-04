@@ -266,37 +266,149 @@ Table stretches to fill available space.`,
     name: 'layout-compare',
     category: 'layout',
     detail: 'Comparison layout — 3-col with VS badge',
-    documentation: '```md\n[](.layout-compare#comparison)\n```\n3-col grid (`1fr auto 1fr`). `#### Heading` becomes VS badge in centre.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-compare#comparison)
+#### Option A
+- Feature 1
+- Feature 2
+#### VS
+#### Option B
+- Feature 3
+- Feature 4
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────┬────┬─────────┐
+│ #### A  │ VS │ #### B  │  ← 1fr auto 1fr grid
+│ Content │    │ Content │
+└─────────┴────┴─────────┘
+\`\`\`
+
+The middle \`#### Heading\` becomes styled VS badge in centre column.`,
   },
   {
     name: 'layout-team',
     category: 'layout',
     detail: 'Team members — flex wrap, space-evenly',
-    documentation: '```md\n[](.layout-team#team)\n```\nCircular headshots. Add `.mod-heading-center` to centre heading with images.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-team#team)
+![Alice](alice.jpg) **Alice** — CEO
+![Bob](bob.jpg) **Bob** — CTO
+![Carol](carol.jpg) **Carol** — CFO
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│  ●      ●      ●        │  ← Images (circular)
+│ Alice  Bob  Carol       │  ← Names wrap
+└─────────────────────────┘
+\`\`\`
+
+Images render as circles. Use \`.mod-heading-center\` to center the heading.`,
   },
   {
     name: 'layout-grid',
     category: 'layout',
     detail: 'Auto-fit responsive grid',
-    documentation: '```md\n[](.layout-grid#gallery)\n```\n`auto-fit` grid with `minmax(350px, 1fr)`. Combine with `.mod-cols-2` or `.mod-cols-4`.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-grid#gallery)
+![](img1.jpg)
+![](img2.jpg)
+![](img3.jpg)
+![](img4.jpg)
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────┬─────┬─────┐
+│ IMG │ IMG │ IMG │  ← auto-fit grid
+├─────┼─────┼─────┤    minmax(350px, 1fr)
+│ IMG │     │     │
+└─────┴─────┴─────┘
+\`\`\`
+
+Responsive grid with \`auto-fit\`. Combine with \`.mod-cols-2\` or \`.mod-cols-4\` to force column count.`,
   },
   {
     name: 'layout-table',
     category: 'layout',
     detail: 'Table layout — table gets flex: 1',
-    documentation: '```md\n[](.layout-table#features)\n```\nFlex column; `table` stretches to fill.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-table#features)
+### Feature Matrix
+| Feature | Basic | Pro |
+|---------|-------|-----|
+| Users   | 5     | ∞   |
+| Storage | 1GB   | 1TB |
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│ ### Heading             │
+│ ┌─────────────────────┐ │
+│ │ TABLE (stretches)   │ │  ← flex: 1
+│ │                     │ │
+│ └─────────────────────┘ │
+└─────────────────────────┘
+\`\`\`
+
+Table stretches to fill available vertical space.`,
   },
   {
     name: 'layout-agenda',
     category: 'layout',
     detail: 'Agenda layout with accent circles',
-    documentation: '```md\n[](.layout-agenda#agenda)\n```\n2-row grid. `ol` items flex-column with accent circles.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-agenda#agenda)
+1. **9:00** — Opening
+2. **10:00** — Keynote
+3. **11:00** — Workshop
+4. **12:00** — Lunch
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌───────────┬───────────┐
+│ ● 9:00    │ ● 11:00   │  ← 2-row grid
+│   Opening │   Workshop│     accent circles
+├───────────┼───────────┤
+│ ● 10:00   │ ● 12:00   │
+│   Keynote │   Lunch   │
+└───────────┴───────────┘
+\`\`\`
+
+Ordered list items displayed in 2-row grid with decorative circles.`,
   },
   {
     name: 'layout-blank',
     category: 'layout',
     detail: 'Blank canvas with guide border',
-    documentation: '```md\n[](.layout-blank#canvas)\n```\nNo inner structure. `::after` guide border.',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-blank#canvas)
+<div style="position:absolute; top:50%; left:50%;">
+  Custom positioned content
+</div>
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌─────────────────────────┐
+│                         │  ← Empty container
+│   (your content here)   │     with guide border
+│                         │
+└─────────────────────────┘
+\`\`\`
+
+No structure applied. Use HTML/CSS for absolute positioning. \`::after\` shows guide border.`,
   },
 
   // ── Modifiers ────────────────────────────────────────────────────────
