@@ -84,18 +84,38 @@ duplicating layout rules.
 ### Adding a new layout
 
 1. Pick a name: `.layout-my-name`.
-2. Add a comment block following the established numbered pattern, then add the CSS rule
-   to `packages/cli/src/templates/layouts.css`.
+2. Add a JSDoc-style documentation comment and CSS rule to `packages/cli/src/templates/layouts.css`:
+   ```css
+   /**
+    * @layout layout-my-name
+    * @detail Brief one-line description
+    * @markdown
+    * [](.layout-my-name#id)
+    * # Content
+    * @structure
+    * ┌─────────────┐
+    * │   Layout    │  ← ASCII diagram
+    * └─────────────┘
+    * @usage
+    * Usage notes here.
+    */
+   section.content.layout-my-name {
+     display: flex;
+     /* ... */
+   }
+   ```
 3. Add theme overrides for it in `packages/cli/src/templates/theme-default.css` under
    section 3 (layout-specific theme overrides).
 4. Update the `how-to/07-style-your-deck.md` layout class table.
-5. **Update VSCode autocomplete:** Add entry to `packages/vscode/src/completion/class-registry.ts` with:
-   - Complete markdown example
-   - ASCII box drawing diagram showing visual structure
-   - Usage notes (column breaks, special elements, compatible modifiers)
-   - This ensures developers get rich IntelliSense documentation
+5. **Rebuild VSCode extension:** `cd packages/vscode && npm run build`
+   - The prebuild script automatically extracts CSS documentation
+   - Generates `src/completion/class-registry-generated.ts`
+   - Autocomplete will show your layout with full documentation
 6. If the new layout is part of a per-deck customisation (not the engine template), add
    the CSS to your deck's `css/layouts.css` instead of the template.
+
+**Documentation format**: See `packages/vscode/src/completion/css-doc-format.md` for complete specification.
+The CSS comment is the **single source of truth** — no manual TypeScript updates needed!
 
 ---
 

@@ -93,42 +93,38 @@ IntelliSense completion for slide marker syntax `[](.layout-title#id,bgurl())`:
 
 Trigger characters: `.` (classes), `#` (IDs), `,` (functions)
 
-**Documentation Structure:**
-Each layout class in the autocomplete registry includes:
-1. **Markdown example**: Complete slide marker syntax with content
-2. **ASCII diagram**: Visual box drawing showing layout structure
-3. **Usage notes**: Key features, modifiers, and best practices
+**Documentation Architecture (CSS-Driven)**:
 
-**Maintenance:** When adding new layouts to `packages/cli/src/templates/layouts.css`:
-1. Add corresponding entry to `packages/vscode/src/completion/class-registry.ts`
-2. Include complete markdown example with slide marker
-3. Draw ASCII diagram showing visual layout structure
-4. Document any special behaviors (column breaks, h4 usage, etc.)
-5. Mention compatible modifiers
+Layout documentation is **automatically generated** from structured comments in `layouts.css`:
 
-Example structure:
-```typescript
-{
-  name: 'layout-example',
-  category: 'layout',
-  detail: 'Brief one-line description',
-  documentation: `**Markdown:**
-\`\`\`md
-[](.layout-example#id)
-# Content
-\`\`\`
+1. **Source**: `packages/cli/src/templates/layouts.css`
+   - 16 layouts with JSDoc-style `/** @layout ... */` comments
+   - Each includes: `@detail`, `@markdown`, `@structure` (ASCII), `@usage` tags
+   - CSS file is the single source of truth
 
-**Structure:**
-\`\`\`
-┌─────────────────────────┐
-│ Visual representation   │
-│ of the layout          │
-└─────────────────────────┘
-\`\`\`
+2. **Build-time extraction**: `packages/vscode/scripts/extract-css-docs.ts`
+   - Runs as `prebuild` script during `npm run build`
+   - Parses structured comments with regex
+   - Validates required fields (build fails if malformed)
+   - Generates: `src/completion/class-registry-generated.ts`
 
-Usage notes and tips.`,
-}
-```
+3. **Registry composition**: `src/completion/class-registry.ts`
+   - Imports generated `LAYOUT_ENTRIES` (16 layouts)
+   - Manually maintains `MODIFIER_ENTRIES` (5 modifiers)
+   - Manually maintains `FUNCTION_ENTRIES` (2 functions)
+   - Combines into `BUILTIN_CLASSES` array
+
+4. **Completion provider**: `src/completion/slide-class-provider.ts`
+   - Consumes `BUILTIN_CLASSES`
+   - Adds dynamic CSS classes from deck stylesheets
+   - Provides IntelliSense with full markdown documentation
+
+**Adding a new layout**:
+1. Add CSS with `/** @layout ... */` comment to `layouts.css`
+2. Run `npm run build` in `packages/vscode`
+3. Done — autocomplete automatically updated!
+
+No manual sync needed. Documentation stays current with CSS.
 
 ## Data Flows
 

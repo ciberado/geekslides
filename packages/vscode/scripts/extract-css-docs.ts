@@ -130,8 +130,10 @@ ${entries.join(',\n')},
  */
 function main(): void {
   try {
-    // Read layouts.css
-    const layoutsCssPath = join(__dirname, '../../../cli/src/templates/layouts.css');
+    // Read layouts.css from packages/cli/src/templates
+    // scripts/ → packages/vscode/ → packages/ → cli/
+    const layoutsCssPath = join(__dirname, '../../cli/src/templates/layouts.css');
+    console.log(`[extract-css-docs] Looking for: ${layoutsCssPath}`);
     const cssContent = readFileSync(layoutsCssPath, 'utf-8');
 
     console.log('[extract-css-docs] Reading layouts.css...');

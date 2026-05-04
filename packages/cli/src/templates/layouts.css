@@ -129,6 +129,23 @@ section.content {
  *   ## Subtitle
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-title
+ * @detail Centered title slide — flex column, center/center
+ * @markdown
+ * [](.layout-title#my-slide)
+ * # Big Title
+ * ## Subtitle
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │
+ * │      # BIG TITLE        │  ← h1, centered
+ * │      ## Subtitle        │  ← h2, optional
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * Full-screen centered title with optional subtitle. Perfect for opening slides or section dividers.
+ */
 section.content.layout-title {
   display: flex;
   flex-direction: column;
@@ -152,6 +169,27 @@ section.content.layout-title {
  *   Optional paragraph
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-cover
+ * @detail Cover slide with background image overlay
+ * @markdown
+ * [](.layout-cover#id,bgurl(hero.jpg))
+ * # Hero Title
+ * ## Tagline
+ * @structure
+ * ┌─────────────────────────┐
+ * │  [BACKGROUND IMAGE]     │
+ * │         with            │
+ * │    gradient overlay     │
+ * │                         │
+ * │  ┌───────────────────┐  │
+ * │  │ # Title           │  │  ← content at bottom
+ * │  │ ## Subtitle       │  │
+ * │  └───────────────────┘  │
+ * └─────────────────────────┘
+ * @usage
+ * Combine with .mod-coverbg for full-bleed background images.
+ */
 section.content.layout-cover {
   display: flex;
   flex-direction: column;
@@ -188,6 +226,23 @@ section.content.layout-cover {
  *   ### Optional tagline
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-section
+ * @detail Section divider — h2 + optional h3
+ * @markdown
+ * [](.layout-section#chapter-2)
+ * ## Chapter 2
+ * ### Advanced Topics
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │
+ * │    ## Chapter Name      │  ← h2, large
+ * │    ### Subtitle         │  ← h3, optional
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * Use for chapter breaks or section transitions.
+ */
 section.content.layout-section {
   display: flex;
   flex-direction: column;
@@ -206,6 +261,23 @@ section.content.layout-section {
  *   Uptime across all regions
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-big-stat
+ * @detail Big statistic — h3 + p centered
+ * @markdown
+ * [](.layout-big-stat#growth)
+ * ### 247%
+ * Growth this quarter
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │
+ * │      ### 247%           │  ← h3, huge number
+ * │   Growth this quarter   │  ← p, description
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * Perfect for highlighting a single key metric.
+ */
 section.content.layout-big-stat {
   display: flex;
   flex-direction: column;
@@ -230,6 +302,26 @@ section.content.layout-big-stat {
  *   - Right list
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-two-col
+ * @detail Two-column grid layout
+ * @markdown
+ * [](.layout-two-col#comparison)
+ * ### Features
+ * - Item 1
+ * - Item 2
+ * #### (column break)
+ * - Item 3
+ * - Item 4
+ * @structure
+ * ┌───────────┬───────────┐
+ * │ ### Left  │ ### Right │
+ * │ - Item 1  │ - Item 3  │
+ * │ - Item 2  │ - Item 4  │
+ * └───────────┴───────────┘
+ * @usage
+ * **Key:** Use #### Heading (h4) as a hidden column break marker.
+ */
 section.content.layout-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -252,6 +344,24 @@ section.content.layout-two-col {
  *   - Point A
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-img-text
+ * @detail Image left, text right — 2-col grid
+ * @markdown
+ * [](.layout-img-text#product)
+ * ![Product](img.jpg)
+ * #### Details
+ * - Feature 1
+ * - Feature 2
+ * @structure
+ * ┌─────────┬─────────────┐
+ * │         │ #### Title  │
+ * │  IMAGE  │ - Feature 1 │
+ * │         │ - Feature 2 │
+ * └─────────┴─────────────┘
+ * @usage
+ * Image in left column, text/list in right column.
+ */
 section.content.layout-img-text {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -298,6 +408,23 @@ section.content.layout-img-text {
  * Supports paragraphs, bullet lists, and ordered lists in the right column.
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-img-text-bleed
+ * @detail Full-height image left — 2-col grid
+ * @markdown
+ * [](.layout-img-text-bleed#hero)
+ * ![Hero](bg.jpg)
+ * #### Story
+ * Content here...
+ * @structure
+ * ┌───────┬───────────────┐
+ * │ IMAGE │ #### Heading  │
+ * │ FULL  │               │
+ * │ BLEED │ Content...    │
+ * └───────┴───────────────┘
+ * @usage
+ * Image spans full height of left half. More dramatic than layout-img-text.
+ */
 section.content.layout-img-text-bleed {
   display: block;
   padding: 0;
@@ -364,6 +491,25 @@ section.content.layout-img-text-bleed {
  *   Description C.
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-three-col
+ * @detail Three-column grid layout
+ * @markdown
+ * [](.layout-three-col#pillars)
+ * #### Column 1
+ * Content
+ * #### Column 2
+ * Content
+ * #### Column 3
+ * Content
+ * @structure
+ * ┌───────┬───────┬───────┐
+ * │ ####  │ ####  │ ####  │
+ * │ Col 1 │ Col 2 │ Col 3 │
+ * └───────┴───────┴───────┘
+ * @usage
+ * Use #### Heading (h4) to head each card.
+ */
 section.content.layout-three-col {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -432,6 +578,23 @@ section.content.layout-three-col {
  *   4. **Ship**: deploy.
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-timeline
+ * @detail Timeline with ordered list steps
+ * @markdown
+ * [](.layout-timeline#roadmap)
+ * 1. **Q1** — Launch
+ * 2. **Q2** — Growth
+ * 3. **Q3** — Scale
+ * @structure
+ * ┌─────────────────────────┐
+ * │ 1 ──── 2 ──── 3 ────    │  ← CSS Grid auto-columns
+ * │ Q1     Q2     Q3        │     with ::before line
+ * │ Launch Growth Scale     │
+ * └─────────────────────────┘
+ * @usage
+ * Ordered list rendered as horizontal timeline. Steps support images.
+ */
 section.content.layout-timeline {
   display: grid;
   grid-template-rows: auto 1fr;
@@ -511,6 +674,27 @@ section.content.layout-timeline {
  *   | 1     | 2     |
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-chart
+ * @detail Chart layout — table gets flex: 1
+ * @markdown
+ * [](.layout-chart#revenue)
+ * ### Revenue Growth
+ * | Q  | Revenue |
+ * |----|---------|
+ * | Q1 | $1.2M   |
+ * | Q2 | $2.4M   |
+ * @structure
+ * ┌─────────────────────────┐
+ * │ ### Heading             │
+ * │ ┌─────────────────────┐ │
+ * │ │  TABLE (stretches)  │ │  ← flex: 1
+ * │ │                     │ │
+ * │ └─────────────────────┘ │
+ * └─────────────────────────┘
+ * @usage
+ * Table stretches to fill available space.
+ */
 section.content.layout-chart {
   display: flex;
   flex-direction: column;
@@ -532,6 +716,26 @@ section.content.layout-chart {
  *   - **Option B**: benefit
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-compare
+ * @detail Comparison layout — 3-col with VS badge
+ * @markdown
+ * [](.layout-compare#comparison)
+ * #### Option A
+ * - Feature 1
+ * - Feature 2
+ * #### VS
+ * #### Option B
+ * - Feature 3
+ * - Feature 4
+ * @structure
+ * ┌─────────┬────┬─────────┐
+ * │ #### A  │ VS │ #### B  │  ← 1fr auto 1fr grid
+ * │ Content │    │ Content │
+ * └─────────┴────┴─────────┘
+ * @usage
+ * The middle #### Heading becomes styled VS badge in centre column.
+ */
 section.content.layout-compare {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -563,6 +767,22 @@ section.content.layout-compare {
  *   ![Bob](bob.jpg)
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-team
+ * @detail Team members — flex wrap, space-evenly
+ * @markdown
+ * [](.layout-team#team)
+ * ![Alice](alice.jpg) **Alice** — CEO
+ * ![Bob](bob.jpg) **Bob** — CTO
+ * ![Carol](carol.jpg) **Carol** — CFO
+ * @structure
+ * ┌─────────────────────────┐
+ * │  ●      ●      ●        │  ← Images (circular)
+ * │ Alice  Bob  Carol       │  ← Names wrap
+ * └─────────────────────────┘
+ * @usage
+ * Images render as circles. Use .mod-heading-center to center the heading.
+ */
 section.content.layout-team {
   display: flex;
   flex-wrap: wrap;
@@ -648,6 +868,24 @@ section.content.layout-team.mod-heading-center {
  *   ![Two](img2.jpg)
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-grid
+ * @detail Auto-fit responsive grid
+ * @markdown
+ * [](.layout-grid#gallery)
+ * ![](img1.jpg)
+ * ![](img2.jpg)
+ * ![](img3.jpg)
+ * ![](img4.jpg)
+ * @structure
+ * ┌─────┬─────┬─────┐
+ * │ IMG │ IMG │ IMG │  ← auto-fit grid
+ * ├─────┼─────┼─────┤    minmax(350px, 1fr)
+ * │ IMG │     │     │
+ * └─────┴─────┴─────┘
+ * @usage
+ * Responsive grid with auto-fit. Combine with .mod-cols-2 or .mod-cols-4 to force column count.
+ */
 section.content.layout-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -685,6 +923,27 @@ section.content.layout-grid {
  *   | Users   | 5    | 50   |
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-table
+ * @detail Table layout — table gets flex: 1
+ * @markdown
+ * [](.layout-table#features)
+ * ### Feature Matrix
+ * | Feature | Basic | Pro |
+ * |---------|-------|-----|
+ * | Users   | 5     | ∞   |
+ * | Storage | 1GB   | 1TB |
+ * @structure
+ * ┌─────────────────────────┐
+ * │ ### Heading             │
+ * │ ┌─────────────────────┐ │
+ * │ │ TABLE (stretches)   │ │  ← flex: 1
+ * │ │                     │ │
+ * │ └─────────────────────┘ │
+ * └─────────────────────────┘
+ * @usage
+ * Table stretches to fill available vertical space.
+ */
 section.content.layout-table {
   display: flex;
   flex-direction: column;
@@ -702,6 +961,23 @@ section.content.layout-table {
  *   [](.layout-blank#id)
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-blank
+ * @detail Blank canvas with guide border
+ * @markdown
+ * [](.layout-blank#canvas)
+ * <div style="position:absolute; top:50%; left:50%;">
+ *   Custom positioned content
+ * </div>
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │  ← Empty container
+ * │   (your content here)   │     with guide border
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * No structure applied. Use HTML/CSS for absolute positioning. ::after shows guide border.
+ */
 section.content.layout-blank {
   &::after {
     content: "";
@@ -724,6 +1000,26 @@ section.content.layout-blank {
  *   4. Q & A
  * ─────────────────────────────────────────────────────────────────────────── */
 
+/**
+ * @layout layout-agenda
+ * @detail Agenda layout with accent circles
+ * @markdown
+ * [](.layout-agenda#agenda)
+ * 1. **9:00** — Opening
+ * 2. **10:00** — Keynote
+ * 3. **11:00** — Workshop
+ * 4. **12:00** — Lunch
+ * @structure
+ * ┌───────────┬───────────┐
+ * │ ● 9:00    │ ● 11:00   │  ← 2-row grid
+ * │   Opening │   Workshop│     accent circles
+ * ├───────────┼───────────┤
+ * │ ● 10:00   │ ● 12:00   │
+ * │   Keynote │   Lunch   │
+ * └───────────┴───────────┘
+ * @usage
+ * Ordered list items displayed in 2-row grid with decorative circles.
+ */
 section.content.layout-agenda {
   display: grid;
   grid-template-rows: auto 1fr;

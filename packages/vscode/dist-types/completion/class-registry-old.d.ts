@@ -1,8 +1,8 @@
 /**
  * Static registry of all built-in GeekSlides slide classes, modifiers, and functions.
  *
- * Layout classes are auto-generated from layouts.css by scripts/extract-css-docs.ts.
- * Modifier and function entries are maintained manually here.
+ * Each entry includes metadata used by the CompletionItemProvider to display
+ * labels, detail, and documentation in the autocomplete popup.
  */
 export type ClassCategory = 'layout' | 'modifier' | 'function';
 export interface ClassEntry {
@@ -13,10 +13,7 @@ export interface ClassEntry {
     /** Snippet insert text (with $1 placeholders). Defaults to name if omitted. */
     readonly insertText?: string;
 }
-/**
- * Combined registry: generated layouts + manual modifiers + functions.
- */
 export declare const BUILTIN_CLASSES: readonly ClassEntry[];
 /** Lookup map by name for fast access. */
 export declare function buildClassMap(entries: readonly ClassEntry[]): ReadonlyMap<string, ClassEntry>;
-//# sourceMappingURL=class-registry.d.ts.map
+//# sourceMappingURL=class-registry-old.d.ts.map

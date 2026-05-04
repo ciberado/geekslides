@@ -85,13 +85,40 @@ If you're using the VSCode extension, class autocomplete will show:
 Press `.` after `[](` to trigger autocomplete and browse available layouts.
 
 **For developers adding new layouts:**
-When you add a layout class to `css/layouts.css`, update the VSCode autocomplete registry at `packages/vscode/src/completion/class-registry.ts`:
-1. Add entry with name, category, detail
-2. Include complete markdown example
-3. Draw ASCII box diagram showing visual structure
-4. Document column breaks, special elements, and compatible modifiers
+Layout documentation is automatically extracted from CSS comments at build time. When you add a layout class to `css/layouts.css`:
 
-This keeps the autocomplete documentation in sync with available layouts.
+1. Add structured JSDoc-style comment before the CSS rule:
+   ```css
+   /**
+    * @layout layout-example
+    * @detail Brief one-line description
+    * @markdown
+    * [](.layout-example#id)
+    * # Content
+    * @structure
+    * ┌─────────┬─────────┐
+    * │ Column  │ Column  │
+    * └─────────┴─────────┘
+    * @usage
+    * Usage notes here.
+    */
+   section.content.layout-example {
+     display: grid;
+     grid-template-columns: 1fr 1fr;
+   }
+   ```
+
+2. Rebuild the VSCode extension:
+   ```bash
+   cd packages/vscode
+   npm run build  # Runs prebuild script automatically
+   ```
+
+3. The autocomplete will automatically show your new layout with documentation!
+
+**See**: `packages/vscode/src/completion/css-doc-format.md` for complete specification.
+
+This keeps the autocomplete documentation in sync with available layouts automatically. The CSS file is the single source of truth.
 
 | Class | Description |
 |---|---|

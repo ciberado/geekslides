@@ -70,6 +70,7 @@
     }
   },
   "scripts": {
+    "prebuild": "tsx scripts/extract-css-docs.ts",
     "build": "node esbuild.js",
     "typecheck": "tsc --noEmit"
   },
@@ -80,6 +81,7 @@
   "devDependencies": {
     "@types/node": "^24.8.1",
     "@types/vscode": "^1.96.0",
-    "esbuild": "^0.25.12"
+    "esbuild": "^0.25.12",
+    "tsx": "^4.20.0"
   }
 }
