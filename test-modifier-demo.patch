@@ -1,0 +1,17 @@
+--- a/packages/cli/src/templates/layouts.css
++++ b/packages/cli/src/templates/layouts.css
+@@ -893,6 +893,14 @@ section.content.layout-grid {
+   row-gap: var(--gs-gap);
+   align-content: start;
+ 
++  /**
++   * @modifier mod-cols-2
++   * @detail Force 2-column grid
++   * @usage
++   * [](.layout-grid.mod-cols-2#my-slide)
++   * 
++   * Override auto-fit behavior to display exactly 2 columns.
++   */
+   &.mod-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+   &.mod-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+ 

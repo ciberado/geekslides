@@ -397,3 +397,14 @@ No structure applied. Use HTML/CSS for absolute positioning. ::after shows guide
 Ordered list items displayed in 2-row grid with decorative circles.`,
   },
 ] as const;
+
+export const LAYOUT_MODIFIER_ENTRIES: readonly ClassEntry[] = [
+  {
+    name: 'mod-cols-2',
+    category: 'modifier' as const,
+    detail: 'Force 2-column grid',
+    documentation: `Combine with parent layout: [](.layout-grid.mod-cols-2#id)
+[](.layout-grid.mod-cols-2#my-slide)
+Override auto-fit behavior to display exactly 2 columns.`,
+  },
+] as const;

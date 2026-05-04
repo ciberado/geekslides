@@ -2,9 +2,15 @@
 
 ## Overview
 
-Layout documentation is embedded in `layouts.css` as structured JSDoc-style comments. A build-time parser extracts these comments and generates TypeScript code for the autocomplete registry.
+Layout and modifier documentation is embedded in `layouts.css` as structured JSDoc-style comments. A build-time parser extracts these comments and generates TypeScript code for the autocomplete registry.
 
-## Comment Block Format
+**Layouts** have top-level documentation blocks before `section.content.layout-*` rules.
+
+**Modifiers** can be:
+1. **Global modifiers**: Top-level rules (e.g., `mod-partial`)
+2. **Layout-specific modifiers**: Nested inside layout rules using `&` (e.g., `&.mod-coverbg`)
+
+## Layout Comment Block Format
 
 ```css
 /**
@@ -24,12 +30,24 @@ Layout documentation is embedded in `layouts.css` as structured JSDoc-style comm
  */
 section.content.layout-name {
   /* CSS rules */
+  
+  /**
+   * @modifier mod-variant
+   * @detail Brief description of modifier behavior
+   * @usage
+   * Combine with parent layout: [](.layout-name.mod-variant#id)
+   */
+  &.mod-variant {
+    /* Modifier CSS */
+  }
 }
 ```
 
 ## Tags
 
-### @layout (required)
+### For Layouts
+
+#### @layout (required)
 The CSS class name without the dot.
 
 **Example:**
@@ -37,7 +55,7 @@ The CSS class name without the dot.
  * @layout layout-two-col
 ```
 
-### @detail (required)
+#### @detail (required)
 Single-line description shown in autocomplete preview.
 
 **Example:**
@@ -45,7 +63,7 @@ Single-line description shown in autocomplete preview.
  * @detail Two-column grid layout
 ```
 
-### @markdown (required)
+#### @markdown (required)
 Multi-line markdown example. All lines following `@markdown` until the next tag are concatenated.
 
 **Example:**
@@ -59,7 +77,7 @@ Multi-line markdown example. All lines following `@markdown` until the next tag 
  * - Item 2
 ```
 
-### @structure (required)
+#### @structure (required)
 ASCII box drawing diagram. All lines following `@structure` until the next tag are concatenated.
 
 **Example:**
@@ -71,7 +89,7 @@ ASCII box drawing diagram. All lines following `@structure` until the next tag a
  * └───────────┴───────────┘
 ```
 
-### @usage (optional)
+#### @usage (optional)
 Additional usage notes, tips, compatible modifiers, special behaviors.
 
 **Example:**
@@ -79,6 +97,34 @@ Additional usage notes, tips, compatible modifiers, special behaviors.
  * @usage
  * Use #### Heading (h4) as a hidden column break marker.
  * Combine with .mod-cols-2 to force two columns.
+```
+
+### For Modifiers (Nested)
+
+#### @modifier (required)
+The modifier CSS class name without the dot.
+
+**Example:**
+```css
+ * @modifier mod-coverbg
+```
+
+#### @detail (required)
+Single-line description shown in autocomplete preview.
+
+**Example:**
+```css
+ * @detail Full-bleed background image treatment
+```
+
+#### @usage (optional)
+Usage notes specific to this modifier, including parent layout context.
+
+**Example:**
+```css
+ * @usage
+ * Combine with parent layout: [](.layout-cover.mod-coverbg#id,bgurl(img.jpg))
+ * First image in content fills the slide background.
 ```
 
 ## Parsing Rules

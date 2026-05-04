@@ -21,6 +21,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Use the Hub](15-use-the-hub.md) | Deploy the community hub, sign in with OAuth, upload decks, edit metadata, share presentations, and keep GitHub imports up to date |
 | [Deploy with Tailscale](16-deploy-with-tailscale.md) | Run GeekSlides on a private Tailscale node with a public HTTPS proxy, full TLS at every hop, WebSocket sync, and Hub routing |
 | [Use the VS Code Extension](18-use-the-vscode-extension.md) | Start the dev server, create decks, open the browser, and verify cursor-to-slide sync from VS Code |
+| [Create a Custom Layout with Modifiers](19-create-layout-with-modifiers.md) | ⭐ Build layouts with nested modifier variations using CSS nesting and structured documentation |
 
 ## Screenshots
 
