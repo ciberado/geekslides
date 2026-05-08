@@ -1,0 +1,10 @@
+{
+  "title": "CSS Doodle Demo",
+  "content": ["README.md"],
+  "styles": ["css/layouts.css", "css/theme-default.css"],
+  "plugins": {
+    "preprocessors": ["header", "css-doodle"],
+    "processors": ["css-doodle"]
+  },
+  "aspectRatio": "16/9"
+}
