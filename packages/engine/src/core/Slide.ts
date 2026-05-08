@@ -31,6 +31,37 @@ export class Slide extends HTMLElement {
     if (name === 'active') {
       if (newVal !== null) {
         this.#revealPartials(this.#visiblePartials || 1);
+        this.#setCssDoodleAnimations(true);
+      } else {
+        this.#setCssDoodleAnimations(false);
+      }
+    }
+  }
+
+  /**
+   * Pause or resume CSS animations inside all css-doodle elements on this slide.
+   *
+   * css-doodle renders its cells into an open Shadow DOM. Inactive slides are
+   * positioned off-screen (left: ±150%) but the browser still ticks every
+   * @keyframes animation. Injecting a pause style into each doodle's shadow root
+   * stops that work without destroying the rendered output.
+   */
+  #setCssDoodleAnimations(playing: boolean): void {
+    const content = this.shadowRoot?.querySelector('section.content');
+    if (!content) return;
+    const PAUSE_CLASS = 'gs-animations-paused';
+    for (const doodle of content.querySelectorAll('css-doodle')) {
+      const sr = doodle.shadowRoot;
+      if (!sr) continue;
+      if (playing) {
+        sr.querySelector(`.${PAUSE_CLASS}`)?.remove();
+      } else {
+        if (!sr.querySelector(`.${PAUSE_CLASS}`)) {
+          const style = document.createElement('style');
+          style.className = PAUSE_CLASS;
+          style.textContent = '* { animation-play-state: paused !important; }';
+          sr.appendChild(style);
+        }
       }
     }
   }
