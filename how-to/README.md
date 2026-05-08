@@ -23,6 +23,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Use the VS Code Extension](18-use-the-vscode-extension.md) | Start the dev server, create decks, open the browser, and verify cursor-to-slide sync from VS Code |
 | [Create a Custom Layout with Modifiers](19-create-layout-with-modifiers.md) | ⭐ Build layouts with nested modifier variations using CSS nesting and structured documentation |
 | [Add CSS Doodle Backgrounds](20-add-css-doodle-backgrounds.md) | Add beautiful generative parametric patterns as decorative backgrounds with automatic theme integration |
+| [Embed Custom Components](21-embed-custom-components.md) | Load custom web components via config.scripts and embed them in slides for interactive controls and visualizations |
 
 ## Screenshots
 

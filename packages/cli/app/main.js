@@ -233,6 +233,9 @@ async function loadScripts(config) {
       if (mod.default && typeof mod.default === 'function') {
         mod.default(config);
       }
+      if (mod.init && typeof mod.init === 'function') {
+        mod.init(config);
+      }
       console.log(`[scripts] Loaded: ${script}`);
     } catch (err) {
       console.warn(`[scripts] Failed to load '${script}':`, err.message);

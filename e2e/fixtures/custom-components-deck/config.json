@@ -1,0 +1,7 @@
+{
+  "title": "Custom Components Fixture",
+  "content": "README.md",
+  "styles": [],
+  "aspectRatio": "16/9",
+  "scripts": ["./components/test-widget.js"]
+}

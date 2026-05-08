@@ -151,6 +151,30 @@ describe('Config', () => {
     expect(config.scripts).toEqual(['./components/widget.js']);
   });
 
+  it('defaults scripts to empty array for non-array non-string value', async () => {
+    mockFetchJson({ content: 'README.md', scripts: 42 });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual([]);
+  });
+
+  it('defaults scripts to empty array for boolean value', async () => {
+    mockFetchJson({ content: 'README.md', scripts: true });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual([]);
+  });
+
+  it('defaults scripts to empty array for object value', async () => {
+    mockFetchJson({ content: 'README.md', scripts: { file: 'app.js' } });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual([]);
+  });
+
+  it('preserves remote script URLs in scripts array', async () => {
+    mockFetchJson({ content: 'README.md', scripts: ['https://cdn.example.com/widget.js', './local.js'] });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual(['https://cdn.example.com/widget.js', './local.js']);
+  });
+
   it('accepts full legacy v1 config shape', async () => {
     mockFetchJson({
       content: ['README.md'],
