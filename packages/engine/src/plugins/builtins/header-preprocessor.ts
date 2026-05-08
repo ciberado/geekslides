@@ -33,11 +33,11 @@ export const headerPreprocessor: Preprocessor = (markdown: string) => {
       insideContainer = Math.max(0, insideContainer - 1);
     }
 
-    if (insideContainer === 0 && /^#{1,6} /.test(line)) {
+    if (insideContainer === 0 && /^#{1,3} /.test(line)) {
       // Skip if a slide marker already precedes this heading.
       const lastNonBlank = findLastNonBlank(result);
       if (lastNonBlank === undefined || !/^\[]\(/.test(lastNonBlank)) {
-        const title = line.replace(/^#{1,6} /, '').trim();
+        const title = line.replace(/^#{1,3} /, '').trim();
         const anchor = slugify(title);
         result.push(`[](.slide#${anchor})`);
         result.push('');
