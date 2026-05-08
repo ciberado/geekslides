@@ -107,12 +107,21 @@ class DoodleControls extends HTMLElement {
   }
 
   connectedCallback() {
-    // Defer to next frame so css-doodle processor has time to create elements
+    this.#tryInit(0);
+  }
+
+  #tryInit(attempt) {
     requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        this.#findDoodle();
+      this.#findDoodle();
+      if (this.#doodle) {
         this.#render();
-      });
+      } else if (attempt < 20) {
+        // Doodle rendering is staggered across frames — retry until it appears
+        setTimeout(() => this.#tryInit(attempt + 1), 50);
+      } else {
+        // Give up and show fallback message
+        this.#render();
+      }
     });
   }
 
@@ -251,7 +260,18 @@ class DoodleControls extends HTMLElement {
     });
   }
 
+  #pendingUpdate = false;
+
   #updateDoodle() {
+    if (!this.#doodle || this.#pendingUpdate) return;
+    this.#pendingUpdate = true;
+    requestAnimationFrame(() => {
+      this.#pendingUpdate = false;
+      this.#applyUpdate();
+    });
+  }
+
+  #applyUpdate() {
     if (!this.#doodle) return;
 
     const { patternRegistry, buildColorVars } = window.__geekslides ?? {};

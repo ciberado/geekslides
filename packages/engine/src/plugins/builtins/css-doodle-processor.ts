@@ -177,93 +177,138 @@ function applyPositioning(
 }
 
 /**
+ * Queue of doodle render tasks. Each entry is a function that creates and
+ * inserts doodle elements for one slide. Processing is staggered across
+ * animation frames so the main thread stays responsive during initial load.
+ */
+const renderQueue: Array<() => void> = [];
+let renderScheduled = false;
+
+function drainRenderQueue(): void {
+  if (renderQueue.length === 0) {
+    renderScheduled = false;
+    return;
+  }
+  const task = renderQueue.shift();
+  if (task) task();
+  requestAnimationFrame(drainRenderQueue);
+}
+
+function enqueueRender(task: () => void): void {
+  renderQueue.push(task);
+  if (!renderScheduled) {
+    renderScheduled = true;
+    requestAnimationFrame(drainRenderQueue);
+  }
+}
+
+/**
  * CSS Doodle processor.
  */
 export const cssDoodleProcessor: Processor = (slideElement: HTMLElement): void => {
   const placeholders = slideElement.querySelectorAll<HTMLElement>('.gs-doodle');
   if (placeholders.length === 0) return;
 
+  // Check if this slide is currently active — active slides render immediately
+  const slideHost = slideElement.getRootNode() instanceof ShadowRoot
+    ? (slideElement.getRootNode() as ShadowRoot).host
+    : null;
+  const isActive = slideHost?.hasAttribute('active') ?? false;
+
   void loadCssDoodle().then(() => {
-    for (const placeholder of placeholders) {
-      const raw = decodeURIComponent(placeholder.dataset.doodle ?? '');
-      const config = parseConfig(raw);
-      
-      const pattern = patternRegistry.get(config.patternName);
-      if (!pattern) {
-        log.warn({ patternName: config.patternName }, 'Pattern not found');
-        continue;
+    const renderSlide = (): void => {
+      for (const placeholder of placeholders) {
+        renderPlaceholder(placeholder, slideElement, isActive);
       }
+    };
 
-      // Build pattern config — patterns reference --doodle-c1..c5 via var()
-      // so we always supply 5 placeholder strings; the actual CSS values come
-      // from buildColorVars() below.
-      const THEME_COLOR_COUNT = 5;
-      const colorRefs = Array.from({ length: THEME_COLOR_COUNT }, (_, i) => `var(--doodle-c${String(i + 1)})`);
-      const patternConfig: DoodlePatternConfig = {
-        grid: config.grid ?? pattern.defaultGrid,
-        colors: colorRefs,
-        animate: config.animate ?? false,
-        speed: config.speed ?? 1,
-      };
-      if (config.seed) {
-        patternConfig.seed = config.seed;
-      }
-
-      // Generate CSS content
-      const cssContent = pattern.generate(patternConfig);
-
-      // Create <css-doodle> element
-      const doodle = document.createElement('css-doodle');
-      if (patternConfig.seed) {
-        doodle.setAttribute('seed', patternConfig.seed);
-      }
-
-      // Store config metadata as data attributes for discoverability by
-      // custom components (e.g. <doodle-controls>).
-      doodle.dataset.pattern = config.patternName;
-      doodle.dataset.grid = patternConfig.grid;
-      if (config.animate) doodle.dataset.animate = '';
-      if (config.speed !== undefined) doodle.dataset.speed = String(config.speed);
-      if (config.opacity) doodle.dataset.opacity = config.opacity;
-      if (config.nohole) doodle.dataset.nohole = '';
-      if (config.colors) doodle.dataset.colors = config.colors.join('|');
-      if (config.seed) doodle.dataset.seed = config.seed;
-      
-      // Inject color variables and CSS content.
-      // buildColorVars uses pure CSS var() references so theme changes are live.
-      const styleWithVars = `
-        :host {
-          ${buildColorVars(config.colors, config.nohole ?? false)}
-        }
-        ${cssContent}
-      `;
-      doodle.textContent = styleWithVars;
-
-      // Apply positioning
-      const mode = determinePositioning(placeholder, config);
-      applyPositioning(doodle, config, mode, slideElement);
-
-      // Replace placeholder with doodle.
-      // If the containing slide is not currently active, pause animations
-      // immediately so we don't burn CPU on off-screen slides.
-      placeholder.replaceWith(doodle);
-      const slideHost = slideElement.getRootNode() instanceof ShadowRoot
-        ? (slideElement.getRootNode() as ShadowRoot).host
-        : null;
-      if (slideHost && !slideHost.hasAttribute('active')) {
-        // Pause after css-doodle has had a tick to render its shadow root
-        requestAnimationFrame(() => {
-          const sr = doodle.shadowRoot;
-          if (sr && !sr.querySelector('.gs-animations-paused')) {
-            const style = document.createElement('style');
-            style.className = 'gs-animations-paused';
-            style.textContent = '* { animation-play-state: paused !important; }';
-            sr.appendChild(style);
-          }
-        });
-      }
+    if (isActive) {
+      renderSlide();
+    } else {
+      enqueueRender(renderSlide);
     }
   }).catch((err: unknown) => {
     log.error({ err }, 'Failed to load css-doodle library');
   });
 };
+
+function renderPlaceholder(
+  placeholder: HTMLElement,
+  slideElement: HTMLElement,
+  isActive: boolean,
+): void {
+  const raw = decodeURIComponent(placeholder.dataset.doodle ?? '');
+  const config = parseConfig(raw);
+
+  const pattern = patternRegistry.get(config.patternName);
+  if (!pattern) {
+    log.warn({ patternName: config.patternName }, 'Pattern not found');
+    return;
+  }
+
+  // Build pattern config — patterns reference --doodle-c1..c5 via var()
+  // so we always supply 5 placeholder strings; the actual CSS values come
+  // from buildColorVars() below.
+  const THEME_COLOR_COUNT = 5;
+  const colorRefs = Array.from({ length: THEME_COLOR_COUNT }, (_, i) => `var(--doodle-c${String(i + 1)})`);
+  const patternConfig: DoodlePatternConfig = {
+    grid: config.grid ?? pattern.defaultGrid,
+    colors: colorRefs,
+    animate: config.animate ?? false,
+    speed: config.speed ?? 1,
+  };
+  if (config.seed) {
+    patternConfig.seed = config.seed;
+  }
+
+  // Generate CSS content
+  const cssContent = pattern.generate(patternConfig);
+
+  // Create <css-doodle> element
+  const doodle = document.createElement('css-doodle');
+  if (patternConfig.seed) {
+    doodle.setAttribute('seed', patternConfig.seed);
+  }
+
+  // Store config metadata as data attributes for discoverability by
+  // custom components (e.g. <doodle-controls>).
+  doodle.dataset.pattern = config.patternName;
+  doodle.dataset.grid = patternConfig.grid;
+  if (config.animate) doodle.dataset.animate = '';
+  if (config.speed !== undefined) doodle.dataset.speed = String(config.speed);
+  if (config.opacity) doodle.dataset.opacity = config.opacity;
+  if (config.nohole) doodle.dataset.nohole = '';
+  if (config.colors) doodle.dataset.colors = config.colors.join('|');
+  if (config.seed) doodle.dataset.seed = config.seed;
+
+  // Inject color variables and CSS content.
+  // buildColorVars uses pure CSS var() references so theme changes are live.
+  const styleWithVars = `
+    :host {
+      ${buildColorVars(config.colors, config.nohole ?? false)}
+    }
+    ${cssContent}
+  `;
+  doodle.textContent = styleWithVars;
+
+  // Apply positioning
+  const mode = determinePositioning(placeholder, config);
+  applyPositioning(doodle, config, mode, slideElement);
+
+  // Replace placeholder with doodle
+  placeholder.replaceWith(doodle);
+
+  // If the containing slide is not currently active, pause animations
+  // immediately so we don't burn CPU on off-screen slides.
+  if (!isActive) {
+    requestAnimationFrame(() => {
+      const sr = doodle.shadowRoot;
+      if (sr && !sr.querySelector('.gs-animations-paused')) {
+        const style = document.createElement('style');
+        style.className = 'gs-animations-paused';
+        style.textContent = '* { animation-play-state: paused !important; }';
+        sr.appendChild(style);
+      }
+    });
+  }
+}

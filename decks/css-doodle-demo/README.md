@@ -56,6 +56,8 @@ Honeycomb grid clipped to hexagon shapes. Adjust `grid` to control cell density.
 
 Diamond lattice with random orientations and opacity variation.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#circles)
 
 ### Circles
@@ -65,6 +67,8 @@ Diamond lattice with random orientations and opacity variation.
 #### col
 
 Overlapping circles with radial gradients fading to transparent.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#quarters)
 
@@ -77,6 +81,8 @@ Overlapping circles with radial gradients fading to transparent.
 Bauhaus-style quarter-circle tiles. Each cell shows a filled rounded
 corner facing a random direction — simple geometry that creates
 surprisingly organic-looking composition.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#waves)
 
@@ -102,6 +108,8 @@ the horizontal wave bands.
 Floating bubble shapes with pulsing scale animation. Slow `speed` values
 create a calm, organic feel.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#petals)
 
 ### Petals
@@ -111,6 +119,8 @@ create a calm, organic feel.
 #### col
 
 Petal shapes rotated at random angles, creating a floral texture.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#dots)
 
@@ -122,6 +132,8 @@ Petal shapes rotated at random angles, creating a floral texture.
 
 Dot matrix with varying sizes — great as a subtle slide background.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#crosshatch)
 
 ### Crosshatch
@@ -131,6 +143,8 @@ Dot matrix with varying sizes — great as a subtle slide background.
 #### col
 
 Cross-hatched texture built with `linear-gradient` stripes.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#lines)
 
@@ -142,16 +156,20 @@ Cross-hatched texture built with `linear-gradient` stripes.
 
 Diagonal line pattern with random opacity and spacing.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#noise)
 
 ### Noise
 
-![css-doodle](#noise,grid=40)
+![css-doodle](#noise,grid=20)
 
 #### col
 
 Dense micro-texture resembling film grain. Works as a subtle slide
 background at low `opacity`.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#gradient-grid)
 
@@ -164,6 +182,8 @@ background at low `opacity`.
 Smooth colour transitions across each cell, creating a shifting
 stained-light effect.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#pixels)
 
 ### Pixels
@@ -175,6 +195,8 @@ stained-light effect.
 Retro pixel-art blocks. Dense grids produce a mosaic texture; coarse
 grids produce a bold blocky look.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#binary)
 
 ### Binary
@@ -185,13 +207,20 @@ grids produce a bold blocky look.
 
 0s and 1s in random sizes — great for data-science or coding talks.
 
+<doodle-controls></doodle-controls>
 
+
+[](.layout-two-col#circuit)
+
+### Circuit
 
 ![css-doodle](#circuit,grid=14)
 
 #### col
 
 Circuit-board traces with corner connections — ideal for tech slides.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#matrix)
 
@@ -204,6 +233,8 @@ Circuit-board traces with corner connections — ideal for tech slides.
 Digital rain effect with cascading characters. Increase `grid` columns for
 a denser stream.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#confetti)
 
 ### Confetti (Animated)
@@ -214,6 +245,8 @@ a denser stream.
 
 Scattered confetti shapes in random orientations, floating gently.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#stars)
 
 ### Stars (Animated)
@@ -223,6 +256,8 @@ Scattered confetti shapes in random orientations, floating gently.
 #### col
 
 Twinkling star field. Each star pulses independently.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#mosaic)
 
@@ -252,6 +287,8 @@ Stacked rectangles in random heights — inspired by modernist tile art.
 
 Override theme colors with `colors=#hex1|#hex2|…`. Separate values with `|`.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#nohole)
 
 ### No Holes (`nohole`)
@@ -264,6 +301,8 @@ The `nohole` flag replaces the surface color slot with a dark accent
 variant. Without it, some cells may pick the slide background color
 and look like transparent holes.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#opacity-demo)
 
 ### Opacity Control
@@ -273,6 +312,8 @@ and look like transparent holes.
 #### col
 
 Use `opacity=0…1` to layer a pattern subtly over the slide background.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#speed-demo)
 
@@ -285,6 +326,8 @@ Use `opacity=0…1` to layer a pattern subtly over the slide background.
 `speed=3` triples the animation rate. Values below 1 slow it down — `speed=0.3` creates a languid, ambient feel.
 Use `animate,speed=N` on any animated pattern: `squares`, `bubbles`, `stars`, `matrix`, `confetti`.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#seed)
 
 ### Reproducible Patterns
@@ -295,6 +338,8 @@ Use `animate,speed=N` on any animated pattern: `squares`, `bubbles`, `stars`, `m
 
 Use `seed=N` for a deterministic pattern — ideal when you need the same
 layout on every render.
+
+<doodle-controls></doodle-controls>
 
 [](#.mod-coverbg)
 

@@ -7,7 +7,7 @@ import type { DoodlePattern } from './types.ts';
 export const confetti: DoodlePattern = {
   name: 'confetti',
   category: 'decorative',
-  defaultGrid: '60',
+  defaultGrid: '20',
   description: 'Confetti burst — rectangular pieces exploding from center',
   generate: ({ colors, grid, animate, speed }) => `
     @grid: ${grid} / 100%;

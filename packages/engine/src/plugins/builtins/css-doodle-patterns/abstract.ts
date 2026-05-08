@@ -51,7 +51,7 @@ export const crosshatch: DoodlePattern = {
 export const noise: DoodlePattern = {
   name: 'noise',
   category: 'abstract',
-  defaultGrid: '40',
+  defaultGrid: '20',
   description: 'Perlin-noise-like visual texture',
   generate: ({ colors, grid }) => `
     @grid: ${grid} / 100%;
