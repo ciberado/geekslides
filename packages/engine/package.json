@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "chart.js": "^4.4.0",
+    "css-doodle": "^0.40.6",
     "markdown-it": "^14.1.0",
     "markdown-it-container": "^4.0.0",
     "mermaid": "^11.14.0",

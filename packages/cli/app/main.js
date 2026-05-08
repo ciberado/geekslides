@@ -4,6 +4,7 @@ import {
   computeSlideMap,
   headerPreprocessor,
   slideSourceNotesPreprocessor,
+  cssDoodlePreprocessor,
   CommandSystem,
   KeyBindings,
   TouchInput,
@@ -13,6 +14,7 @@ import {
   iframeProcessor,
   chartProcessor,
   videoProcessor,
+  cssDoodleProcessor,
   uploadDeck,
   buildManifest,
   getProxyBaseUrl,
@@ -58,12 +60,14 @@ const BUILTIN_THEMES = [
 const PREPROCESSORS = {
   header: headerPreprocessor,
   'source-notes': slideSourceNotesPreprocessor,
+  'css-doodle': cssDoodlePreprocessor,
 };
 
 const PROCESSORS = {
   chart: chartProcessor,
   iframe: iframeProcessor,
   video: videoProcessor,
+  'css-doodle': cssDoodleProcessor,
 };
 
 const params = new URLSearchParams(window.location.search);

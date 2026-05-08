@@ -23,6 +23,7 @@ export type { PreprocessorOutput, PreprocessorResult } from './plugins/types.ts'
 export { isLocalPluginPath, isRemotePluginUrl, importRemotePlugin, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { slideSourceNotesPreprocessor } from './plugins/builtins/slide-source-notes-preprocessor.ts';
+export { cssDoodlePreprocessor } from './plugins/builtins/css-doodle-preprocessor.ts';
 export {
   applyPreprocessorResult,
   composeLineMappings,
@@ -33,6 +34,7 @@ export { iframeProcessor } from './plugins/builtins/iframe-processor.ts';
 export { chartProcessor } from './plugins/builtins/chart-processor.ts';
 export { videoProcessor } from './plugins/builtins/video-processor.ts';
 export { mermaidProcessor } from './plugins/builtins/mermaid-processor.ts';
+export { cssDoodleProcessor } from './plugins/builtins/css-doodle-processor.ts';
 
 // Phase 6: Rich Components
 import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';
