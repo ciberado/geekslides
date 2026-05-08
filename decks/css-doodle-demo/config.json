@@ -2,6 +2,7 @@
   "title": "CSS Doodle Demo",
   "content": ["README.md"],
   "styles": ["css/layouts.css", "css/theme-default.css"],
+  "scripts": ["./components/doodle-controls.js"],
   "plugins": {
     "preprocessors": ["header", "css-doodle"],
     "processors": ["css-doodle"]

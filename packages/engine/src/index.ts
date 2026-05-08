@@ -35,6 +35,11 @@ export { chartProcessor } from './plugins/builtins/chart-processor.ts';
 export { videoProcessor } from './plugins/builtins/video-processor.ts';
 export { mermaidProcessor } from './plugins/builtins/mermaid-processor.ts';
 export { cssDoodleProcessor } from './plugins/builtins/css-doodle-processor.ts';
+export { buildColorVars, parseConfig as parseDoodleConfig } from './plugins/builtins/css-doodle-processor.ts';
+
+// CSS Doodle pattern registry and types
+export { patternRegistry } from './plugins/builtins/css-doodle-patterns/index.ts';
+export type { DoodlePattern, DoodlePatternConfig, ParsedDoodleConfig } from './plugins/builtins/css-doodle-patterns/types.ts';
 
 // Phase 6: Rich Components
 import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';

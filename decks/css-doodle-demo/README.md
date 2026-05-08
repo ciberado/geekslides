@@ -19,6 +19,8 @@ Welcome to the CSS Doodle plugin demonstration!
 Randomized triangular mosaic using `clip-path`. Each cell picks a random
 triangle orientation from the theme palette.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#squares)
 
 ### Squares (Animated)
@@ -30,6 +32,8 @@ triangle orientation from the theme palette.
 Rotated and scaled squares that spin continuously. Use `speed` to control
 the animation rate.
 
+<doodle-controls></doodle-controls>
+
 [](.layout-two-col#hexagons)
 
 ### Hexagons
@@ -39,6 +43,8 @@ the animation rate.
 #### col
 
 Honeycomb grid clipped to hexagon shapes. Adjust `grid` to control cell density.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#diamonds)
 
@@ -82,6 +88,8 @@ surprisingly organic-looking composition.
 
 Sinusoidal wave interference pattern. Use a tall `grid` ratio to emphasise
 the horizontal wave bands.
+
+<doodle-controls></doodle-controls>
 
 [](.layout-two-col#bubbles)
 
@@ -225,6 +233,8 @@ Twinkling star field. Each star pulses independently.
 #### col
 
 Stacked rectangles in random heights — inspired by modernist tile art.
+
+<doodle-controls></doodle-controls>
 
 [](#.mod-coverbg)
 

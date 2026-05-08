@@ -32,6 +32,7 @@ export default tseslint.config(
   {
     ignores: [
       'archived/',
+      'decks/',
       'node_modules/',
       '**/dist/',
       'coverage/',

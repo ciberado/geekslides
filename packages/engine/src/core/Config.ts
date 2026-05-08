@@ -21,6 +21,7 @@ export interface GeekSlidesConfig {
   readonly title: string;
   readonly content: readonly string[];
   readonly styles: readonly string[];
+  readonly scripts: readonly string[];
   readonly plugins: PluginsConfig;
   readonly features: readonly string[];
   readonly aspectRatio: string;
@@ -33,6 +34,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
   title: 'Untitled Presentation',
   content: ['README.md'],
   styles: [],
+  scripts: [],
   plugins: {
     preprocessors: ['header'],
     processors: ['iframe'],
@@ -113,7 +115,11 @@ function normalizeLegacyConfig(obj: Record<string, unknown>): void {
 
   // Silently drop fields that were dev-server or runtime options in v1
   delete obj['liveReload'];
-  delete obj['scripts'];
+
+  // Normalize scripts: string → string[]
+  if (typeof obj['scripts'] === 'string') {
+    obj['scripts'] = [obj['scripts']];
+  }
 }
 
 export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
@@ -198,6 +204,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     title: typeof obj['title'] === 'string' ? obj['title'] : DEFAULT_CONFIG.title,
     content: rawContent as string[],
     styles: Array.isArray(obj['styles']) ? (obj['styles'] as string[]) : [...DEFAULT_CONFIG.styles],
+    scripts: Array.isArray(obj['scripts']) ? (obj['scripts'] as string[]) : [...DEFAULT_CONFIG.scripts],
     plugins: {
       preprocessors,
       processors,

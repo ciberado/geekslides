@@ -127,10 +127,28 @@ describe('Config', () => {
     expect(config.features).toContain('whiteboard');
   });
 
-  it('silently ignores liveReload and scripts fields', async () => {
-    mockFetchJson({ content: 'README.md', liveReload: true, scripts: ['app.js'] });
+  it('silently ignores liveReload field', async () => {
+    mockFetchJson({ content: 'README.md', liveReload: true });
     const config = await loadConfig('config.json');
     expect(config.content).toEqual(['README.md']);
+  });
+
+  it('parses scripts field as string array', async () => {
+    mockFetchJson({ content: 'README.md', scripts: ['./components/widget.js', './components/chart.js'] });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual(['./components/widget.js', './components/chart.js']);
+  });
+
+  it('defaults scripts to empty array when not provided', async () => {
+    mockFetchJson({ content: 'README.md' });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual([]);
+  });
+
+  it('coerces scripts string to array', async () => {
+    mockFetchJson({ content: 'README.md', scripts: './components/widget.js' });
+    const config = await loadConfig('config.json');
+    expect(config.scripts).toEqual(['./components/widget.js']);
   });
 
   it('accepts full legacy v1 config shape', async () => {
@@ -142,7 +160,7 @@ describe('Config', () => {
       slideWhiteBoards: false,
       preprocessors: ['headerPreprocessor'],
       processors: [],
-      scripts: [],
+      scripts: ['app.js'],
     });
     const config = await loadConfig('config.json');
     expect(config.content).toEqual(['README.md']);
@@ -151,6 +169,7 @@ describe('Config', () => {
     expect(config.plugins.preprocessors).toEqual(['headerPreprocessor']);
     expect(config.plugins.processors).toEqual([]);
     expect(config.features).not.toContain('whiteboard');
+    expect(config.scripts).toEqual(['app.js']);
   });
 
   it('throws a clear error when the server returns HTML instead of JSON', async () => {

@@ -31,7 +31,7 @@ function loadCssDoodle(): Promise<void> {
 /**
  * Parse config string like "pattern-name,grid=12,opacity=0.3,colors=pink|teal"
  */
-function parseConfig(raw: string): ParsedDoodleConfig {
+export function parseConfig(raw: string): ParsedDoodleConfig {
   const parts = raw.split(',').map((s) => s.trim());
   const patternName = parts[0] ?? 'triangles';
   
@@ -82,7 +82,7 @@ function parseConfig(raw: string): ParsedDoodleConfig {
  * When nohole=true, all 5 slots become clearly visible accent-derived shades —
  * no near-white surface color, so shapes never disappear against a light background.
  */
-function buildColorVars(customColors: readonly string[] | undefined, nohole: boolean): string {
+export function buildColorVars(customColors: readonly string[] | undefined, nohole: boolean): string {
   if (customColors && customColors.length > 0) {
     const pad = (i: number) => customColors[i] ?? customColors[customColors.length - 1] ?? 'transparent';
     return `
@@ -153,8 +153,8 @@ function applyPositioning(
     doodle.style.top = '50%';
     doodle.style.left = '50%';
     doodle.style.transform = 'translate(-50%, -50%)';
-    doodle.style.width = sz > 0 ? `${sz}px` : '100%';
-    doodle.style.height = sz > 0 ? `${sz}px` : '100%';
+    doodle.style.width = sz > 0 ? `${String(sz)}px` : '100%';
+    doodle.style.height = sz > 0 ? `${String(sz)}px` : '100%';
     doodle.style.zIndex = '-1';
   } else {
     if (config.size && config.size !== '100%') {
@@ -217,6 +217,17 @@ export const cssDoodleProcessor: Processor = (slideElement: HTMLElement): void =
       if (patternConfig.seed) {
         doodle.setAttribute('seed', patternConfig.seed);
       }
+
+      // Store config metadata as data attributes for discoverability by
+      // custom components (e.g. <doodle-controls>).
+      doodle.dataset.pattern = config.patternName;
+      doodle.dataset.grid = patternConfig.grid;
+      if (config.animate) doodle.dataset.animate = '';
+      if (config.speed !== undefined) doodle.dataset.speed = String(config.speed);
+      if (config.opacity) doodle.dataset.opacity = config.opacity;
+      if (config.nohole) doodle.dataset.nohole = '';
+      if (config.colors) doodle.dataset.colors = config.colors.join('|');
+      if (config.seed) doodle.dataset.seed = config.seed;
       
       // Inject color variables and CSS content.
       // buildColorVars uses pure CSS var() references so theme changes are live.

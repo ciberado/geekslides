@@ -26,6 +26,9 @@ import {
   createIdentityLineMapping,
   normalizePreprocessorResult,
   composeLineMappings,
+  patternRegistry,
+  buildColorVars,
+  parseDoodleConfig,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -68,6 +71,15 @@ const PROCESSORS = {
   iframe: iframeProcessor,
   video: videoProcessor,
   'css-doodle': cssDoodleProcessor,
+};
+
+// Expose engine utilities for deck-local custom components.
+// Scripts loaded via config.scripts can use window.__geekslides to access
+// the pattern registry, color variable builder, and config parser.
+window.__geekslides = {
+  patternRegistry,
+  buildColorVars,
+  parseDoodleConfig,
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -205,6 +217,29 @@ async function fetchStyles(config) {
   return cssTexts.join('\n');
 }
 
+/**
+ * Load custom scripts declared in config.scripts.
+ * Scripts are loaded sequentially via dynamic import(). If a script exports
+ * a default function, it is called with the config object.
+ */
+async function loadScripts(config) {
+  const scripts = Array.isArray(config.scripts) ? config.scripts : [];
+  for (const script of scripts) {
+    try {
+      const url = isRemotePluginUrl(script)
+        ? `/api/plugin-proxy?url=${encodeURIComponent(script)}`
+        : resolveUrl(script);
+      const mod = await import(/* @vite-ignore */ url);
+      if (mod.default && typeof mod.default === 'function') {
+        mod.default(config);
+      }
+      console.log(`[scripts] Loaded: ${script}`);
+    } catch (err) {
+      console.warn(`[scripts] Failed to load '${script}':`, err.message);
+    }
+  }
+}
+
 function updateDocumentTitle(activeConfig) {
   document.title = activeConfig?.title || 'GeekSlides v2';
 }
@@ -216,7 +251,8 @@ function getTrackedStylePaths(activeConfig) {
 
 function getHmrWatchFiles(activeConfig) {
   const contentPaths = Array.isArray(activeConfig.content) ? activeConfig.content : [activeConfig.content];
-  const files = [configUrl, ...contentPaths.map(resolveUrl), ...getTrackedStylePaths(activeConfig)];
+  const scriptPaths = Array.isArray(activeConfig.scripts) ? activeConfig.scripts.filter((s) => !isRemotePluginUrl(s)) : [];
+  const files = [configUrl, ...contentPaths.map(resolveUrl), ...getTrackedStylePaths(activeConfig), ...scriptPaths.map(resolveUrl)];
   return [...new Set(files.map((file) => file.split('?')[0]))];
 }
 
@@ -318,6 +354,7 @@ try {
   let config = await fetchConfig();
   let markdown = await fetchMarkdown(config);
   let combinedCss = await fetchStyles(config);
+  await loadScripts(config);
   updateDocumentTitle(config);
   await registerHmrFiles(config);
   let currentSlideMap = [];
@@ -900,6 +937,7 @@ try {
 
         const newMarkdown = await fetchMarkdown(newConfig);
         const newCss = await fetchStyles(newConfig);
+        await loadScripts(newConfig);
 
         combinedCss = newCss;
         updateDocumentTitle(newConfig);

@@ -200,12 +200,17 @@ Config.ts (validate + defaults)
 fetch(contentUrl)  →  README.md (raw markdown)
     │
     ▼
+loadScripts(config.scripts)
+    │  ├─ dynamic import() each script
+    │  ├─ scripts may call customElements.define()
+    │  └─ optional init(config) callback
+    ▼
 PluginManager.preprocess(md)
     │  ┌─ header-preprocessor: ## Title → [](.title#anchor)
     │  └─ ...custom preprocessors
     ▼
 SlideParser.parse(md)
-    │  ├─ markdown-it render → HTML
+    │  ├─ markdown-it render → HTML (html: true → custom tags pass through)
     │  ├─ split on empty <a> links → sections
     │  ├─ extract per-section attributes (classes, bg, id)
     │  └─ extract <style> blocks → StyleScoper
@@ -221,7 +226,7 @@ PluginManager.process(slides[])
     │  ├─ iframe-processor: data-src lazy loading
     │  └─ ...custom processors
     ▼
-Ready (first slide visible)
+Ready (first slide visible, custom elements upgraded)
 ```
 
 ### 2. Navigation & Commands
@@ -297,22 +302,24 @@ Presenter Browser                      Audience Browser
 | `geek:config:loaded` | `{ config }` | CLI/dev server | Slideshow |
 | `geek:hmr:update` | `{ contentUrl }` | Vite HMR handler | Slideshow (re-render) |
 
-## Extension Model: Plugins vs Features
+## Extension Model: Plugins vs Features vs Scripts
 
-geekslides v2 has two extension mechanisms:
+geekslides v2 has three extension mechanisms:
 
 - **Plugins** (preprocessors + processors) — stateless, fire-once content transformations at parse time. See [plugin-system.md](plugin-system.md).
 - **Features** — stateful, long-lived interactive extensions with access to navigation, sync, commands, and DOM. See [feature-system.md](feature-system.md).
+- **Scripts** — deck-local ES modules that register custom web components for embedding in markdown. See [custom-components.md](custom-components.md).
 
-Plugins and features are complementary. A deck can use both.
+All three are complementary. A deck can use any combination.
 
-| Aspect | Plugin | Feature |
-|--------|--------|--------|
-| Scope | Content transformation | Interactive runtime behavior |
-| Lifecycle | Fire-once (parse time) | Long-lived (presentation session) |
-| State | Stateless | Stateful (local + synced via Yjs) |
-| API access | Markdown string or DOM element | Full FeatureContext (slideshow, sync, commands, DOM) |
-| Examples | header, chart, mermaid | whiteboard, survey, Q&A |
+| Aspect | Plugin | Feature | Script |
+|--------|--------|---------|--------|
+| Scope | Content transformation | Interactive runtime behavior | Custom element registration |
+| Lifecycle | Fire-once (parse time) | Long-lived (presentation session) | Load-once (before render) |
+| State | Stateless | Stateful (local + synced via Yjs) | Component-managed |
+| API access | Markdown string or DOM element | Full FeatureContext (slideshow, sync, commands, DOM) | DOM + `window.__geekslides` utilities |
+| Config key | `plugins.preprocessors` / `plugins.processors` | `features` | `scripts` |
+| Examples | header, chart, mermaid | whiteboard, survey, Q&A | doodle-controls, live-chart |
 
 ## Key Architectural Differences from v1
 

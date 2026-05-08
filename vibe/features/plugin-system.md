@@ -205,6 +205,8 @@ Slides Ready
 
 Plugins handle **content transformation** at parse time. For **interactive, stateful extensions** that need ongoing access to navigation, sync, commands, and the DOM at runtime, see the [Feature System](feature-system.md).
 
+For **custom web components** embedded in slides (e.g. interactive controls, data widgets), see [Custom Components](custom-components.md). Components are loaded via `config.scripts` before the plugin pipeline runs, so custom element tags in markdown render as live elements.
+
 Examples of features (not plugins): whiteboard, live surveys, Q&A overlays, audience reactions.
 
 ## v1 → v2 Migration
