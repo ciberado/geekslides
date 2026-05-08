@@ -79,6 +79,9 @@ export type { WhiteboardStroke } from './sync/types.ts';
 export { uploadDeck, buildManifest, scanMarkdownImages, scanCssUrls, getProxyBaseUrl } from './sync/DeckUploader.ts';
 export type { DeckManifest } from './sync/DeckUploader.ts';
 
+// Utilities for deck-local custom components
+export { waitForProcessedElement } from './utils/waitForProcessedElement.ts';
+
 // Phase 9: Feature System
 export { FeatureManager, loadFeature } from './features/index.ts';
 export type {

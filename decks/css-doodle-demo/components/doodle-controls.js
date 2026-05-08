@@ -93,6 +93,7 @@ const STYLE = `
 
 class DoodleControls extends HTMLElement {
   #doodle = null;
+  #cancelWait = null;
   #patternName = '';
   #grid = '8';
   #animate = false;
@@ -107,44 +108,43 @@ class DoodleControls extends HTMLElement {
   }
 
   connectedCallback() {
-    this.#tryInit(0);
+    const { waitForProcessedElement } = window.__geekslides ?? {};
+    if (waitForProcessedElement) {
+      this.#cancelWait = waitForProcessedElement('css-doodle', this, (doodle) => {
+        this.#cancelWait = null;
+        this.#initFromDoodle(doodle);
+        this.#render();
+      });
+    } else {
+      // Fallback for environments where __geekslides isn't available yet.
+      this.#findDoodle();
+      if (this.#doodle) this.#render();
+    }
   }
 
-  #tryInit(attempt) {
-    requestAnimationFrame(() => {
-      this.#findDoodle();
-      if (this.#doodle) {
-        this.#render();
-      } else if (attempt < 20) {
-        // Doodle rendering is staggered across frames — retry until it appears
-        setTimeout(() => this.#tryInit(attempt + 1), 50);
-      } else {
-        // Give up and show fallback message
-        this.#render();
-      }
-    });
+  disconnectedCallback() {
+    this.#cancelWait?.();
+    this.#cancelWait = null;
+  }
+
+  #initFromDoodle(doodle) {
+    this.#doodle = doodle;
+    this.#patternName = doodle.dataset.pattern ?? 'triangles';
+    this.#grid = doodle.dataset.grid ?? '8';
+    this.#animate = doodle.dataset.animate !== undefined;
+    this.#speed = parseFloat(doodle.dataset.speed ?? '1');
+    this.#opacity = parseFloat(doodle.dataset.opacity ?? '1');
+    this.#nohole = doodle.dataset.nohole !== undefined;
+    if (doodle.dataset.colors) {
+      this.#customColors = doodle.dataset.colors.split('|');
+    }
   }
 
   #findDoodle() {
     // Walk up to the slide content section, then find the css-doodle element
     const content = this.closest('section.content') ?? this.closest('[class*="content"]');
-    if (content) {
-      this.#doodle = content.querySelector('css-doodle');
-    }
-
-    if (!this.#doodle) return;
-
-    // Read current config from data attributes set by the processor
-    this.#patternName = this.#doodle.dataset.pattern ?? 'triangles';
-    this.#grid = this.#doodle.dataset.grid ?? '8';
-    this.#animate = this.#doodle.dataset.animate !== undefined;
-    this.#speed = parseFloat(this.#doodle.dataset.speed ?? '1');
-    this.#opacity = parseFloat(this.#doodle.dataset.opacity ?? '1');
-    this.#nohole = this.#doodle.dataset.nohole !== undefined;
-
-    if (this.#doodle.dataset.colors) {
-      this.#customColors = this.#doodle.dataset.colors.split('|');
-    }
+    const doodle = content?.querySelector('css-doodle') ?? null;
+    if (doodle) this.#initFromDoodle(doodle);
   }
 
   #render() {
@@ -330,4 +330,11 @@ class DoodleControls extends HTMLElement {
   }
 }
 
-customElements.define('doodle-controls', DoodleControls);
+if (!customElements.get('doodle-controls')) {
+  customElements.define('doodle-controls', DoodleControls);
+}
+
+// Backward/forward compatibility: allow singular tag too.
+if (!customElements.get('doodle-control')) {
+  customElements.define('doodle-control', DoodleControls);
+}

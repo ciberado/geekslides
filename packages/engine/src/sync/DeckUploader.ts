@@ -14,6 +14,7 @@ export interface DeckManifest {
   readonly configPath: string;
   readonly contentPath: string;
   readonly stylePaths: readonly string[];
+  readonly scriptPaths: readonly string[];
   readonly imagePaths: readonly string[];
 }
 
@@ -82,6 +83,7 @@ function isAbsoluteUrl(url: string): boolean {
 export interface DeckConfig {
   readonly content: string;
   readonly styles?: readonly string[];
+  readonly scripts?: readonly string[];
 }
 
 /**
@@ -94,6 +96,7 @@ export function buildManifest(
   css: string,
 ): DeckManifest {
   const stylePaths = config.styles ? [...config.styles] : [];
+  const scriptPaths = config.scripts ? [...config.scripts] : [];
   const markdownImages = scanMarkdownImages(markdown);
   const cssImages = scanCssUrls(css);
 
@@ -103,6 +106,7 @@ export function buildManifest(
     configPath: basename(configPath),
     contentPath: config.content,
     stylePaths,
+    scriptPaths,
     imagePaths: allImages,
   };
 }
@@ -131,6 +135,7 @@ export async function uploadDeck(
     manifest.configPath,
     manifest.contentPath,
     ...manifest.stylePaths,
+    ...manifest.scriptPaths,
     ...manifest.imagePaths,
   ];
 

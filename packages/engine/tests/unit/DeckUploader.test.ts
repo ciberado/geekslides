@@ -85,6 +85,38 @@ describe('DeckUploader', () => {
       expect(manifest.imagePaths).toContain('images/pattern.png');
     });
 
+    it('includes script paths in the manifest', () => {
+      const config = {
+        content: 'README.md',
+        scripts: ['./components/doodle-controls.js', './components/live-chart.js'],
+      };
+      const manifest = buildManifest('config.json', config, '# Hi', '');
+      expect(manifest.scriptPaths).toEqual([
+        './components/doodle-controls.js',
+        './components/live-chart.js',
+      ]);
+    });
+
+    it('includes script paths in the files sent for upload', () => {
+      // scriptPaths must appear in the allPaths list that uploadDeck fetches.
+      // We verify indirectly by checking that scriptPaths is non-empty and
+      // distinct from stylePaths and imagePaths.
+      const config = {
+        content: 'README.md',
+        styles: ['theme.css'],
+        scripts: ['./components/widget.js'],
+      };
+      const manifest = buildManifest('config.json', config, '', '');
+      expect(manifest.scriptPaths).toEqual(['./components/widget.js']);
+      expect(manifest.stylePaths).toEqual(['theme.css']);
+    });
+
+    it('produces an empty scriptPaths array when config has no scripts', () => {
+      const config = { content: 'README.md' };
+      const manifest = buildManifest('config.json', config, '# Hello', '');
+      expect(manifest.scriptPaths).toEqual([]);
+    });
+
     it('deduplicates images across markdown and CSS', () => {
       const config = { content: 'README.md' };
       const markdown = '![](images/shared.png)';

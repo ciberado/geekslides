@@ -155,11 +155,12 @@ To enable custom components to interact with css-doodle elements:
 
 ### Engine Exports for Component Authors
 
-The engine will export pattern utilities for use by custom components:
+The engine exports utilities for use by custom components:
 
 ```typescript
 // From @geekslides/engine (or available on window.__geekslides)
 export { patternRegistry } from './plugins/builtins/css-doodle-patterns/index.ts';
+export { waitForProcessedElement } from './utils/waitForProcessedElement.ts';
 export type { DoodlePattern, DoodlePatternConfig } from './plugins/builtins/css-doodle-patterns/types.ts';
 ```
 
@@ -168,9 +169,37 @@ Since deck-local scripts can't easily import from `@geekslides/engine` (they run
 ```typescript
 window.__geekslides = {
   patternRegistry,
-  // Future: other utilities for component authors
+  buildColorVars,
+  parseDoodleConfig,
+  waitForProcessedElement,
 };
 ```
+
+### Timing: Waiting for Processor-Generated Elements
+
+Processors (css-doodle, chart, iframe, …) run asynchronously in a staggered render queue after slides are inserted. A custom component's `connectedCallback` fires while slides are being connected, which can be **before** the processor has replaced the placeholder with the real element.
+
+The correct pattern is **not** to poll with a timeout, but to use `waitForProcessedElement`:
+
+```javascript
+connectedCallback() {
+  const { waitForProcessedElement } = window.__geekslides ?? {};
+  this.#cancelWait = waitForProcessedElement?.('css-doodle', this, (el) => {
+    this.#cancelWait = null;
+    this.#init(el);
+  });
+}
+
+disconnectedCallback() {
+  this.#cancelWait?.();
+}
+```
+
+`waitForProcessedElement(selector, anchor, callback)` works by:
+1. Walking up from `anchor` to find the nearest `section.content` container.
+2. If `selector` already matches an element, invoking `callback` synchronously.
+3. Otherwise, installing a `MutationObserver` on the container. The callback fires the moment the element is inserted, then the observer disconnects.
+4. Returning a cleanup function — call it from `disconnectedCallback` to cancel a pending wait if the component is removed before the element appears.
 
 ### HMR Support
 
@@ -190,54 +219,51 @@ Custom components render in the DOM, so they appear in print output if they prod
 
 Components that are purely interactive (controls, buttons) can use `@media print { display: none; }` to hide themselves in PDF output.
 
-## Implementation Plan
+## Implementation Status
 
-### Phase 1: `scripts` in Config
+### ✅ Phase 1: `scripts` in Config — Complete
 
-- Add `scripts: readonly string[]` to `GeekSlidesConfig` interface
-- Stop deleting legacy `scripts` field in `normalizeLegacyConfig()`
-- Parse and validate `scripts` array in `loadConfig()`
-- Default to `[]` (empty — backward compatible)
+- `scripts: readonly string[]` in `GeekSlidesConfig`
+- Parsed and validated in `loadConfig()`; defaults to `[]`
 
-### Phase 2: Script Loading in main.js
+### ✅ Phase 2: Script Loading in main.js — Complete
 
-- Add `loadScripts(config, resolveUrl)` function
-- Load scripts sequentially via dynamic `import()`
-- Call optional default init function with config
-- Run script loading AFTER config load, BEFORE preprocessor pipeline
-- Add scripts to HMR watch list
+- `loadScripts(config)` loads scripts sequentially via dynamic `import()`
+- Calls optional `default` or `init` export with config
+- Scripts run AFTER config load, BEFORE preprocessor pipeline
+- Script paths included in HMR watch list
 
-### Phase 3: Engine Utilities Export
+### ✅ Phase 3: Engine Utilities Export — Complete
 
-- Export `patternRegistry` and pattern types from engine's public API
-- Expose `window.__geekslides` with pattern utilities
-- Store pattern name and config as data attributes on `<css-doodle>` elements
+- `patternRegistry`, `buildColorVars`, `parseDoodleConfig`, `waitForProcessedElement` exported from engine
+- All four exposed on `window.__geekslides`
 
-### Phase 4: css-doodle Updatability
+### ✅ Phase 4: css-doodle Updatability — Complete
 
-- Modify css-doodle processor to store config metadata on elements
-- Add `data-pattern`, `data-grid`, `data-colors`, `data-animate`, `data-speed`, `data-opacity` attributes
-- Export `buildColorVars()` and `parseConfig()` utilities for component reuse
+- `data-pattern`, `data-grid`, `data-colors`, `data-animate`, `data-speed`, `data-opacity` stored on `<css-doodle>` by processor
+- `buildColorVars()` and `parseDoodleConfig()` exported
 
-### Phase 5: Demo Component (`<doodle-controls>`)
+### ✅ Phase 5: Demo Component (`<doodle-controls>`) — Complete
 
-- Create `decks/css-doodle-demo/components/doodle-controls.js`
-- Implement controls: grid slider, color pickers, opacity slider, speed slider, animate toggle, pattern selector
-- Wire controls to css-doodle's `.update()` API
-- Update `decks/css-doodle-demo/config.json` to include the script
-- Update `decks/css-doodle-demo/README.md` to embed `<doodle-controls>` in slides
+- `decks/css-doodle-demo/components/doodle-controls.js` implemented
+- Uses `waitForProcessedElement` for timing-safe initialization
+- Embedded in all two-column css-doodle slides
 
-### Phase 6: Tests
+### ✅ Phase 6: Scripts Uploaded to Content Proxy — Complete
 
-- Unit tests for script loading
-- Unit tests for config `scripts` parsing
-- E2E test: deck with custom component renders and interacts
+- `DeckManifest` now includes `scriptPaths`
+- `buildManifest` reads `config.scripts` and adds them to the upload set
+- Prevents 404 when clients load the deck from the room proxy
 
-### Phase 7: Documentation
+### ✅ Phase 7: Tests — Complete
 
-- Update `vibe/features/architecture-v2.md` with scripts loading stage
-- Update `vibe/features/plugin-system.md` with cross-reference
-- Create how-to guide for writing custom components
+- Unit tests for `waitForProcessedElement` in `packages/engine/tests/unit/waitForProcessedElement.test.ts`
+- `DeckUploader` tests updated to cover `scriptPaths`
+
+### ⬜ Phase 8: How-to Guide
+
+- Guide for writing custom components (`how-to/21-embed-custom-components.md`) exists
+- Consider expanding with `waitForProcessedElement` timing section
 
 ## Relationship to Other Systems
 

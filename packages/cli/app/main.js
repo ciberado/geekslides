@@ -29,6 +29,7 @@ import {
   patternRegistry,
   buildColorVars,
   parseDoodleConfig,
+  waitForProcessedElement,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -80,6 +81,7 @@ window.__geekslides = {
   patternRegistry,
   buildColorVars,
   parseDoodleConfig,
+  waitForProcessedElement,
 };
 
 const params = new URLSearchParams(window.location.search);
@@ -198,16 +200,8 @@ async function fetchStyles(config) {
           console.warn(`Failed to load style: ${url} (HTTP ${res.status})`);
           return '';
         }
-        let text = await res.text();
-        // Vite wraps ?raw CSS as a JS module: export default "..."
-        // with a sourcemap comment. Strip both to get actual CSS.
-        text = text.replace(/\/\/# sourceMappingURL=.*$/gm, '').trim();
-        if (text.startsWith('export default "')) {
-          try {
-            text = JSON.parse(text.slice('export default '.length).replace(/;\s*$/, ''));
-          } catch { /* not a JS module, use as-is */ }
-        }
-        return text;
+        const text = await res.text();
+        return extractCssText(text);
       } catch (err) {
         console.warn(`Failed to load style: ${url}`, err);
         return '';
@@ -215,6 +209,39 @@ async function fetchStyles(config) {
     }),
   );
   return cssTexts.join('\n');
+}
+
+function extractCssText(rawText) {
+  const text = rawText.replace(/\/\/# sourceMappingURL=.*$/gm, '').trim();
+
+  // Most responses are plain CSS; keep fast path simple.
+  if (!text.includes('__vite__') && !text.includes('export default')) {
+    return text;
+  }
+
+  // Vite raw modules can export a JSON-encoded CSS string.
+  const exportDefaultLiteral = text.match(/export\s+default\s+("(?:\\.|[^"\\])*");?\s*$/s)?.[1];
+  if (exportDefaultLiteral) {
+    try {
+      return JSON.parse(exportDefaultLiteral);
+    } catch {
+      // Fall through to other extraction patterns.
+    }
+  }
+
+  // Vite CSS HMR modules commonly assign css to __vite__css.
+  const viteCssLiteral =
+    text.match(/\bconst\s+__vite__css\s*=\s*("(?:\\.|[^"\\])*")\s*;?/s)?.[1]
+    ?? text.match(/__vite__updateStyle\([^,]+,\s*("(?:\\.|[^"\\])*")\)/s)?.[1];
+  if (viteCssLiteral) {
+    try {
+      return JSON.parse(viteCssLiteral);
+    } catch {
+      // If parsing fails, use the original text to avoid dropping styles.
+    }
+  }
+
+  return text;
 }
 
 /**
