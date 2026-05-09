@@ -1,9 +1,48 @@
 import { defineConfig } from 'vite';
 import { resolve } from 'path';
+import { posix } from 'node:path';
 import { geekSlidesHmr } from './packages/engine/src/hmr/vite-plugin-geekslides-hmr';
 
+const DEFAULT_DEV_DECK_BASE = '/decks/css-doodle-demo';
+
+function resolveDevDeckBase(): string {
+  const configuredBase = process.env['GEEKSLIDES_DEV_DECK_BASE'] ?? DEFAULT_DEV_DECK_BASE;
+  const withLeadingSlash = configuredBase.startsWith('/') ? configuredBase : `/${configuredBase}`;
+  return withLeadingSlash.replace(/\/$/, '');
+}
+
+function mapDeckRequestPlugin() {
+  const devDeckBase = resolveDevDeckBase();
+
+  return {
+    name: 'geekslides-map-deck-request',
+    configureServer(server: import('vite').ViteDevServer): void {
+      server.middlewares.use((req, _res, next) => {
+        const requestUrl = req.url;
+        if (!requestUrl || !requestUrl.startsWith('/deck/')) {
+          next();
+          return;
+        }
+
+        // Prevent traversal when remapping /deck/* into the configured local deck path.
+        const [pathPart, queryPart] = requestUrl.split('?', 2);
+        const rawSuffix = pathPart.slice('/deck/'.length);
+        const normalizedSuffix = posix.normalize(`/${rawSuffix}`);
+        if (normalizedSuffix.includes('..')) {
+          next();
+          return;
+        }
+
+        const mappedPath = `${devDeckBase}${normalizedSuffix}`;
+        req.url = queryPart ? `${mappedPath}?${queryPart}` : mappedPath;
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [geekSlidesHmr()],
+  plugins: [mapDeckRequestPlugin(), geekSlidesHmr()],
   resolve: {
     alias: [
       { find: /^@geekslides\/engine$/, replacement: resolve(__dirname, 'packages/engine/src/index.ts') },
@@ -21,6 +60,7 @@ export default defineConfig({
     },
   },
   server: {
+    allowedHosts : ['vscode-gs.snow-burbot.ts.net'],
     port: 5173,
     proxy: {
       '/ws': {
