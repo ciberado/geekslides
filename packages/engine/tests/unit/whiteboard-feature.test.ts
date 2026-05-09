@@ -218,6 +218,14 @@ describe('whiteboardFeature', () => {
     expect(wb.toolbar).toBeTruthy();
   });
 
+  it('hides the toolbar by default for presenter', () => {
+    const { ctx, container } = makeContext({ role: 'presenter' });
+    whiteboardFeature.activate(ctx);
+    const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
+    const toolbar = wb.toolbar as StubToolbar;
+    expect(toolbar.hide).toHaveBeenCalledOnce();
+  });
+
   it('registers whiteboard toggle command for presenter', () => {
     const { ctx, commands } = makeContext({ role: 'presenter' });
     whiteboardFeature.activate(ctx);
@@ -470,10 +478,24 @@ describe('whiteboardFeature', () => {
     // pointerdown on container (not on whiteboard)
     firePointer(gsContainer, 'pointerdown', { button: 0 });
     // pointermove while button held
-    firePointer(gsContainer, 'pointermove', { buttons: 1 });
+    firePointer(gsContainer, 'pointermove', { buttons: 1, clientX: 16, clientY: 16 });
 
     expect(wb.setActive).toHaveBeenCalledWith(true);
     expect(wb.beginStroke).toHaveBeenCalledOnce();
+  });
+
+  it('does not auto-activate when drag starts on interactive controls', () => {
+    const { ctx, gsContainer, container } = makeContext({ role: 'presenter' });
+    whiteboardFeature.activate(ctx);
+    const wb = getWhiteboard(container);
+
+    const button = document.createElement('button');
+    gsContainer.appendChild(button);
+
+    firePointer(button, 'pointerdown', { button: 0 });
+    firePointer(button, 'pointermove', { buttons: 1, clientX: 20, clientY: 20 });
+
+    expect(wb.setActive).not.toHaveBeenCalled();
   });
 
   it('does not auto-activate when whiteboard is already visible', () => {

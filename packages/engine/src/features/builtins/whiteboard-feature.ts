@@ -60,26 +60,55 @@ export const whiteboardFeature: Feature = {
       const gsContainer = ctx.container.closest<HTMLElement>('.gs-container') ?? ctx.container.parentElement;
       if (gsContainer) {
         let pointerStartedOnSlide = false;
+        let pointerStartX = 0;
+        let pointerStartY = 0;
+        let pointerStartedOnInteractive = false;
+        const DRAG_THRESHOLD_PX = 6;
+
+        const isInteractiveElement = (el: Element): boolean =>
+          el instanceof HTMLElement &&
+          (
+            el.isContentEditable ||
+            el.matches('input, textarea, select, option, button, label, a, summary, details')
+          );
+
+        const eventStartedOnInteractive = (e: PointerEvent): boolean =>
+          e.composedPath().some((node) => node instanceof Element && isInteractiveElement(node));
 
         const onPointerDown = (e: PointerEvent): void => {
           if (e.button !== 0) return;
           if (ctx.slideshow.mode !== 'present') return;
           if (e.composedPath().some((el) => (el as Element).tagName === 'GEEK-WHITEBOARD')) return;
+          pointerStartedOnInteractive = eventStartedOnInteractive(e);
+          if (pointerStartedOnInteractive) {
+            pointerStartedOnSlide = false;
+            return;
+          }
           pointerStartedOnSlide = true;
-          e.preventDefault();
+          pointerStartX = e.clientX;
+          pointerStartY = e.clientY;
         };
 
         const onPointerMove = (e: PointerEvent): void => {
           if (!pointerStartedOnSlide) return;
+          if (pointerStartedOnInteractive) return;
           if (ctx.slideshow.mode !== 'present') { pointerStartedOnSlide = false; return; }
           if (e.buttons === 0) { pointerStartedOnSlide = false; return; }
+          const movedX = Math.abs(e.clientX - pointerStartX);
+          const movedY = Math.abs(e.clientY - pointerStartY);
+          if (movedX < DRAG_THRESHOLD_PX && movedY < DRAG_THRESHOLD_PX) return;
           if (!whiteboard.isVisible && !whiteboard.userDismissed && !whiteboard.toolbarCollapsed) {
+            e.preventDefault();
             whiteboard.setActive(true);
             whiteboard.beginStroke(e);
+            pointerStartedOnSlide = false;
           }
         };
 
-        const onPointerUp = (): void => { pointerStartedOnSlide = false; };
+        const onPointerUp = (): void => {
+          pointerStartedOnSlide = false;
+          pointerStartedOnInteractive = false;
+        };
 
         gsContainer.addEventListener('pointerdown', onPointerDown as EventListener);
         gsContainer.addEventListener('pointermove', onPointerMove as EventListener);
@@ -126,6 +155,7 @@ export const whiteboardFeature: Feature = {
 
       const toolbar = whiteboard.toolbar;
       if (toolbar) {
+        toolbar.hide();
         ctx.commands.register({
           name: 'wb-toolbar', label: 'Hide/show whiteboard toolbar',
           execute: () => { toolbar.toggleVisibility(); },

@@ -629,7 +629,7 @@ test.describe('Whiteboard', () => {
     expect(toolbarInfo?.hasCollapseBtn).toBe(true);
   });
 
-  test('wb-toolbar command completely hides toolbar (toggleVisibility)', async ({ page }) => {
+  test('wb-toolbar command toggles toolbar visibility (hidden by default)', async ({ page }) => {
     // Activate whiteboard first
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
@@ -639,7 +639,7 @@ test.describe('Whiteboard', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    // Hide via command — should set isHidden=true, not collapsed
+    // Toolbar starts hidden by default, so first toggle should show it.
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
@@ -648,30 +648,30 @@ test.describe('Whiteboard', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    const hidden = await page.evaluate(() => {
-      const ss = document.getElementById('slideshow');
-      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
-      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
-      return toolbar?.isHidden;
-    });
-    expect(hidden).toBe(true);
-
-    // Show via command again
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-    await page.keyboard.type('wb-toolbar');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(500);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-
-    const visible = await page.evaluate(() => {
+    const shown = await page.evaluate(() => {
       const ss = document.getElementById('slideshow');
       const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
       const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
       return toolbar?.isHidden === false;
     });
-    expect(visible).toBe(true);
+    expect(shown).toBe(true);
+
+    // Second toggle should hide it again.
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    const hiddenAgain = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.isHidden === true;
+    });
+    expect(hiddenAgain).toBe(true);
   });
 
   test('wb-hide and wb-show commands control toolbar visibility', async ({ page }) => {
@@ -1415,8 +1415,8 @@ test.describe('Whiteboard + Overview interaction', () => {
     expect(hasContent).toBe(true);
   });
 
-  test('wb-toolbar command completely hides and shows the toolbar', async ({ page }) => {
-    // Activate whiteboard so the toolbar is visible
+  test('wb-toolbar command completely shows and hides the toolbar', async ({ page }) => {
+    // Activate whiteboard (toolbar should remain hidden by default)
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('whiteboard');
@@ -1425,34 +1425,16 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    // Verify toolbar is visible initially
-    const toolbarVisibleInitially = await page.evaluate(() => {
-      const ss = document.getElementById('slideshow');
-      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
-      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
-      return toolbar !== null && toolbar.style.display !== 'none';
-    });
-    expect(toolbarVisibleInitially).toBe(true);
-
-    // Run wb-toolbar to hide the toolbar
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-    await page.keyboard.type('wb-toolbar');
-    await page.keyboard.press('Enter');
-    await page.waitForTimeout(400);
-    await page.keyboard.press('Escape');
-    await page.waitForTimeout(200);
-
-    // Toolbar should now be completely hidden (display: none)
-    const toolbarHiddenAfterCommand = await page.evaluate(() => {
+    // Verify toolbar is hidden initially
+    const toolbarHiddenInitially = await page.evaluate(() => {
       const ss = document.getElementById('slideshow');
       const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
       const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
       return toolbar?.isHidden === true;
     });
-    expect(toolbarHiddenAfterCommand).toBe(true);
+    expect(toolbarHiddenInitially).toBe(true);
 
-    // Run wb-toolbar again to show it
+    // Run wb-toolbar to show the toolbar
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
     await page.keyboard.type('wb-toolbar');
@@ -1461,13 +1443,31 @@ test.describe('Whiteboard + Overview interaction', () => {
     await page.keyboard.press('Escape');
     await page.waitForTimeout(200);
 
-    // Toolbar should be visible again
-    const toolbarShownAgain = await page.evaluate(() => {
+    // Toolbar should now be visible
+    const toolbarShownAfterCommand = await page.evaluate(() => {
       const ss = document.getElementById('slideshow');
       const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
       const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
       return toolbar?.isHidden === false;
     });
-    expect(toolbarShownAgain).toBe(true);
+    expect(toolbarShownAfterCommand).toBe(true);
+
+    // Run wb-toolbar again to hide it
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+    await page.keyboard.type('wb-toolbar');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(400);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(200);
+
+    // Toolbar should be hidden again
+    const toolbarHiddenAgain = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard');
+      const toolbar = wb?.shadowRoot?.querySelector('geek-whiteboard-toolbar') as any;
+      return toolbar?.isHidden === true;
+    });
+    expect(toolbarHiddenAgain).toBe(true);
   });
 });
