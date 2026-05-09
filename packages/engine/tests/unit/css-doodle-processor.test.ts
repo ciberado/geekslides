@@ -57,6 +57,11 @@ describe('parseConfig', () => {
     expect(result.size).toBe('400px');
   });
 
+  it('parses shape parameter as number', () => {
+    const result = parseConfig('triangles,shape=150');
+    expect(result.shape).toBe(150);
+  });
+
   it('parses seed parameter', () => {
     const result = parseConfig('confetti,seed=42');
     expect(result.seed).toBe('42');
@@ -334,6 +339,32 @@ describe('css-doodle processor data attributes', () => {
     });
   });
 
+  it('sets data-size when size is specified', async () => {
+    const { cssDoodleProcessor } = await import('../../src/plugins/builtins/css-doodle-processor.ts');
+    const el = document.createElement('div');
+    el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,size=70%')}"></div>`;
+
+    cssDoodleProcessor(el);
+
+    await vi.waitFor(() => {
+      const doodle = el.querySelector('css-doodle');
+      expect(doodle?.getAttribute('data-size')).toBe('70%');
+    });
+  });
+
+  it('sets data-shape when shape is specified', async () => {
+    const { cssDoodleProcessor } = await import('../../src/plugins/builtins/css-doodle-processor.ts');
+    const el = document.createElement('div');
+    el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,shape=150')}"></div>`;
+
+    cssDoodleProcessor(el);
+
+    await vi.waitFor(() => {
+      const doodle = el.querySelector('css-doodle');
+      expect(doodle?.getAttribute('data-shape')).toBe('150');
+    });
+  });
+
   it('sets data-nohole when nohole flag is present', async () => {
     const { cssDoodleProcessor } = await import('../../src/plugins/builtins/css-doodle-processor.ts');
     const el = document.createElement('div');
@@ -440,7 +471,7 @@ describe('css-doodle processor data attributes', () => {
   it('sets all data attributes together on a fully configured doodle', async () => {
     const { cssDoodleProcessor } = await import('../../src/plugins/builtins/css-doodle-processor.ts');
     const el = document.createElement('div');
-    const config = 'confetti,grid=16,animate,speed=2,opacity=0.5,nohole,colors=red|blue,seed=7';
+    const config = 'confetti,grid=16,shape=140,animate,speed=2,opacity=0.5,nohole,colors=red|blue,seed=7';
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent(config)}"></div>`;
 
     cssDoodleProcessor(el);
@@ -450,6 +481,7 @@ describe('css-doodle processor data attributes', () => {
       expect(doodle).not.toBeNull();
       expect(doodle?.getAttribute('data-pattern')).toBe('confetti');
       expect(doodle?.getAttribute('data-grid')).toBe('16');
+      expect(doodle?.getAttribute('data-shape')).toBe('140');
       expect(doodle?.hasAttribute('data-animate')).toBe(true);
       expect(doodle?.getAttribute('data-speed')).toBe('2');
       expect(doodle?.getAttribute('data-opacity')).toBe('0.5');

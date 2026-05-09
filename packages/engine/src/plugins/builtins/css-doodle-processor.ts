@@ -61,6 +61,11 @@ export function parseConfig(raw: string): ParsedDoodleConfig {
         config.grid = value;
       } else if (key === 'size') {
         config.size = value;
+      } else if (key === 'shape') {
+        const shape = parseFloat(value);
+        if (!Number.isNaN(shape)) {
+          config.shape = Math.max(25, Math.min(300, shape));
+        }
       } else if (key === 'opacity') {
         config.opacity = value;
       } else if (key === 'seed') {
@@ -177,6 +182,33 @@ function applyPositioning(
 }
 
 /**
+ * Scale grid density while keeping doodle area fixed.
+ * shape=100 keeps original grid; >100 makes larger cells; <100 makes smaller cells.
+ */
+function applyShapeScaleToGrid(grid: string, shape: number): string {
+  const scaleGridPart = (part: string): number | null => {
+    const n = parseInt(part, 10);
+    if (!Number.isFinite(n) || n <= 0) return null;
+    // Bigger shape -> fewer cells. Smaller shape -> more cells.
+    const scaled = Math.round((n * 100) / shape);
+    return Math.max(1, Math.min(200, scaled));
+  };
+
+  const lower = grid.toLowerCase();
+  if (lower.includes('x')) {
+    const [colsRaw, rowsRaw] = lower.split('x');
+    if (!colsRaw || !rowsRaw) return grid;
+    const cols = scaleGridPart(colsRaw);
+    const rows = scaleGridPart(rowsRaw);
+    if (cols === null || rows === null) return grid;
+    return `${String(cols)}x${String(rows)}`;
+  }
+
+  const single = scaleGridPart(grid);
+  return single === null ? grid : String(single);
+}
+
+/**
  * Queue of doodle render tasks. Each entry is a function that creates and
  * inserts doodle elements for one slide. Processing is staggered across
  * animation frames so the main thread stays responsive during initial load.
@@ -251,8 +283,9 @@ function renderPlaceholder(
   // from buildColorVars() below.
   const THEME_COLOR_COUNT = 5;
   const colorRefs = Array.from({ length: THEME_COLOR_COUNT }, (_, i) => `var(--doodle-c${String(i + 1)})`);
+  const baseGrid = config.grid ?? pattern.defaultGrid;
   const patternConfig: DoodlePatternConfig = {
-    grid: config.grid ?? pattern.defaultGrid,
+    grid: applyShapeScaleToGrid(baseGrid, config.shape ?? 100),
     colors: colorRefs,
     animate: config.animate ?? false,
     speed: config.speed ?? 1,
@@ -273,10 +306,12 @@ function renderPlaceholder(
   // Store config metadata as data attributes for discoverability by
   // custom components (e.g. <doodle-controls>).
   doodle.dataset.pattern = config.patternName;
-  doodle.dataset.grid = patternConfig.grid;
+  doodle.dataset.grid = baseGrid;
+  if (config.shape !== undefined && config.shape !== 100) doodle.dataset.shape = String(config.shape);
   if (config.animate) doodle.dataset.animate = '';
   if (config.speed !== undefined) doodle.dataset.speed = String(config.speed);
   if (config.opacity) doodle.dataset.opacity = config.opacity;
+  if (config.size) doodle.dataset.size = config.size;
   if (config.nohole) doodle.dataset.nohole = '';
   if (config.colors) doodle.dataset.colors = config.colors.join('|');
   if (config.seed) doodle.dataset.seed = config.seed;

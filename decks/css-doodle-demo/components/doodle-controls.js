@@ -2,7 +2,7 @@
  * <doodle-controls> — Interactive control panel for css-doodle elements.
  *
  * Finds the closest <css-doodle> in the same slide and provides UI controls
- * to adjust its parameters in real time: grid size, colors, opacity, animation
+ * to adjust its parameters in real time: grid size, shape scale, colors, opacity, animation
  * speed, animate toggle, and pattern selection.
  *
  * Usage in markdown:
@@ -86,6 +86,29 @@ const STYLE = `
     accent-color: var(--gs-color-accent, #3b55a0);
   }
 
+  .config {
+    display: grid;
+    gap: 6px;
+    margin-top: 8px;
+  }
+
+  .config label {
+    min-width: 0;
+  }
+
+  .config textarea {
+    width: 100%;
+    min-height: 52px;
+    resize: vertical;
+    border-radius: 4px;
+    border: 1px solid color-mix(in oklch, var(--gs-color-surface, #fff) 60%, var(--gs-color-text, #333));
+    background: var(--gs-color-surface, #fff);
+    color: var(--gs-color-text, #333);
+    font: 12px/1.35 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    padding: 6px 8px;
+    box-sizing: border-box;
+  }
+
   @media print {
     :host { display: none; }
   }
@@ -96,10 +119,12 @@ class DoodleControls extends HTMLElement {
   #cancelWait = null;
   #patternName = '';
   #grid = '8';
+  #shape = 100;
   #animate = false;
   #speed = 1;
   #opacity = 1;
   #nohole = false;
+  #seed = '';
   #customColors = null;
 
   constructor() {
@@ -131,13 +156,42 @@ class DoodleControls extends HTMLElement {
     this.#doodle = doodle;
     this.#patternName = doodle.dataset.pattern ?? 'triangles';
     this.#grid = doodle.dataset.grid ?? '8';
+    this.#shape = this.#parseShapePercent(doodle.dataset.shape);
     this.#animate = doodle.dataset.animate !== undefined;
     this.#speed = parseFloat(doodle.dataset.speed ?? '1');
     this.#opacity = parseFloat(doodle.dataset.opacity ?? '1');
     this.#nohole = doodle.dataset.nohole !== undefined;
+    this.#seed = doodle.dataset.seed ?? '';
     if (doodle.dataset.colors) {
       this.#customColors = doodle.dataset.colors.split('|');
     }
+  }
+
+  #parseShapePercent(raw) {
+    if (!raw) return 100;
+    const parsed = parseFloat(raw);
+    if (Number.isNaN(parsed)) return 100;
+    return Math.max(25, Math.min(300, parsed));
+  }
+
+  #shapeAdjustedGrid() {
+    const scalePart = (part) => {
+      const n = parseInt(part, 10);
+      if (!Number.isFinite(n) || n <= 0) return null;
+      const scaled = Math.round((n * 100) / this.#shape);
+      return Math.max(1, Math.min(200, scaled));
+    };
+    const lower = this.#grid.toLowerCase();
+    if (lower.includes('x')) {
+      const [colsRaw, rowsRaw] = lower.split('x');
+      if (!colsRaw || !rowsRaw) return this.#grid;
+      const cols = scalePart(colsRaw);
+      const rows = scalePart(rowsRaw);
+      if (cols === null || rows === null) return this.#grid;
+      return `${String(cols)}x${String(rows)}`;
+    }
+    const single = scalePart(this.#grid);
+    return single === null ? this.#grid : String(single);
   }
 
   #findDoodle() {
@@ -184,6 +238,12 @@ class DoodleControls extends HTMLElement {
       </div>
 
       <div class="row">
+        <label>Shape</label>
+        <input type="range" id="shape" min="25" max="300" value="${String(this.#shape)}" step="1">
+        <span class="value" id="shape-val">${String(this.#shape)}%</span>
+      </div>
+
+      <div class="row">
         <label>Opacity</label>
         <input type="range" id="opacity" min="0.05" max="1" value="${String(this.#opacity)}" step="0.05">
         <span class="value" id="opacity-val">${this.#opacity.toFixed(2)}</span>
@@ -212,6 +272,11 @@ class DoodleControls extends HTMLElement {
           No holes
         </label>
       </div>
+
+      <div class="config">
+        <label for="config-text">Config</label>
+        <textarea id="config-text" readonly></textarea>
+      </div>
     `;
 
     // Wire up event listeners
@@ -226,10 +291,18 @@ class DoodleControls extends HTMLElement {
       this.#updateDoodle();
     });
 
+    this.shadowRoot.getElementById('shape').addEventListener('input', (e) => {
+      this.#shape = parseInt(e.target.value, 10) || 100;
+      this.shadowRoot.getElementById('shape-val').textContent = `${String(this.#shape)}%`;
+      this.#updateDoodle();
+    });
+
     this.shadowRoot.getElementById('opacity').addEventListener('input', (e) => {
       this.#opacity = parseFloat(e.target.value);
       this.shadowRoot.getElementById('opacity-val').textContent = this.#opacity.toFixed(2);
       this.#doodle.style.opacity = String(this.#opacity);
+      this.#doodle.dataset.opacity = String(this.#opacity);
+      this.#syncConfigText();
     });
 
     this.shadowRoot.getElementById('speed').addEventListener('input', (e) => {
@@ -258,6 +331,8 @@ class DoodleControls extends HTMLElement {
       this.#nohole = e.target.checked;
       this.#updateDoodle();
     });
+
+    this.#syncConfigText();
   }
 
   #pendingUpdate = false;
@@ -291,10 +366,11 @@ class DoodleControls extends HTMLElement {
     const colorRefs = Array.from({ length: THEME_COLOR_COUNT }, (_, i) => `var(--doodle-c${String(i + 1)})`);
 
     const patternConfig = {
-      grid: this.#grid,
+      grid: this.#shapeAdjustedGrid(),
       colors: colorRefs,
       animate: this.#animate,
       speed: this.#speed,
+      seed: this.#seed || undefined,
     };
 
     const cssContent = pattern.generate(patternConfig);
@@ -313,8 +389,16 @@ class DoodleControls extends HTMLElement {
     // Update data attributes to reflect current state
     this.#doodle.dataset.pattern = this.#patternName;
     this.#doodle.dataset.grid = this.#grid;
+    if (this.#shape === 100) {
+      delete this.#doodle.dataset.shape;
+    } else {
+      this.#doodle.dataset.shape = String(this.#shape);
+    }
     this.#doodle.dataset.speed = String(this.#speed);
     this.#doodle.dataset.opacity = String(this.#opacity);
+    if (this.#seed) {
+      this.#doodle.dataset.seed = this.#seed;
+    }
 
     if (this.#animate) {
       this.#doodle.dataset.animate = '';
@@ -327,6 +411,30 @@ class DoodleControls extends HTMLElement {
     } else {
       delete this.#doodle.dataset.nohole;
     }
+
+    this.#syncConfigText();
+  }
+
+  #buildConfigText() {
+    const parts = [
+      this.#patternName,
+      `grid=${this.#grid}`,
+      `shape=${String(this.#shape)}`,
+      `opacity=${this.#opacity.toFixed(2)}`,
+      `speed=${this.#speed.toFixed(1)}`,
+    ];
+    if (this.#animate) parts.push('animate');
+    if (this.#nohole) parts.push('nohole');
+    if (this.#seed) parts.push(`seed=${this.#seed}`);
+    if (this.#customColors && this.#customColors.length > 0) {
+      parts.push(`colors=${this.#customColors.join('|')}`);
+    }
+    return parts.join(',');
+  }
+
+  #syncConfigText() {
+    const out = this.shadowRoot?.getElementById('config-text');
+    if (out) out.value = this.#buildConfigText();
   }
 }
 
@@ -335,6 +443,8 @@ if (!customElements.get('doodle-controls')) {
 }
 
 // Backward/forward compatibility: allow singular tag too.
+// A subclass is required because the CustomElementRegistry forbids registering
+// the same constructor under more than one name.
 if (!customElements.get('doodle-control')) {
-  customElements.define('doodle-control', DoodleControls);
+  customElements.define('doodle-control', class extends DoodleControls {});
 }

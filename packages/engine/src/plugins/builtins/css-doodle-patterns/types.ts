@@ -32,6 +32,8 @@ export interface ParsedDoodleConfig {
   patternName: string;
   grid?: string;
   size?: string;
+  /** Shape scale in percent: >100 bigger shapes, <100 smaller shapes. */
+  shape?: number;
   opacity?: string;
   colors?: string[];
   seed?: string;
