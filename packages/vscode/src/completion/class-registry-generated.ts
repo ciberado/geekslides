@@ -129,7 +129,7 @@ Perfect for highlighting a single key metric.`,
   {
     name: 'layout-img-text',
     category: 'layout' as const,
-    detail: 'Image left, text right — 2-col grid',
+    detail: 'Image left, text right — float-based',
     documentation: `**Markdown:**
 \`\`\`md
 [](.layout-img-text#product)
@@ -144,11 +144,13 @@ Perfect for highlighting a single key metric.`,
 ┌─────────┬─────────────┐
 │         │ #### Title  │
 │  IMAGE  │ - Feature 1 │
-│         │ - Feature 2 │
+│ (50%)   │ - Feature 2 │
+│         │ - Feature 3 │  ← multiple content OK
 └─────────┴─────────────┘
 \`\`\`
 
-Image in left column, text/list in right column.`,
+Image floats left at 50% width. Heading spans full width.
+Text/lists flow right with automatic wrapping. Supports multiple content elements.`,
   },
   {
     name: 'layout-img-text-bleed',
