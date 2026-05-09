@@ -64,7 +64,7 @@ export const mosaic: DoodlePattern = {
   category: 'decorative',
   defaultGrid: '12',
   description: 'Stained-glass mosaic effect',
-  generate: ({ colors, grid }) => `
+  generate: ({ colors, grid, animate, speed }) => `
     @grid: ${grid} / 100%;
     background: @pick(${colors.map((c, i) => `var(--doodle-c${String(i + 1)})`).join(', ')});
     clip-path: polygon(
@@ -77,6 +77,14 @@ export const mosaic: DoodlePattern = {
     );
     opacity: @rand(0.5, 0.9);
     margin: -2px;
+    ${animate ? `animation: mosaic-shimmer @rand(${String(2 / speed)}s, ${String(6 / speed)}s) ease-in-out infinite alternate;` : ''}
+    
+    ${animate ? `
+    @keyframes mosaic-shimmer {
+      from { transform: scale(1) rotate(0deg); filter: saturate(1); }
+      to { transform: scale(@rand(0.95, 1.08)) rotate(@rand(-8deg, 8deg)); filter: saturate(@rand(0.9, 1.35)); }
+    }
+    ` : ''}
   `,
 };
 

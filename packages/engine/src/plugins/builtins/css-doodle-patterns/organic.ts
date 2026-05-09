@@ -58,13 +58,21 @@ export const petals: DoodlePattern = {
   category: 'organic',
   defaultGrid: '8',
   description: 'Flower-petal radial arrangement',
-  generate: ({ colors, grid }) => `
+  generate: ({ colors, grid, animate, speed }) => `
     @grid: ${grid} / 100%;
     background: @pick(${colors.map((c, i) => `var(--doodle-c${String(i + 1)})`).join(', ')});
     border-radius: 50% 0 50% 0;
     opacity: @rand(0.4, 0.8);
     transform: rotate(@calc(@index * 360 / @size)deg);
     @size: @rand(40%, 60%);
+    ${animate ? `animation: petal-sway @rand(${String(2 / speed)}s, ${String(5 / speed)}s) ease-in-out infinite alternate;` : ''}
+    
+    ${animate ? `
+    @keyframes petal-sway {
+      from { transform: rotate(@calc(@index * 360 / @size)deg) scale(1); }
+      to { transform: rotate(@calc(@index * 360 / @size + @rand(-25deg, 25deg))) scale(@rand(0.9, 1.12)); }
+    }
+    ` : ''}
   `,
 };
 
@@ -73,13 +81,21 @@ export const branches: DoodlePattern = {
   category: 'organic',
   defaultGrid: '16x12',
   description: 'Tree-like branching lines',
-  generate: ({ colors, grid }) => `
+  generate: ({ colors, grid, animate, speed }) => `
     @grid: ${grid} / 100%;
     background: @pick(${colors.map((c, i) => `var(--doodle-c${String(i + 1)})`).join(', ')});
     @size: @rand(2px, 4px) @rand(20%, 60%);
     opacity: @rand(0.3, 0.7);
     transform: rotate(@rand(360deg));
     border-radius: 50%;
+    ${animate ? `animation: branch-flicker @rand(${String(1.5 / speed)}s, ${String(4 / speed)}s) ease-in-out infinite alternate;` : ''}
+    
+    ${animate ? `
+    @keyframes branch-flicker {
+      from { transform: rotate(@rand(360deg)); opacity: @rand(0.2, 0.65); }
+      to { transform: rotate(@rand(360deg)); opacity: @rand(0.35, 0.9); }
+    }
+    ` : ''}
   `,
 };
 
