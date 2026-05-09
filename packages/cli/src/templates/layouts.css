@@ -337,12 +337,32 @@ section.content.layout-big-stat {
 section.content.layout-two-col {
   display: grid;
   grid-template-columns: 1fr 1fr;
+  grid-auto-flow: row dense;
   column-gap: calc(var(--gs-gap) * 2);
   row-gap: var(--gs-gap);
   align-content: start;
 
-  > h3 { grid-column: 1 / -1; }
+  > h1, > h2, > h3 { grid-column: 1 / -1; margin-bottom: var(--gs-gap); }
   > h4 { display: none; }
+
+  > * {
+    grid-column: 1;
+  }
+
+  > h4 ~ * {
+    grid-column: 2;
+  }
+
+  /* doodle-controls (or its <p> wrapper) is pinned to the bottom-right of
+   * the slide, out of the grid flow, so it never overflows the canvas. */
+  > doodle-controls,
+  > doodle-control,
+  > p:has(> doodle-controls),
+  > p:has(> doodle-control) {
+    position: absolute;
+    bottom: var(--gs-pad-y);
+    right: var(--gs-pad-x);
+  }
 }
 
 
@@ -358,7 +378,7 @@ section.content.layout-two-col {
 
 /**
  * @layout layout-img-text
- * @detail Image left, text right — 2-col grid
+ * @detail Image left, text right — float-based
  * @markdown
  * [](.layout-img-text#product)
  * ![Product](img.jpg)
@@ -369,39 +389,43 @@ section.content.layout-two-col {
  * ┌─────────┬─────────────┐
  * │         │ #### Title  │
  * │  IMAGE  │ - Feature 1 │
- * │         │ - Feature 2 │
+ * │ (50%)   │ - Feature 2 │
+ * │         │ - Feature 3 │  ← multiple content OK
  * └─────────┴─────────────┘
  * @usage
- * Image in left column, text/list in right column.
+ * Image floats left at 50% width. Heading spans full width.
+ * Text/lists flow right with automatic wrapping. Supports multiple content elements.
  */
 section.content.layout-img-text {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: auto 1fr;
-  column-gap: calc(var(--gs-gap) * 2);
-  row-gap: var(--gs-gap);
-  align-items: center;
-
   > h3 {
-    grid-column: 1 / -1;
-    grid-row: 1;
+    width: 100%;
   }
 
   > .block-image {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: stretch;
+    float: left;
+    width: 50%;
+    margin-inline-end: var(--gs-gap);
+    margin-block-end: var(--gs-gap);
 
     img {
       width: 100%;
-      height: 100%;
-      object-fit: cover;
+      height: auto;
+      display: block;
     }
   }
 
   > ul, > ol, > p {
-    grid-column: 2;
-    grid-row: 2;
+    margin-inline-start: calc(50% + var(--gs-gap));
+  }
+
+  > doodle-controls,
+  > doodle-control,
+  > p:has(> doodle-controls),
+  > p:has(> doodle-control) {
+    position: absolute;
+    bottom: var(--gs-pad-y);
+    right: var(--gs-pad-x);
+    margin-inline-start: 0;
   }
 }
 

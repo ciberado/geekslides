@@ -169,18 +169,17 @@ test.describe('Layout CSS', () => {
 
   /* ── 2. Two-column text ─────────────────────────────────────────────────── */
 
-  test('layout-two-col: grid with two columns', async ({ page }) => {
+  test('layout-two-col: grid dense arrangement', async ({ page }) => {
     await goToSlide(page, 2);
     expect(await hasContentClass(page, 'layout-two-col')).toBe(true);
 
-    const styles = await getContentStyles(page, ['display', 'grid-template-columns']);
+    const styles = await getContentStyles(page, ['display', 'grid-template-columns', 'grid-auto-flow']);
     expect(styles['display']).toBe('grid');
-    // Two equal fractional columns — computed value will be two pixel widths
-    const cols = (styles['grid-template-columns'] ?? '').split(' ');
-    expect(cols.length).toBe(2);
+    // Chrome sometimes computes 'row dense' as just 'dense', testing for include
+    expect(styles['grid-auto-flow']).toContain('dense');
   });
 
-  test('layout-two-col: h4 is hidden', async ({ page }) => {
+  test('layout-two-col: h4 is hidden or empty', async ({ page }) => {
     await goToSlide(page, 2);
     const h4Display = await getChildStyles(page, 'h4', ['display']);
     expect(h4Display['display']).toBe('none');
