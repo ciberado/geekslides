@@ -87,10 +87,11 @@ Separate route/tab:
     the canvas via `display: none` and also controls `userDismissed` state. Restores
     click-through to links, sliders, and other interactive elements in the slide.
   - **Collapse the toolbar** (click `≡`): shrinks the toolbar to a collapsed strip, keeping it visible
-  - **Hide the toolbar** (run `wb-toolbar`): completely removes the toolbar from view (`display: none`)
-    UI only. The canvas remains visible so annotations stay on screen, and the canvas
-    is immediately given `pointer-events: none` / `touch-action: auto` so swipe
-    gestures and tap-zone navigation pass straight through to the slide. Slide
+- **Hide the toolbar** (run `wb-toolbar`): completely removes the toolbar from view (`display: none`)
+    UI only. The toolbar is hidden by default in presenter mode and can be shown again
+    with `wb-toolbar` or `wb-show`. The canvas remains visible so annotations stay on
+    screen, and the canvas is immediately given `pointer-events: none` / `touch-action: auto`
+    so swipe gestures and tap-zone navigation pass straight through to the slide. Slide
     navigation does not hide the canvas — drawings are preserved and visible after
     navigating away and back. Expanding the toolbar restores `pointer-events: auto` /
     `touch-action: none` for drawing. Collapsing does _not_ hide the canvas; use the
@@ -111,7 +112,8 @@ Separate route/tab:
 ## Whiteboard Toolbar
 
 `<geek-whiteboard-toolbar>` is a collapsible vertical toolbar anchored to the right
-edge of the whiteboard. It provides drawing controls without leaving the canvas.
+edge of the whiteboard. It provides drawing controls without leaving the canvas and
+starts hidden by default in presenter mode.
 
 ### Layout
 
@@ -149,7 +151,7 @@ pink, cyan, brown, lime, navy, maroon, teal, grey.
 
 | Command | Description |
 |---------|-------------|
-| `wb-toolbar` | Completely hide/show the toolbar (`toggleVisibility()`) |
+| `wb-toolbar` | Completely show/hide the toolbar (`toggleVisibility()`) |
 | `wb-hide` | Hide toolbar entirely (remove from DOM display) |
 | `wb-show` | Show toolbar (restore DOM display) |
 | `wb-pen` | Switch to pen tool |

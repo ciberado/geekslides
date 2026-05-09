@@ -12,7 +12,7 @@ The plugin uses markdown image syntax as its invocation mechanism:
 ```markdown
 ![css-doodle](#triangles)
 ![css-doodle](#waves,grid=12,opacity=0.3)
-![css-doodle](#dots,colors=pink|teal,size=200px)
+![css-doodle](#dots,colors=pink|teal,shape=140)
 ```
 
 ## Design Decisions
@@ -44,7 +44,8 @@ The plugin uses markdown image syntax as its invocation mechanism:
 | Parameter | Description | Default |
 |-----------|-------------|---------|
 | `grid` | Grid dimensions (e.g., `8`, `12x6`, `20x1`) | Pattern's default |
-| `size` | Container size (e.g., `400px`, `100%`) | `100%` for bg/cover, `300px` for inline |
+| `size` | Container size (e.g. `400px`, `100%`) | `100%` for bg/cover, `300px` for inline |
+| `shape` | Shape scale percentage (`25`–`300`); values above 100 make shapes larger | `100` |
 | `opacity` | Overall opacity (0–1) | `1` |
 | `colors` | Pipe-separated color list overriding theme colors | Theme palette |
 | `seed` | Fixed seed for reproducible randomness | Auto-generated |
@@ -154,7 +155,7 @@ export const triangles: DoodlePattern = {
   category: 'geometric',
   defaultGrid: '18',
   description: 'Randomized triangular mosaic via clip-path',
-  generate: ({ colors, grid }) => `
+  generate: ({ colors, grid, animate, speed }) => `
     @grid: ${grid} / 100%;
     --hue: calc(180 + 1.5 * @x * @y);
     background: @pick(${colors.map(c => `var(--doodle-c${c})`).join(', ')});
@@ -168,6 +169,11 @@ export const triangles: DoodlePattern = {
   `,
 };
 ```
+
+### Shape Scale
+
+`shape` changes the effective cell size without resizing the doodle footprint.
+Values above `100` make larger shapes; values below `100` make them denser.
 
 ### Preprocessor Logic
 

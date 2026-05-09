@@ -214,14 +214,14 @@ Remote scripts load as ES modules, same as local ones.
 
 ## Example: The css-doodle-demo Deck
 
-The `decks/css-doodle-demo/` deck ships with a `<doodle-controls>` component that provides interactive controls for css-doodle patterns. Check it out for a full working example:
+The `decks/css-doodle-demo/` deck ships with a `<doodle-controls>` component that provides interactive controls for css-doodle patterns, including shape scale, animation, color, and a live config summary. Check it out for a full working example:
 
 ```
 decks/css-doodle-demo/
   config.json               ← scripts: ["./components/doodle-controls.js"]
   README.md                 ← <doodle-controls></doodle-controls> in each slide
   components/
-    doodle-controls.js      ← Full control panel with sliders, color pickers, etc.
+    doodle-controls.js      ← Full control panel with sliders, color pickers, config text, etc.
 ```
 
 ---

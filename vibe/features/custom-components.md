@@ -95,12 +95,14 @@ Once a script registers a custom element, use it directly in markdown:
 
 Here's a triangular pattern:
 
-![css-doodle](#triangles,grid=8)
+![css-doodle](#triangles,grid=8,shape=140)
 
 <doodle-controls></doodle-controls>
 ```
 
 The `<doodle-controls>` HTML passes through markdown-it unchanged and becomes a live custom element in the rendered slide DOM.
+The control panel reads the generated doodle state, lets you tweak grid/shape/colors/animation,
+and keeps a live config string in sync with the current settings.
 
 ### Component Scoping: Deck-Level vs Slide-Level
 

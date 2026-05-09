@@ -95,11 +95,12 @@ Each slide has its own canvas. Strokes persist when you navigate away and come b
 > **Tip:** While the whiteboard is active the canvas sits on top of the slide, so links
 > and interactive elements underneath cannot be clicked. Use the **Hide (⊘)** button in
 > the toolbar (or the `whiteboard` toggle command) to dismiss the canvas and restore
-> click-through to the slide content.
+> click-through to the slide content. The toolbar itself starts hidden by default in
+> presenter mode; use `wb-toolbar` or `wb-show` to reveal it.
 
 ### The toolbar
 
-When the whiteboard is active a collapsible toolbar appears on the right edge of the slide:
+When shown, the collapsible toolbar sits on the right edge of the slide:
 
 - **Pen** — thin, fully opaque line (default)
 - **Highlighter** — wide, semi-transparent stroke for emphasis
@@ -122,7 +123,7 @@ All toolbar actions are also available from the terminal:
 
 | Command | Action |
 |---|---|
-| `wb-toolbar` | **Completely hide / show** the toolbar |
+| `wb-toolbar` | **Toggle** the toolbar visibility |
 | `wb-hide` | Hide toolbar |
 | `wb-show` | Show toolbar |
 | `wb-pen` | Switch to pen |
@@ -131,7 +132,7 @@ All toolbar actions are also available from the terminal:
 | `wb-color <hex>` | Set colour, e.g. `wb-color #ff0000` |
 | `clear` | Clear whiteboard strokes on current slide |
 
-> **Tip:** `wb-toolbar` completely hides or restores the toolbar element (useful for screen-sharing or demo recording). The **≡** collapse button in the toolbar itself just collapses it to a smaller strip.
+> **Tip:** `wb-toolbar` toggles the toolbar element on and off (useful for screen-sharing or demo recording). The **≡** collapse button in the toolbar itself just collapses it to a smaller strip.
 
 ![Whiteboard annotations over a slide](screenshots/whiteboard.png)
 

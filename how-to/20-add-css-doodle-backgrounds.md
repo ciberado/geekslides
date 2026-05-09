@@ -122,6 +122,7 @@ Customize patterns with comma-separated key=value pairs:
 |-----------|-------------|---------|
 | `grid` | Grid dimensions | `12`, `16x8`, `20x1` |
 | `size` | Container size | `400px`, `50%` |
+| `shape` | Shape scale percentage | `80`, `140` |
 | `opacity` | Overall opacity (0–1) | `0.3` |
 | `colors` | Pipe-separated colors | `#ff0000\|#00ff00\|#0000ff` |
 | `seed` | Fixed seed for reproducibility | `42` |
@@ -168,6 +169,18 @@ Patterns automatically use your theme's color palette:
 Override with custom colors:
 ```markdown
 ![css-doodle](#triangles,colors=#ff6b6b|#4ecdc4|#45b7d1)
+```
+
+---
+
+## Shape Scale
+
+Use `shape` to make the generated shapes larger or smaller without changing the
+overall doodle area:
+
+```markdown
+![css-doodle](#triangles,shape=140)
+![css-doodle](#dots,shape=80)
 ```
 
 ---
