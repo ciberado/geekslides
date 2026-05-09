@@ -53,5 +53,5 @@ export function waitForProcessedElement(
 
   observer.observe(content, { childList: true, subtree: true });
 
-  return () => observer.disconnect();
+  return () => { observer.disconnect(); };
 }

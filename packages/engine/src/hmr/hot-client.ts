@@ -115,9 +115,14 @@ async function handleStyleUpdate(
 ): Promise<void> {
   const stylePaths = options.getStyleSheetPaths().map(normalizePath);
   const payloadPath = normalizePath(payload.file);
-  const isTrackedStyle = stylePaths.some(
-    (stylePath) => stylePath.endsWith(payloadPath) || payloadPath.endsWith(stylePath),
-  );
+  const isTrackedStyle = stylePaths.some((stylePath) => {
+    if (stylePath.endsWith(payloadPath) || payloadPath.endsWith(stylePath)) return true;
+    // Handle virtual path remapping (e.g. /deck/css/layouts.css → real decks/some-deck/css/layouts.css).
+    // Strip the virtual mount-point (first path segment) and check if the payload ends with that suffix.
+    const slashIdx = stylePath.indexOf('/');
+    const suffix = slashIdx >= 0 ? stylePath.slice(slashIdx + 1) : '';
+    return suffix.length > 0 && payloadPath.endsWith(suffix);
+  });
 
   if (!isTrackedStyle) {
     return;
