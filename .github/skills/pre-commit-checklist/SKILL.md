@@ -84,7 +84,15 @@ If the change affects architecture, APIs, testing, or decisions, check these fil
 
 Use `git status --short` to review changes. Stage only files related to the current work. Do not stage unrelated changes (e.g. submodule pointer drifts).
 
-### 8. Write a conventional commit message
+### 8. Update CHANGELOG.md (on version bumps)
+
+If this commit includes a version bump (any `package.json` version changed), update `CHANGELOG.md`:
+
+- Add a new `## [X.Y.Z] - YYYY-MM-DD` section above the previous entry.
+- List all notable additions, changes, fixes, and removals since the last release under the appropriate sub-headings (`### Added`, `### Changed`, `### Fixed`, `### Removed`).
+- Keep the placeholder comment `<!-- Add new entries above this line -->` at the bottom.
+
+### 9. Write a conventional commit message
 
 Format: `<type>: <subject>`
 
@@ -98,18 +106,19 @@ Types:
 
 For multi-line bodies, summarize what changed and list key items with `-` bullets.
 
-### 9. Commit
+### 10. Commit
 
 Run the commit. Confirm it succeeds.
 
 ## Quick Reference: What to Check by Change Type
 
-| Changed | Tests | E2E | How-to | Vibe docs |
-|---------|-------|-----|--------|-----------|
-| Engine logic (`packages/engine/src/`) | ✓ | Maybe | If user-facing | `architecture-v2.md`, relevant feature doc |
-| Server (`packages/server/src/`) | ✓ | Maybe | If user-facing | `deployment-v2.md`, relevant feature doc |
-| CLI app (`packages/cli/`, `index.html`) | ✓ | ✓ | If user-facing | `architecture-v2.md` |
-| Config schema (`Config.ts`) | ✓ | ✓ | ✓ | `architecture-v2.md` |
-| New web component | ✓ | ✓ | ✓ | `components.md`, `architecture-v2.md` |
-| Documentation only | — | — | ✓ | Maybe |
-| Test only | ✓ | — | — | `testing.md` |
+| Changed | Tests | E2E | How-to | Vibe docs | Changelog |
+|---------|-------|-----|--------|-----------|-----------|
+| Engine logic (`packages/engine/src/`) | ✓ | Maybe | If user-facing | `architecture-v2.md`, relevant feature doc | If version bump |
+| Server (`packages/server/src/`) | ✓ | Maybe | If user-facing | `deployment-v2.md`, relevant feature doc | If version bump |
+| CLI app (`packages/cli/`, `index.html`) | ✓ | ✓ | If user-facing | `architecture-v2.md` | If version bump |
+| Config schema (`Config.ts`) | ✓ | ✓ | ✓ | `architecture-v2.md` | If version bump |
+| New web component | ✓ | ✓ | ✓ | `components.md`, `architecture-v2.md` | If version bump |
+| Documentation only | — | — | ✓ | Maybe | — |
+| Test only | ✓ | — | — | `testing.md` | — |
+| **Version bump** | ✓ | ✓ | — | — | **✓** |

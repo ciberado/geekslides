@@ -64,6 +64,7 @@ npm run docker:push     # Push all Docker images to Docker Hub
 - **Commands**: registered via `commands.register({ name, label, execute, category })`, two input modes: NORMAL (hotkeys) and TERMINAL (prompt)
 - **Docker**: single-container with Caddy reverse proxy; 3-stage build (app-builder, server-builder, runtime)
 - **How-to guides**: numbered `how-to/NN-slug.md` files — use the `how-to-guide` skill when creating or updating
+- **Version bumps**: when bumping any package version, update **all** `packages/*/package.json` files to the same version AND add a new entry to `CHANGELOG.md` following the Keep a Changelog format (`## [X.Y.Z] - YYYY-MM-DD`)
 
 ## Documentation
 
