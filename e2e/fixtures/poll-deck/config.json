@@ -1,0 +1,11 @@
+{
+  "title": "Poll E2E Fixture",
+  "content": "README.md",
+  "styles": [],
+  "aspectRatio": "16/9",
+  "features": ["poll"],
+  "plugins": {
+    "preprocessors": [],
+    "processors": []
+  }
+}
