@@ -28,6 +28,7 @@
   },
   "dependencies": {
     "chart.js": "^4.4.0",
+    "qrcode": "^1.5.4",
     "css-doodle": "^0.40.6",
     "markdown-it": "^14.1.0",
     "markdown-it-container": "^4.0.0",
