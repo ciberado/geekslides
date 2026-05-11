@@ -17,6 +17,10 @@ const BUILTIN_FEATURES: Record<string, () => Promise<Feature>> = {
     const mod = await import('./builtins/whiteboard-feature.ts');
     return mod.whiteboardFeature;
   },
+  poll: async () => {
+    const mod = await import('./builtins/poll-feature.ts');
+    return mod.pollFeature;
+  },
 };
 
 /**
