@@ -15,6 +15,7 @@ import { setupWSConnection } from 'y-websocket/bin/utils';
 import { handleContentApi } from './ContentApi.ts';
 import { handlePluginProxy } from './PluginProxy.ts';
 import { handleDeckProxy } from './DeckProxy.ts';
+import { handleFeatureWrite } from './FeatureWriteApi.ts';
 import { RoomStore } from './RoomStore.ts';
 import { RateLimiter } from './RateLimiter.ts';
 import { createRoomApiHandler } from './RoomApi.ts';
@@ -28,6 +29,7 @@ export { storeRoomContent, getRoomFile, getRoomContent, deleteRoomContent, MAX_U
 export { handleContentApi } from './ContentApi.ts';
 export { handlePluginProxy } from './PluginProxy.ts';
 export { handleDeckProxy } from './DeckProxy.ts';
+export { handleFeatureWrite } from './FeatureWriteApi.ts';
 export { RoomStore } from './RoomStore.ts';
 export { RateLimiter } from './RateLimiter.ts';
 export { createRoomApiHandler } from './RoomApi.ts';
@@ -163,6 +165,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
 
     void (async () => {
       const handled =
+        await handleFeatureWrite(req, res) ||
         await handlePluginProxy(req, res) ||
         await handleDeckProxy(req, res) ||
         await handleRoomApi(req, res) ||
