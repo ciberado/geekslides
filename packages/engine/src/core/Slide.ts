@@ -6,6 +6,7 @@
  */
 
 import { scope } from './StyleScoper.ts';
+import { applyLayoutTransforms } from './LayoutTransforms.ts';
 
 export class Slide extends HTMLElement {
   #partialCount = 0;
@@ -159,6 +160,7 @@ export class Slide extends HTMLElement {
     }
 
     content.innerHTML = html;
+    applyLayoutTransforms(content);
 
     // Mark partial elements
     const partials = content.querySelectorAll('[partial]');

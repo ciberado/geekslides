@@ -16,6 +16,10 @@ export { Slideshow } from './core/Slideshow.ts';
 export type { SlideshowMode } from './core/Slideshow.ts';
 export { Slide } from './core/Slide.ts';
 
+// Layout Transform Registry
+export { registerLayoutTransform, applyLayoutTransforms } from './core/LayoutTransforms.ts';
+export type { LayoutTransform } from './core/LayoutTransforms.ts';
+
 // Phase 3: Plugin System
 export { PluginManager } from './plugins/PluginManager.ts';
 export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
