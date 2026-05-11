@@ -129,15 +129,17 @@ This keeps the autocomplete documentation in sync with available layouts automat
 | `layout-img-text` | Image on the left, text/list on the right |
 | `layout-img-text-bleed` | Image fills left edge-to-edge, text/list on the right |
 | `layout-big-stat` | Giant centred `h3` for key metrics + paragraph label |
-| `layout-three-col` | Three card columns (each `####` starts a card; body: `p`, `ul`, `ol`, or image) |
+| `layout-three-col` ⚡ | Three card columns (each `####` starts a card; body: `p`, `ul`, `ol`, or image) |
 | `layout-timeline` | Horizontal steps with numbered circles; steps support images |
 | `layout-chart` | Heading + full-height data table |
-| `layout-compare` | Two panels with a bold VS divider in the centre |
+| `layout-compare` ⚡ | Two panels with a bold VS divider in the centre |
 | `layout-team` | Row of circular headshots (add `.mod-heading-center` to centre heading with images) |
 | `layout-grid` | Responsive image grid / mood board |
 | `layout-table` | Heading + full-width feature matrix table |
 | `layout-agenda` | Numbered session agenda with accent circles |
 | `layout-blank` | Empty canvas (whiteboard-friendly) |
+
+> ⚡ = has a **DOM transform** — the engine injects structural elements (`.gs-card`, `.gs-vs-badge`) after markdown conversion. This enables richer per-element styling in CSS.
 
 ### Extending layouts.css with a custom layout
 
@@ -179,6 +181,37 @@ Activate it with a slide marker:
 Main content paragraph.
 - Footer point A
 - Footer point B
+```
+
+### Adding a DOM transform to a custom layout
+
+For layouts that need structural elements beyond CSS (wrappers, badges, data attributes), add a
+**layout transform** in a deck script. Register it before the slideshow renders:
+
+```javascript
+// js/my-layouts.js (referenced in config.json → "scripts")
+window.__geekslides.registerLayoutTransform('layout-cards', (section) => {
+  // Wrap each <li> from a <ul> into a .gs-card div
+  for (const li of section.querySelectorAll(':scope > ul > li')) {
+    const card = document.createElement('div');
+    card.className = 'gs-card';
+    card.replaceChildren(...li.childNodes);
+    li.replaceWith(card);
+  }
+  // Remove the now-empty <ul> shell
+  section.querySelector(':scope > ul')?.remove();
+});
+```
+
+In your CSS you can then target `.gs-card` directly:
+
+```css
+/* css/my-layouts.css */
+section.content.layout-cards > .gs-card {
+  border: 1px solid var(--gs-color-border);
+  border-radius: var(--gs-radius);
+  padding: 1em;
+}
 ```
 
 ### Customising design tokens

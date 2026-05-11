@@ -81,6 +81,83 @@ duplicating layout rules.
 | `.layout-agenda` | `[](.layout-agenda#id)` | 2-row grid; `ol` items flex-column with accent circles |
 | `.layout-blank` | `[](.layout-blank#id)` | No inner structure; `::after` guide border |
 
+### Layout Transforms
+
+Some layouts need structural DOM changes beyond what CSS alone can achieve — injecting wrapper
+`<div>` elements, replacing heading nodes with semantic badges, or adding `data-*` attributes.
+GeekSlides provides a **Layout Transform Registry** for this purpose.
+
+#### How transforms work
+
+Transforms are registered by layout class name. When `Slide.loadContent()` sets `innerHTML`,
+it immediately calls `applyLayoutTransforms(section)` which runs any matching transform.
+
+Built-in transforms (registered in `packages/engine/src/core/LayoutTransforms.ts`):
+
+| Layout | Transform |
+|--------|-----------|
+| `layout-three-col` | Wraps each `h4` + following content sibling into a `.gs-card` div |
+| `layout-compare` | Replaces the `h4` VS-badge with a `<span class="gs-vs-badge">` |
+
+#### CSS authoring conventions
+
+A layout with a transform must include CSS rules for **both** the transformed DOM and the
+untransformed fallback (used by `renderPrint`/headless HTML generation):
+
+```css
+/* With transform (browser engine path) */
+section.content.layout-three-col > .gs-card { … }
+
+/* Fallback for renderPrint (no DOM transform) */
+section.content.layout-three-col > h4:nth-of-type(1) { … }
+```
+
+Document the transform in the `@layout` comment block with a `@transform` tag — this signals
+the VSCode extension to show a "⚡ Has DOM transform" note in autocomplete:
+
+```css
+/**
+ * @layout layout-my-layout
+ * @transform Brief description of what the transform does
+ * @detail …
+ */
+```
+
+#### Deck-local custom transforms
+
+Deck scripts (loaded via `config.scripts`) can register custom layout transforms using
+`window.__geekslides.registerLayoutTransform(cls, fn)`:
+
+```javascript
+// js/my-layouts.js
+window.__geekslides.registerLayoutTransform('layout-cards', (section) => {
+  for (const li of section.querySelectorAll('ul > li')) {
+    const card = document.createElement('div');
+    card.className = 'gs-card';
+    card.replaceChildren(...li.childNodes);
+    li.replaceWith(card);
+  }
+});
+```
+
+Custom CSS goes in the deck's `css/layouts.css` and the script in `config.scripts`:
+
+```json
+{
+  "styles": ["css/layouts.css", "css/my-layouts.css"],
+  "scripts": ["js/my-layouts.js"]
+}
+```
+
+The VSCode extension already discovers `.layout-cards` from the deck's CSS. If the CSS comment
+uses `@transform`, the extension will also show the transform note in autocomplete.
+
+#### Timing
+
+Custom scripts are loaded before the slideshow initialises, so transforms registered in
+`config.scripts` are always available before the first `loadContent()` call. HMR live-reload
+re-calls `loadContent()` on affected slides, so transforms are re-applied automatically.
+
 ### Adding a new layout
 
 1. Pick a name: `.layout-my-name`.
@@ -115,15 +192,20 @@ duplicating layout rules.
      }
    }
    ```
-3. Add theme overrides for it in `packages/cli/src/templates/theme-default.css` under
+3. If the layout needs DOM manipulation, add a transform to `packages/engine/src/core/LayoutTransforms.ts`
+   and add a `@transform` tag to the CSS comment. Include CSS fallback selectors for environments
+   without transforms (see **Layout Transforms** section above).
+4. Add theme overrides for it in `packages/cli/src/templates/theme-default.css` under
    section 3 (layout-specific theme overrides).
-4. Update the `how-to/07-style-your-deck.md` layout class table.
-5. **Rebuild VSCode extension:** `cd packages/vscode && npm run build`
+5. Update the `how-to/07-style-your-deck.md` layout class table.
+6. **Rebuild VSCode extension:** `cd packages/vscode && npm run build`
    - The prebuild script automatically extracts CSS documentation
    - Generates `src/completion/class-registry-generated.ts`
    - Autocomplete will show your layout with full documentation
    - Layout-specific modifiers (nested with `&.mod-*`) are extracted automatically
-6. If the new layout is part of a per-deck customisation (not the engine template), add
+   - The `@transform` tag triggers the ⚡ note in autocomplete
+7. Run `npm run sync-templates` in `packages/cli` to regenerate `layouts-css.ts`.
+8. If the new layout is part of a per-deck customisation (not the engine template), add
    the CSS to your deck's `css/layouts.css` instead of the template.
 
 **Documentation format**: See `packages/vscode/src/completion/css-doc-format.md` for complete specification.
