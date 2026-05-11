@@ -14,6 +14,8 @@
  *   6  layout-three-col       14  layout-img-text-bleed
  *   7  layout-big-stat        15  layout-agenda
  *                             16  layout-blank
+ *                             17  layout-quote
+ *                             18  layout-features
  */
 import { test, expect } from '@playwright/test';
 
@@ -185,6 +187,12 @@ test.describe('Layout CSS', () => {
     expect(h4Display['display']).toBe('none');
   });
 
+  test('layout-two-col: has two separate ul lists', async ({ page }) => {
+    await goToSlide(page, 2);
+    // The separator h4 keeps the two lists as separate DOM elements
+    expect(await countChildren(page, 'ul')).toBe(2);
+  });
+
   /* ── 3. Image + text ────────────────────────────────────────────────────── */
 
   test('layout-img-text: grid with two columns', async ({ page }) => {
@@ -201,6 +209,25 @@ test.describe('Layout CSS', () => {
     await goToSlide(page, 3);
     expect(await countChildren(page, '.block-image')).toBe(1);
     expect(await countChildren(page, 'ul')).toBe(1);
+  });
+
+  test('layout-img-text: block-image occupies left column', async ({ page }) => {
+    await goToSlide(page, 3);
+    // In the 2-col grid, block-image should be in column 1 (left half)
+    const result = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as (HTMLElement & { shadowRoot: ShadowRoot }) | null;
+      const slide = ss?.shadowRoot?.querySelector('geek-slide[active]') as HTMLElement | null;
+      const content = slide?.shadowRoot?.querySelector('section.content') as HTMLElement | null;
+      const img = content?.querySelector('.block-image') as HTMLElement | null;
+      const ul = content?.querySelector('ul') as HTMLElement | null;
+      if (!img || !ul) return null;
+      const imgRect = img.getBoundingClientRect();
+      const ulRect = ul.getBoundingClientRect();
+      return { imgLeft: imgRect.left, ulLeft: ulRect.left, imgRight: imgRect.right };
+    });
+    expect(result).not.toBeNull();
+    // Block-image starts at the left; list starts to the right of the image
+    expect(result!.ulLeft).toBeGreaterThan(result!.imgRight - 10);
   });
 
   /* ── 4. Full-bleed cover ────────────────────────────────────────────────── */
@@ -253,9 +280,25 @@ test.describe('Layout CSS', () => {
     expect(cols.length).toBe(3);
   });
 
-  test('layout-three-col: has three h4 card titles', async ({ page }) => {
+  test('layout-three-col: DOM transform wraps cards in .gs-card divs', async ({ page }) => {
     await goToSlide(page, 6);
-    expect(await countChildren(page, 'h4')).toBe(3);
+
+    const result = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as (HTMLElement & { shadowRoot: ShadowRoot }) | null;
+      const slide = ss?.shadowRoot?.querySelector('geek-slide[active]') as HTMLElement | null;
+      const content = slide?.shadowRoot?.querySelector('section.content') as HTMLElement | null;
+      const cards = content?.querySelectorAll(':scope > .gs-card') ?? [];
+      const h4Count = content?.querySelectorAll(':scope > h4').length ?? 0;
+      return {
+        cardCount: cards.length,
+        directH4Count: h4Count,
+        cardHasH4: Array.from(cards).every((c) => c.querySelector('h4') !== null),
+      };
+    });
+
+    expect(result.cardCount).toBe(3);
+    expect(result.directH4Count).toBe(0); // h4s are now inside .gs-card, not direct children
+    expect(result.cardHasH4).toBe(true);
   });
 
   /* ── 7. Big stat ────────────────────────────────────────────────────────── */
@@ -296,6 +339,15 @@ test.describe('Layout CSS', () => {
     expect(olStyles['grid-auto-flow']).toBe('column');
   });
 
+  test('layout-timeline: outer container uses two-row grid', async ({ page }) => {
+    await goToSlide(page, 8);
+    // The section uses grid-template-rows: auto 1fr for heading + content
+    const styles = await getContentStyles(page, ['display', 'grid-template-rows']);
+    expect(styles['display']).toBe('grid');
+    const rows = (styles['grid-template-rows'] ?? '').trim().split(/\s+/);
+    expect(rows.length).toBe(2);
+  });
+
   test('layout-timeline: has four list items', async ({ page }) => {
     await goToSlide(page, 8);
     expect(await countChildren(page, 'ol > li')).toBe(4);
@@ -316,6 +368,12 @@ test.describe('Layout CSS', () => {
     const styles = await getContentStyles(page, ['display', 'flex-direction']);
     expect(styles['display']).toBe('flex');
     expect(styles['flex-direction']).toBe('column');
+  });
+
+  test('layout-chart: has h3 heading and table', async ({ page }) => {
+    await goToSlide(page, 9);
+    expect(await countChildren(page, 'h3')).toBe(1);
+    expect(await countChildren(page, 'table')).toBe(1);
   });
 
   test('layout-chart: table exists and fills width', async ({ page }) => {
@@ -349,10 +407,26 @@ test.describe('Layout CSS', () => {
     expect(cols.length).toBe(3);
   });
 
-  test('layout-compare: h4 VS badge is visible', async ({ page }) => {
+  test('layout-compare: DOM transform replaces h4 with .gs-vs-badge span', async ({ page }) => {
     await goToSlide(page, 10);
-    const h4Display = await getChildStyles(page, 'h4', ['display']);
-    expect(h4Display['display']).not.toBe('none');
+
+    const result = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as (HTMLElement & { shadowRoot: ShadowRoot }) | null;
+      const slide = ss?.shadowRoot?.querySelector('geek-slide[active]') as HTMLElement | null;
+      const content = slide?.shadowRoot?.querySelector('section.content') as HTMLElement | null;
+      const badge = content?.querySelector('.gs-vs-badge') as HTMLElement | null;
+      return {
+        hasBadge: badge !== null,
+        tagName: badge?.tagName ?? '',
+        text: badge?.textContent?.trim() ?? '',
+        hasH4: content?.querySelector('h4') !== null,
+      };
+    });
+
+    expect(result.hasBadge).toBe(true);
+    expect(result.tagName).toBe('SPAN');
+    expect(result.text.toLowerCase()).toBe('vs');
+    expect(result.hasH4).toBe(false);
   });
 
   test('layout-compare: two lists exist', async ({ page }) => {
@@ -484,5 +558,68 @@ test.describe('Layout CSS', () => {
     });
     // Verify layout spacing token exists in shadow DOM CSS
     expect(result).toContain('--gs-pad-x');
+  });
+
+  /* ── 17. Pull quote ─────────────────────────────────────────────────────── */
+
+  test('layout-quote: flex column centered', async ({ page }) => {
+    await goToSlide(page, 17);
+    expect(await hasContentClass(page, 'layout-quote')).toBe(true);
+
+    const styles = await getContentStyles(page, ['display', 'align-items', 'justify-content']);
+    expect(styles['display']).toBe('flex');
+    expect(styles['align-items']).toBe('center');
+    expect(styles['justify-content']).toBe('center');
+  });
+
+  test('layout-quote: has blockquote and attribution', async ({ page }) => {
+    await goToSlide(page, 17);
+    expect(await countChildren(page, 'blockquote')).toBe(1);
+    expect(await countChildren(page, 'h4')).toBe(1);
+  });
+
+  test('layout-quote: blockquote has non-empty text content', async ({ page }) => {
+    await goToSlide(page, 17);
+    const text = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as (HTMLElement & { shadowRoot: ShadowRoot }) | null;
+      const slide = ss?.shadowRoot?.querySelector('geek-slide[active]') as HTMLElement | null;
+      const content = slide?.shadowRoot?.querySelector('section.content') as HTMLElement | null;
+      return content?.querySelector('blockquote')?.textContent?.trim() ?? '';
+    });
+    expect(text.length).toBeGreaterThan(10);
+  });
+
+  /* ── 18. Feature cards (2×2) ─────────────────────────────────────────────── */
+
+  test('layout-features: grid with two columns', async ({ page }) => {
+    await goToSlide(page, 18);
+    expect(await hasContentClass(page, 'layout-features')).toBe(true);
+
+    const styles = await getContentStyles(page, ['display', 'grid-template-columns']);
+    expect(styles['display']).toBe('grid');
+    const cols = (styles['grid-template-columns'] ?? '').split(' ');
+    expect(cols.length).toBe(2);
+  });
+
+  test('layout-features: DOM transform wraps cards in .gs-card divs', async ({ page }) => {
+    await goToSlide(page, 18);
+    expect(await countChildren(page, '.gs-card')).toBe(4);
+  });
+
+  test('layout-features: preserves h3 title alongside cards', async ({ page }) => {
+    await goToSlide(page, 18);
+    expect(await countChildren(page, 'h3')).toBe(1);
+  });
+
+  test('layout-features: each gs-card contains an h4 title', async ({ page }) => {
+    await goToSlide(page, 18);
+    const cardsWithH4 = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow') as (HTMLElement & { shadowRoot: ShadowRoot }) | null;
+      const slide = ss?.shadowRoot?.querySelector('geek-slide[active]') as HTMLElement | null;
+      const content = slide?.shadowRoot?.querySelector('section.content') as HTMLElement | null;
+      return Array.from(content?.querySelectorAll('.gs-card') ?? [])
+        .filter(c => c.querySelector('h4') !== null).length;
+    });
+    expect(cardsWithH4).toBe(4);
   });
 });

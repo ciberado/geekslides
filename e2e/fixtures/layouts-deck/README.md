@@ -94,15 +94,15 @@ Uptime across all regions
 
 ### Comparison
 
-- **Option A**: simpler setup.
-- **Option A**: lower cost.
-- **Option A**: less flexible.
+- **Simpler** setup.
+- **Lower** cost.
+- **Less** flexible.
 
 #### vs
 
-- **Option B**: complex setup.
-- **Option B**: higher cost.
-- **Option B**: very flexible.
+- **Complex** setup.
+- **Higher** cost.
+- **More** flexible.
 
 [](.layout-team#team)
 
@@ -155,4 +155,30 @@ Uptime across all regions
 4. Q & A
 
 [](.layout-blank#blank-canvas)
+
+[](.layout-quote#quote-slide)
+
+> "Programs must be written for people to read, and only incidentally for machines to execute."
+
+#### — Harold Abelson
+
+[](.layout-features#features-slide)
+
+### Key Features
+
+#### ⚡ Fast
+
+One million events per second.
+
+#### 🔒 Secure
+
+End-to-end encryption built in.
+
+#### 📦 Simple
+
+One-line install, zero config.
+
+#### 🌐 Global
+
+Fifty edge locations worldwide.
 
