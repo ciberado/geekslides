@@ -30,6 +30,7 @@ import {
   buildColorVars,
   parseDoodleConfig,
   waitForProcessedElement,
+  registerLayoutTransform,
 } from '@geekslides/engine';
 import { registerHotClient } from '@geekslides/engine/hot-client';
 
@@ -76,12 +77,13 @@ const PROCESSORS = {
 
 // Expose engine utilities for deck-local custom components.
 // Scripts loaded via config.scripts can use window.__geekslides to access
-// the pattern registry, color variable builder, and config parser.
+// the pattern registry, color variable builder, config parser, and layout transform registry.
 window.__geekslides = {
   patternRegistry,
   buildColorVars,
   parseDoodleConfig,
   waitForProcessedElement,
+  registerLayoutTransform,
 };
 
 const params = new URLSearchParams(window.location.search);

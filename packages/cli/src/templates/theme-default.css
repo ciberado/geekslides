@@ -214,6 +214,34 @@ section.content.layout-big-stat {
 /* --- Three-column cards --- */
 
 section.content.layout-three-col {
+  /* With DOM transform: .gs-card wrappers */
+  > .gs-card {
+    border-radius: var(--gs-radius);
+    overflow: hidden;
+
+    > h4 {
+      background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+      border-radius: var(--gs-radius) var(--gs-radius) 0 0;
+    }
+
+    > :is(p, ul, ol) {
+      background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
+      border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+      color: var(--gs-color-muted);
+      font-size: 0.85em;
+    }
+
+    > .block-image {
+      border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+      overflow: hidden;
+    }
+
+    > p img {
+      border-radius: calc(var(--gs-radius) * 0.8);
+    }
+  }
+
+  /* Fallback: direct child selectors (print / renderPrint path) */
   > h4 {
     background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
     border-radius: var(--gs-radius) var(--gs-radius) 0 0;
@@ -290,7 +318,8 @@ section.content.layout-compare {
     z-index: 1;
   }
 
-  > h4 {
+  /* VS badge — targets both the DOM-transformed .gs-vs-badge and the h4 fallback */
+  > :is(h4, .gs-vs-badge) {
     position: relative;
     z-index: 2;
     font-weight: 900;
@@ -401,5 +430,74 @@ section.content.layout-agenda {
       font-weight: 700;
       font-size: var(--gs-font-size-h4);
     }
+  }
+}
+
+/* --- Pull quote --- */
+
+section.content.layout-quote {
+  > blockquote {
+    font-size: 1.5em;
+    font-weight: 300;
+    color: var(--gs-color-heading);
+    line-height: 1.4;
+    font-style: italic;
+    position: relative;
+    padding-block: 0.4em;
+
+    &::before {
+      content: '\201C';
+      font-size: 4em;
+      line-height: 0.8;
+      color: var(--gs-color-accent);
+      opacity: 0.4;
+      display: block;
+      text-align: center;
+      font-style: normal;
+    }
+  }
+
+  > h4 {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: var(--gs-color-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-block: 0.5em 0;
+  }
+}
+
+/* --- Feature cards (2×2) --- */
+
+section.content.layout-features {
+  /* With DOM transform: .gs-card wrappers */
+  > .gs-card {
+    border-radius: var(--gs-radius);
+    overflow: hidden;
+
+    > h4 {
+      background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+      border-radius: var(--gs-radius) var(--gs-radius) 0 0;
+    }
+
+    > :is(p, ul, ol) {
+      background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
+      border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+      color: var(--gs-color-muted);
+      font-size: 0.85em;
+    }
+  }
+
+  /* Fallback: direct child selectors (print / renderPrint path) */
+  > h4 {
+    background: color-mix(in oklch, var(--gs-color-accent) 8%, transparent);
+    border-radius: var(--gs-radius) var(--gs-radius) 0 0;
+  }
+
+  > h4 + :is(p, ul, ol) {
+    background: color-mix(in oklch, var(--gs-color-accent) 4%, transparent);
+    border-radius: 0 0 var(--gs-radius) var(--gs-radius);
+    color: var(--gs-color-muted);
+    font-size: 0.85em;
   }
 }
