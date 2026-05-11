@@ -41,8 +41,26 @@ function mapDeckRequestPlugin() {
   };
 }
 
+function mapVotePagePlugin() {
+  return {
+    name: 'geekslides-map-vote-page',
+    configureServer(server: import('vite').ViteDevServer): void {
+      server.middlewares.use((req, _res, next) => {
+        // Rewrite /vote.html and /vote.js → /packages/cli/app/* so Vite can
+        // serve and transform them without duplicating the files.
+        if (req.url === '/vote.html' || req.url?.startsWith('/vote.html?')) {
+          req.url = req.url.replace('/vote.html', '/packages/cli/app/vote.html');
+        } else if (req.url === '/vote.js' || req.url?.startsWith('/vote.js?')) {
+          req.url = req.url.replace('/vote.js', '/packages/cli/app/vote.js');
+        }
+        next();
+      });
+    },
+  };
+}
+
 export default defineConfig({
-  plugins: [mapDeckRequestPlugin(), geekSlidesHmr()],
+  plugins: [mapDeckRequestPlugin(), mapVotePagePlugin(), geekSlidesHmr()],
   resolve: {
     alias: [
       { find: /^@geekslides\/engine$/, replacement: resolve(__dirname, 'packages/engine/src/index.ts') },

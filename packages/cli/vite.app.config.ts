@@ -11,6 +11,12 @@ export default defineConfig({
     outDir: resolve(__dirname, 'dist/app'),
     emptyOutDir: true,
     target: 'es2022',
+    rollupOptions: {
+      input: {
+        main: resolve(__dirname, 'app/index.html'),
+        vote: resolve(__dirname, 'app/vote.html'),
+      },
+    },
   },
   configFile: false,
 });

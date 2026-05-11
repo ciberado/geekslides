@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vote</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0f0f19;
+      --card: #1a1a2e;
+      --accent: #63b3ed;
+      --accent2: #4299e1;
+      --text: #e2e8f0;
+      --muted: #718096;
+      --success: #68d391;
+      --frozen: #f6ad55;
+      --radius: 14px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 480px;
+      padding: 28px 24px 32px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+
+    .logo { font-size: 28px; }
+
+    .header-text h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .header-text p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    /* Status messages */
+    .status {
+      text-align: center;
+      padding: 24px 0;
+      color: var(--muted);
+      font-size: 16px;
+    }
+
+    .spinner {
+      width: 36px;
+      height: 36px;
+      border: 3px solid rgba(255,255,255,0.1);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin: 0 auto 12px;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Options */
+    .options { display: flex; flex-direction: column; gap: 12px; }
+
+    .option-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1.5px solid rgba(255,255,255,0.1);
+      border-radius: 12px;
+      color: var(--text);
+      font-size: 17px;
+      font-weight: 500;
+      padding: 16px 20px;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.15s, border-color 0.15s, transform 0.1s;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .option-btn:hover:not(:disabled) {
+      background: rgba(99,179,237,0.1);
+      border-color: var(--accent);
+    }
+
+    .option-btn:active:not(:disabled) { transform: scale(0.98); }
+
+    .option-btn.selected {
+      background: rgba(99,179,237,0.15);
+      border-color: var(--accent);
+    }
+
+    .option-btn:disabled { cursor: not-allowed; opacity: 0.65; }
+
+    .option-btn .check { font-size: 20px; }
+
+    /* Results view */
+    .results { display: flex; flex-direction: column; gap: 14px; }
+
+    .result-row { display: flex; flex-direction: column; gap: 6px; }
+
+    .result-row-top {
+      display: flex;
+      justify-content: space-between;
+      font-size: 15px;
+    }
+
+    .result-label { font-weight: 500; }
+
+    .result-pct {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .result-bar-wrap {
+      height: 10px;
+      background: rgba(255,255,255,0.08);
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    .result-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      border-radius: 5px;
+      transition: width 0.5s ease;
+    }
+
+    /* Confirmation toast */
+    .toast {
+      background: rgba(104,211,145,0.15);
+      border: 1px solid var(--success);
+      border-radius: 10px;
+      color: var(--success);
+      font-size: 15px;
+      padding: 12px 16px;
+      margin-top: 18px;
+      text-align: center;
+      display: none;
+    }
+
+    .toast.visible { display: block; }
+
+    /* Frozen banner */
+    .frozen-banner {
+      background: rgba(246,173,85,0.1);
+      border: 1px solid var(--frozen);
+      border-radius: 10px;
+      color: var(--frozen);
+      font-size: 14px;
+      padding: 10px 16px;
+      margin-bottom: 18px;
+      text-align: center;
+      display: none;
+    }
+
+    .frozen-banner.visible { display: block; }
+
+    .vote-count {
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="header">
+      <span class="logo">📊</span>
+      <div class="header-text">
+        <h1>Live Poll</h1>
+        <p id="subtitle">Connecting…</p>
+      </div>
+    </div>
+
+    <div id="content">
+      <div class="status">
+        <div class="spinner"></div>
+        Connecting to the presentation…
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./vote.js"></script>
+</body>
+</html>
