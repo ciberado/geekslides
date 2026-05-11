@@ -1,0 +1,9 @@
+{
+  "title": "GeekSlides — Layout Showcase",
+  "content": "README.md",
+  "styles": ["css/layouts.css", "css/theme-default.css"],
+  "aspectRatio": "16/9",
+  "plugins": {
+    "preprocessors": []
+  }
+}
