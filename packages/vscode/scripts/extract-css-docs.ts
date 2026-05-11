@@ -18,6 +18,7 @@ interface ParsedLayout {
   markdown: string;
   structure: string;
   usage?: string;
+  hasTransform: boolean;
 }
 
 interface ParsedModifier {
@@ -139,6 +140,8 @@ function parseComment(comment: string, selector: string): ParsedLayout {
   const markdown = tags['markdown']?.join('\n').trim();
   const structure = tags['structure']?.join('\n').trim();
   const usage = tags['usage']?.join('\n').trim();
+  const transformDesc = tags['transform']?.join(' ').trim();
+  const hasTransform = transformDesc !== undefined && transformDesc.length > 0;
 
   if (!layout) {
     throw new Error(`Missing @layout tag for selector: ${selector}`);
@@ -156,7 +159,7 @@ function parseComment(comment: string, selector: string): ParsedLayout {
     throw new Error(`Missing @structure tag for layout: ${layout}`);
   }
 
-  return { name: layout, detail, markdown, structure, usage };
+  return { name: layout, detail, markdown, structure, usage, hasTransform };
 }
 
 /**
@@ -207,6 +210,7 @@ function parseModifierComment(comment: string, selector: string, parentLayout: s
 function generateTypeScript(layouts: ParsedLayout[], modifiers: ParsedModifier[]): string {
   const layoutEntries = layouts.map((layout) => {
     const usage = layout.usage ? `\n\n${layout.usage}` : '';
+    const transformNote = layout.hasTransform ? '\n\n⚡ **DOM transform** — this layout restructures the slide HTML after markdown rendering.' : '';
     const doc = `**Markdown:**
 \`\`\`md
 ${layout.markdown}
@@ -215,13 +219,14 @@ ${layout.markdown}
 **Structure:**
 \`\`\`
 ${layout.structure}
-\`\`\`${usage}`;
+\`\`\`${usage}${transformNote}`;
 
+    const hasTransformField = layout.hasTransform ? '\n    hasTransform: true,' : '';
     return `  {
     name: '${layout.name}',
     category: 'layout' as const,
     detail: '${layout.detail.replace(/'/g, "\\'")}',
-    documentation: \`${doc.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,
+    documentation: \`${doc.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`,${hasTransformField}
   }`;
   });
 

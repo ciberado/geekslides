@@ -99,6 +99,23 @@ Additional usage notes, tips, compatible modifiers, special behaviors.
  * Combine with .mod-cols-2 to force two columns.
 ```
 
+#### @transform (optional)
+Describes the DOM transform that this layout applies at render time. When present, the engine's
+`LayoutTransforms` registry contains a matching entry for this layout class name. The transform
+runs automatically in `Slide.loadContent()` after `innerHTML` is set.
+
+Set to a short description of what the transform does. The VSCode extension will display a
+⚡ **DOM transform** note in the autocomplete documentation for this layout.
+
+**Example:**
+```css
+ * @transform Wraps each h4 and its following content sibling into a .gs-card div
+```
+
+> **Note for CSS authors:** When a layout has a `@transform`, the CSS should include selectors
+> for the injected DOM elements (e.g. `.gs-card`, `.gs-vs-badge`) as well as fallback selectors
+> for environments where the transform doesn't run (e.g. `renderPrint` / headless HTML).
+
 ### For Modifiers (Nested)
 
 #### @modifier (required)

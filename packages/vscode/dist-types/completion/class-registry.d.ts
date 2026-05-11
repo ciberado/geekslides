@@ -14,6 +14,8 @@ export interface ClassEntry {
     readonly documentation: string;
     /** Snippet insert text (with $1 placeholders). Defaults to name if omitted. */
     readonly insertText?: string;
+    /** True when this layout has a built-in DOM transform applied at render time. */
+    readonly hasTransform?: boolean;
 }
 /**
  * Combined registry:

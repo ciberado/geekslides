@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { BUILTIN_CLASSES, buildClassMap, type ClassEntry } from '../src/completion/class-registry.ts';
 
 describe('class-registry', () => {
-  it('contains all 16 layout classes', () => {
+  it('contains all 18 layout classes', () => {
     const layouts = BUILTIN_CLASSES.filter((c) => c.category === 'layout');
-    expect(layouts.length).toBe(16);
+    expect(layouts.length).toBe(18);
   });
 
   it('contains mod- prefixed modifiers', () => {

@@ -129,12 +129,12 @@ Perfect for highlighting a single key metric.`,
   {
     name: 'layout-img-text',
     category: 'layout' as const,
-    detail: 'Image left, text right — float-based',
+    detail: 'Image left, text right — CSS grid',
     documentation: `**Markdown:**
 \`\`\`md
 [](.layout-img-text#product)
+### Title
 ![Product](img.jpg)
-#### Details
 - Feature 1
 - Feature 2
 \`\`\`
@@ -142,15 +142,16 @@ Perfect for highlighting a single key metric.`,
 **Structure:**
 \`\`\`
 ┌─────────┬─────────────┐
-│         │ #### Title  │
+│ ### Heading (full row) │
+├─────────┼─────────────┤
 │  IMAGE  │ - Feature 1 │
 │ (50%)   │ - Feature 2 │
-│         │ - Feature 3 │  ← multiple content OK
+│         │ - Feature 3 │
 └─────────┴─────────────┘
 \`\`\`
 
-Image floats left at 50% width. Heading spans full width.
-Text/lists flow right with automatic wrapping. Supports multiple content elements.`,
+Two-column grid: image occupies the left column, heading + text/lists the right.
+An optional ### heading spans both columns at the top.`,
   },
   {
     name: 'layout-img-text-bleed',
@@ -198,7 +199,12 @@ Content
 └───────┴───────┴───────┘
 \`\`\`
 
-Use #### Heading (h4) to head each card.`,
+Use #### Heading (h4) to head each card. Each h4 and its following paragraph,
+list, or image are automatically wrapped in a .gs-card container for styling.
+Use an optional ### heading before the cards for a section title.
+
+⚡ **DOM transform** — this layout restructures the slide HTML after markdown rendering.`,
+    hasTransform: true,
   },
   {
     name: 'layout-timeline',
@@ -257,11 +263,9 @@ Table stretches to fill available space.`,
     documentation: `**Markdown:**
 \`\`\`md
 [](.layout-compare#comparison)
-#### Option A
 - Feature 1
 - Feature 2
 #### VS
-#### Option B
 - Feature 3
 - Feature 4
 \`\`\`
@@ -269,12 +273,16 @@ Table stretches to fill available space.`,
 **Structure:**
 \`\`\`
 ┌─────────┬────┬─────────┐
-│ #### A  │ VS │ #### B  │  ← 1fr auto 1fr grid
+│  List   │ VS │  List   │  ← 1fr auto 1fr grid
 │ Content │    │ Content │
 └─────────┴────┴─────────┘
 \`\`\`
 
-The middle #### Heading becomes styled VS badge in centre column.`,
+Write a single #### heading between the two lists — it becomes the VS badge in the
+centre column. Optionally add a ### heading above both lists as a slide title.
+
+⚡ **DOM transform** — this layout restructures the slide HTML after markdown rendering.`,
+    hasTransform: true,
   },
   {
     name: 'layout-team',
@@ -397,6 +405,69 @@ No structure applied. Use HTML/CSS for absolute positioning. ::after shows guide
 \`\`\`
 
 Ordered list items displayed in 2-row grid with decorative circles.`,
+  },
+  {
+    name: 'layout-quote',
+    category: 'layout' as const,
+    detail: 'Full-slide centered pull quote with attribution',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-quote#testimonial)
+> "The best way to predict the future is to invent it."
+#### — Alan Kay
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌────────────────────────────────┐
+│                                │
+│   "Quote text goes here        │
+│    spanning multiple lines."   │
+│                                │
+│         — Attribution          │
+│                                │
+└────────────────────────────────┘
+\`\`\`
+
+Use a blockquote (> text) for the quote body and #### — Name for attribution.
+Content is centered vertically and horizontally. Decorative quote marks are
+injected by the theme.`,
+  },
+  {
+    name: 'layout-features',
+    category: 'layout' as const,
+    detail: '2×2 feature cards with heading and body',
+    documentation: `**Markdown:**
+\`\`\`md
+[](.layout-features#features)
+### Key Features
+#### ⚡ Fast
+Processes 1M events/sec.
+#### 🔒 Secure
+End-to-end encryption.
+#### 📦 Simple
+One-line install.
+#### 🌐 Global
+50 edge locations.
+\`\`\`
+
+**Structure:**
+\`\`\`
+┌───────────────┬───────────────┐
+│ #### Fast     │ #### Secure   │
+│ Description   │ Description   │
+├───────────────┼───────────────┤
+│ #### Simple   │ #### Global   │
+│ Description   │ Description   │
+└───────────────┴───────────────┘
+\`\`\`
+
+Use #### Heading (h4) to head each feature card. Each h4 and its following
+paragraph or list are automatically wrapped in a .gs-card container.
+An optional ### heading spans both columns at the top.
+
+⚡ **DOM transform** — this layout restructures the slide HTML after markdown rendering.`,
+    hasTransform: true,
   },
 ] as const;
 
