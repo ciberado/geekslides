@@ -1,0 +1,1104 @@
+/* =============================================================================
+ * GeekSlides — Layout System (Structure Only)
+ *
+ * Pure structural layout rules: grid, flex, positioning, spacing.
+ * Pair with a theme file (e.g. theme-default.css) for colors, fonts, and
+ * decorative styles.
+ *
+ *   "styles": ["layouts.css", "theme-default.css"]
+ *
+ * Activate layouts on individual slides:
+ *
+ *   [](.layout-title#my-title-slide)
+ *   [](.layout-two-col#comparison)
+ *   [](.layout-img-text#product-shot)
+ *
+ * Design canvas: 1920 × 1080 px (16:9). All absolute units (px, pt) are
+ * relative to this canvas — the engine scales it to fit any viewport.
+ *
+ * CSS features used:
+ *   - Nesting (Chrome 120+, Firefox 117+, Safari 17.2+)
+ *   - Logical properties (margin-inline, padding-block)
+ *   - CSS Grid & Flexbox gap
+ * ========================================================================== */
+
+
+/* ─── 1. SPACING TOKENS ─────────────────────────────────────────────────────
+ *
+ * Structural spacing tokens used by layouts. Override on :host in your CSS.
+ * Visual tokens (colors, fonts, radius) belong in the theme file.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+:host {
+  --gs-pad-x: 80px;        /* horizontal slide padding */
+  --gs-pad-y: 60px;        /* vertical slide padding */
+  --gs-gap: 32px;           /* default gap between grid/flex children */
+}
+
+
+/* ─── 2. BASE ELEMENT STRUCTURE ─────────────────────────────────────────────
+ *
+ * Structural defaults for every HTML element the parser produces.
+ * Font sizes, colors, and decorative borders belong in the theme file.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/* --- Headings --- */
+
+h1, h2, h3, h4 {
+  line-height: 1.2;
+  margin-block: 0 0.4em;
+}
+
+h3 {
+  margin-block-end: 0.55em;
+}
+
+/* --- Paragraphs --- */
+
+p {
+  margin-block: 0 0.6em;
+}
+
+/* --- Lists --- */
+
+ul, ol {
+  margin-block: 0 0.6em;
+  padding-inline-start: 1.2em;
+
+  li {
+    margin-block-end: 0.35em;
+  }
+}
+
+/* --- Tables --- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-block: 0.6em 0;
+
+  th, td {
+    padding: 0.45em 0.8em;
+    text-align: left;
+  }
+}
+
+/* --- Code blocks --- */
+
+pre {
+  line-height: 1.55;
+}
+
+/* --- Blockquotes --- */
+
+blockquote {
+  margin-inline: 0;
+  padding-inline-start: 1em;
+}
+
+/* --- Block images --- */
+
+.block-image {
+  margin-block: 0.4em;
+
+  img {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+  }
+}
+
+
+/* ─── 3. DEFAULT SLIDE LAYOUT (Title + Content) ─────────────────────────────
+ *
+ * Every slide gets this when no .layout-* class is applied.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+section.content {
+  padding: var(--gs-pad-y) var(--gs-pad-x);
+}
+
+
+/* ─── 4. LAYOUT: TITLE SLIDE ────────────────────────────────────────────────
+ *
+ * Centered title and optional subtitle.
+ *
+ *   [](.layout-title#id,bgurl(bg.jpg))
+ *   # Big Title
+ *   ## Subtitle
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-title
+ * @detail Centered title slide — flex column, center/center
+ * @markdown
+ * [](.layout-title#my-slide)
+ * # Big Title
+ * ## Subtitle
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │
+ * │      # BIG TITLE        │  ← h1, centered
+ * │      ## Subtitle        │  ← h2, optional
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * Full-screen centered title with optional subtitle. Perfect for opening slides or section dividers.
+ */
+section.content.layout-title {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  > h1 {
+    margin-block-end: 0.15em;
+  }
+}
+
+
+/* ─── 5. LAYOUT: FULL-BLEED COVER ───────────────────────────────────────────
+ *
+ * Background image fills the slide. Content sits at the bottom.
+ * The ::before pseudo-element provides an overlay area for theming.
+ *
+ *   [](.layout-cover.mod-coverbg#id,bgurl(hero.jpg))
+ *   # Headline
+ *   Optional paragraph
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-cover
+ * @detail Cover slide with background image overlay
+ * @markdown
+ * [](.layout-cover#id,bgurl(hero.jpg))
+ * # Hero Title
+ * ## Tagline
+ * @structure
+ * ┌─────────────────────────┐
+ * │  [BACKGROUND IMAGE]     │
+ * │         with            │
+ * │    gradient overlay     │
+ * │                         │
+ * │  ┌───────────────────┐  │
+ * │  │ # Title           │  │  ← content at bottom
+ * │  │ ## Subtitle       │  │
+ * │  └───────────────────┘  │
+ * └─────────────────────────┘
+ * @usage
+ * Combine with .mod-coverbg for full-bleed background images.
+ */
+section.content.layout-cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding-block-end: 100px;
+
+  /* Overlay pseudo-element — theme provides the gradient background */
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* Elevate all children above the overlay */
+  > * {
+    position: relative;
+    z-index: 1;
+  }
+
+  > h1 {
+    margin-block-end: 0.1em;
+  }
+
+  /**
+   * @modifier mod-coverbg
+   * @detail Apply background image to the slide (full-bleed)
+   * @usage
+   * [](.layout-cover.mod-coverbg#id,bgurl(hero.jpg))
+   * Use with bgurl() function to set the background image.
+   */
+  &.mod-coverbg {
+    background-size: cover;
+    background-position: center;
+  }
+}
+
+
+/* ─── 6. LAYOUT: SECTION DIVIDER ────────────────────────────────────────────
+ *
+ * Full-slide background with centered chapter heading.
+ *
+ *   [](.layout-section#id)
+ *   ## Chapter Name
+ *   ### Optional tagline
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-section
+ * @detail Section divider — h2 + optional h3
+ * @markdown
+ * [](.layout-section#chapter-2)
+ * ## Chapter 2
+ * ### Advanced Topics
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │
+ * │    ## Chapter Name      │  ← h2, large
+ * │    ### Subtitle         │  ← h3, optional
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * Use for chapter breaks or section transitions.
+ */
+section.content.layout-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+
+/* ─── 7. LAYOUT: BIG STAT / PULL QUOTE ──────────────────────────────────────
+ *
+ * A single oversized number or short quote dominates the slide.
+ *
+ *   [](.layout-big-stat#id)
+ *   ### 99.9%
+ *   Uptime across all regions
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-big-stat
+ * @detail Big statistic — h3 + p centered
+ * @markdown
+ * [](.layout-big-stat#growth)
+ * ### 247%
+ * Growth this quarter
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │
+ * │      ### 247%           │  ← h3, huge number
+ * │   Growth this quarter   │  ← p, description
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * Perfect for highlighting a single key metric.
+ */
+section.content.layout-big-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  > h1 {
+    margin-block-end: 0.15em;
+  }
+}
+
+
+/* ─── 8. LAYOUT: TWO-COLUMN TEXT ────────────────────────────────────────────
+ *
+ * Content split into two equal columns. <h4> acts as hidden column break.
+ *
+ *   [](.layout-two-col#id)
+ *   ### Heading
+ *   - Left list
+ *   #### (column break)
+ *   - Right list
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-two-col
+ * @detail Two-column grid layout
+ * @markdown
+ * [](.layout-two-col#comparison)
+ * ### Features
+ * - Item 1
+ * - Item 2
+ * #### (column break)
+ * - Item 3
+ * - Item 4
+ * @structure
+ * ┌───────────┬───────────┐
+ * │ ### Left  │ ### Right │
+ * │ - Item 1  │ - Item 3  │
+ * │ - Item 2  │ - Item 4  │
+ * └───────────┴───────────┘
+ * @usage
+ * **Key:** Use #### Heading (h4) as a hidden column break marker.
+ */
+section.content.layout-two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-flow: row dense;
+  column-gap: calc(var(--gs-gap) * 2);
+  row-gap: var(--gs-gap);
+  align-content: start;
+
+  > h1, > h2, > h3 { grid-column: 1 / -1; margin-bottom: var(--gs-gap); }
+  > h4 { display: none; }
+
+  > * {
+    grid-column: 1;
+  }
+
+  > h4 ~ * {
+    grid-column: 2;
+  }
+
+  /* doodle-controls (or its <p> wrapper) is pinned to the bottom-right of
+   * the slide, out of the grid flow, so it never overflows the canvas. */
+  > doodle-controls,
+  > doodle-control,
+  > p:has(> doodle-controls),
+  > p:has(> doodle-control) {
+    position: absolute;
+    bottom: var(--gs-pad-y);
+    right: var(--gs-pad-x);
+  }
+}
+
+
+/* ─── 9. LAYOUT: IMAGE + TEXT ───────────────────────────────────────────────
+ *
+ * Left half image, right half heading + bullets.
+ *
+ *   [](.layout-img-text#id)
+ *   ### Heading
+ *   ![Alt](image.png)
+ *   - Point A
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-img-text
+ * @detail Image left, text right — float-based
+ * @markdown
+ * [](.layout-img-text#product)
+ * ![Product](img.jpg)
+ * #### Details
+ * - Feature 1
+ * - Feature 2
+ * @structure
+ * ┌─────────┬─────────────┐
+ * │         │ #### Title  │
+ * │  IMAGE  │ - Feature 1 │
+ * │ (50%)   │ - Feature 2 │
+ * │         │ - Feature 3 │  ← multiple content OK
+ * └─────────┴─────────────┘
+ * @usage
+ * Image floats left at 50% width. Heading spans full width.
+ * Text/lists flow right with automatic wrapping. Supports multiple content elements.
+ */
+section.content.layout-img-text {
+  > h3 {
+    width: 100%;
+  }
+
+  > .block-image {
+    float: left;
+    width: 50%;
+    margin-inline-end: var(--gs-gap);
+    margin-block-end: var(--gs-gap);
+
+    img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+  }
+
+  > ul, > ol, > p {
+    margin-inline-start: calc(50% + var(--gs-gap));
+  }
+
+  > doodle-controls,
+  > doodle-control,
+  > p:has(> doodle-controls),
+  > p:has(> doodle-control) {
+    position: absolute;
+    bottom: var(--gs-pad-y);
+    right: var(--gs-pad-x);
+    margin-inline-start: 0;
+  }
+}
+
+
+/* ─── 9b. LAYOUT: IMAGE + TEXT (FULL-BLEED) ─────────────────────────────────
+ *
+ * Left image touches north, south, and west slide edges. Heading and content
+ * occupy the right half with standard padding.
+ *
+ *   [](.layout-img-text-bleed#id)
+ *   ![Alt](image.png)
+ *   ### Heading
+ *   - Point A
+ *   - Point B
+ *
+ * Supports paragraphs, bullet lists, and ordered lists in the right column.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-img-text-bleed
+ * @detail Full-height image left — 2-col grid
+ * @markdown
+ * [](.layout-img-text-bleed#hero)
+ * ![Hero](bg.jpg)
+ * #### Story
+ * Content here...
+ * @structure
+ * ┌───────┬───────────────┐
+ * │ IMAGE │ #### Heading  │
+ * │ FULL  │               │
+ * │ BLEED │ Content...    │
+ * └───────┴───────────────┘
+ * @usage
+ * Image spans full height of left half. More dramatic than layout-img-text.
+ */
+section.content.layout-img-text-bleed {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+
+  > .block-image {
+    float: left;
+    width: 50%;
+    height: 100%;
+    margin: 0;
+
+    img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  > h3 {
+    margin-inline: calc(50% + var(--gs-pad-x)) var(--gs-pad-x);
+    margin-block: 0;
+    padding-block-start: calc(var(--gs-pad-y) * 0.7);
+  }
+
+  > h3 + :is(p, ul, ol) {
+    margin-block-start: 0.9em;
+  }
+
+  > p {
+    margin-inline: calc(50% + var(--gs-pad-x)) var(--gs-pad-x);
+    margin-block: 0;
+  }
+
+  > ul,
+  > ol {
+    margin-inline: calc(50% + var(--gs-pad-x)) var(--gs-pad-x);
+    margin-block: 0;
+    padding-inline-start: 0;
+    list-style-position: inside;
+  }
+
+  > :is(p, ul, ol) + :is(p, ul, ol) {
+    margin-block-start: 0.5em;
+  }
+
+  > :last-child {
+    margin-block-end: var(--gs-pad-y);
+  }
+}
+
+
+/* ─── 10. LAYOUT: THREE-COLUMN CARDS ────────────────────────────────────────
+ *
+ * Three equal-width cards. Each starts with an <h4> heading + <p> body.
+ *
+ *   [](.layout-three-col#id)
+ *   ### Main Heading
+ *   #### Card A
+ *   Description A.
+ *   #### Card B
+ *   Description B.
+ *   #### Card C
+ *   Description C.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-three-col
+ * @detail Three-column grid layout
+ * @markdown
+ * [](.layout-three-col#pillars)
+ * #### Column 1
+ * Content
+ * #### Column 2
+ * Content
+ * #### Column 3
+ * Content
+ * @structure
+ * ┌───────┬───────┬───────┐
+ * │ ####  │ ####  │ ####  │
+ * │ Col 1 │ Col 2 │ Col 3 │
+ * └───────┴───────┴───────┘
+ * @usage
+ * Use #### Heading (h4) to head each card.
+ */
+section.content.layout-three-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  column-gap: var(--gs-gap);
+  row-gap: calc(var(--gs-gap) / 2);
+  align-content: start;
+  align-items: stretch;
+
+  > h3 { grid-column: 1 / -1; }
+
+  > h4:nth-of-type(1) { grid-column: 1; grid-row: 2; }
+  > h4:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+  > h4:nth-of-type(3) { grid-column: 3; grid-row: 2; }
+
+  > h4:nth-of-type(1) + :is(p, ul, ol, .block-image) { grid-column: 1; grid-row: 3; }
+  > h4:nth-of-type(2) + :is(p, ul, ol, .block-image) { grid-column: 2; grid-row: 3; }
+  > h4:nth-of-type(3) + :is(p, ul, ol, .block-image) { grid-column: 3; grid-row: 3; }
+
+  /* Card spacing — visual treatment (bg, radius) in theme */
+  > h4 {
+    padding: 0.6em 0.8em 0.4em;
+    margin-block-end: 0;
+  }
+
+  > h4 + :is(p, ul, ol) {
+    padding: 0.5em 0.8em 0.8em;
+    margin-block: 0;
+  }
+
+  > h4 + :is(ul, ol) {
+    padding-inline-start: 2em;
+  }
+
+  > h4 + .block-image {
+    margin: 0;
+    height: 100%;
+    display: flex;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  > h4 + p img {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    object-fit: cover;
+    margin-block: 0.5em;
+  }
+}
+
+
+/* ─── 11. LAYOUT: TIMELINE / PROCESS STEPS ──────────────────────────────────
+ *
+ * Horizontal ordered list with numbered circles and a connecting line.
+ *
+ *   [](.layout-timeline#id)
+ *   ### Heading
+ *   1. **Plan**: define scope.
+ *   2. **Build**: write code.
+ *   3. **Test**: verify.
+ *   4. **Ship**: deploy.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-timeline
+ * @detail Timeline with ordered list steps
+ * @markdown
+ * [](.layout-timeline#roadmap)
+ * 1. **Q1** — Launch
+ * 2. **Q2** — Growth
+ * 3. **Q3** — Scale
+ * @structure
+ * ┌─────────────────────────┐
+ * │ 1 ──── 2 ──── 3 ────    │  ← CSS Grid auto-columns
+ * │ Q1     Q2     Q3        │     with ::before line
+ * │ Launch Growth Scale     │
+ * └─────────────────────────┘
+ * @usage
+ * Ordered list rendered as horizontal timeline. Steps support images.
+ */
+section.content.layout-timeline {
+  display: grid;
+  grid-template-rows: auto 1fr;
+
+  > h3 { align-self: start; }
+
+  > ol {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: 1fr;
+    list-style: none;
+    padding-inline-start: 0;
+    position: relative;
+    margin-block: 0;
+    align-self: center;
+
+    /* Horizontal connecting line — theme provides color */
+    &::before {
+      content: "";
+      position: absolute;
+      top: 24px;
+      left: 8%;
+      right: 8%;
+      height: 3px;
+      z-index: 0;
+    }
+
+    > li {
+      text-align: center;
+      padding-block-start: 72px;
+      position: relative;
+      z-index: 1;
+      padding-inline: 0.5em;
+
+      /* Numbered circle — theme provides colors */
+      &::before {
+        content: counter(list-item);
+        position: absolute;
+        top: 0;
+        left: 50%;
+        translate: -50% 0;
+        width: 48px;
+        height: 48px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+
+      > strong:first-child {
+        display: block;
+        margin-block-end: 0.2em;
+      }
+
+      .block-image {
+        margin-block-start: 0.6em;
+
+        img {
+          max-height: 140px;
+          width: auto;
+          max-width: 100%;
+          margin: 0 auto;
+        }
+      }
+    }
+  }
+}
+
+
+/* ─── 12. LAYOUT: CHART / DATA SLIDE ────────────────────────────────────────
+ *
+ * Heading at top; the table fills remaining space.
+ *
+ *   [](.layout-chart#id)
+ *   ### Chart Title
+ *   | Col A | Col B |
+ *   |-------|-------|
+ *   | 1     | 2     |
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-chart
+ * @detail Chart layout — table gets flex: 1
+ * @markdown
+ * [](.layout-chart#revenue)
+ * ### Revenue Growth
+ * | Q  | Revenue |
+ * |----|---------|
+ * | Q1 | $1.2M   |
+ * | Q2 | $2.4M   |
+ * @structure
+ * ┌─────────────────────────┐
+ * │ ### Heading             │
+ * │ ┌─────────────────────┐ │
+ * │ │  TABLE (stretches)  │ │  ← flex: 1
+ * │ │                     │ │
+ * │ └─────────────────────┘ │
+ * └─────────────────────────┘
+ * @usage
+ * Table stretches to fill available space.
+ */
+section.content.layout-chart {
+  display: flex;
+  flex-direction: column;
+
+  > table {
+    flex: 1;
+  }
+}
+
+
+/* ─── 13. LAYOUT: COMPARISON (A vs B) ───────────────────────────────────────
+ *
+ * Two panels side by side. <h4> separates the groups (hidden).
+ *
+ *   [](.layout-compare#id)
+ *   ### Heading
+ *   - **Option A**: benefit
+ *   #### vs
+ *   - **Option B**: benefit
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-compare
+ * @detail Comparison layout — 3-col with VS badge
+ * @markdown
+ * [](.layout-compare#comparison)
+ * #### Option A
+ * - Feature 1
+ * - Feature 2
+ * #### VS
+ * #### Option B
+ * - Feature 3
+ * - Feature 4
+ * @structure
+ * ┌─────────┬────┬─────────┐
+ * │ #### A  │ VS │ #### B  │  ← 1fr auto 1fr grid
+ * │ Content │    │ Content │
+ * └─────────┴────┴─────────┘
+ * @usage
+ * The middle #### Heading becomes styled VS badge in centre column.
+ */
+section.content.layout-compare {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  grid-template-rows: auto 1fr;
+  column-gap: var(--gs-gap);
+  row-gap: var(--gs-gap);
+  align-items: start;
+
+  > h3 { grid-column: 1 / -1; grid-row: 1; }
+  > h4 { grid-column: 2; grid-row: 2; align-self: center; text-align: center; }
+
+  /* Lists */
+  > ul:first-of-type, > ol:first-of-type { grid-column: 1; grid-row: 2; }
+  > ul:last-of-type, > ol:last-of-type { grid-column: 3; grid-row: 2; }
+
+  /* Tables — span left + right columns, hiding the VS badge */
+  > table:first-of-type { grid-column: 1; grid-row: 2; }
+  > table:last-of-type { grid-column: 3; grid-row: 2; }
+}
+
+
+/* ─── 14. LAYOUT: TEAM / PEOPLE GRID ────────────────────────────────────────
+ *
+ * Headshot images in a row with even spacing.
+ *
+ *   [](.layout-team#id)
+ *   ### Meet the Team
+ *   ![Alice](alice.jpg)
+ *   ![Bob](bob.jpg)
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-team
+ * @detail Team members — flex wrap, space-evenly
+ * @markdown
+ * [](.layout-team#team)
+ * ![Alice](alice.jpg) **Alice** — CEO
+ * ![Bob](bob.jpg) **Bob** — CTO
+ * ![Carol](carol.jpg) **Carol** — CFO
+ * @structure
+ * ┌─────────────────────────┐
+ * │  ●      ●      ●        │  ← Images (circular)
+ * │ Alice  Bob  Carol       │  ← Names wrap
+ * └─────────────────────────┘
+ * @usage
+ * Images render as circles. Use .mod-heading-center to center the heading.
+ */
+section.content.layout-team {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-evenly;
+  align-items: center;
+  align-content: flex-start;
+  gap: var(--gs-gap);
+
+  > h3 {
+    flex-basis: 100%;
+    text-align: left;
+    margin-block-end: var(--gs-gap);
+  }
+
+  .block-image {
+    text-align: center;
+    flex: 1 1 280px;
+    max-width: 400px;
+    margin: 0;
+
+    img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+    }
+  }
+
+  /* Optional rich member card mode via list items:
+   * - ![Name](img.jpg)
+   *   **Name**
+   *   Role / short bio
+   */
+  > ul {
+    flex-basis: 100%;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: var(--gs-gap);
+
+    > li {
+      text-align: center;
+      margin: 0;
+      padding: 0;
+      font-size: 0.72em;
+
+      img {
+        display: block;
+        width: 100%;
+        max-width: 280px;
+        aspect-ratio: 1;
+        object-fit: cover;
+        margin: 0 auto 0.5em;
+      }
+
+      strong {
+        display: block;
+        margin-block-end: 0.15em;
+      }
+    }
+  }
+
+  /**
+   * @modifier mod-heading-center
+   * @detail Center heading and images vertically
+   * @usage
+   * [](.layout-team.mod-heading-center#id)
+   * Centers the h3 heading and aligns content vertically in the middle.
+   */
+  &.mod-heading-center {
+    align-content: center;
+
+    > h3 {
+      text-align: center;
+      margin-block-end: 0;
+    }
+  }
+}
+
+
+/* ─── 15. LAYOUT: IMAGE GRID / MOOD BOARD ───────────────────────────────────
+ *
+ * Responsive grid of equal-sized image thumbnails.
+ *
+ *   [](.layout-grid#id)
+ *   ### Heading
+ *   ![One](img1.jpg)
+ *   ![Two](img2.jpg)
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-grid
+ * @detail Auto-fit responsive grid
+ * @markdown
+ * [](.layout-grid#gallery)
+ * ![](img1.jpg)
+ * ![](img2.jpg)
+ * ![](img3.jpg)
+ * ![](img4.jpg)
+ * @structure
+ * ┌─────┬─────┬─────┐
+ * │ IMG │ IMG │ IMG │  ← auto-fit grid
+ * ├─────┼─────┼─────┤    minmax(350px, 1fr)
+ * │ IMG │     │     │
+ * └─────┴─────┴─────┘
+ * @usage
+ * Responsive grid with auto-fit. Combine with .mod-cols-2 or .mod-cols-4 to force column count.
+ */
+section.content.layout-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: calc(var(--gs-gap) / 2);
+  row-gap: var(--gs-gap);
+  align-content: start;
+
+  /**
+   * @modifier mod-cols-2
+   * @detail Force 2-column grid
+   * @usage
+   * [](.layout-grid.mod-cols-2#my-slide)
+   * 
+   * Override auto-fit behavior to display exactly 2 columns.
+   */
+  &.mod-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  &.mod-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+  > h3 { grid-column: 1 / -1; }
+
+  .block-image {
+    margin: 0;
+    overflow: hidden;
+
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      aspect-ratio: 4 / 3;
+    }
+  }
+}
+
+
+/* ─── 16. LAYOUT: TABLE / MATRIX ────────────────────────────────────────────
+ *
+ * Heading + full-width table.
+ *
+ *   [](.layout-table#id)
+ *   ### Feature Matrix
+ *   | Feature | Free | Pro  |
+ *   |---------|------|------|
+ *   | Users   | 5    | 50   |
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-table
+ * @detail Table layout — table gets flex: 1
+ * @markdown
+ * [](.layout-table#features)
+ * ### Feature Matrix
+ * | Feature | Basic | Pro |
+ * |---------|-------|-----|
+ * | Users   | 5     | ∞   |
+ * | Storage | 1GB   | 1TB |
+ * @structure
+ * ┌─────────────────────────┐
+ * │ ### Heading             │
+ * │ ┌─────────────────────┐ │
+ * │ │ TABLE (stretches)   │ │  ← flex: 1
+ * │ │                     │ │
+ * │ └─────────────────────┘ │
+ * └─────────────────────────┘
+ * @usage
+ * Table stretches to fill available vertical space.
+ */
+section.content.layout-table {
+  display: flex;
+  flex-direction: column;
+
+  > table {
+    flex: 1;
+  }
+}
+
+
+/* ─── 17. LAYOUT: BLANK / CANVAS ────────────────────────────────────────────
+ *
+ * Empty slide. The ::after pseudo-element provides a guide area for theming.
+ *
+ *   [](.layout-blank#id)
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-blank
+ * @detail Blank canvas with guide border
+ * @markdown
+ * [](.layout-blank#canvas)
+ * <div style="position:absolute; top:50%; left:50%;">
+ *   Custom positioned content
+ * </div>
+ * @structure
+ * ┌─────────────────────────┐
+ * │                         │  ← Empty container
+ * │   (your content here)   │     with guide border
+ * │                         │
+ * └─────────────────────────┘
+ * @usage
+ * No structure applied. Use HTML/CSS for absolute positioning. ::after shows guide border.
+ */
+section.content.layout-blank {
+  &::after {
+    content: "";
+    position: absolute;
+    inset: var(--gs-pad-y) var(--gs-pad-x);
+    pointer-events: none;
+  }
+}
+
+
+/* ─── 18. LAYOUT: AGENDA ────────────────────────────────────────────────────
+ *
+ * Numbered list of session topics. Items fill the available height evenly.
+ *
+ *   [](.layout-agenda#id)
+ *   ### Agenda
+ *   1. Introduction
+ *   2. Architecture overview
+ *   3. Live demo
+ *   4. Q & A
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-agenda
+ * @detail Agenda layout with accent circles
+ * @markdown
+ * [](.layout-agenda#agenda)
+ * 1. **9:00** — Opening
+ * 2. **10:00** — Keynote
+ * 3. **11:00** — Workshop
+ * 4. **12:00** — Lunch
+ * @structure
+ * ┌───────────┬───────────┐
+ * │ ● 9:00    │ ● 11:00   │  ← 2-row grid
+ * │   Opening │   Workshop│     accent circles
+ * ├───────────┼───────────┤
+ * │ ● 10:00   │ ● 12:00   │
+ * │   Keynote │   Lunch   │
+ * └───────────┴───────────┘
+ * @usage
+ * Ordered list items displayed in 2-row grid with decorative circles.
+ */
+section.content.layout-agenda {
+  display: grid;
+  grid-template-rows: auto 1fr;
+
+  > h3 { align-self: start; }
+
+  > ol {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-evenly;
+    list-style: none;
+    padding-inline-start: 0;
+    margin: 0;
+
+    > li {
+      display: flex;
+      align-items: center;
+      gap: 0.8em;
+
+      /* Numbered circle — theme provides colors */
+      &::before {
+        content: counter(list-item);
+        flex-shrink: 0;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        display: grid;
+        place-items: center;
+      }
+    }
+  }
+}

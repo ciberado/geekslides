@@ -1,0 +1,11 @@
+{
+  "title": "Live Poll Demo",
+  "content": "README.md",
+  "styles": ["css/layouts.css", "css/theme-nordic.css"],
+  "aspectRatio": "16/9",
+  "features": ["poll"],
+  "plugins": {
+    "preprocessors": ["header"],
+    "processors": []
+  }
+}
