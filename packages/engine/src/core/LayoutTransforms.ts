@@ -98,7 +98,7 @@ function compareTransform(section: HTMLElement): void {
 
   const badge = document.createElement('span');
   badge.className = 'gs-vs-badge';
-  badge.textContent = h4.textContent ?? '';
+  badge.textContent = h4.textContent;
   h4.replaceWith(badge);
 }
 
