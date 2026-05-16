@@ -42,4 +42,22 @@ Complete rewrite of GeekSlides as a modern TypeScript monorepo.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Dev container Tailscale integration** — `postStartCommand` starts `tailscaled`, calls `tailscale up` with `--ssh`, `tag:vscode`, and `hostname=vs-${PROJECT_NAME}`; auth key and project name injected from host env via `remoteEnv`
+- `.devcontainer/README.md` — documents devcontainer CLI usage, Tailscale key setup, and SSH connection instructions
+- `decks/welcome-deck/` — default deck shown by the Docker container when no `CONTENT_DIR` is mounted (moved from `docker/welcome-deck/`)
+
+### Changed
+
+- Welcome deck moved from `docker/welcome-deck/` to `decks/welcome-deck/` — all decks now live under `decks/`
+
+### Removed
+
+- `decks/slides-cuatro-cosas-aws` — external project deck, no longer tracked in this repository
+
+---
+
 <!-- Add new entries above this line in the format: ## [X.Y.Z] - YYYY-MM-DD -->

@@ -84,13 +84,21 @@ If the change affects architecture, APIs, testing, or decisions, check these fil
 
 Use `git status --short` to review changes. Stage only files related to the current work. Do not stage unrelated changes (e.g. submodule pointer drifts).
 
-### 8. Update CHANGELOG.md (on version bumps)
+### 8. Update CHANGELOG.md (always)
 
-If this commit includes a version bump (any `package.json` version changed), update `CHANGELOG.md`:
+`CHANGELOG.md` must be updated with **every commit** that introduces a notable change. Keep an `## [Unreleased]` section at the top that accumulates entries between releases.
 
-- Add a new `## [X.Y.Z] - YYYY-MM-DD` section above the previous entry.
-- List all notable additions, changes, fixes, and removals since the last release under the appropriate sub-headings (`### Added`, `### Changed`, `### Fixed`, `### Removed`).
+- Add or update the `## [Unreleased]` section above all versioned entries.
+- List notable additions, changes, fixes, and removals under the appropriate sub-headings (`### Added`, `### Changed`, `### Fixed`, `### Removed`).
+- Skip only for trivial commits (whitespace, typo in a comment, test-only internal changes with no user-visible effect).
 - Keep the placeholder comment `<!-- Add new entries above this line -->` at the bottom.
+
+**On a version bump** (when the user says "bump", "release", "patch", or "minor"):
+
+1. Promote `## [Unreleased]` to the new version: `## [X.Y.Z] - YYYY-MM-DD`.
+2. Bump **all** `packages/*/package.json` files to the same version.
+3. Run `npm install` to update `package-lock.json`.
+4. Check `docker/Dockerfile` and `docker/docker-compose*.yml` for any hardcoded image tags and update them to the new version.
 
 ### 9. Write a conventional commit message
 
@@ -114,11 +122,11 @@ Run the commit. Confirm it succeeds.
 
 | Changed | Tests | E2E | How-to | Vibe docs | Changelog |
 |---------|-------|-----|--------|-----------|-----------|
-| Engine logic (`packages/engine/src/`) | ✓ | Maybe | If user-facing | `architecture-v2.md`, relevant feature doc | If version bump |
-| Server (`packages/server/src/`) | ✓ | Maybe | If user-facing | `deployment-v2.md`, relevant feature doc | If version bump |
-| CLI app (`packages/cli/`, `index.html`) | ✓ | ✓ | If user-facing | `architecture-v2.md` | If version bump |
-| Config schema (`Config.ts`) | ✓ | ✓ | ✓ | `architecture-v2.md` | If version bump |
-| New web component | ✓ | ✓ | ✓ | `components.md`, `architecture-v2.md` | If version bump |
-| Documentation only | — | — | ✓ | Maybe | — |
+| Engine logic (`packages/engine/src/`) | ✓ | Maybe | If user-facing | `architecture-v2.md`, relevant feature doc | ✓ |
+| Server (`packages/server/src/`) | ✓ | Maybe | If user-facing | `deployment-v2.md`, relevant feature doc | ✓ |
+| CLI app (`packages/cli/`, `index.html`) | ✓ | ✓ | If user-facing | `architecture-v2.md` | ✓ |
+| Config schema (`Config.ts`) | ✓ | ✓ | ✓ | `architecture-v2.md` | ✓ |
+| New web component | ✓ | ✓ | ✓ | `components.md`, `architecture-v2.md` | ✓ |
+| Documentation only | — | — | ✓ | Maybe | If user-facing |
 | Test only | ✓ | — | — | `testing.md` | — |
-| **Version bump** | ✓ | ✓ | — | — | **✓** |
+| **Version bump** | ✓ | ✓ | — | — | **✓ (promote Unreleased → X.Y.Z + bump all packages + npm install + Docker tags)** |
