@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { parse } from '../../src/core/SlideParser.ts';
 import { headerPreprocessor } from '../../src/plugins/builtins/header-preprocessor.ts';
 import { normalizePreprocessorResult, applyPreprocessorResult, createIdentityLineMapping } from '../../src/plugins/preprocessor-utils.ts';
@@ -17,11 +19,13 @@ const PREPROCESSORS = {
   header: headerPreprocessor,
 };
 
-async function loadAwsSampleSlides() {
-  const configUrl = new URL('../../../../decks/slides-cuatro-cosas-aws/config.json', import.meta.url);
-  const rawConfig = JSON.parse(await readFile(configUrl, 'utf8')) as SampleDeckConfig;
+const CONFIG_URL = new URL('../../../../decks/slides-cuatro-cosas-aws/config.json', import.meta.url);
+const DECK_EXISTS = existsSync(fileURLToPath(CONFIG_URL));
 
-  const rawMarkdown = await readFile(new URL(rawConfig.content, configUrl), 'utf8');
+async function loadAwsSampleSlides() {
+  const rawConfig = JSON.parse(await readFile(CONFIG_URL, 'utf8')) as SampleDeckConfig;
+
+  const rawMarkdown = await readFile(new URL(rawConfig.content, CONFIG_URL), 'utf8');
   let state: PreprocessedMarkdown = {
     content: rawMarkdown,
     lineMapping: createIdentityLineMapping(rawMarkdown),
@@ -40,7 +44,7 @@ async function loadAwsSampleSlides() {
   };
 }
 
-describe('AWS sample deck parity', () => {
+describe.skipIf(!DECK_EXISTS)('AWS sample deck parity', () => {
   it('parses the sample deck with the configured preprocessor pipeline', async () => {
     const { config, slides } = await loadAwsSampleSlides();
 
