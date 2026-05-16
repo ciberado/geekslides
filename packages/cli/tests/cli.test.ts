@@ -236,6 +236,12 @@ describe.skipIf(!BUNDLE_EXISTS)('CLI bundle integrity (dist/index.cjs)', () => {
       expect(existsSync(join(dir, 'config.json'))).toBe(true);
       expect(existsSync(join(dir, 'README.md'))).toBe(true);
       expect(existsSync(join(dir, 'css', 'layouts.css'))).toBe(true);
+      // Scaffold assets
+      expect(existsSync(join(dir, '.gitignore'))).toBe(true);
+      expect(existsSync(join(dir, 'AGENTS.md'))).toBe(true);
+      expect(existsSync(join(dir, '.copilot', 'skills', 'add-slide.md'))).toBe(true);
+      expect(existsSync(join(dir, '.copilot', 'skills', 'export-pdf.md'))).toBe(true);
+      expect(existsSync(join(dir, '.copilot', 'skills', 'update-theme.md'))).toBe(true);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }

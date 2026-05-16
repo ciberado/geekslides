@@ -16,12 +16,59 @@ This creates the following structure:
 my-first-talk/
 ├── config.json              # Deck metadata and settings
 ├── README.md                # Your slide content (Markdown)
+├── .gitignore               # Git ignore rules for deck repos
+├── AGENTS.md                # AI-agent guidance for this deck
 ├── css/
 │   ├── layouts.css          # Slide layout rules (grid, flex, spacing)
 │   ├── theme-default.css    # Default colour and typography theme
 │   └── local.css            # Your per-deck overrides
-└── images/                  # Image assets
+├── images/                  # Image assets
+└── .copilot/
+    └── skills/
+        ├── add-slide.md     # Copilot skill: add a new slide
+        ├── export-pdf.md    # Copilot skill: export to PDF
+        └── update-theme.md  # Copilot skill: change the theme
 ```
+
+### Choose a theme
+
+Use `--theme` to start with a different built-in colour theme:
+
+```bash
+npx geekslides create --title "My Talk" --theme ocean
+```
+
+Available themes: `default`, `aurora`, `solarized`, `ocean`, `forest`, `sunset`, `nordic`, `crimson`, `monochrome`, `candy`, `volcano`.
+
+### Bootstrap from a community template
+
+Use `--template` to download a pre-built example deck from the
+[GeekSlides GitHub repository](https://github.com/ciberado/geekslides/tree/main/decks)
+instead of the built-in scaffold:
+
+```bash
+# List available templates
+npx geekslides create --title "." --list-templates
+
+# Scaffold from a specific template
+npx geekslides create --title "My Live Poll" --template live-poll-demo
+```
+
+The template files are downloaded as-is and the `title` field in `config.json`
+is updated to the value you pass via `--title`. The common scaffold assets
+(`.gitignore`, `AGENTS.md`, `.copilot/skills/`) are always written on top.
+
+You can also point at a fork or a different branch:
+
+```bash
+npx geekslides create --title "My Talk" \
+  --template my-custom-deck \
+  --repo my-org/my-slides \
+  --ref feature-branch
+```
+
+Set the `GITHUB_TOKEN` environment variable to raise the GitHub API rate limit
+from 60 to 5 000 requests per hour.
 
 ## Anatomy of a deck
 

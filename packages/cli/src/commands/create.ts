@@ -3,16 +3,31 @@
  *
  * Scaffolds a new presentation repository with the layout system,
  * a default theme, and a showcase deck that demonstrates every layout.
+ * Pass `--template <name>` to bootstrap from a community deck template
+ * hosted in the upstream GitHub repository instead of the built-in scaffold.
  */
 
 import type { Command } from 'commander';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createLogger } from '../logging.ts';
 import { layoutsCss } from '../templates/layouts-css.ts';
 import { THEME_NAMES, findTheme } from '../templates/themes.ts';
+import {
+  GITIGNORE_CONTENT,
+  AGENTS_MD_TEMPLATE,
+  SKILL_ADD_SLIDE,
+  SKILL_EXPORT_PDF,
+  SKILL_UPDATE_THEME,
+} from '../scaffold/assets.ts';
+import {
+  listGithubTemplates,
+  downloadGithubTemplate,
+  DEFAULT_REPO,
+  DEFAULT_REF,
+} from '../scaffold/github.ts';
 
 const log = createLogger('create');
 
@@ -656,6 +671,50 @@ to draw on this slide during your presentation.
 `;
 }
 
+/**
+ * Write the universal scaffold assets (.gitignore, AGENTS.md, Copilot skills)
+ * into the deck directory. These files are written regardless of whether the
+ * deck was created from the built-in template or a GitHub deck template.
+ */
+async function writeScaffoldAssets(dir: string, title: string): Promise<void> {
+  const slug = dir.replace(/\\/g, '/').split('/').pop() ?? dir;
+
+  // .gitignore
+  await writeFile(join(dir, '.gitignore'), GITIGNORE_CONTENT, 'utf-8');
+
+  // AGENTS.md — AI-agent guidance document for this deck
+  const agentsMd = AGENTS_MD_TEMPLATE
+    .replaceAll('%%TITLE%%', title)
+    .replaceAll('%%DIR%%', slug);
+  await writeFile(join(dir, 'AGENTS.md'), agentsMd, 'utf-8');
+
+  // .copilot/skills/ — Copilot skill scripts for common deck tasks
+  const skillsDir = join(dir, '.copilot', 'skills');
+  await mkdir(skillsDir, { recursive: true });
+  await writeFile(join(skillsDir, 'add-slide.md'), SKILL_ADD_SLIDE, 'utf-8');
+  await writeFile(join(skillsDir, 'export-pdf.md'), SKILL_EXPORT_PDF, 'utf-8');
+  await writeFile(join(skillsDir, 'update-theme.md'), SKILL_UPDATE_THEME, 'utf-8');
+}
+
+/** Patch the title field in a config.json without altering other fields. */
+async function patchConfigTitle(configPath: string, title: string): Promise<void> {
+  const raw = await readFile(configPath, 'utf-8');
+  const config = JSON.parse(raw) as Record<string, unknown>;
+  config['title'] = title;
+  await writeFile(configPath, JSON.stringify(config, null, 2) + '\n', 'utf-8');
+}
+
+type CreateOpts = {
+  title: string;
+  dir?: string;
+  git: boolean;
+  theme?: string;
+  template?: string;
+  listTemplates: boolean;
+  repo: string;
+  ref: string;
+};
+
 export function registerCreateCommand(program: Command): void {
   program
     .command('create')
@@ -663,13 +722,29 @@ export function registerCreateCommand(program: Command): void {
     .requiredOption('--title <string>', 'Presentation title')
     .option('--dir <path>', 'Target directory (default: slugified title)')
     .option('--no-git', 'Skip git init')
-    .option(`--theme <name>`, `Built-in theme to use (default: default). Available: ${THEME_NAMES.join(', ')}`)
-    .action(async (opts: { title: string; dir?: string; git: boolean; theme?: string }) => {
-      const themeName = opts.theme ?? 'default';
-      const theme = findTheme(themeName);
-      if (!theme) {
-        console.error(`Unknown theme: "${themeName}". Available themes: ${THEME_NAMES.join(', ')}`);
-        process.exit(1);
+    .option(`--theme <name>`, `Built-in theme (default: default). Available: ${THEME_NAMES.join(', ')}`)
+    .option('--template <name>', 'Bootstrap from a GitHub deck template (see --list-templates)')
+    .option('--list-templates', 'List available GitHub deck templates and exit', false)
+    .option('--repo <owner/repo>', 'GitHub repository to fetch templates from', DEFAULT_REPO)
+    .option('--ref <branch>', 'Git ref (branch/tag/SHA) for template fetching', DEFAULT_REF)
+    .action(async (opts: CreateOpts) => {
+      // --list-templates: print available templates and exit
+      if (opts.listTemplates) {
+        try {
+          const names = await listGithubTemplates(opts.repo, opts.ref);
+          if (names.length === 0) {
+            console.log('No deck templates found in the repository.');
+          } else {
+            console.log('Available deck templates:');
+            for (const name of names) {
+              console.log(`  ${name}`);
+            }
+          }
+        } catch (err) {
+          console.error(`Failed to list templates: ${String(err)}`);
+          process.exit(1);
+        }
+        return;
       }
 
       const slug = opts.title
@@ -680,39 +755,78 @@ export function registerCreateCommand(program: Command): void {
 
       console.log(`Creating presentation: ${opts.title}`);
 
-      await mkdir(join(dir, 'images'), { recursive: true });
-      await mkdir(join(dir, 'css'), { recursive: true });
+      if (opts.template) {
+        // ── GitHub template path ──────────────────────────────────────────
+        try {
+          await downloadGithubTemplate(opts.template, dir, opts.repo, opts.ref);
+        } catch (err) {
+          console.error(`Failed to download template "${opts.template}": ${String(err)}`);
+          process.exit(1);
+        }
 
-      const themeFileName = `theme-${theme.name}.css`;
+        // Patch the title in the downloaded config.json
+        const configPath = join(dir, 'config.json');
+        try {
+          await patchConfigTitle(configPath, opts.title);
+        } catch {
+          // config.json may not exist in all templates — that's fine
+        }
 
-      // config.json — layout + theme + local overrides
-      // The template uses explicit []() separators, so disable the header
-      // preprocessor that would auto-split on every heading.
-      const config = {
-        title: opts.title,
-        content: 'README.md',
-        styles: ['css/layouts.css', `css/${themeFileName}`, 'css/local.css'],
-        features: ['whiteboard'],
-        aspectRatio: '16/9',
-        plugins: {
-          // source-notes: auto-injects each slide's markdown source into the
-          // speaker notes so this showcase deck teaches by example.
-          preprocessors: ['source-notes'],
-        },
-      };
-      await writeFile(join(dir, 'config.json'), JSON.stringify(config, null, 2) + '\n', 'utf-8');
+        await writeScaffoldAssets(dir, opts.title);
 
-      // README.md — showcase deck with all layouts
-      await writeFile(join(dir, 'README.md'), buildReadme(opts.title), 'utf-8');
+        if (opts.git) {
+          try {
+            await execFileAsync('git', ['init', dir]);
+            console.log('  Git repository initialized');
+          } catch {
+            console.log('  Git init skipped (git not available)');
+          }
+        }
 
-      // css/layouts.css — structural layout system
-      await writeFile(join(dir, 'css', 'layouts.css'), layoutsCss, 'utf-8');
+        console.log(`  Created: ${dir}/  (from template: ${opts.template})`);
+        log.debug({ dir, title: opts.title, template: opts.template }, 'presentation scaffolded from template');
+      } else {
+        // ── Built-in scaffold path ────────────────────────────────────────
+        const themeName = opts.theme ?? 'default';
+        const theme = findTheme(themeName);
+        if (!theme) {
+          console.error(`Unknown theme: "${themeName}". Available themes: ${THEME_NAMES.join(', ')}`);
+          process.exit(1);
+        }
 
-      // css/theme-<name>.css — chosen color/typography theme
-      await writeFile(join(dir, 'css', themeFileName), theme.css, 'utf-8');
+        await mkdir(join(dir, 'images'), { recursive: true });
+        await mkdir(join(dir, 'css'), { recursive: true });
 
-      // css/local.css — user overrides (loaded last)
-      const localCss = `/* ${opts.title} — local style overrides.
+        const themeFileName = `theme-${theme.name}.css`;
+
+        // config.json — layout + theme + local overrides
+        // The template uses explicit []() separators, so disable the header
+        // preprocessor that would auto-split on every heading.
+        const config = {
+          title: opts.title,
+          content: 'README.md',
+          styles: ['css/layouts.css', `css/${themeFileName}`, 'css/local.css'],
+          features: ['whiteboard'],
+          aspectRatio: '16/9',
+          plugins: {
+            // source-notes: auto-injects each slide's markdown source into the
+            // speaker notes so this showcase deck teaches by example.
+            preprocessors: ['source-notes'],
+          },
+        };
+        await writeFile(join(dir, 'config.json'), JSON.stringify(config, null, 2) + '\n', 'utf-8');
+
+        // README.md — showcase deck with all layouts
+        await writeFile(join(dir, 'README.md'), buildReadme(opts.title), 'utf-8');
+
+        // css/layouts.css — structural layout system
+        await writeFile(join(dir, 'css', 'layouts.css'), layoutsCss, 'utf-8');
+
+        // css/theme-<name>.css — chosen color/typography theme
+        await writeFile(join(dir, 'css', themeFileName), theme.css, 'utf-8');
+
+        // css/local.css — user overrides (loaded last)
+        const localCss = `/* ${opts.title} — local style overrides.
  *
  * This file is loaded AFTER layouts.css and theme-default.css.
  * Override any design token here:
@@ -729,23 +843,25 @@ export function registerCreateCommand(program: Command): void {
  *   }
  */
 `;
-      await writeFile(join(dir, 'css', 'local.css'), localCss, 'utf-8');
+        await writeFile(join(dir, 'css', 'local.css'), localCss, 'utf-8');
 
-      // images/.gitkeep
-      await writeFile(join(dir, 'images', '.gitkeep'), '', 'utf-8');
+        // images/.gitkeep
+        await writeFile(join(dir, 'images', '.gitkeep'), '', 'utf-8');
 
-      // Git init
-      if (opts.git) {
-        try {
-          await execFileAsync('git', ['init', dir]);
-          console.log('  Git repository initialized');
-        } catch {
-          console.log('  Git init skipped (git not available)');
+        await writeScaffoldAssets(dir, opts.title);
+
+        if (opts.git) {
+          try {
+            await execFileAsync('git', ['init', dir]);
+            console.log('  Git repository initialized');
+          } catch {
+            console.log('  Git init skipped (git not available)');
+          }
         }
-      }
 
-      console.log(`  Created: ${dir}/`);
-      console.log(`  Files: config.json, README.md, css/{layouts,${themeFileName},local}.css, images/`);
-      log.debug({ dir, title: opts.title, theme: theme.name }, 'presentation scaffolded');
+        console.log(`  Created: ${dir}/`);
+        console.log(`  Files: config.json, README.md, css/{layouts,${themeFileName},local}.css, images/, .gitignore, AGENTS.md`);
+        log.debug({ dir, title: opts.title, theme: theme.name }, 'presentation scaffolded');
+      }
     });
 }
