@@ -49,10 +49,20 @@ function keyVote(i: number, voterId: string): string { return `${votePrefix(i)}$
 
 const VOTER_ID_KEY = 'geekslides-voter-id';
 
+/** Generate a UUID v4, with a fallback for non-secure (HTTP) contexts. */
+function generateUUID(): string {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
+  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
+
 function getVoterId(): string {
   let id = localStorage.getItem(VOTER_ID_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = generateUUID();
     localStorage.setItem(VOTER_ID_KEY, id);
   }
   return id;
@@ -79,8 +89,19 @@ async function getQRCode(): Promise<typeof import('qrcode')> {
 /*  Utility: scan slides for poll options                              */
 /* ------------------------------------------------------------------ */
 
-export function getPollSlides(container: HTMLElement): Map<number, string[]> {
-  const result = new Map<number, string[]>();
+export interface PollSlideConfig {
+  /** Voting options extracted from the slide's list items. */
+  options: string[];
+  /**
+   * When `true` (slide has `.poll-live` class), vote percentages are shown
+   * in real-time as votes arrive.  When `false` (default), percentages and
+   * bars are hidden until the presenter freezes the poll.
+   */
+  live: boolean;
+}
+
+export function getPollSlides(container: HTMLElement): Map<number, PollSlideConfig> {
+  const result = new Map<number, PollSlideConfig>();
   const gsContainer = container.parentElement?.parentElement;
   if (!gsContainer) return result;
 
@@ -95,7 +116,8 @@ export function getPollSlides(container: HTMLElement): Map<number, string[]> {
     if (items.length < 2) return;
 
     const options = Array.from(items).map((li) => li.textContent.trim());
-    result.set(i, options);
+    const live = content.classList.contains('poll-live');
+    result.set(i, { options, live });
   });
 
   return result;
@@ -146,6 +168,17 @@ const PANEL_CSS = `
     flex-direction: column;
     gap: 0;
     z-index: 200;
+    transition: width 0.35s ease;
+  }
+  /* Frozen: expand to a centered modal */
+  .gs-poll-panel.frozen {
+    right: auto;
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: min(92%, 780px);
+    z-index: 250;
   }
   .gs-poll-header {
     display: flex;
@@ -170,6 +203,11 @@ const PANEL_CSS = `
     padding: 18px 22px;
     min-height: 170px;
   }
+  .gs-poll-body.frozen-layout {
+    flex-direction: column;
+    min-height: 0;
+    padding-top: 12px;
+  }
   .gs-poll-qr {
     display: flex;
     flex-direction: column;
@@ -178,8 +216,8 @@ const PANEL_CSS = `
     flex-shrink: 0;
   }
   .gs-poll-qr img {
-    width: 140px;
-    height: 140px;
+    width: 180px;
+    height: 180px;
     border-radius: 8px;
     background: #fff;
     padding: 6px;
@@ -196,6 +234,7 @@ const PANEL_CSS = `
     flex-direction: column;
     justify-content: center;
     gap: 10px;
+    min-width: 0;
   }
   .gs-poll-option { display: flex; flex-direction: column; gap: 4px; }
   .gs-poll-option-row {
@@ -209,7 +248,7 @@ const PANEL_CSS = `
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    max-width: 200px;
+    flex: 1;
   }
   .gs-poll-option-pct {
     font-size: 18px;
@@ -218,6 +257,7 @@ const PANEL_CSS = `
     min-width: 52px;
     text-align: right;
   }
+  .gs-poll-option-pct.hidden-pct { color: rgba(255,255,255,0.25); }
   .gs-poll-bar-wrap {
     height: 10px;
     background: rgba(255,255,255,0.1);
@@ -230,10 +270,10 @@ const PANEL_CSS = `
     border-radius: 5px;
     transition: width 0.4s ease;
   }
+  /* Chart container — height set via inline style based on option count */
   .gs-poll-chart-wrap {
-    flex: 1;
-    min-height: 150px;
     display: none;
+    width: 100%;
   }
   .gs-poll-chart-wrap.visible { display: block; }
   .gs-poll-footer {
@@ -335,7 +375,90 @@ const PANEL_CSS = `
     gap: 6px;
   }
   .gs-poll-frozen-viewer.visible { display: flex; }
+
+  /* QR expand + copy buttons */
+  .gs-poll-qr-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    justify-content: center;
+  }
+  .gs-poll-qr-icon-btn {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 4px;
+    line-height: 1.2;
+    transition: color 0.15s;
+  }
+  .gs-poll-qr-icon-btn:hover { color: rgba(255,255,255,0.9); }
+  /* Full-slide QR overlay */
+  .gs-poll-overlay {
+    display: none;
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.87);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 14px;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .gs-poll-overlay.visible { display: flex; }
+  .gs-poll-overlay-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    cursor: default;
+    position: relative;
+  }
+  .gs-poll-overlay img {
+    width: min(70vw, 70vh);
+    height: min(70vw, 70vh);
+    border-radius: 16px;
+    background: #fff;
+    padding: 16px;
+    box-sizing: border-box;
+    box-shadow: 0 0 0 8px #fff, 0 12px 60px rgba(0,0,0,0.8);
+  }
+  .gs-poll-overlay-url {
+    font-size: 16px;
+    color: #63b3ed;
+    text-align: center;
+    word-break: break-all;
+    max-width: min(70vw, 600px);
+    text-decoration: none;
+  }
+  .gs-poll-overlay-url:hover { text-decoration: underline; }
+  .gs-poll-overlay-close {
+    position: absolute;
+    top: -16px;
+    right: -16px;
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: #fff;
+    border-radius: 50%;
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    transition: background 0.15s;
+    pointer-events: auto;
+  }
+  .gs-poll-overlay-close:hover { background: rgba(255,255,255,0.25); }
 `;
+
+
 
 /* ---- Presenter panel ---- */
 
@@ -348,7 +471,9 @@ interface PollPanel {
 function buildPresenterPanel(
   options: string[],
   voteUrl: string,
+  outerContainer: HTMLElement,
   onFreeze: () => void,
+  live: boolean,
 ): PollPanel {
   const el = document.createElement('div');
   el.className = 'gs-poll-panel';
@@ -356,16 +481,20 @@ function buildPresenterPanel(
   el.innerHTML = `
     <div class="gs-poll-header">
       <span class="gs-poll-icon">📊</span>
-      <span class="gs-poll-title">Live Poll</span>
+      <span class="gs-poll-title">Live Poll${live ? ' 🔴' : ''}</span>
       <span class="gs-poll-count">0 votes</span>
     </div>
     <div class="gs-poll-body">
       <div class="gs-poll-qr">
         <img class="gs-poll-qr-img" alt="QR code" />
-        <span class="gs-poll-qr-label">Scan to vote</span>
+        <div class="gs-poll-qr-actions">
+          <span class="gs-poll-qr-label">Scan to vote</span>
+          <button class="gs-poll-qr-icon-btn gs-poll-qr-expand-btn" title="Show large QR">🔍</button>
+          <button class="gs-poll-qr-icon-btn gs-poll-qr-copy-btn" title="Copy vote link">🔗</button>
+        </div>
       </div>
       <div class="gs-poll-options"></div>
-      <canvas class="gs-poll-chart-wrap"></canvas>
+      <div class="gs-poll-chart-wrap"></div>
     </div>
     <div class="gs-poll-footer">
       <span class="gs-poll-frozen-badge">🔒 Results shown</span>
@@ -376,12 +505,79 @@ function buildPresenterPanel(
   const countEl = el.querySelector<HTMLElement>('.gs-poll-count');
   const qrImg = el.querySelector<HTMLImageElement>('.gs-poll-qr-img');
   const qrWrap = el.querySelector<HTMLElement>('.gs-poll-qr');
+  const bodyEl = el.querySelector<HTMLElement>('.gs-poll-body');
   const optionsEl = el.querySelector<HTMLElement>('.gs-poll-options');
-  const chartCanvas = el.querySelector<HTMLCanvasElement>('.gs-poll-chart-wrap');
+  const chartWrap = el.querySelector<HTMLElement>('.gs-poll-chart-wrap');
   const frozenBadge = el.querySelector<HTMLElement>('.gs-poll-frozen-badge');
   const freezeBtn = el.querySelector<HTMLButtonElement>('.gs-poll-freeze-btn');
 
   freezeBtn?.addEventListener('click', onFreeze);
+
+  /* ---- Fullscreen QR overlay ---- */
+  const overlay = document.createElement('div');
+  overlay.className = 'gs-poll-overlay';
+  const overlayInner = document.createElement('div');
+  overlayInner.className = 'gs-poll-overlay-inner';
+  const overlayCloseBtn = document.createElement('button');
+  overlayCloseBtn.className = 'gs-poll-overlay-close';
+  overlayCloseBtn.title = 'Close';
+  overlayCloseBtn.textContent = '✕';
+  const overlayQrImg = document.createElement('img');
+  overlayQrImg.alt = 'QR code';
+  const overlayUrl = document.createElement('a');
+  overlayUrl.className = 'gs-poll-overlay-url';
+  overlayUrl.textContent = voteUrl;
+  overlayUrl.href = voteUrl;
+  overlayUrl.target = '_blank';
+  overlayUrl.rel = 'noopener noreferrer';
+  overlayInner.appendChild(overlayCloseBtn);
+  overlayInner.appendChild(overlayQrImg);
+  overlayInner.appendChild(overlayUrl);
+  overlay.appendChild(overlayInner);
+  outerContainer.appendChild(overlay);
+
+  function showOverlay(): void { overlay.classList.add('visible'); }
+  function hideOverlay(): void { overlay.classList.remove('visible'); }
+
+  overlay.addEventListener('click', hideOverlay);
+  overlayInner.addEventListener('click', (e) => { e.stopPropagation(); });
+  overlayCloseBtn.addEventListener('click', (e) => { e.stopPropagation(); hideOverlay(); });
+  overlayUrl.addEventListener('click', (e) => { e.stopPropagation(); });
+
+  const onEscape = (e: KeyboardEvent): void => { if (e.key === 'Escape') hideOverlay(); };
+  document.addEventListener('keydown', onEscape);
+
+  /* ---- Clipboard helper (navigator.clipboard with textarea fallback) ---- */
+  function copyText(text: string, btn: HTMLButtonElement): void {
+    const flash = (): void => {
+      const orig = btn.textContent;
+      btn.textContent = '✓';
+      setTimeout(() => { btn.textContent = orig; }, 1500);
+    };
+    const fallback = (): void => {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;';
+      document.body.appendChild(ta);
+      ta.focus();
+      ta.select();
+      try { document.execCommand('copy'); flash(); } catch { /* give up */ }
+      ta.remove();
+    };
+    if (navigator.clipboard) {
+      void navigator.clipboard.writeText(text).then(flash).catch(fallback);
+    } else {
+      fallback();
+    }
+  }
+
+  /* ---- Expand button ---- */
+  const expandBtn = el.querySelector<HTMLButtonElement>('.gs-poll-qr-expand-btn');
+  expandBtn?.addEventListener('click', showOverlay);
+
+  /* ---- Copy-link button ---- */
+  const copyBtn = el.querySelector<HTMLButtonElement>('.gs-poll-qr-copy-btn');
+  copyBtn?.addEventListener('click', () => { if (copyBtn) copyText(voteUrl, copyBtn); });
 
   const optionEls: { bar: HTMLElement; pct: HTMLElement }[] = [];
   options.forEach((label) => {
@@ -390,7 +586,7 @@ function buildPresenterPanel(
     row.innerHTML = `
       <div class="gs-poll-option-row">
         <span class="gs-poll-option-label">${label}</span>
-        <span class="gs-poll-option-pct">0%</span>
+        <span class="gs-poll-option-pct${live ? '' : ' hidden-pct'}">—</span>
       </div>
       <div class="gs-poll-bar-wrap">
         <div class="gs-poll-bar" style="width:0%"></div>
@@ -403,9 +599,10 @@ function buildPresenterPanel(
   });
 
   void getQRCode().then((QRCode) =>
-    QRCode.toDataURL(voteUrl, { width: 140, margin: 1, color: { dark: '#000000', light: '#ffffff' } }),
+    QRCode.toDataURL(voteUrl, { width: 600, margin: 1, color: { dark: '#000000', light: '#ffffff' } }),
   ).then((dataUrl) => {
     if (qrImg) qrImg.src = dataUrl;
+    overlayQrImg.src = dataUrl;
   }).catch((err: unknown) => {
     log.warn({ err }, 'QR code generation failed');
   });
@@ -416,22 +613,31 @@ function buildPresenterPanel(
     const total = counts.reduce((a, b) => a + b, 0);
     if (countEl) countEl.textContent = `${String(total)} vote${total === 1 ? '' : 's'}`;
 
+    // Show bars/percentages live, or hide them until freeze (end-only mode).
+    const showBars = live || frozen;
     counts.forEach((c, i) => {
       const entry = optionEls[i];
       if (!entry) return;
-      const pct = total > 0 ? Math.round((c / total) * 100) : 0;
-      entry.bar.style.width = `${String(pct)}%`;
-      entry.pct.textContent = `${String(pct)}%`;
+      const pctVal = total > 0 ? Math.round((c / total) * 100) : 0;
+      entry.bar.style.width = showBars ? `${String(pctVal)}%` : '0%';
+      entry.pct.textContent = showBars ? `${String(pctVal)}%` : '—';
+      entry.pct.classList.toggle('hidden-pct', !showBars);
     });
 
     if (frozen) {
+      el.classList.add('frozen');
+      if (bodyEl) bodyEl.classList.add('frozen-layout');
       if (qrWrap) qrWrap.style.display = 'none';
-      if (chartCanvas) chartCanvas.classList.add('visible');
+      if (optionsEl) optionsEl.style.display = 'none';
+      if (chartWrap) chartWrap.classList.add('visible');
       if (frozenBadge) frozenBadge.classList.add('visible');
       if (freezeBtn) { freezeBtn.disabled = true; freezeBtn.style.display = 'none'; }
 
-      if (!chart && chartCanvas) {
-        chart = new Chart(chartCanvas, {
+      if (!chart && chartWrap) {
+        const canvas = document.createElement('canvas');
+        chartWrap.style.height = `${String(Math.max(160, options.length * 56))}px`;
+        chartWrap.appendChild(canvas);
+        chart = new Chart(canvas, {
           type: 'bar',
           data: {
             labels: options,
@@ -445,7 +651,8 @@ function buildPresenterPanel(
           },
           options: {
             indexAxis: 'y',
-            responsive: false,
+            responsive: true,
+            maintainAspectRatio: false,
             plugins: { legend: { display: false }, tooltip: { enabled: true } },
             scales: {
               x: {
@@ -459,17 +666,17 @@ function buildPresenterPanel(
             },
           },
         });
-        chartCanvas.width = 460;
-        chartCanvas.height = Math.max(120, options.length * 50);
-        chart.resize();
       } else if (chart) {
         const ds = chart.data.datasets[0];
         if (ds) ds.data = counts;
         chart.update();
       }
     } else {
+      el.classList.remove('frozen');
+      if (bodyEl) bodyEl.classList.remove('frozen-layout');
       if (qrWrap) qrWrap.style.display = '';
-      if (chartCanvas) chartCanvas.classList.remove('visible');
+      if (optionsEl) optionsEl.style.display = '';
+      if (chartWrap) chartWrap.classList.remove('visible');
       if (frozenBadge) frozenBadge.classList.remove('visible');
       if (freezeBtn) { freezeBtn.disabled = false; }
     }
@@ -478,6 +685,8 @@ function buildPresenterPanel(
   function destroy(): void {
     chart?.destroy();
     chart = null;
+    overlay.remove();
+    document.removeEventListener('keydown', onEscape);
   }
 
   return { el, update, destroy };
@@ -490,6 +699,7 @@ function buildViewerPanel(
   room: string,
   slideIndex: number,
   isFrozen: () => boolean,
+  live: boolean,
 ): PollPanel {
   const el = document.createElement('div');
   el.className = 'gs-poll-panel';
@@ -573,12 +783,13 @@ function buildViewerPanel(
     const total = counts.reduce((a, b) => a + b, 0);
     if (countEl) countEl.textContent = `${String(total)} vote${total === 1 ? '' : 's'}`;
 
+    const showBars = live || frozen;
     counts.forEach((c, i) => {
-      const pct = total > 0 ? Math.round((c / total) * 100) : 0;
+      const pctVal = total > 0 ? Math.round((c / total) * 100) : 0;
       const pctEl = pctEls[i];
       const bar = bars[i];
-      if (pctEl) pctEl.textContent = `${String(pct)}%`;
-      if (bar) bar.style.width = `${String(pct)}%`;
+      if (pctEl) pctEl.textContent = showBars ? `${String(pctVal)}%` : '—';
+      if (bar) bar.style.width = showBars ? `${String(pctVal)}%` : '0%';
     });
 
     if (frozen) {
@@ -605,9 +816,25 @@ export const pollFeature: Feature = {
   label: 'Live audience poll with QR voting',
 
   activate(ctx: FeatureContext): () => void {
+    // `syncMap` may become stale after Yjs CRDT resolution: the server's
+    // existing Y.Map for 'poll' can win the merge, making `syncMap` point to
+    // the losing (no-longer-active) map.  We therefore:
+    //  1. Keep `syncMap` only for the initial write (creating the map if absent).
+    //  2. Use `featuresRoot.observeDeep` so ANY change inside 'features' fires
+    //     our callback, regardless of which Y.Map won the CRDT conflict.
+    //  3. Always read from `featuresRoot.get('poll')` dynamically inside callbacks.
     const syncMap = ctx.sync?.getSharedMap() ?? null;
     const isPresenter = ctx.role === 'presenter';
-    const isViewer = ctx.sync?.readonly === true;
+    const isViewer = ctx.role === 'viewer';
+
+    // Raw doc/root for dynamic poll-map access after CRDT resolution.
+    // Fall back to syncMap.doc so unit tests (where syncManager is null) work too.
+    const doc = ctx.syncManager?.doc ?? syncMap?.doc ?? null;
+    const featuresRoot = doc?.getMap('features') ?? null;
+
+    function getPollMap(): import('yjs').Map<unknown> | null {
+      return (featuresRoot?.get('poll') as import('yjs').Map<unknown> | undefined) ?? null;
+    }
 
     const styleEl = document.createElement('style');
     styleEl.textContent = PANEL_CSS;
@@ -624,13 +851,19 @@ export const pollFeature: Feature = {
     const room = new URLSearchParams(location.search).get('room')
       ?? ctx.config.sync.room;
 
-    // Presenter writes options to Yjs so the voter page can read them
-    if (syncMap && isPresenter) {
-      ctx.syncManager?.doc.transact(() => {
-        pollSlides.forEach((options, slideIndex) => {
-          syncMap.set(keyOptions(slideIndex), JSON.stringify(options));
-        });
+    // Write poll options to whichever Y.Map is currently active.
+    // Called once on activation and again if the poll-map reference changes
+    // after Yjs sync resolves the CRDT conflict.
+    function writeOptions(): void {
+      const pollMap = getPollMap();
+      if (!pollMap) return;
+      pollSlides.forEach(({ options }, slideIndex) => {
+        pollMap.set(keyOptions(slideIndex), JSON.stringify(options));
       });
+    }
+
+    if (syncMap && isPresenter) {
+      ctx.syncManager?.doc.transact(() => { writeOptions(); });
     }
 
     let currentPanel: PollPanel | null = null;
@@ -643,41 +876,48 @@ export const pollFeature: Feature = {
         currentPanel = null;
       }
 
-      const options = pollSlides.get(slideIndex);
-      if (!options) {
+      const slideConfig = pollSlides.get(slideIndex);
+      if (!slideConfig) {
         currentSlideIndex = -1;
         return;
       }
 
+      const { options, live } = slideConfig;
       currentSlideIndex = slideIndex;
 
       let panel: PollPanel;
 
       if (isViewer) {
         panel = buildViewerPanel(options, room, slideIndex, () =>
-          syncMap?.get(keyFrozen(slideIndex)) === true,
-        );
+          getPollMap()?.get(keyFrozen(slideIndex)) === true,
+        live);
       } else {
-        const voteUrl = `${location.origin}/vote.html?room=${encodeURIComponent(room)}&slide=${String(slideIndex)}`;
-        panel = buildPresenterPanel(options, voteUrl, () => {
-          if (!syncMap || !isPresenter) return;
-          syncMap.set(keyFrozen(slideIndex), true);
-        });
+        const vtoken = new URLSearchParams(location.search).get('vtoken');
+        const vtokenPart = vtoken ? `&vtoken=${encodeURIComponent(vtoken)}` : '';
+        const voteUrl = `${location.origin}/vote.html?room=${encodeURIComponent(room)}&slide=${String(slideIndex)}${vtokenPart}`;
+        panel = buildPresenterPanel(options, voteUrl, ctx.container, () => {
+          if (!isPresenter) return;
+          const pollMap = getPollMap();
+          if (!pollMap) return;
+          pollMap.set(keyFrozen(slideIndex), true);
+        }, live);
       }
 
       ctx.container.appendChild(panel.el);
       currentPanel = panel;
 
       // Mark active in Yjs (presenter only)
-      if (syncMap && isPresenter) {
-        syncMap.set(keyActive(slideIndex), true);
+      if (isPresenter) {
+        const pollMap = getPollMap();
+        if (pollMap) pollMap.set(keyActive(slideIndex), true);
       }
 
       // Initial render
-      const counts = syncMap
-        ? countVotes(syncMap, slideIndex, options.length)
+      const pollMap = getPollMap();
+      const counts = pollMap
+        ? countVotes(pollMap, slideIndex, options.length)
         : new Array<number>(options.length).fill(0);
-      const frozen = syncMap ? (syncMap.get(keyFrozen(slideIndex)) === true) : false;
+      const frozen = pollMap ? (pollMap.get(keyFrozen(slideIndex)) === true) : false;
       panel.update(counts, frozen);
     }
 
@@ -690,18 +930,47 @@ export const pollFeature: Feature = {
       currentSlideIndex = -1;
     }
 
-    let unobserve: (() => void) | null = null;
-    if (syncMap) {
+    // Deep observer: fires for any change inside doc.getMap('features'),
+    // including votes/frozen in the poll Y.Map — no matter which Y.Map
+    // won the CRDT conflict after Yjs sync.
+    const cleanups: Array<() => void> = [];
+
+    if (featuresRoot) {
+      const deepObserver = (): void => {
+        if (currentSlideIndex < 0 || !currentPanel) return;
+        const pollMap = getPollMap();
+        if (!pollMap) return;
+        const slideConfig = pollSlides.get(currentSlideIndex);
+        if (!slideConfig) return;
+        const counts = countVotes(pollMap, currentSlideIndex, slideConfig.options.length);
+        const frozen = pollMap.get(keyFrozen(currentSlideIndex)) === true;
+        currentPanel.update(counts, frozen);
+      };
+      featuresRoot.observeDeep(deepObserver);
+      cleanups.push(() => { featuresRoot.unobserveDeep(deepObserver); });
+
+      // Shallow observer: re-write options whenever the 'poll' map reference
+      // itself changes (i.e., CRDT resolution picked a different Y.Map).
+      if (isPresenter) {
+        const rootObserver = (event: import('yjs').YMapEvent<unknown>): void => {
+          if (!event.keysChanged.has('poll')) return;
+          ctx.syncManager?.doc.transact(() => { writeOptions(); });
+        };
+        featuresRoot.observe(rootObserver);
+        cleanups.push(() => { featuresRoot.unobserve(rootObserver); });
+      }
+    } else if (syncMap) {
+      // No raw doc available — fall back to observing the initial syncMap
       const observer = (): void => {
         if (currentSlideIndex < 0 || !currentPanel) return;
-        const options = pollSlides.get(currentSlideIndex);
-        if (!options) return;
-        const counts = countVotes(syncMap, currentSlideIndex, options.length);
+        const slideConfig = pollSlides.get(currentSlideIndex);
+        if (!slideConfig) return;
+        const counts = countVotes(syncMap, currentSlideIndex, slideConfig.options.length);
         const frozen = syncMap.get(keyFrozen(currentSlideIndex)) === true;
         currentPanel.update(counts, frozen);
       };
       syncMap.observe(observer);
-      unobserve = () => { syncMap.unobserve(observer); };
+      cleanups.push(() => { syncMap.unobserve(observer); });
     }
 
     const unsubEnter = ctx.on('slide:enter', ({ slideIndex }) => {
@@ -717,7 +986,7 @@ export const pollFeature: Feature = {
     return () => {
       unsubEnter();
       unsubLeave();
-      unobserve?.();
+      cleanups.forEach((fn) => { fn(); });
       hidePoll();
       styleEl.remove();
     };

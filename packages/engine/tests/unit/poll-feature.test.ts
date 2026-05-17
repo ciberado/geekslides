@@ -60,7 +60,7 @@ function makeContainer(): { container: HTMLElement; gsContainer: HTMLElement } {
  */
 function addSlide(
   gsContainer: HTMLElement,
-  opts: { poll?: boolean; items?: string[] } = {},
+  opts: { poll?: boolean; live?: boolean; items?: string[] } = {},
 ): HTMLElement {
   if (!customElements.get('geek-slide')) {
     customElements.define('geek-slide', class extends HTMLElement {
@@ -71,6 +71,7 @@ function addSlide(
   const section = document.createElement('section');
   section.className = 'content';
   if (opts.poll) section.classList.add('poll');
+  if (opts.live) section.classList.add('poll-live');
   (opts.items ?? []).forEach((text) => {
     const li = document.createElement('li');
     li.textContent = text;
@@ -81,10 +82,13 @@ function addSlide(
   return slide;
 }
 
-/** Build a Yjs Y.Map that backs the poll's shared state. */
+/** Build a Yjs Y.Map that backs the poll's shared state.
+ *  Matches production layout: doc.getMap('features').get('poll').
+ */
 function makeYMap(initial: Record<string, unknown> = {}): Y.Map<unknown> {
   const doc = new Y.Doc();
-  const map = doc.getMap<unknown>('poll');
+  const map = new Y.Map<unknown>();
+  doc.getMap<unknown>('features').set('poll', map);
   doc.transact(() => {
     for (const [k, v] of Object.entries(initial)) map.set(k, v);
   });
@@ -174,7 +178,7 @@ describe('getPollSlides()', () => {
     addSlide(gsContainer, { poll: true, items: ['Alpha', 'Beta', 'Gamma'] });
     const result = getPollSlides(container);
     expect(result.size).toBe(1);
-    expect(result.get(0)).toEqual(['Alpha', 'Beta', 'Gamma']);
+    expect(result.get(0)).toEqual({ options: ['Alpha', 'Beta', 'Gamma'], live: false });
   });
 
   it('maps correct slide index when poll is not the first slide', () => {
@@ -183,7 +187,7 @@ describe('getPollSlides()', () => {
     addSlide(gsContainer, { poll: true, items: ['X', 'Y'] }); // index 1
     const result = getPollSlides(container);
     expect(result.has(0)).toBe(false);
-    expect(result.get(1)).toEqual(['X', 'Y']);
+    expect(result.get(1)).toEqual({ options: ['X', 'Y'], live: false });
   });
 
   it('detects multiple poll slides at their correct indices', () => {
@@ -193,13 +197,25 @@ describe('getPollSlides()', () => {
     addSlide(gsContainer, { poll: true, items: ['P', 'Q', 'R'] }); // 2
     const result = getPollSlides(container);
     expect(result.size).toBe(2);
-    expect(result.get(0)).toEqual(['A', 'B']);
-    expect(result.get(2)).toEqual(['P', 'Q', 'R']);
+    expect(result.get(0)).toEqual({ options: ['A', 'B'], live: false });
+    expect(result.get(2)).toEqual({ options: ['P', 'Q', 'R'], live: false });
   });
 
   it('returns empty map when container has no parent', () => {
     const detached = document.createElement('div');
     expect(getPollSlides(detached).size).toBe(0);
+  });
+
+  it('sets live=false for a plain .poll slide', () => {
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
+    expect(getPollSlides(container).get(0)?.live).toBe(false);
+  });
+
+  it('sets live=true for a .poll.poll-live slide', () => {
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, live: true, items: ['A', 'B'] });
+    expect(getPollSlides(container).get(0)?.live).toBe(true);
   });
 });
 
@@ -335,7 +351,8 @@ describe('pollFeature.activate() — presenter mode', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['Yes', 'No'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
     pollFeature.activate(ctx);
 
@@ -353,7 +370,8 @@ describe('pollFeature.activate() — presenter mode', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
     pollFeature.activate(ctx);
 
@@ -366,7 +384,8 @@ describe('pollFeature.activate() — presenter mode', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['X', 'Y'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
     pollFeature.activate(ctx);
 
@@ -382,13 +401,85 @@ describe('pollFeature.activate() — presenter mode', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
     pollFeature.activate(ctx);
     expect(MockChart).not.toHaveBeenCalled();
 
     doc.transact(() => { map.set('slide-0-frozen', true); });
     expect(MockChart).toHaveBeenCalledOnce();
+  });
+
+  it('adds .frozen class to panel when frozen', () => {
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
+    const doc = new Y.Doc();
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
+    const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
+    pollFeature.activate(ctx);
+
+    expect(container.querySelector('.gs-poll-panel')?.classList.contains('frozen')).toBe(false);
+    doc.transact(() => { map.set('slide-0-frozen', true); });
+    expect(container.querySelector('.gs-poll-panel')?.classList.contains('frozen')).toBe(true);
+  });
+
+  it('hides bars and shows "—" in end-only mode before freeze', () => {
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, items: ['A', 'B'] }); // live=false
+    const doc = new Y.Doc();
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
+    const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
+    pollFeature.activate(ctx);
+
+    // Cast vote for option 0
+    doc.transact(() => { map.set('slide-0-vote-v1', 0); });
+
+    const pcts = container.querySelectorAll<HTMLElement>('.gs-poll-option-pct');
+    pcts.forEach((pct) => { expect(pct.textContent).toBe('—'); });
+    const bars = container.querySelectorAll<HTMLElement>('.gs-poll-bar');
+    bars.forEach((bar) => { expect(bar.style.width).toBe('0%'); });
+  });
+
+  it('shows live bars in poll-live mode before freeze', () => {
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, live: true, items: ['A', 'B'] });
+    const doc = new Y.Doc();
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
+    const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
+    pollFeature.activate(ctx);
+
+    // Cast all 2 votes for option 0
+    doc.transact(() => {
+      map.set('slide-0-vote-v1', 0);
+      map.set('slide-0-vote-v2', 0);
+    });
+
+    const pcts = container.querySelectorAll<HTMLElement>('.gs-poll-option-pct');
+    expect(pcts[0]?.textContent).toBe('100%');
+    expect(pcts[1]?.textContent).toBe('0%');
+  });
+
+  it('shows bars in end-only mode after freeze', () => {
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, items: ['A', 'B'] }); // live=false
+    const doc = new Y.Doc();
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
+    const ctx = makeCtx(container, { role: 'presenter', syncMap: map, currentSlide: 0 });
+    pollFeature.activate(ctx);
+
+    doc.transact(() => {
+      map.set('slide-0-vote-v1', 0);
+      map.set('slide-0-frozen', true);
+    });
+
+    // After freeze, chart is created — bars are in the chart not in optionEls
+    expect(container.querySelector('.gs-poll-panel')?.classList.contains('frozen')).toBe(true);
+    expect(container.querySelector('.gs-poll-chart-wrap')?.classList.contains('visible')).toBe(true);
   });
 
   it('shows panel on slide:enter for a poll slide', () => {
@@ -435,6 +526,24 @@ describe('pollFeature.activate() — presenter mode', () => {
 
 describe('pollFeature.activate() — viewer mode', () => {
   beforeEach(() => { document.body.innerHTML = ''; });
+
+  it('shows voter panel based on role, even without sync.readonly flag', () => {
+    // Verifies isViewer = ctx.role === 'viewer' (not ctx.sync?.readonly).
+    // A viewer with sync.readonly=false must still see vote buttons.
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, items: ['Coffee', 'Tea'] });
+    const ctx = makeCtx(container, {
+      role: 'viewer',
+      syncMap: makeYMap({}),
+      readonly: false, // sync.readonly is false — isViewer must still be true
+      currentSlide: 0,
+    });
+    pollFeature.activate(ctx);
+
+    expect(container.querySelector('.gs-poll-voter-btn')).not.toBeNull();
+    expect(container.querySelector('.gs-poll-freeze-btn')).toBeNull();
+    expect(container.querySelector('.gs-poll-qr')).toBeNull();
+  });
 
   it('shows clickable option buttons instead of QR in viewer mode', () => {
     const { container, gsContainer } = makeContainer();
@@ -550,7 +659,8 @@ describe('pollFeature.activate() — viewer mode', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     doc.transact(() => { map.set('slide-0-frozen', true); });
 
     const ctx = makeCtx(container, {
@@ -597,7 +707,8 @@ describe('pollFeature.activate() — viewer mode', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, {
       role: 'viewer',
       syncMap: map,
@@ -613,11 +724,32 @@ describe('pollFeature.activate() — viewer mode', () => {
     expect(countEl?.textContent).toContain('1');
   });
 
+  it('voter panel renders without error when crypto.randomUUID is unavailable (HTTP context)', () => {
+    // On plain HTTP (non-localhost), crypto.randomUUID is undefined.
+    // generateUUID() must fall back to crypto.getRandomValues.
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
+    vi.stubGlobal('localStorage', { getItem: vi.fn().mockReturnValue(null), setItem: vi.fn() });
+    vi.stubGlobal('crypto', {
+      randomUUID: undefined, // simulate insecure context
+      getRandomValues: (arr: Uint8Array) => { arr.fill(0xab); return arr; },
+    });
+
+    const { container, gsContainer } = makeContainer();
+    addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
+    const ctx = makeCtx(container, { role: 'viewer', syncMap: makeYMap({}), currentSlide: 0 });
+
+    expect(() => { pollFeature.activate(ctx); }).not.toThrow();
+    expect(container.querySelector('.gs-poll-voter-btn')).not.toBeNull();
+
+    vi.unstubAllGlobals();
+  });
+
   it('shows frozen indicator when poll freezes via Yjs', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, {
       role: 'viewer',
       syncMap: map,
@@ -664,7 +796,8 @@ describe('pollFeature.activate() — cleanup', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, { syncMap: map, currentSlide: 0 });
     const cleanup = pollFeature.activate(ctx)!;
 
@@ -679,7 +812,8 @@ describe('pollFeature.activate() — cleanup', () => {
     const { container, gsContainer } = makeContainer();
     addSlide(gsContainer, { poll: true, items: ['A', 'B'] });
     const doc = new Y.Doc();
-    const map = doc.getMap<unknown>('poll');
+    const map = new Y.Map<unknown>();
+    doc.getMap<unknown>('features').set('poll', map);
     const ctx = makeCtx(container, { syncMap: map, currentSlide: 0 });
     const cleanup = pollFeature.activate(ctx)!;
 
