@@ -3,6 +3,11 @@
  *
  * Connects to the same Yjs room as the presentation, reads poll options,
  * and submits one vote per browser (voter ID stored in localStorage).
+ *
+ * Options are fetched from /api/poll-options on load for instant display so
+ * the page is usable even before the WebSocket sync completes.  Votes are
+ * submitted via the HTTP /api/feature-write endpoint (reliable from phones);
+ * the WebSocket is used only for live vote counts and the frozen state.
  */
 
 import * as Y from 'yjs';
@@ -17,13 +22,30 @@ const room = params.get('room') ?? 'default';
 const slideIndex = parseInt(params.get('slide') ?? '0', 10);
 
 /* ------------------------------------------------------------------ */
+/*  Options — fetched from server for instant render, fallback to Yjs  */
+/* ------------------------------------------------------------------ */
+
+/** @type {string[] | null} */
+let options = null;
+
+/* ------------------------------------------------------------------ */
 /*  Voter identity (one UUID per browser, persisted in localStorage)   */
 /* ------------------------------------------------------------------ */
+
+/** UUID v4 with fallback for iOS < 15.4 / older Android */
+function randomUUID() {
+  if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  bytes[6] = (bytes[6] & 0x0f) | 0x40; // version 4
+  bytes[8] = (bytes[8] & 0x3f) | 0x80; // variant RFC 4122
+  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+}
 
 const VOTER_ID_KEY = 'geekslides-voter-id';
 let voterId = localStorage.getItem(VOTER_ID_KEY);
 if (!voterId) {
-  voterId = crypto.randomUUID();
+  voterId = randomUUID();
   localStorage.setItem(VOTER_ID_KEY, voterId);
 }
 
@@ -54,6 +76,19 @@ function render(html) {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Vote state                                                         */
+/* ------------------------------------------------------------------ */
+
+const savedVote = localStorage.getItem(VOTED_KEY);
+/** @type {number | null} confirmed vote index */
+let selectedIdx = savedVote !== null ? parseInt(savedVote, 10) : null;
+/** @type {number | null} vote in-flight (not yet confirmed by server) */
+let pendingIdx = null;
+/** @type {number[] | null} live counts from Yjs — null until WS syncs */
+let liveCounts = null;
+let isFrozen = false;
+
+/* ------------------------------------------------------------------ */
 /*  Vote counting                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -69,12 +104,24 @@ function countVotes(pollMap, optionCount) {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Render: results view                                               */
+/*  HTML escaping                                                      */
 /* ------------------------------------------------------------------ */
 
-function renderResults(options, counts, message = '') {
+function escHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/* ------------------------------------------------------------------ */
+/*  Render helpers                                                     */
+/* ------------------------------------------------------------------ */
+
+function renderResults(opts, counts) {
   const total = counts.reduce((a, b) => a + b, 0);
-  const rows = options.map((label, i) => {
+  const rows = opts.map((label, i) => {
     const pct = total > 0 ? Math.round((counts[i] / total) * 100) : 0;
     return `
       <div class="result-row">
@@ -88,152 +135,184 @@ function renderResults(options, counts, message = '') {
       </div>`;
   }).join('');
 
+  const votedMsg = selectedIdx !== null
+    ? `<div class="toast visible">✅ Your vote has been recorded!</div>`
+    : '';
+
   render(`
     <div class="frozen-banner visible">🔒 Poll closed — results below</div>
     <div class="results">${rows}</div>
-    ${message ? `<div class="toast visible">${message}</div>` : ''}
+    ${votedMsg}
     <p class="vote-count">${total} total vote${total === 1 ? '' : 's'}</p>
   `);
 }
 
-/* ------------------------------------------------------------------ */
-/*  Render: voting view                                                */
-/* ------------------------------------------------------------------ */
-
-function renderOptions(options, pollMap, selectedIdx) {
-  const counts = countVotes(pollMap, options.length);
+function renderOptions(opts, counts) {
   const total = counts.reduce((a, b) => a + b, 0);
   const hasVoted = selectedIdx !== null;
+  const isSubmitting = pendingIdx !== null;
+  const disabled = hasVoted || isSubmitting;
 
-  const btns = options.map((label, i) => {
+  const btns = opts.map((label, i) => {
     const isSelected = i === selectedIdx;
     return `
       <button class="option-btn${isSelected ? ' selected' : ''}"
               data-idx="${i}"
-              ${hasVoted ? 'disabled' : ''}>
+              ${disabled ? 'disabled' : ''}>
         <span>${escHtml(label)}</span>
         ${isSelected ? '<span class="check">✓</span>' : ''}
       </button>`;
   }).join('');
 
+  const toast = hasVoted
+    ? `<div class="toast visible">✅ Your vote has been recorded!</div>`
+    : isSubmitting
+      ? `<div class="toast visible" style="background:rgba(99,179,237,0.08);border-color:#63b3ed;color:#63b3ed">Submitting…</div>`
+      : '';
+
   render(`
     <div class="options">${btns}</div>
-    ${hasVoted ? `<div class="toast visible">✅ Your vote has been recorded!</div>` : ''}
+    ${toast}
     <p class="vote-count">${total} vote${total === 1 ? '' : 's'} so far</p>
   `);
 
-  // Attach click handlers if not yet voted
-  if (!hasVoted) {
+  if (!disabled) {
     contentEl?.querySelectorAll('.option-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         const idx = parseInt(btn.dataset.idx ?? '-1', 10);
         if (idx < 0) return;
-
-        // Write vote to Yjs
-        const voteKey = keyVote(slideIndex, voterId);
-        pollMap.set(voteKey, idx);
-
-        // Persist locally so page reload shows "already voted"
-        localStorage.setItem(VOTED_KEY, String(idx));
-
-        // Re-render with selection shown
-        renderOptions(options, pollMap, idx);
+        submitVote(idx);
       });
     });
   }
 }
 
-/* ------------------------------------------------------------------ */
-/*  HTML escaping                                                      */
-/* ------------------------------------------------------------------ */
-
-function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function refresh() {
+  if (!options) return;
+  const counts = liveCounts ?? new Array(options.length).fill(0);
+  if (isFrozen) {
+    renderResults(options, counts);
+  } else {
+    renderOptions(options, counts);
+  }
 }
 
 /* ------------------------------------------------------------------ */
-/*  Main — connect to Yjs and initialise the poll UI                  */
+/*  Vote submission via HTTP (reliable from phones / external nets)   */
+/* ------------------------------------------------------------------ */
+
+function submitVote(idx) {
+  if (pendingIdx !== null || selectedIdx !== null) return;
+  pendingIdx = idx;
+  refresh(); // show "Submitting…" and disable buttons immediately
+
+  fetch('/api/feature-write', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      room,
+      featureId: 'poll',
+      updates: { [keyVote(slideIndex, voterId)]: idx },
+    }),
+  })
+    .then((r) => {
+      if (!r.ok) throw new Error(`HTTP ${r.status}`);
+      // Only persist the vote after the server confirms it
+      selectedIdx = idx;
+      localStorage.setItem(VOTED_KEY, String(idx));
+      pendingIdx = null;
+      refresh();
+    })
+    .catch(() => {
+      pendingIdx = null;
+      render(`<div class="status" style="color:#fc8181">Could not submit vote — please try again.</div>`);
+      setTimeout(() => { refresh(); }, 2500);
+    });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Immediate render — fetch options from server API                  */
+/* ------------------------------------------------------------------ */
+
+const vtokenParam = params.get('vtoken');
+const vtokenQuery = vtokenParam ? `&vtoken=${encodeURIComponent(vtokenParam)}` : '';
+
+fetch(`/api/poll-options?room=${encodeURIComponent(room)}&slide=${slideIndex}${vtokenQuery}`)
+  .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+  .then((data) => {
+    if (Array.isArray(data.options) && data.options.length > 0) {
+      options = data.options;
+      isFrozen = data.frozen === true;
+      setSubtitle(`Room: ${room}`);
+      refresh();
+    }
+  })
+  .catch(() => { /* will fall back to WebSocket sync */ });
+
+/* ------------------------------------------------------------------ */
+/*  WebSocket sync — for live vote counts and frozen state            */
 /* ------------------------------------------------------------------ */
 
 const wsUrl = `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
 
-const doc = new Y.Doc();
-const provider = new WebsocketProvider(wsUrl, room, doc);
+// Pass vtoken so protected rooms allow viewer access
+const wsParams = vtokenParam ? { vtoken: vtokenParam } : {};
 
-setSubtitle(`Room: ${room}`);
+const doc = new Y.Doc();
+const provider = new WebsocketProvider(wsUrl, room, doc, { params: wsParams });
+
+if (!options) setSubtitle(`Room: ${room}`);
 
 provider.on('status', ({ status }) => {
   if (status === 'disconnected') {
     setSubtitle('Disconnected — reconnecting…');
   } else if (status === 'connecting') {
-    setSubtitle(`Room: ${room}`);
+    if (!options) setSubtitle(`Room: ${room}`);
   }
 });
 
 provider.on('sync', (synced) => {
   if (!synced) return;
-
   setSubtitle(`Room: ${room}`);
 
-  // The presenter stores poll options at features.poll (a nested Y.Map).
-  // We need to wait for that nested map to exist in the synced doc.
   const featuresMap = doc.getMap('features');
 
-  function initPoll() {
+  function tryInitFromYjs() {
     const pollMap = featuresMap.get('poll');
     if (!(pollMap instanceof Y.Map)) return;
 
-    const optionsJson = pollMap.get(keyOptions(slideIndex));
-    if (typeof optionsJson !== 'string') return;
-
-    let options;
-    try {
-      options = JSON.parse(optionsJson);
-    } catch {
-      render('<div class="status">Could not read poll options.</div>');
-      return;
+    // Resolve options from Yjs if not already available from URL
+    if (!options) {
+      const optionsJson = pollMap.get(keyOptions(slideIndex));
+      if (typeof optionsJson !== 'string') return;
+      try {
+        const parsed = JSON.parse(optionsJson);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          options = parsed;
+        } else return;
+      } catch { return; }
     }
 
-    if (!Array.isArray(options) || options.length === 0) {
-      render('<div class="status">No options found for this poll.</div>');
-      return;
+    function onYjsChange() {
+      liveCounts = countVotes(pollMap, options.length);
+      isFrozen = pollMap.get(keyFrozen(slideIndex)) === true;
+      refresh();
     }
 
-    // Restore previous vote from localStorage (survives refresh)
-    const savedVote = localStorage.getItem(VOTED_KEY);
-    const selectedIdx = savedVote !== null ? parseInt(savedVote, 10) : null;
-
-    function refresh() {
-      const frozen = pollMap.get(keyFrozen(slideIndex)) === true;
-      const counts = countVotes(pollMap, options.length);
-
-      if (frozen) {
-        const msg = selectedIdx !== null ? '✅ Your vote has been recorded!' : '';
-        renderResults(options, counts, msg);
-      } else {
-        renderOptions(options, pollMap, selectedIdx);
-      }
-    }
-
-    // Observe for live updates (votes + freeze)
-    pollMap.observe(() => { refresh(); });
-
-    // Initial render
-    refresh();
+    pollMap.observe(onYjsChange);
+    onYjsChange(); // initial render with live data
   }
 
-  // The nested poll map might not exist yet if the presenter hasn't activated it
-  initPoll();
-  featuresMap.observe(() => { initPoll(); });
+  tryInitFromYjs();
+  featuresMap.observe(() => { tryInitFromYjs(); });
 });
 
-// Fallback if sync never fires (e.g. no server)
+/* ------------------------------------------------------------------ */
+/*  Fallback: no opts in URL and WS never synced                      */
+/* ------------------------------------------------------------------ */
+
 setTimeout(() => {
-  if (contentEl?.querySelector('.spinner')) {
+  if (!options) {
     render('<div class="status">Could not connect to the presentation server.<br>Make sure you are on the same network.</div>');
   }
 }, 8000);
