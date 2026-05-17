@@ -11,7 +11,7 @@ Real-time audience polling for GeekSlides
 3. A **QR code** appears for the audience to scan and vote
 4. **Freeze & reveal** the results as a live chart
 
-[](#q1.poll)
+[](#q1.poll.poll-live)
 ## What is your favourite programming language?
 
 - TypeScript
