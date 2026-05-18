@@ -8,7 +8,7 @@
  *    (decorative, no real audio data).
  *
  * Visualiser colour is configurable via the `data-color` attribute (CSS colour
- * string, default `oklch(65% 0.25 255)`).  A gradient from centre outward is
+ * string, default `#5b8def`).  A gradient from centre outward is
  * always applied for a more polished look.
  *
  * Pauses audio when the parent `<geek-slide>` becomes inactive.
@@ -24,7 +24,29 @@ import type { MediaState } from '../sync/types.ts';
 
 const DEFAULT_VIS_THRESHOLD = 300; // seconds
 const BAR_COUNT = 64;
-const DEFAULT_BAR_COLOR = 'oklch(65% 0.25 255)';
+// Use hex color (Canvas2D doesn't support oklch in all browsers).
+const DEFAULT_BAR_COLOR = '#5b8def';
+
+/** Convert a CSS color to an rgba() string with the given alpha (0–1). */
+function colorWithAlpha(color: string, alpha: number): string {
+  // For hex colors, parse and apply alpha directly.
+  if (color.startsWith('#')) {
+    const hex = color.slice(1);
+    const r = parseInt(hex.length >= 6 ? hex.slice(0, 2) : hex[0]! + hex[0]!, 16);
+    const g = parseInt(hex.length >= 6 ? hex.slice(2, 4) : hex[1]! + hex[1]!, 16);
+    const b = parseInt(hex.length >= 6 ? hex.slice(4, 6) : hex[2]! + hex[2]!, 16);
+    return `rgba(${String(r)},${String(g)},${String(b)},${String(alpha)})`;
+  }
+  // For rgb/rgba, inject/replace alpha.
+  if (color.startsWith('rgb')) {
+    const match = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/.exec(color);
+    if (match) {
+      return `rgba(${match[1]!},${match[2]!},${match[3]!},${String(alpha)})`;
+    }
+  }
+  // Fallback: just return the color (no alpha change) — gradient still works.
+  return color;
+}
 
 export class AudioSlide extends HTMLElement {
   #observer: MutationObserver | null = null;
@@ -246,11 +268,11 @@ export class AudioSlide extends HTMLElement {
 
       // Build a vertical gradient: brighter at centre, dimmer at edges.
       const grad = ctx.createLinearGradient(0, cy - halfH, 0, cy + halfH);
-      grad.addColorStop(0, barColor + '44');   // top edge (faded)
-      grad.addColorStop(0.35, barColor);       // upper body
-      grad.addColorStop(0.5, barColor);        // centre (full colour)
-      grad.addColorStop(0.65, barColor);       // lower body
-      grad.addColorStop(1, barColor + '44');   // bottom edge (faded)
+      grad.addColorStop(0, colorWithAlpha(barColor, 0.25));   // top edge (faded)
+      grad.addColorStop(0.35, barColor);                      // upper body
+      grad.addColorStop(0.5, barColor);                       // centre (full colour)
+      grad.addColorStop(0.65, barColor);                      // lower body
+      grad.addColorStop(1, colorWithAlpha(barColor, 0.25));   // bottom edge (faded)
 
       ctx.fillStyle = grad;
       const x = i * (barWidth + 1);
@@ -278,7 +300,7 @@ export class AudioSlide extends HTMLElement {
     // Draw tiny bars at rest (3px from centre)
     for (let i = 0; i < BAR_COUNT; i++) {
       const halfH = 2 + Math.sin(i * 0.3) * 1.5;
-      ctx.fillStyle = barColor + '55'; // very faded
+      ctx.fillStyle = colorWithAlpha(barColor, 0.33);
       const x = i * (barWidth + 1);
       ctx.fillRect(x, cy - halfH, barWidth, halfH * 2);
     }
