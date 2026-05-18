@@ -39,7 +39,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
     preprocessors: ['header'],
     processors: ['iframe'],
   },
-  features: ['whiteboard'],
+  features: ['whiteboard', 'media-sync'],
   aspectRatio: '16/9',
   sync: {
     enabled: true,

@@ -62,6 +62,8 @@ export class AudioSlide extends HTMLElement {
     this.#render();
     this.#observeSlide();
     this.#wireEvents();
+    // Draw idle waveform so the canvas isn't blank before playback.
+    requestAnimationFrame(() => { this.#drawIdle(); });
     document.addEventListener('geek:autoplay:unblocked', this.#onAutoplayUnblocked);
   }
 
@@ -193,10 +195,8 @@ export class AudioSlide extends HTMLElement {
       cancelAnimationFrame(this.#animationId);
       this.#animationId = null;
     }
-    // Clear canvas
-    const canvas = this.#canvas;
-    const ctx = canvas?.getContext('2d');
-    if (ctx && canvas) ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // Draw idle state (subtle centre line + tiny bars)
+    this.#drawIdle();
     this.shadowRoot?.querySelector('.gs-audio-bars')?.classList.remove('playing');
   }
 
@@ -237,6 +237,30 @@ export class AudioSlide extends HTMLElement {
     }
 
     this.#animationId = requestAnimationFrame(() => { this.#drawFrame(); });
+  }
+
+  /** Draw a subtle idle state so the canvas isn't blank before playback. */
+  #drawIdle(): void {
+    const canvas = this.#canvas;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const w = canvas.width;
+    const h = canvas.height;
+    const cy = h / 2;
+    ctx.clearRect(0, 0, w, h);
+
+    const barColor = this.getAttribute('data-color') ?? DEFAULT_BAR_COLOR;
+    const barWidth = w / BAR_COUNT - 1;
+
+    // Draw tiny bars at rest (3px from centre)
+    for (let i = 0; i < BAR_COUNT; i++) {
+      const halfH = 2 + Math.sin(i * 0.3) * 1.5;
+      ctx.fillStyle = barColor + '55'; // very faded
+      const x = i * (barWidth + 1);
+      ctx.fillRect(x, cy - halfH, barWidth, halfH * 2);
+    }
   }
 
   #updateVisualiserMode(): void {

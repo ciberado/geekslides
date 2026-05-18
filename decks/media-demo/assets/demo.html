@@ -1,11 +1,46 @@
 <!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><title>Demo Page</title>
-<style>body{font-family:sans-serif;background:#1a1a2e;color:#eee;display:flex;align-items:center;justify-content:center;height:100vh;margin:0;flex-direction:column;gap:1rem}h1{font-size:2rem;color:#7ec8e3}p{color:#aaa}</style>
+<head><meta charset="UTF-8"><title>Interactive Demo</title>
+<style>
+body { font-family: system-ui, sans-serif; background: #1a1a2e; color: #eee; display: flex; align-items: center; justify-content: center; height: 100vh; margin: 0; flex-direction: column; gap: 1.2rem; }
+h1 { font-size: 1.8rem; color: #7ec8e3; margin: 0; }
+p { color: #aaa; margin: 0; }
+.controls { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+button { background: #2d5aa0; color: white; border: none; border-radius: 6px; padding: 10px 20px; font-size: 1rem; cursor: pointer; transition: background 0.15s; }
+button:hover { background: #4a7fd4; }
+button:active { background: #1e3f6f; }
+input[type=text] { padding: 8px 14px; border-radius: 6px; border: 1px solid #555; background: #2a2a4a; color: #eee; font-size: 1rem; width: 220px; }
+.output { background: #12122a; border: 1px solid #333; border-radius: 6px; padding: 10px 16px; min-height: 40px; font-family: monospace; font-size: 0.9rem; color: #8ef; max-width: 400px; text-align: center; }
+</style>
 </head>
 <body>
-<h1>🎉 Embedded Demo</h1>
-<p>This page is embedded via an iframe in GeekSlides.</p>
-<p>Click anywhere outside this iframe overlay to navigate normally.</p>
+<h1>🎮 Interactive Iframe</h1>
+<p>Use these controls to verify keyboard/focus behaviour:</p>
+<div class="controls">
+  <button id="btn-click">Click me</button>
+  <button id="btn-count">Count: 0</button>
+  <input type="text" id="txt-input" placeholder="Type here to test focus…">
+</div>
+<div class="output" id="output">Waiting for interaction…</div>
+<script>
+  let count = 0;
+  const out = document.getElementById('output');
+  const btnCount = document.getElementById('btn-count');
+  document.getElementById('btn-click').addEventListener('click', () => {
+    out.textContent = '✓ Button clicked at ' + new Date().toLocaleTimeString();
+  });
+  btnCount.addEventListener('click', () => {
+    count++;
+    btnCount.textContent = 'Count: ' + count;
+    out.textContent = 'Counter = ' + count;
+  });
+  document.getElementById('txt-input').addEventListener('input', (e) => {
+    out.textContent = 'Typed: ' + e.target.value;
+  });
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT') return;
+    out.textContent = 'Key pressed: ' + e.key;
+  });
+</script>
 </body>
 </html>

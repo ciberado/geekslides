@@ -80,9 +80,9 @@ function injectFeatureUI(
       top: 50%;
       transform: translateY(-50%);
       pointer-events: auto;
-      background: oklch(12% 0 0 / 0.62);
+      background: rgba(20, 20, 20, 0.62);
       color: white;
-      border: 1px solid oklch(100% 0 0 / 0.18);
+      border: 1px solid rgba(255, 255, 255, 0.18);
       border-radius: 6px;
       width: 36px;
       height: 80px;
@@ -97,7 +97,7 @@ function injectFeatureUI(
       user-select: none;
       box-shadow: 0 2px 10px rgba(0,0,0,0.45);
     }
-    .gs-media-nav-btn:hover { opacity: 1; background: oklch(18% 0 0 / 0.82); }
+    .gs-media-nav-btn:hover { opacity: 1; background: rgba(30, 30, 30, 0.82); }
     .gs-media-nav-prev { left: 8px; }
     .gs-media-nav-next { right: 8px; }
     .gs-keyboard-captured {
@@ -106,25 +106,25 @@ function injectFeatureUI(
       left: 50%;
       transform: translateX(-50%);
       pointer-events: auto;
-      background: oklch(22% 0.04 240 / 0.92);
+      background: rgba(25, 35, 60, 0.92);
       color: #c8deff;
       padding: 7px 18px;
       border-radius: 20px;
       font-family: system-ui, sans-serif;
       font-size: 0.78rem;
       white-space: nowrap;
-      border: 1px solid oklch(60% 0.1 240 / 0.4);
+      border: 1px solid rgba(80, 120, 200, 0.4);
       z-index: 200;
       cursor: pointer;
     }
-    .gs-keyboard-captured:hover { background: oklch(28% 0.06 240 / 0.95); }
+    .gs-keyboard-captured:hover { background: rgba(40, 50, 80, 0.95); }
     .gs-autoplay-banner {
       position: absolute;
       bottom: 14px;
       left: 50%;
       transform: translateX(-50%);
       pointer-events: auto;
-      background: oklch(18% 0 0 / 0.92);
+      background: rgba(25, 25, 25, 0.92);
       color: white;
       padding: 10px 22px;
       border-radius: 8px;
@@ -132,7 +132,7 @@ function injectFeatureUI(
       font-family: system-ui, sans-serif;
       font-size: 0.85rem;
       white-space: nowrap;
-      border: 1px solid oklch(55% 0 0 / 0.5);
+      border: 1px solid rgba(128, 128, 128, 0.5);
       z-index: 200;
     }
     .gs-autoplay-banner strong { font-weight: 600; }
