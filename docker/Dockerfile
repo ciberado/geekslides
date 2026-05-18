@@ -40,6 +40,9 @@ WORKDIR /app
 
 COPY --from=app-builder /app/packages/cli/dist/app /srv/slides
 COPY --from=server-builder /app/packages/server/dist/index.cjs ./index.cjs
+# pino (and thread-stream) are marked --external in the esbuild bundle and
+# must be present at runtime; copy only the server's node_modules.
+COPY --from=server-builder /app/node_modules ./node_modules
 # Bundle the welcome deck — shown when no CONTENT_DIR is mounted
 COPY decks/welcome-deck/ /srv/content/
 COPY docker/Caddyfile /etc/caddy/Caddyfile

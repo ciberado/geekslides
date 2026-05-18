@@ -13,6 +13,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **Hub launch endpoint** — `POST /hub/api/presentations/:id/launch` now returns HTTP 500 (not 400) when the launch backend (yjs-server) is unreachable, with a descriptive error message including the target URL and underlying cause (e.g. "Launch backend unavailable: Cannot reach yjs-server at http://localhost:1234: fetch failed")
 - **Hub server-client** — network-level `fetch()` failures (e.g. connection refused) now continue to the next `SERVER_BASE_URL` candidate instead of aborting immediately; the final error includes which URL failed and why
+- **Docker: yjs-server fails to start** — `Dockerfile` runtime stage was missing `COPY node_modules` so `pino` (marked `--external` in the esbuild bundle) was not found at startup; added the copy step matching the hub Dockerfile pattern
 
 <!-- Add new entries above this line -->
 
