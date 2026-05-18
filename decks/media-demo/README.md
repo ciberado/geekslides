@@ -64,6 +64,16 @@ in `<geek-video>` for pause-on-navigate and sync support:
 
 
 
+[](#video-cover,.layout-cover.mod-media-cover)
+
+# Video Background
+
+Navigate with the **‹ ›** arrows even when the video has keyboard focus.
+
+![Sample video](./assets/video-by-eugenio-manghi.mp4)
+
+
+
 [](#iframe)
 
 ## Embedded Page

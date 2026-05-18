@@ -25,6 +25,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Symmetric audio waveform** — `<geek-audio>` now draws 64 bars radiating up AND down from a vertical centre line on a transparent canvas; colour configurable via `data-color` attribute; gradient fades at bar tips; CSS fallback also uses symmetric bars
 - **Terminal commands** — `media-play`, `media-pause`, `media-seek <seconds>` control media on the current slide from the terminal
 - **`decks/media-demo/`** — demo deck exercising all media types with local Firefox-compatible assets
+- **Video cover slide** — `layout-cover` + `mod-media-cover` combination: video fills the slide as a background, gradient overlay provides contrast, title and paragraph float above the gradient. CSS z-index layering added to `layouts.css` for this combination.
 
 ### Fixed
 
@@ -34,6 +35,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Iframe keyboard trap** — after clicking the overlay, keyboard stayed locked in the iframe; fixed with restore button and keyboard-captured banner
 - **Autoplay banner prominence** — banner redesigned as a full-slide-area modal overlay with `backdrop-filter: blur`, pulsing play icon, large title, explanatory subtitle, and prominent white CTA button (replaces previous small pill badge)
 - **Media sync viewer** — fixed orphan Y.Map bug where viewer created a local Yjs map that the server dropped on readonly connections; viewer now observes the root `features` map for the presenter's `media-sync` entry before attaching its observer
+- **Sync-on-unblock** — when the viewer clicks the autoplay banner, media on the current slide is re-synced to the latest Yjs state (compensates for time elapsed while playback was blocked by browser policy)
 
 <!-- Add new entries above this line -->
 

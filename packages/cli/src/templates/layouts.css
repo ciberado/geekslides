@@ -1366,6 +1366,22 @@ section.content.mod-media-cover .gs-iframe-wrapper {
   padding-bottom: 0;
 }
 
+/* When layout-cover and mod-media-cover are combined, the media element acts as
+   the slide background (z-index 0), the gradient overlay sits on top (z-index 1),
+   and text content floats above the gradient (z-index 2). */
+section.content.layout-cover.mod-media-cover > geek-video,
+section.content.layout-cover.mod-media-cover > geek-youtube {
+  z-index: 0;
+}
+
+section.content.layout-cover.mod-media-cover::before {
+  z-index: 1;
+}
+
+section.content.layout-cover.mod-media-cover > *:not(geek-video):not(geek-youtube) {
+  z-index: 2;
+}
+
 /* ── Iframe wrapper (16:9 default) ── */
 .gs-iframe-wrapper {
   position: relative;

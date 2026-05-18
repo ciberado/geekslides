@@ -571,5 +571,94 @@ describe('media-sync-feature', () => {
       expect(rootMap.unobserve).toHaveBeenCalled();
       expect(featureMap.unobserve).toHaveBeenCalled();
     });
+
+    it('re-applies latest Yjs state when autoplay banner is dismissed', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      const { map: rootMap } = createMockYMap();
+      const { map: featureMap } = createMockYMap();
+      rootMap.get.mockReturnValue(featureMap);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+
+      const audioEl = slideshow.shadowRoot!
+        .querySelector('geek-slide')!.shadowRoot!
+        .querySelector('geek-audio')! as HTMLElement & { applyRemoteState: ReturnType<typeof vi.fn> };
+      audioEl.applyRemoteState = vi.fn();
+
+      // Presenter is at t=42s (stored in Yjs map for slide 0)
+      const syncedState = { playing: true, currentTime: 42, timestamp: Date.now() };
+      featureMap.get.mockReturnValue(syncedState);
+
+      // User clicks the autoplay banner
+      document.dispatchEvent(new CustomEvent('geek:autoplay:unblocked'));
+
+      // Component should be told to apply the latest synced state
+      expect(audioEl.applyRemoteState).toHaveBeenCalledWith(
+        expect.objectContaining({ playing: true, currentTime: 42 }),
+      );
+
+      cleanup();
+    });
+
+    it('does not crash when geek:autoplay:unblocked fires but no Yjs map yet', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      const { map: rootMap } = createMockYMap();
+      // No feature map yet (presenter hasn't connected)
+      rootMap.get.mockReturnValue(undefined);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+
+      // Should not throw even though the feature map isn't available yet
+      expect(() => {
+        document.dispatchEvent(new CustomEvent('geek:autoplay:unblocked'));
+      }).not.toThrow();
+
+      cleanup();
+    });
+
+    it('removes autoplay:unblocked listener on cleanup', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      const { map: rootMap } = createMockYMap();
+      const { map: featureMap } = createMockYMap();
+      rootMap.get.mockReturnValue(featureMap);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+
+      const audioEl = slideshow.shadowRoot!
+        .querySelector('geek-slide')!.shadowRoot!
+        .querySelector('geek-audio')! as HTMLElement & { applyRemoteState: ReturnType<typeof vi.fn> };
+      audioEl.applyRemoteState = vi.fn();
+      featureMap.get.mockReturnValue({ playing: true, currentTime: 5, timestamp: Date.now() });
+
+      cleanup();
+
+      // After cleanup, dispatching the event should NOT call applyRemoteState
+      document.dispatchEvent(new CustomEvent('geek:autoplay:unblocked'));
+      expect(audioEl.applyRemoteState).not.toHaveBeenCalled();
+    });
   });
 });

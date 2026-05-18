@@ -447,9 +447,21 @@ export const mediaSyncFeature: Feature = {
       // If the map already exists (presenter connected first), attach immediately.
       attachFeatureMap();
 
+      // When the user dismisses the autoplay banner, snap media on the current slide
+      // to the latest synced state (compensates for time elapsed while blocked).
+      const onAutoplayUnblocked = (): void => {
+        const idx = ctx.slideshow.currentSlide;
+        const featureMap = currentFeatureMap;
+        if (!featureMap) return;
+        const state = featureMap.get(String(idx)) as MediaState | undefined;
+        if (state) applyState(state, idx);
+      };
+      document.addEventListener('geek:autoplay:unblocked', onAutoplayUnblocked);
+
       mapUnsubscribe = () => {
         root.unobserve(onRootChange);
         if (currentFeatureMap) currentFeatureMap.unobserve(onFeatureMapChange);
+        document.removeEventListener('geek:autoplay:unblocked', onAutoplayUnblocked);
       };
     }
 
