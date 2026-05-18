@@ -5,6 +5,10 @@ import {
   headerPreprocessor,
   slideSourceNotesPreprocessor,
   cssDoodlePreprocessor,
+  youtubeUrlPreprocessor,
+  audioUrlPreprocessor,
+  videoUrlPreprocessor,
+  iframeUrlPreprocessor,
   CommandSystem,
   KeyBindings,
   TouchInput,
@@ -15,6 +19,8 @@ import {
   chartProcessor,
   videoProcessor,
   cssDoodleProcessor,
+  audioProcessor,
+  iframeOverlayProcessor,
   uploadDeck,
   buildManifest,
   getProxyBaseUrl,
@@ -66,6 +72,10 @@ const PREPROCESSORS = {
   header: headerPreprocessor,
   'source-notes': slideSourceNotesPreprocessor,
   'css-doodle': cssDoodlePreprocessor,
+  'youtube-url': youtubeUrlPreprocessor,
+  'audio-url': audioUrlPreprocessor,
+  'video-url': videoUrlPreprocessor,
+  'iframe-url': iframeUrlPreprocessor,
 };
 
 const PROCESSORS = {
@@ -73,6 +83,8 @@ const PROCESSORS = {
   iframe: iframeProcessor,
   video: videoProcessor,
   'css-doodle': cssDoodleProcessor,
+  'audio-url': audioProcessor,
+  'iframe-url': iframeOverlayProcessor,
 };
 
 // Expose engine utilities for deck-local custom components.

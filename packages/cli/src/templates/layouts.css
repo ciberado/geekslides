@@ -1315,3 +1315,97 @@ section.content.layout-features {
     padding-inline-start: 2em;
   }
 }
+
+
+/* ─── MEDIA ELEMENTS ─────────────────────────────────────────────────────────
+ *
+ * Structural rules for embedded media components (<geek-youtube>, <geek-audio>,
+ * <geek-video>) and iframe wrappers produced by the media URL plugins.
+ *
+ * This CSS is injected into every slide's shadow DOM via Slideshow.injectStyles(),
+ * so selectors like `section.content.mod-media-cover geek-youtube` work correctly
+ * inside the slide shadow root.
+ *
+ * Default: block, full-width, auto height — participates in grid/flex layouts
+ * exactly like <img>.
+ *
+ * Cover variant — fill the slide like a background:
+ *   Add `.mod-media-cover` to the slide marker:
+ *     [](#slide-id,.mod-media-cover)
+ *     ![My Talk](https://youtu.be/dQw4w9WgXcQ)
+ *
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+geek-youtube,
+geek-audio,
+geek-video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ── Cover variant: fill the entire slide ── */
+section.content.mod-media-cover {
+  padding: 0;
+}
+
+section.content.mod-media-cover geek-youtube,
+section.content.mod-media-cover geek-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+}
+
+section.content.mod-media-cover .gs-iframe-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 0;
+}
+
+/* ── Iframe wrapper (16:9 default) ── */
+.gs-iframe-wrapper {
+  position: relative;
+  width: 100%;
+  height: 0;
+  padding-bottom: 56.25%;
+}
+
+.gs-iframe-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Overlay that prevents keyboard-focus stealing */
+.gs-iframe-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: pointer;
+  background: transparent;
+  outline: none;
+}
+
+.gs-iframe-overlay-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.gs-iframe-overlay:hover .gs-iframe-overlay-hint,
+.gs-iframe-overlay:focus .gs-iframe-overlay-hint {
+  opacity: 1;
+}

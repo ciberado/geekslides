@@ -40,6 +40,10 @@ export { videoProcessor } from './plugins/builtins/video-processor.ts';
 export { mermaidProcessor } from './plugins/builtins/mermaid-processor.ts';
 export { cssDoodleProcessor } from './plugins/builtins/css-doodle-processor.ts';
 export { buildColorVars, parseConfig as parseDoodleConfig } from './plugins/builtins/css-doodle-processor.ts';
+export { youtubeUrlPlugin, youtubeUrlPreprocessor } from './plugins/builtins/youtube-url-plugin.ts';
+export { audioUrlPlugin, audioUrlPreprocessor, audioProcessor } from './plugins/builtins/audio-url-plugin.ts';
+export { videoUrlPlugin, videoUrlPreprocessor } from './plugins/builtins/video-url-plugin.ts';
+export { iframeUrlPlugin, iframeUrlPreprocessor, iframeOverlayProcessor } from './plugins/builtins/iframe-url-plugin.ts';
 
 // CSS Doodle pattern registry and types
 export { patternRegistry } from './plugins/builtins/css-doodle-patterns/index.ts';
@@ -48,10 +52,14 @@ export type { DoodlePattern, DoodlePatternConfig, ParsedDoodleConfig } from './p
 // Phase 6: Rich Components
 import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';
 import { VideoSlide as VideoSlideImpl } from './components/VideoSlide.ts';
+import { YoutubeSlide as YoutubeSlideImpl } from './components/YoutubeSlide.ts';
+import { AudioSlide as AudioSlideImpl } from './components/AudioSlide.ts';
 import { Whiteboard as WhiteboardImpl } from './components/Whiteboard.ts';
 import { WhiteboardToolbar as WhiteboardToolbarImpl } from './components/WhiteboardToolbar.ts';
 export { ChartSlide } from './components/ChartSlide.ts';
 export { VideoSlide } from './components/VideoSlide.ts';
+export { YoutubeSlide } from './components/YoutubeSlide.ts';
+export { AudioSlide } from './components/AudioSlide.ts';
 export { Whiteboard } from './components/Whiteboard.ts';
 export { WhiteboardToolbar } from './components/WhiteboardToolbar.ts';
 export type { WhiteboardTool, ToolSettings } from './components/WhiteboardToolbar.ts';
@@ -98,6 +106,7 @@ export type {
   FeatureOutputAPI,
 } from './features/index.ts';
 export { whiteboardFeature } from './features/builtins/whiteboard-feature.ts';
+export { mediaSyncFeature } from './features/builtins/media-sync-feature.ts';
 
 // Register custom elements
 function registerElements(): void {
@@ -119,6 +128,12 @@ function registerElements(): void {
     }
     if (!customElements.get('geek-video')) {
       customElements.define('geek-video', VideoSlideImpl);
+    }
+    if (!customElements.get('geek-youtube')) {
+      customElements.define('geek-youtube', YoutubeSlideImpl);
+    }
+    if (!customElements.get('geek-audio')) {
+      customElements.define('geek-audio', AudioSlideImpl);
     }
     if (!customElements.get('geek-whiteboard')) {
       customElements.define('geek-whiteboard', WhiteboardImpl);

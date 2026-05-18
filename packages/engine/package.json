@@ -28,16 +28,17 @@
   },
   "dependencies": {
     "chart.js": "^4.4.0",
-    "qrcode": "^1.5.4",
     "css-doodle": "^0.40.6",
     "markdown-it": "^14.1.0",
     "markdown-it-container": "^4.0.0",
     "mermaid": "^11.14.0",
     "pino": "^10.3.1",
+    "qrcode": "^1.5.4",
     "y-websocket": "^2.0.0",
     "yjs": "^13.6.0"
   },
   "devDependencies": {
-    "@types/markdown-it": "^14.1.0"
+    "@types/markdown-it": "^14.1.0",
+    "@types/youtube": "^0.2.0"
   }
 }

@@ -7,7 +7,29 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
-## [2.0.0] - 2026-05-09
+## [Unreleased]
+
+### Added
+
+- **Rich media embeds** — YouTube, audio, video, and iframe embeds via image-link markdown syntax (`![alt](url)`)
+  - `youtube-url` plugin: detects YouTube / youtu.be URLs → `<geek-youtube>` web component with IFrame API
+  - `audio-url` plugin: detects audio extensions (`.mp3 .wav .ogg .flac .aac .m4a .opus .weba`) → `<geek-audio>` with waveform visualiser (Web Audio API or CSS-bars fallback)
+  - `video-url` plugin: detects video extensions (`.mp4 .webm .ogv .mov`) → `<geek-video>`
+  - `iframe-url` plugin: detects `.html`/`.htm` URLs → lazy-loaded `<iframe data-src>` with click-to-activate overlay
+- **`mod-media-cover` modifier** — add to a slide marker to fill the slide with any media element; implemented via CSS injection (no JS class detection needed)
+- **Media sync feature** (`media-sync`) — presenter play/pause/seek is propagated to viewers via Yjs `mediaState` map; drift-corrected via wall-clock timestamp
+- **Autoplay banner** — when viewer's browser blocks autoplay, a clickable banner appears; resolves on user click and retries media playback
+- **Nav arrow buttons** — subtle ‹ › buttons injected by `media-sync` feature allow slide navigation when iframes or YouTube embeds have keyboard focus
+- **Terminal commands** — `media-play`, `media-pause`, `media-seek <seconds>` control media on the current slide from the terminal
+- **`decks/media-demo/`** — demo deck exercising all media types with local Firefox-compatible assets
+
+### Fixed
+
+- **`layouts.css` media section** — missing `*/` comment terminator caused all media CSS rules to be treated as a comment and never applied
+- **Missing deck CSS directory** — `decks/media-demo/css/` was absent so `layouts.css` and `theme-default.css` were not loaded; deck now includes both files
+
+<!-- Add new entries above this line -->
+
 
 Complete rewrite of GeekSlides as a modern TypeScript monorepo.
 

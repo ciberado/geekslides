@@ -1,0 +1,11 @@
+{
+  "title": "Rich Media Demo",
+  "content": ["README.md"],
+  "styles": ["css/layouts.css", "css/theme-default.css"],
+  "plugins": {
+    "preprocessors": ["header", "youtube-url", "audio-url", "video-url", "iframe-url"],
+    "processors": ["iframe", "video", "audio-url", "iframe-url"]
+  },
+  "features": ["whiteboard", "media-sync"],
+  "aspectRatio": "16/9"
+}

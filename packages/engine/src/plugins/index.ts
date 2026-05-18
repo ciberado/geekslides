@@ -10,3 +10,7 @@ export { slideSourceNotesPreprocessor } from './builtins/slide-source-notes-prep
 export { iframeProcessor } from './builtins/iframe-processor.ts';
 export { chartProcessor } from './builtins/chart-processor.ts';
 export { videoProcessor } from './builtins/video-processor.ts';
+export { videoUrlPlugin, videoUrlPreprocessor } from './builtins/video-url-plugin.ts';
+export { iframeUrlPlugin, iframeUrlPreprocessor, iframeOverlayProcessor } from './builtins/iframe-url-plugin.ts';
+export { youtubeUrlPlugin, youtubeUrlPreprocessor } from './builtins/youtube-url-plugin.ts';
+export { audioUrlPlugin, audioUrlPreprocessor, audioProcessor } from './builtins/audio-url-plugin.ts';

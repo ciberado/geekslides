@@ -244,3 +244,7 @@ decks/css-doodle-demo/
 | Script fails to load | Open browser console for errors; verify the path in `config.json` is relative to the deck root |
 | `window.__geekslides` is undefined | Scripts load before render — `__geekslides` is set in `main.js` at boot. Make sure you're not accessing it at module-level; use it inside `connectedCallback()` or event handlers |
 | Doodle `.update()` has no effect | Ensure you're calling `.update(css)` with a full CSS string, not just a fragment |
+
+---
+
+Next: [Embed Rich Media →](22-embed-rich-media.md)

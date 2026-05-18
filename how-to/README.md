@@ -24,6 +24,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Create a Custom Layout with Modifiers](19-create-layout-with-modifiers.md) | ⭐ Build layouts with nested modifier variations using CSS nesting and structured documentation |
 | [Add CSS Doodle Backgrounds](20-add-css-doodle-backgrounds.md) | Add beautiful generative parametric patterns as decorative backgrounds with automatic theme integration |
 | [Embed Custom Components](21-embed-custom-components.md) | Load custom web components via config.scripts and embed them in slides for interactive controls and visualizations |
+| [Embed Rich Media](22-embed-rich-media.md) | Add YouTube videos, audio players, video files, and embedded pages to slides using image-link syntax with lazy-load, layout, and sync support |
 
 ## Screenshots
 

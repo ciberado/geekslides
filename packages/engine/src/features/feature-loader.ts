@@ -21,6 +21,10 @@ const BUILTIN_FEATURES: Record<string, () => Promise<Feature>> = {
     const mod = await import('./builtins/poll-feature.ts');
     return mod.pollFeature;
   },
+  'media-sync': async () => {
+    const mod = await import('./builtins/media-sync-feature.ts');
+    return mod.mediaSyncFeature;
+  },
 };
 
 /**

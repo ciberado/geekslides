@@ -33,14 +33,13 @@ describe('iframe-processor', () => {
       };
     }));
 
-    const mockIframe = Object.create(HTMLIFrameElement.prototype, {
-      getAttribute: { value: vi.fn().mockReturnValue('https://example.com') },
-      src: { value: '', writable: true },
-    });
+    const mockIframe = document.createElement('iframe');
+    mockIframe.setAttribute('data-src', 'https://example.com');
 
     const el = {
       querySelectorAll: vi.fn().mockReturnValue([mockIframe]),
       hasAttribute: vi.fn().mockReturnValue(false),
+      getRootNode: vi.fn().mockReturnValue(document),
     } as unknown as HTMLElement;
 
     const ctx = {
@@ -52,7 +51,7 @@ describe('iframe-processor', () => {
 
     iframeProcessor(el, ctx);
 
-    // MutationObserver should be set up
+    // MutationObserver should observe the element itself (not in a ShadowRoot)
     expect(observeMock).toHaveBeenCalledWith(el, {
       attributes: true,
       attributeFilter: ['active'],
@@ -66,7 +65,7 @@ describe('iframe-processor', () => {
     );
 
     // iframe should now have src set from data-src
-    expect(mockIframe.src).toBe('https://example.com');
+    expect(mockIframe.src).toBe('https://example.com/');
 
     vi.unstubAllGlobals();
   });
@@ -78,14 +77,13 @@ describe('iframe-processor', () => {
       return { observe: vi.fn(), disconnect: vi.fn() };
     }));
 
-    const mockIframe = Object.create(HTMLIFrameElement.prototype, {
-      getAttribute: { value: vi.fn().mockReturnValue('https://example.com') },
-      src: { value: '', writable: true },
-    });
+    const mockIframe = document.createElement('iframe');
+    mockIframe.setAttribute('data-src', 'https://example.com');
 
     const el = {
       querySelectorAll: vi.fn().mockReturnValue([mockIframe]),
       hasAttribute: vi.fn().mockReturnValue(false),
+      getRootNode: vi.fn().mockReturnValue(document),
     } as unknown as HTMLElement;
 
     const ctx = {
