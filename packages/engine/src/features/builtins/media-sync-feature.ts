@@ -67,7 +67,7 @@ function injectFeatureUI(
   container: HTMLElement,
   onPrev: () => void,
   onNext: () => void,
-): { showAutoplayBanner: () => void; removeUI: () => void } {
+): { showAutoplayBanner: () => void; setHasMedia: (value: boolean) => void; removeUI: () => void } {
   const style = document.createElement('style');
   style.textContent = `
     .gs-media-layer {
@@ -329,28 +329,67 @@ export const mediaSyncFeature: Feature = {
     document.addEventListener('geek:autoplay:blocked', onAutoplayBlocked);
 
     // ── 4. Viewer: observe shared map, apply to current slide ────────────────
+    // IMPORTANT: The viewer must NOT call getSharedMap() eagerly because that
+    // creates a local Y.Map via root.set(). If the server rejects readonly writes,
+    // the presenter's map arrives later and Yjs conflict resolution may pick a
+    // different Y.Map instance — making the viewer's .observe() on the old orphan
+    // map never fire. Instead, observe the root 'features' map for the feature key
+    // to appear, then observe the actual shared map.
     let mapUnsubscribe: (() => void) | null = null;
 
-    if (isViewer && ctx.sync) {
-      const sharedMap = ctx.sync.getSharedMap();
-      sharedMap.observe((event) => {
-        event.keysChanged.forEach((key: unknown) => {
-          if (!slideshow) return;
-          const keyStr = String(key);
-          const slideIndex = parseInt(keyStr, 10);
-          if (isNaN(slideIndex)) return;
-          const state = sharedMap.get(keyStr) as MediaState | undefined;
-          if (!state) return;
+    if (isViewer && ctx.syncManager) {
+      const root = ctx.syncManager.doc.getMap('features');
 
-          const components = getMediaInSlide(slideshow, slideIndex);
-          for (const c of components) {
-            if (c instanceof HTMLElement && 'applyRemoteState' in c) {
-              c.applyRemoteState(state);
-            }
+      const applyState = (state: MediaState, slideIndex: number): void => {
+        if (!slideshow) return;
+        const components = getMediaInSlide(slideshow, slideIndex);
+        for (const c of components) {
+          if (c instanceof HTMLElement && 'applyRemoteState' in c) {
+            c.applyRemoteState(state);
           }
+        }
+      };
+
+      // Handler that observes the feature's nested map for media state changes.
+      type YMapEvent = { keysChanged: Set<string> };
+      const onFeatureMapChange = (event: YMapEvent): void => {
+        const featureMap = root.get('media-sync') as { get(k: string): unknown } | undefined;
+        if (!featureMap) return;
+        event.keysChanged.forEach((key: string) => {
+          const slideIndex = parseInt(key, 10);
+          if (isNaN(slideIndex)) return;
+          const state = featureMap.get(key) as MediaState | undefined;
+          if (state) applyState(state, slideIndex);
         });
-      });
-      mapUnsubscribe = () => { /* Yjs observers clean up with the doc */ };
+      };
+
+      // Try to attach observer to the existing feature map, or wait for it.
+      let currentFeatureMap: { observe(fn: (e: YMapEvent) => void): void; unobserve(fn: (e: YMapEvent) => void): void; get(k: string): unknown } | null = null;
+
+      const attachFeatureMap = (): void => {
+        const map = root.get('media-sync') as typeof currentFeatureMap | undefined;
+        if (map && map !== currentFeatureMap) {
+          if (currentFeatureMap) currentFeatureMap.unobserve(onFeatureMapChange);
+          currentFeatureMap = map;
+          map.observe(onFeatureMapChange);
+        }
+      };
+
+      // Observe root for the 'media-sync' key appearing (presenter creates it).
+      const onRootChange = (event: YMapEvent): void => {
+        if (event.keysChanged.has('media-sync')) {
+          attachFeatureMap();
+        }
+      };
+      root.observe(onRootChange);
+
+      // If the map already exists (presenter connected first), attach immediately.
+      attachFeatureMap();
+
+      mapUnsubscribe = () => {
+        root.unobserve(onRootChange);
+        if (currentFeatureMap) currentFeatureMap.unobserve(onFeatureMapChange);
+      };
     }
 
     // ── 5. Terminal commands (all roles) ─────────────────────────────────────

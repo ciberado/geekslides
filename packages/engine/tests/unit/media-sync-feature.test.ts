@@ -101,6 +101,8 @@ function createMockContext(
       };
     }) as unknown as FeatureContext['on'],
     sync: undefined,
+    syncManager: undefined,
+    output: { show: vi.fn() },
   } as unknown as FeatureContext;
 
   return { ctx, listeners };
@@ -417,6 +419,157 @@ describe('media-sync-feature', () => {
       document.dispatchEvent(event);
 
       expect(mockMap.set).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('viewer sync observation', () => {
+    /** Create a minimal mock of Y.Map behaviour for testing observer logic. */
+    function createMockYMap(): {
+      map: { get: ReturnType<typeof vi.fn>; set: ReturnType<typeof vi.fn>; observe: ReturnType<typeof vi.fn>; unobserve: ReturnType<typeof vi.fn> };
+      triggerObservers: (keysChanged: Set<string>) => void;
+    } {
+      const observers: Array<(e: { keysChanged: Set<string> }) => void> = [];
+      const map = {
+        get: vi.fn(),
+        set: vi.fn(),
+        observe: vi.fn((fn: (e: { keysChanged: Set<string> }) => void) => { observers.push(fn); }),
+        unobserve: vi.fn((fn: (e: { keysChanged: Set<string> }) => void) => {
+          const idx = observers.indexOf(fn);
+          if (idx >= 0) observers.splice(idx, 1);
+        }),
+      };
+      return {
+        map,
+        triggerObservers: (keysChanged) => {
+          for (const fn of [...observers]) fn({ keysChanged });
+        },
+      };
+    }
+
+    it('observes root features map and attaches to media-sync map when it appears', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      // Mock Yjs doc with features root map
+      const { map: rootMap, triggerObservers: triggerRoot } = createMockYMap();
+      const { map: featureMap, triggerObservers: triggerFeature } = createMockYMap();
+
+      // Initially, root.get('media-sync') returns undefined (presenter hasn't created it yet)
+      rootMap.get.mockReturnValue(undefined);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+
+      // Root map should be observed
+      expect(rootMap.observe).toHaveBeenCalled();
+
+      // Simulate presenter creating the media-sync map
+      rootMap.get.mockReturnValue(featureMap);
+      triggerRoot(new Set(['media-sync']));
+
+      // Feature map should now be observed
+      expect(featureMap.observe).toHaveBeenCalled();
+
+      // Simulate presenter pushing media state for slide 0
+      const audioEl = slideshow.shadowRoot!
+        .querySelector('geek-slide')!.shadowRoot!
+        .querySelector('geek-audio')! as HTMLElement & { applyRemoteState: ReturnType<typeof vi.fn> };
+      audioEl.applyRemoteState = vi.fn();
+
+      featureMap.get.mockReturnValue({ playing: true, currentTime: 3, timestamp: Date.now() });
+      triggerFeature(new Set(['0']));
+
+      expect(audioEl.applyRemoteState).toHaveBeenCalledWith(
+        expect.objectContaining({ playing: true, currentTime: 3 }),
+      );
+
+      cleanup();
+    });
+
+    it('attaches immediately if media-sync map already exists at activation time', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      const { map: rootMap } = createMockYMap();
+      const { map: featureMap, triggerObservers: triggerFeature } = createMockYMap();
+
+      // Presenter already created the map before viewer connected
+      rootMap.get.mockReturnValue(featureMap);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+
+      // Feature map should be observed immediately (no need to wait)
+      expect(featureMap.observe).toHaveBeenCalled();
+
+      // Simulate state arriving
+      const audioEl = slideshow.shadowRoot!
+        .querySelector('geek-slide')!.shadowRoot!
+        .querySelector('geek-audio')! as HTMLElement & { applyRemoteState: ReturnType<typeof vi.fn> };
+      audioEl.applyRemoteState = vi.fn();
+
+      featureMap.get.mockReturnValue({ playing: false, currentTime: 10, timestamp: Date.now() });
+      triggerFeature(new Set(['0']));
+
+      expect(audioEl.applyRemoteState).toHaveBeenCalledWith(
+        expect.objectContaining({ playing: false, currentTime: 10 }),
+      );
+
+      cleanup();
+    });
+
+    it('does NOT call getSharedMap() on viewer (avoids creating orphan Y.Map)', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      const { map: rootMap } = createMockYMap();
+      rootMap.get.mockReturnValue(undefined);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+      const mockSync = { getSharedMap: vi.fn(), isReadonly: true };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+      (ctx as unknown as { sync: unknown }).sync = mockSync;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+
+      // getSharedMap should NOT be called by the viewer — that's the bug we fixed
+      expect(mockSync.getSharedMap).not.toHaveBeenCalled();
+
+      cleanup();
+    });
+
+    it('unsubscribes observers on cleanup', () => {
+      const { slideshow, container } = createSlideshowDOM([
+        '<geek-audio src="track.mp3"></geek-audio>',
+      ]);
+
+      const { map: rootMap } = createMockYMap();
+      const { map: featureMap } = createMockYMap();
+      rootMap.get.mockReturnValue(featureMap);
+
+      const mockSyncManager = { doc: { getMap: vi.fn(() => rootMap) } };
+
+      const { ctx } = createMockContext(slideshow, container, { isViewer: true });
+      (ctx as unknown as { syncManager: unknown }).syncManager = mockSyncManager;
+
+      const cleanup = mediaSyncFeature.activate(ctx);
+      cleanup();
+
+      expect(rootMap.unobserve).toHaveBeenCalled();
+      expect(featureMap.unobserve).toHaveBeenCalled();
     });
   });
 });
