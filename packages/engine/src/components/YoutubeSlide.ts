@@ -79,6 +79,10 @@ export class YoutubeSlide extends HTMLElement {
   #videoId = '';
   #observer: MutationObserver | null = null;
   #loaded = false;
+  /** State stored while awaiting autoplay confirmation or banner dismissal. */
+  #pendingState: MediaState | null = null;
+  #autoplayCheckTimer: ReturnType<typeof setTimeout> | null = null;
+  #onAutoplayUnblocked: () => void;
 
   static get observedAttributes(): string[] {
     return ['data-id', 'cover'];
@@ -87,12 +91,25 @@ export class YoutubeSlide extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
+    this.#onAutoplayUnblocked = () => {
+      if (!this.#pendingState) return;
+      const root = this.getRootNode();
+      const hostSlide = root instanceof ShadowRoot ? root.host : null;
+      if (!hostSlide?.hasAttribute('active')) {
+        this.#pendingState = null;
+        return;
+      }
+      const state = this.#pendingState;
+      this.#pendingState = null;
+      this.applyRemoteState(state);
+    };
   }
 
   connectedCallback(): void {
     this.#videoId = this.getAttribute('data-id') ?? '';
     this.#render();
     this.#observeSlide();
+    document.addEventListener('geek:autoplay:unblocked', this.#onAutoplayUnblocked);
   }
 
   disconnectedCallback(): void {
@@ -101,6 +118,12 @@ export class YoutubeSlide extends HTMLElement {
     this.#player?.destroy();
     this.#player = null;
     this.#loaded = false;
+    this.#pendingState = null;
+    if (this.#autoplayCheckTimer !== null) {
+      clearTimeout(this.#autoplayCheckTimer);
+      this.#autoplayCheckTimer = null;
+    }
+    document.removeEventListener('geek:autoplay:unblocked', this.#onAutoplayUnblocked);
   }
 
   attributeChangedCallback(name: string, _old: string | null, newVal: string | null): void {
@@ -126,10 +149,31 @@ export class YoutubeSlide extends HTMLElement {
     if (Math.abs(player.getCurrentTime() - targetTime) > 0.5) {
       player.seekTo(targetTime, true);
     }
+
     if (state.playing) {
       player.playVideo();
+      // YouTube's playVideo() is void — it can't throw NotAllowedError.
+      // Detect blocked autoplay by checking if the player transitioned to
+      // PLAYING or BUFFERING within a short window.
+      this.#pendingState = state;
+      if (this.#autoplayCheckTimer !== null) clearTimeout(this.#autoplayCheckTimer);
+      this.#autoplayCheckTimer = setTimeout(() => {
+        this.#autoplayCheckTimer = null;
+        if (!this.#pendingState) return; // Already cleared by onStateChange → success
+        // Player hasn't started — autoplay is blocked by the browser.
+        this.dispatchEvent(new CustomEvent('geek:autoplay:blocked', { bubbles: true, composed: true }));
+      }, 800);
     } else {
+      this.#clearPending();
       player.pauseVideo();
+    }
+  }
+
+  #clearPending(): void {
+    this.#pendingState = null;
+    if (this.#autoplayCheckTimer !== null) {
+      clearTimeout(this.#autoplayCheckTimer);
+      this.#autoplayCheckTimer = null;
     }
   }
 
@@ -184,6 +228,7 @@ export class YoutubeSlide extends HTMLElement {
   }
 
   #deactivate(): void {
+    this.#clearPending();
     this.#player?.pauseVideo();
   }
 
@@ -193,6 +238,11 @@ export class YoutubeSlide extends HTMLElement {
     const playing = yt
       ? state === yt.PlayerState.PLAYING || state === yt.PlayerState.BUFFERING
       : false;
+
+    // Autoplay succeeded — clear pending check.
+    if (playing && this.#pendingState) {
+      this.#clearPending();
+    }
 
     this.dispatchEvent(
       new CustomEvent<MediaState>('geek:media:state', {

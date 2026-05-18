@@ -36,6 +36,7 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Autoplay banner prominence** — banner redesigned as a full-slide-area modal overlay with `backdrop-filter: blur`, pulsing play icon, large title, explanatory subtitle, and prominent white CTA button (replaces previous small pill badge)
 - **Media sync viewer** — fixed orphan Y.Map bug where viewer created a local Yjs map that the server dropped on readonly connections; viewer now observes the root `features` map for the presenter's `media-sync` entry before attaching its observer
 - **Sync-on-unblock** — when the viewer clicks the autoplay banner, media on the current slide is re-synced to the latest Yjs state (compensates for time elapsed while playback was blocked by browser policy)
+- **YouTube autoplay detection** — `<geek-youtube>` now detects browser autoplay blocks (YouTube's `playVideo()` is void; an 800ms timeout checks whether the player transitioned to PLAYING/BUFFERING; if not, dispatches `geek:autoplay:blocked` and stores pending state for retry on banner dismiss)
 
 <!-- Add new entries above this line -->
 
