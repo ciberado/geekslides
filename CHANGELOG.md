@@ -9,6 +9,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+<!-- Add new entries above this line -->
+
+## [2.1.0] - 2026-05-18
+
 ### Added
 
 - **Rich media embeds** — YouTube, audio, video, and iframe embeds via image-link markdown syntax (`![alt](url)`)
@@ -18,14 +22,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - `iframe-url` plugin: detects `.html`/`.htm` URLs → lazy-loaded `<iframe data-src>` with click-to-activate overlay
 - **`mod-media-cover` modifier** — add to a slide marker to fill the slide with any media element; implemented via CSS injection (no JS class detection needed)
 - **Media sync feature** (`media-sync`) — presenter play/pause/seek is propagated to viewers via Yjs `mediaState` map; drift-corrected via wall-clock timestamp
-- **Autoplay banner** — when viewer's browser blocks autoplay, a clickable banner appears; resolves on user click and retries media playback
-- **Nav arrow buttons** — clearly visible ‹ › buttons (36×80px with drop-shadow) injected by `media-sync` feature allow slide navigation when iframes or YouTube embeds have keyboard focus
+- **Autoplay banner** — when viewer's browser blocks autoplay, a full-overlay modal with pulsing play icon, title, and white CTA button appears; click to enable playback and resync to the presenter's current timestamp
+- **Nav arrow buttons** — clearly visible ‹ › buttons (36×80px with drop-shadow) injected by `media-sync` feature allow slide navigation when iframes or YouTube embeds have keyboard focus; shown only on slides with media, only while the mouse is moving
 - **Keyboard-captured banner** — when an iframe steals keyboard focus (window `blur`), a notification banner appears reminding users to use ‹ › buttons or click the banner to dismiss it
 - **Iframe restore button** — small ⌨ badge appears in the top-right of an iframe wrapper after the overlay is dismissed; clicking it restores the click-to-activate overlay and returns keyboard navigation
-- **Symmetric audio waveform** — `<geek-audio>` now draws 64 bars radiating up AND down from a vertical centre line on a transparent canvas; colour configurable via `data-color` attribute; gradient fades at bar tips; CSS fallback also uses symmetric bars
+- **Symmetric audio waveform** — `<geek-audio>` draws 64 bars radiating up AND down from a vertical centre line on a transparent canvas; colour configurable via `data-color` attribute; gradient fades at bar tips; CSS fallback also uses symmetric bars
 - **Terminal commands** — `media-play`, `media-pause`, `media-seek <seconds>` control media on the current slide from the terminal
-- **`decks/media-demo/`** — demo deck exercising all media types with local Firefox-compatible assets
-- **Video cover slide** — `layout-cover` + `mod-media-cover` combination: video fills the slide as a background, gradient overlay provides contrast, title and paragraph float above the gradient. CSS z-index layering added to `layouts.css` for this combination.
+- **`decks/media-demo/`** — demo deck exercising all media types (YouTube, audio, video, iframes, video cover background) with local Firefox-compatible assets
+- **Video cover background** — combine `layout-cover` + `mod-media-cover` on a slide: video fills the background, gradient overlay darkens the bottom, title and paragraph float above the gradient in white text
 
 ### Fixed
 
@@ -33,12 +37,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Missing deck CSS directory** — `decks/media-demo/css/` was absent so `layouts.css` and `theme-default.css` were not loaded; deck now includes both files
 - **Nav arrow visibility** — buttons were too small (28×56px) and too faint (opacity 0.45, no shadow); now 36×80px with `box-shadow` for contrast on any background
 - **Iframe keyboard trap** — after clicking the overlay, keyboard stayed locked in the iframe; fixed with restore button and keyboard-captured banner
-- **Autoplay banner prominence** — banner redesigned as a full-slide-area modal overlay with `backdrop-filter: blur`, pulsing play icon, large title, explanatory subtitle, and prominent white CTA button (replaces previous small pill badge)
 - **Media sync viewer** — fixed orphan Y.Map bug where viewer created a local Yjs map that the server dropped on readonly connections; viewer now observes the root `features` map for the presenter's `media-sync` entry before attaching its observer
 - **Sync-on-unblock** — when the viewer clicks the autoplay banner, media on the current slide is re-synced to the latest Yjs state (compensates for time elapsed while playback was blocked by browser policy)
-- **YouTube autoplay detection** — `<geek-youtube>` now detects browser autoplay blocks (YouTube's `playVideo()` is void; an 800ms timeout checks whether the player transitioned to PLAYING/BUFFERING; if not, dispatches `geek:autoplay:blocked` and stores pending state for retry on banner dismiss)
-
-<!-- Add new entries above this line -->
+- **YouTube autoplay detection** — `<geek-youtube>` now detects browser autoplay blocks via an 800ms timeout; if the player has not transitioned to PLAYING/BUFFERING, dispatches `geek:autoplay:blocked`; on banner dismiss retries with time-compensated seek target
+- **Firefox audio canvas gradient** — `canvas.addColorStop()` in Firefox rejects `oklch()` colours; `colorWithAlpha()` helper converts hex/rgb to hex+alpha before use
 
 
 Complete rewrite of GeekSlides as a modern TypeScript monorepo.
