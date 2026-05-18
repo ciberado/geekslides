@@ -1,0 +1,5 @@
+{
+  "title": "Plugin Bundle Fixture",
+  "content": "README.md",
+  "plugins": ["whiteboard"]
+}
