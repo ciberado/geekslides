@@ -305,14 +305,18 @@ export const mediaSyncFeature: Feature = {
     const onMediaState = (e: Event): void => {
       if (isViewer || !ctx.sync) return;
       const ce = e as CustomEvent<MediaState>;
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      const slideEl = target.closest('geek-slide') ??
-        (target.getRootNode() instanceof ShadowRoot
-          ? (target.getRootNode() as ShadowRoot).host
-          : null);
+      // Use composedPath() to find the originating element through shadow DOM.
+      const path = e.composedPath();
+      let slideEl: Element | null = null;
+      for (const node of path) {
+        if (node instanceof Element && node.tagName === 'GEEK-SLIDE') {
+          slideEl = node;
+          break;
+        }
+      }
+      if (!slideEl) return;
       const slides = slideshow?.shadowRoot?.querySelectorAll('geek-slide');
-      const idx = slides ? [...slides].indexOf(slideEl as Element) : -1;
+      const idx = slides ? [...slides].indexOf(slideEl) : -1;
       if (idx < 0) return;
 
       ctx.sync.getSharedMap().set(String(idx), ce.detail);
