@@ -34,6 +34,7 @@ export class AudioSlide extends HTMLElement {
   #useCssVisualiser = false;
   #connected = false;
   #pendingState: MediaState | null = null;
+  #zeroFrames = 0;
   #onAutoplayUnblocked: () => void;
 
   static get observedAttributes(): string[] {
@@ -169,12 +170,17 @@ export class AudioSlide extends HTMLElement {
     try {
       const ctx = this.#audioCtx ?? new AudioContext();
       this.#audioCtx = ctx;
+      // Firefox keeps AudioContext suspended until explicitly resumed.
+      if (ctx.state === 'suspended') {
+        void ctx.resume();
+      }
       const source = ctx.createMediaElementSource(audio);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 128;
       source.connect(analyser);
       analyser.connect(ctx.destination);
       this.#analyser = analyser;
+      this.#zeroFrames = 0;
     } catch {
       // CORS or API unavailable — fall back to CSS visualiser.
       this.#useCssVisualiser = true;
@@ -210,6 +216,21 @@ export class AudioSlide extends HTMLElement {
 
     const data = new Uint8Array(analyser.frequencyBinCount);
     analyser.getByteFrequencyData(data);
+
+    // Detect if we're getting zero data (CORS-blocked in Firefox).
+    // After ~60 frames (~1s) of silence, switch to CSS visualiser.
+    const hasSignal = data.some((v) => v > 0);
+    if (!hasSignal) {
+      this.#zeroFrames++;
+      if (this.#zeroFrames > 60) {
+        this.#useCssVisualiser = true;
+        this.#updateVisualiserMode();
+        this.#startVisualiser();
+        return;
+      }
+    } else {
+      this.#zeroFrames = 0;
+    }
 
     const w = canvas.width;
     const h = canvas.height;

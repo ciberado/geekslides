@@ -30,6 +30,7 @@ import type { MediaState } from '../../sync/types.ts';
 type MediaComponent = YoutubeSlide | AudioSlide | VideoSlide;
 
 const MEDIA_SELECTORS = 'geek-youtube, geek-audio, geek-video';
+const MEDIA_OR_IFRAME_SELECTORS = 'geek-youtube, geek-audio, geek-video, .gs-iframe-wrapper';
 
 /** Find all media components inside the shadow DOM of a given slide element. */
 function getMediaInSlide(
@@ -92,12 +93,13 @@ function injectFeatureUI(
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.72;
-      transition: opacity 0.15s, background 0.15s;
+      opacity: 0;
+      transition: opacity 0.25s;
       user-select: none;
       box-shadow: 0 2px 10px rgba(0,0,0,0.45);
     }
-    .gs-media-nav-btn:hover { opacity: 1; background: rgba(30, 30, 30, 0.82); }
+    .gs-media-layer--visible .gs-media-nav-btn { opacity: 0.72; }
+    .gs-media-layer--visible .gs-media-nav-btn:hover { opacity: 1; background: rgba(30, 30, 30, 0.82); }
     .gs-media-nav-prev { left: 8px; }
     .gs-media-nav-next { right: 8px; }
     .gs-keyboard-captured {
@@ -158,6 +160,29 @@ function injectFeatureUI(
   container.appendChild(style);
   container.appendChild(layer);
 
+  // ── Arrow visibility: only on media slides, only while mouse moves ────
+  let hasMedia = false;
+  let hideTimer: ReturnType<typeof setTimeout> | null = null;
+  const HIDE_DELAY = 2000; // ms after last mouse movement
+
+  const showArrows = (): void => { layer.classList.add('gs-media-layer--visible'); };
+  const hideArrows = (): void => { layer.classList.remove('gs-media-layer--visible'); };
+
+  const onMouseMove = (): void => {
+    if (!hasMedia) return;
+    showArrows();
+    if (hideTimer !== null) clearTimeout(hideTimer);
+    hideTimer = setTimeout(hideArrows, HIDE_DELAY);
+  };
+
+  // Listen on the parent element (which covers the slide area) for mouse activity.
+
+  /** Call when slide changes to signal whether the new slide has media/iframes. */
+  const setHasMedia = (value: boolean): void => {
+    hasMedia = value;
+    if (!value) hideArrows();
+  };
+
   // Show a banner when an iframe captures keyboard focus (window loses focus).
   // Clicking the banner returns keyboard navigation.
   let keyboardBanner: HTMLElement | null = null;
@@ -178,7 +203,9 @@ function injectFeatureUI(
     keyboardBanner = null;
   };
 
-  const onWindowBlur = (): void => { showKeyboardCapturedBanner(); };
+  const onWindowBlur = (): void => {
+    if (hasMedia) showKeyboardCapturedBanner();
+  };
   const onWindowFocus = (): void => { hideKeyboardCapturedBanner(); };
   window.addEventListener('blur', onWindowBlur);
   window.addEventListener('focus', onWindowFocus);
@@ -200,14 +227,28 @@ function injectFeatureUI(
     layer.appendChild(banner);
   };
 
-  // Style the container as the positioning root.
+  // Style the container as the positioning root — pointer-events: none so slides remain interactive.
   Object.assign(container.style, { position: 'absolute', inset: '0', pointerEvents: 'none' });
+
+  // Detect mouse movement on .gs-container (the full-size slide area in the shadow root).
+  const rootNode = container.getRootNode();
+  const mouseTarget = rootNode instanceof ShadowRoot
+    ? rootNode.querySelector('.gs-container') ?? container
+    : container;
+  mouseTarget.addEventListener('mousemove', onMouseMove);
+  mouseTarget.addEventListener('mouseenter', onMouseMove);
+  mouseTarget.addEventListener('mouseleave', () => {
+    if (hideTimer !== null) clearTimeout(hideTimer);
+    hideArrows();
+  });
 
   return {
     showAutoplayBanner,
+    setHasMedia,
     removeUI: () => {
       window.removeEventListener('blur', onWindowBlur);
       window.removeEventListener('focus', onWindowFocus);
+      if (hideTimer !== null) clearTimeout(hideTimer);
       style.remove();
       layer.remove();
     },
@@ -229,7 +270,7 @@ export const mediaSyncFeature: Feature = {
       : ctx.container.closest<HTMLElement>('geek-slideshow');
 
     // ── UI: nav arrows + autoplay banner ────────────────────────────────────
-    const { showAutoplayBanner, removeUI } = injectFeatureUI(
+    const { showAutoplayBanner, setHasMedia, removeUI } = injectFeatureUI(
       ctx.container,
       () => { ctx.slideshow.prev(); },
       () => { ctx.slideshow.next(); },
@@ -241,6 +282,24 @@ export const mediaSyncFeature: Feature = {
       const components = getMediaInSlide(slideshow, slideIndex);
       pauseAll(components);
     });
+
+    // ── 1b. Show/hide nav arrows based on media presence in new slide ────────
+    const checkMediaPresence = (slideIndex: number): void => {
+      if (!slideshow) { setHasMedia(false); return; }
+      const slides = slideshow.shadowRoot?.querySelectorAll('geek-slide');
+      const slideEl = slides?.[slideIndex];
+      if (!slideEl) { setHasMedia(false); return; }
+      const content = slideEl.shadowRoot?.querySelector('section.content');
+      if (!content) { setHasMedia(false); return; }
+      const found = content.querySelector(MEDIA_OR_IFRAME_SELECTORS);
+      setHasMedia(found !== null);
+    };
+
+    const unsubEnter = ctx.on('slide:enter', ({ slideIndex }) => {
+      checkMediaPresence(slideIndex);
+    });
+    // Check the initial slide too.
+    checkMediaPresence(ctx.slideshow.currentSlide);
 
     // ── 2. Presenter: collect geek:media:state events, push to Yjs ──────────
     const onMediaState = (e: Event): void => {
@@ -339,6 +398,7 @@ export const mediaSyncFeature: Feature = {
 
     return () => {
       unsubLeave();
+      unsubEnter();
       mapUnsubscribe?.();
       document.removeEventListener('geek:media:state', onMediaState);
       document.removeEventListener('geek:autoplay:blocked', onAutoplayBlocked);
