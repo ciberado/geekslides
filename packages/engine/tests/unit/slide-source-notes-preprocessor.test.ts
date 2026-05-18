@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { slideSourceNotesPreprocessor } from '../../src/plugins/builtins/slide-source-notes-preprocessor.ts';
+import { slideSourceNotesPreprocessor } from '../../../../plugins/core/slide-source-notes-preprocessor.ts';
 import { normalizePreprocessorResult } from '../../src/plugins/preprocessor-utils.ts';
 
 function preprocess(input: string): { content: string; lineMapping: readonly number[] } {

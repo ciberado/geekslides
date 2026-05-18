@@ -8,7 +8,7 @@
  * These placeholders are later processed by the css-doodle-processor.
  */
 
-import type { Preprocessor } from '../types.ts';
+import type { Preprocessor } from '@engine/plugins/types.ts';
 
 /**
  * Regex to match css-doodle image syntax.

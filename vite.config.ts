@@ -63,6 +63,7 @@ export default defineConfig({
   plugins: [mapDeckRequestPlugin(), mapVotePagePlugin(), geekSlidesHmr()],
   resolve: {
     alias: [
+      { find: /^@engine\/(.+)$/, replacement: resolve(__dirname, 'packages/engine/src/$1') },
       { find: /^@geekslides\/engine$/, replacement: resolve(__dirname, 'packages/engine/src/index.ts') },
     ],
   },

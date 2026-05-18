@@ -21,11 +21,11 @@
  *   { "features": ["whiteboard", "media-sync"] }
  */
 
-import type { Feature, FeatureContext } from '../types.ts';
-import type { YoutubeSlide } from '../../components/YoutubeSlide.ts';
-import type { AudioSlide } from '../../components/AudioSlide.ts';
-import type { VideoSlide } from '../../components/VideoSlide.ts';
-import type { MediaState } from '../../sync/types.ts';
+import type { Feature, FeatureContext } from '@engine/features/types.ts';
+import type { YoutubeSlide } from '@engine/components/YoutubeSlide.ts';
+import type { AudioSlide } from '@engine/components/AudioSlide.ts';
+import type { VideoSlide } from '@engine/components/VideoSlide.ts';
+import type { MediaState } from '@engine/sync/types.ts';
 
 type MediaComponent = YoutubeSlide | AudioSlide | VideoSlide;
 

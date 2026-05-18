@@ -10,7 +10,7 @@
  * that carries the `active` attribute.
  */
 
-import type { Processor } from '../types.ts';
+import type { Processor } from '@engine/plugins/types.ts';
 
 export const iframeProcessor: Processor = (slideElement: HTMLElement): void => {
   const iframes = slideElement.querySelectorAll('iframe[data-src]');

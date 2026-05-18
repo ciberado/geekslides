@@ -3,8 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { cssDoodlePreprocessor } from '../../src/plugins/builtins/css-doodle-preprocessor.ts';
-import { patternRegistry } from '../../src/plugins/builtins/css-doodle-patterns/index.ts';
+import { cssDoodlePreprocessor } from '../../../../plugins/css-doodle/css-doodle-preprocessor.ts';
+import { patternRegistry } from '../../../../plugins/css-doodle/css-doodle-patterns/index.ts';
 
 describe('css-doodle-preprocessor', () => {
   it('converts ![css-doodle](#pattern) to placeholder div', () => {

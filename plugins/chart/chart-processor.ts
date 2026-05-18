@@ -4,7 +4,7 @@
  * Replaces <table> elements in slides with .chart class with <geek-chart> components.
  */
 
-import type { Processor } from '../types.ts';
+import type { Processor } from '@engine/plugins/types.ts';
 
 export const chartProcessor: Processor = (slideElement: HTMLElement): void => {
   if (!slideElement.classList.contains('chart')) return;

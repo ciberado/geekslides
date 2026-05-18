@@ -19,7 +19,7 @@ vi.mock('../../src/logging.ts', () => ({
 let mediaSyncFeature: Feature;
 
 beforeEach(async () => {
-  const mod = await import('../../src/features/builtins/media-sync-feature.ts');
+  const mod = await import('../../../../plugins/media/media-sync-feature.ts');
   mediaSyncFeature = mod.mediaSyncFeature;
 });
 

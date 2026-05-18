@@ -6,7 +6,7 @@
  * container blocks (Notes, Details, …) are left untouched.
  */
 
-import type { Preprocessor } from '../types.ts';
+import type { Preprocessor } from '@engine/plugins/types.ts';
 
 /**
  * Generate a URL-safe anchor from a heading title.

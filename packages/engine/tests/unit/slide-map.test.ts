@@ -3,8 +3,8 @@ import {
   computeSlideMap,
   parse,
 } from '../../src/core/SlideParser.ts';
-import { headerPreprocessor } from '../../src/plugins/builtins/header-preprocessor.ts';
-import { slideSourceNotesPreprocessor } from '../../src/plugins/builtins/slide-source-notes-preprocessor.ts';
+import { headerPreprocessor } from '../../../../plugins/core/header-preprocessor.ts';
+import { slideSourceNotesPreprocessor } from '../../../../plugins/core/slide-source-notes-preprocessor.ts';
 import { applyPreprocessorResult, createIdentityLineMapping } from '../../src/plugins/preprocessor-utils.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 

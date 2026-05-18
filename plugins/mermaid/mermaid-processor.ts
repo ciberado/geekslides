@@ -8,8 +8,8 @@
  * add weight when the processor isn't active.
  */
 
-import type { Processor } from '../types.ts';
-import { createLogger } from '../../logging.ts';
+import type { Processor } from '@engine/plugins/types.ts';
+import { createLogger } from '@engine/logging.ts';
 
 const log = createLogger('mermaid');
 

@@ -12,7 +12,7 @@
  *   ![](relative/clip.webm)
  */
 
-import type { Plugin, Preprocessor } from '../types.ts';
+import type { Plugin, Preprocessor } from '@engine/plugins/types.ts';
 
 const VIDEO_EXT_RE = /\.(mp4|webm|ogv|mov)(\?[^)]*)?$/i;
 const IMAGE_SYNTAX_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;

@@ -4,10 +4,10 @@
  * These are pure string-transform functions — no DOM required.
  */
 import { describe, it, expect } from 'vitest';
-import { youtubeUrlPreprocessor } from '../../src/plugins/builtins/youtube-url-plugin.ts';
-import { audioUrlPreprocessor } from '../../src/plugins/builtins/audio-url-plugin.ts';
-import { videoUrlPreprocessor } from '../../src/plugins/builtins/video-url-plugin.ts';
-import { iframeUrlPreprocessor } from '../../src/plugins/builtins/iframe-url-plugin.ts';
+import { youtubeUrlPreprocessor } from '../../../../plugins/media/youtube-url-plugin.ts';
+import { audioUrlPreprocessor } from '../../../../plugins/media/audio-url-plugin.ts';
+import { videoUrlPreprocessor } from '../../../../plugins/media/video-url-plugin.ts';
+import { iframeUrlPreprocessor } from '../../../../plugins/media/iframe-url-plugin.ts';
 
 // ── YouTube URL Preprocessor ─────────────────────────────────────────────────
 

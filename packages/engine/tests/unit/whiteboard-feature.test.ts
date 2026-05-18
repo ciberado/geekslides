@@ -67,7 +67,7 @@ if (!customElements.get('geek-whiteboard-toolbar')) {
   customElements.define('geek-whiteboard-toolbar', StubToolbar);
 }
 
-import { whiteboardFeature } from '../../src/features/builtins/whiteboard-feature.ts';
+import { whiteboardFeature } from '../../../../plugins/whiteboard/whiteboard-feature.ts';
 import type { SyncManager } from '../../src/sync/SyncManager.ts';
 
 // ---------------------------------------------------------------------------

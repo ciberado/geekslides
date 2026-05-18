@@ -9,9 +9,9 @@
  * the sync layer and keyboard commands that need external context.
  */
 
-import type { Feature, FeatureContext } from '../types.ts';
-import type { Whiteboard } from '../../components/Whiteboard.ts';
-import { WhiteboardSync } from '../../sync/WhiteboardSync.ts';
+import type { Feature, FeatureContext } from '@engine/features/types.ts';
+import type { Whiteboard } from '@engine/components/Whiteboard.ts';
+import { WhiteboardSync } from '@engine/sync/WhiteboardSync.ts';
 
 export const whiteboardFeature: Feature = {
   id: 'whiteboard',

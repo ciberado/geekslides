@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { videoProcessor } from '../../src/plugins/builtins/video-processor.ts';
+import { videoProcessor } from '../../../../plugins/media/video-processor.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 
 describe('video-processor', () => {

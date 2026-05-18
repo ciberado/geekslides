@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { headerPreprocessor } from '../../src/plugins/builtins/header-preprocessor.ts';
+import { headerPreprocessor } from '../../../../plugins/core/header-preprocessor.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 import { normalizePreprocessorResult } from '../../src/plugins/preprocessor-utils.ts';
 

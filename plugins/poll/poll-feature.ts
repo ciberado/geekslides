@@ -25,9 +25,9 @@
  *   - Option C
  */
 
-import type { Feature, FeatureContext } from '../types.ts';
+import type { Feature, FeatureContext } from '@engine/features/types.ts';
 import { Chart, BarController, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js';
-import { createLogger } from '../../logging.ts';
+import { createLogger } from '@engine/logging.ts';
 
 Chart.register(BarController, CategoryScale, LinearScale, BarElement, Tooltip);
 

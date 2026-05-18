@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mermaidProcessor } from '../../src/plugins/builtins/mermaid-processor.ts';
+import { mermaidProcessor } from '../../../../plugins/mermaid/mermaid-processor.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 import type { ProcessorContext } from '../../src/plugins/types.ts';
 

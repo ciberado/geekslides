@@ -15,7 +15,7 @@
  *   ![My Demo](./demos/interactive.html)
  */
 
-import type { Plugin, Preprocessor, Processor } from '../types.ts';
+import type { Plugin, Preprocessor, Processor } from '@engine/plugins/types.ts';
 
 const HTML_EXT_RE = /\.html?(\?[^)]*)?$/i;
 const IMAGE_SYNTAX_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;

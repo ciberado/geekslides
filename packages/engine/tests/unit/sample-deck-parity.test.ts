@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { parse } from '../../src/core/SlideParser.ts';
-import { headerPreprocessor } from '../../src/plugins/builtins/header-preprocessor.ts';
+import { headerPreprocessor } from '../../../../plugins/core/header-preprocessor.ts';
 import { normalizePreprocessorResult, applyPreprocessorResult, createIdentityLineMapping } from '../../src/plugins/preprocessor-utils.ts';
 import type { PreprocessedMarkdown } from '../../src/plugins/preprocessor-utils.ts';
 

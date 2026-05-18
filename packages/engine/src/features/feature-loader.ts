@@ -14,15 +14,15 @@ const log = createLogger('feature-loader');
 /** Registry of built-in feature names → lazy loaders. */
 const BUILTIN_FEATURES: Record<string, () => Promise<Feature>> = {
   whiteboard: async () => {
-    const mod = await import('./builtins/whiteboard-feature.ts');
+    const mod = await import('../../../../plugins/whiteboard/whiteboard-feature.ts');
     return mod.whiteboardFeature;
   },
   poll: async () => {
-    const mod = await import('./builtins/poll-feature.ts');
+    const mod = await import('../../../../plugins/poll/poll-feature.ts');
     return mod.pollFeature;
   },
   'media-sync': async () => {
-    const mod = await import('./builtins/media-sync-feature.ts');
+    const mod = await import('../../../../plugins/media/media-sync-feature.ts');
     return mod.mediaSyncFeature;
   },
 };

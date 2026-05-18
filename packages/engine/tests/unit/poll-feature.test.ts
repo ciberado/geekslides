@@ -32,7 +32,7 @@ vi.mock('qrcode', () => ({
   toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,stub'),
 }));
 
-import { getPollSlides, countVotes, pollFeature } from '../../src/features/builtins/poll-feature.ts';
+import { getPollSlides, countVotes, pollFeature } from '../../../../plugins/poll/poll-feature.ts';
 import type { FeatureContext, FeatureSyncAPI } from '../../src/features/types.ts';
 
 // ---------------------------------------------------------------------------

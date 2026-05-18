@@ -12,7 +12,7 @@ const mockWhiteboardFeature: Feature = {
   activate: vi.fn(() => vi.fn()),
 };
 
-vi.mock('../../src/features/builtins/whiteboard-feature.ts', () => ({
+vi.mock('../../../../plugins/whiteboard/whiteboard-feature.ts', () => ({
   whiteboardFeature: mockWhiteboardFeature,
 }));
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi } from 'vitest';
-import { iframeProcessor } from '../../src/plugins/builtins/iframe-processor.ts';
+import { iframeProcessor } from '../../../../plugins/core/iframe-processor.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 
 describe('iframe-processor', () => {

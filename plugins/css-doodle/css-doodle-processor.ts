@@ -6,10 +6,10 @@
  * theme-aware colors and applying positioning modes.
  */
 
-import type { Processor } from '../types.ts';
+import type { Processor } from '@engine/plugins/types.ts';
 import type { ParsedDoodleConfig, DoodlePatternConfig } from './css-doodle-patterns/types.ts';
 import { patternRegistry } from './css-doodle-patterns/index.ts';
-import { createLogger } from '../../logging.ts';
+import { createLogger } from '@engine/logging.ts';
 
 const log = createLogger('css-doodle');
 

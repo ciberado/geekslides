@@ -94,6 +94,18 @@ export const BUILTIN_BUNDLES: Readonly<Record<string, PluginBundleDef>> = {
     processors: ['css-doodle'],
     features: [],
   },
+
+  /**
+   * Poll: live audience polling with real-time vote aggregation.
+   */
+  poll: {
+    name: 'poll',
+    description: 'Live audience polling with real-time vote aggregation',
+    dependsOn: [],
+    preprocessors: [],
+    processors: [],
+    features: ['poll'],
+  },
 };
 
 /**

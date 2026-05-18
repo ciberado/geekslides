@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { audioProcessor } from '../../src/plugins/builtins/audio-url-plugin.ts';
-import { iframeOverlayProcessor } from '../../src/plugins/builtins/iframe-url-plugin.ts';
+import { audioProcessor } from '../../../../plugins/media/audio-url-plugin.ts';
+import { iframeOverlayProcessor } from '../../../../plugins/media/iframe-url-plugin.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 import type { ProcessorContext } from '../../src/plugins/types.ts';
 

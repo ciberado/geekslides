@@ -22,7 +22,7 @@
  *   { "plugins": { "preprocessors": ["header", "youtube-url"] } }
  */
 
-import type { Plugin, Preprocessor } from '../types.ts';
+import type { Plugin, Preprocessor } from '@engine/plugins/types.ts';
 
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
 

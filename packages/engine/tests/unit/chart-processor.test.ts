@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect } from 'vitest';
-import { chartProcessor } from '../../src/plugins/builtins/chart-processor.ts';
+import { chartProcessor } from '../../../../plugins/chart/chart-processor.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 
 describe('chart-processor', () => {

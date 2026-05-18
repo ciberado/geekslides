@@ -4,6 +4,7 @@ import { resolve } from 'path';
 export default defineConfig({
   resolve: {
     alias: {
+      '@engine': resolve(__dirname, 'packages/engine/src'),
       '@geekslides/engine/headless': resolve(__dirname, 'packages/engine/src/headless.ts'),
       '@geekslides/engine/hmr': resolve(__dirname, 'packages/engine/src/hmr/vite-plugin-geekslides-hmr.ts'),
       '@geekslides/engine': resolve(__dirname, 'packages/engine/src/index.ts'),
@@ -15,7 +16,7 @@ export default defineConfig({
     environment: 'node',
     coverage: {
       provider: 'v8',
-      include: ['packages/*/src/**/*.ts'],
+      include: ['packages/*/src/**/*.ts', 'plugins/**/*.ts'],
       exclude: ['**/*.d.ts', '**/index.ts'],
       thresholds: {
         branches: 80,

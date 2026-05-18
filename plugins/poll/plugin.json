@@ -1,0 +1,9 @@
+{
+  "name": "poll",
+  "description": "Live audience polling with real-time vote aggregation",
+  "version": "1.0.0",
+  "dependsOn": [],
+  "preprocessors": [],
+  "processors": [],
+  "features": ["poll"]
+}
