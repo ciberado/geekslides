@@ -25,6 +25,8 @@ export { PluginManager } from './plugins/PluginManager.ts';
 export type { Plugin, Preprocessor, Processor, ProcessorContext } from './plugins/types.ts';
 export type { PreprocessorOutput, PreprocessorResult } from './plugins/types.ts';
 export { isLocalPluginPath, isRemotePluginUrl, importRemotePlugin, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
+export { BUILTIN_BUNDLES, expandBundles } from './plugins/plugin-bundles.ts';
+export type { PluginBundleDef } from './plugins/plugin-bundles.ts';
 export { headerPreprocessor } from './plugins/builtins/header-preprocessor.ts';
 export { slideSourceNotesPreprocessor } from './plugins/builtins/slide-source-notes-preprocessor.ts';
 export { cssDoodlePreprocessor } from './plugins/builtins/css-doodle-preprocessor.ts';

@@ -6,6 +6,7 @@
     "theme-default.css"
   ],
   "aspectRatio": "16/9",
+  "features": ["whiteboard"],
   "plugins": {
     "preprocessors": [],
     "processors": []

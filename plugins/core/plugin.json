@@ -1,0 +1,8 @@
+{
+  "name": "core",
+  "description": "Essential preprocessors: heading-based slide separators and basic iframe embeds",
+  "dependsOn": [],
+  "preprocessors": ["header"],
+  "processors": ["iframe"],
+  "features": []
+}

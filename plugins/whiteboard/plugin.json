@@ -1,0 +1,8 @@
+{
+  "name": "whiteboard",
+  "description": "Drawing overlay for live annotation during presentations",
+  "dependsOn": [],
+  "preprocessors": [],
+  "processors": [],
+  "features": ["whiteboard"]
+}

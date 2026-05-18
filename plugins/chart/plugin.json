@@ -1,0 +1,8 @@
+{
+  "name": "chart",
+  "description": "Chart.js-powered data visualisation in slides",
+  "dependsOn": [],
+  "preprocessors": [],
+  "processors": ["chart"],
+  "features": []
+}

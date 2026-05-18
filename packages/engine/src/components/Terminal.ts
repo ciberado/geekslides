@@ -134,6 +134,7 @@ export class Terminal extends HTMLElement {
         font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
         font-size: 16px;
         min-height: 52px;
+        height: 160px;
         border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
 

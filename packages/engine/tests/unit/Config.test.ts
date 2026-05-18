@@ -196,6 +196,84 @@ describe('Config', () => {
     expect(config.scripts).toEqual(['app.js']);
   });
 
+  describe('Plugin bundle syntax (plugins: string[])', () => {
+    it('expands a single bundle into preprocessors, processors, and features', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['whiteboard'] });
+      const config = await loadConfig('config.json');
+      expect(config.features).toContain('whiteboard');
+      expect(config.plugins.preprocessors).toEqual([]);
+      expect(config.plugins.processors).toEqual([]);
+    });
+
+    it('expands the media bundle including its core dependency', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['media'] });
+      const config = await loadConfig('config.json');
+      // Core dependency contributes header + iframe
+      expect(config.plugins.preprocessors).toContain('header');
+      expect(config.plugins.processors).toContain('iframe');
+      // Media itself contributes its preprocessors and processors
+      expect(config.plugins.preprocessors).toContain('youtube-url');
+      expect(config.plugins.preprocessors).toContain('audio-url');
+      expect(config.plugins.processors).toContain('video');
+      // media-sync feature
+      expect(config.features).toContain('media-sync');
+      expect(config.features).not.toContain('whiteboard');
+    });
+
+    it('merges multiple bundles, deduplicating shared dependencies', async () => {
+      // Both media and a hypothetical second bundle depending on core
+      // should not duplicate header/iframe
+      mockFetchJson({ content: 'README.md', plugins: ['media', 'whiteboard'] });
+      const config = await loadConfig('config.json');
+      const ppCount = config.plugins.preprocessors.filter((p) => p === 'header').length;
+      expect(ppCount).toBe(1);
+      const procCount = config.plugins.processors.filter((p) => p === 'iframe').length;
+      expect(procCount).toBe(1);
+      expect(config.features).toContain('media-sync');
+      expect(config.features).toContain('whiteboard');
+    });
+
+    it('merges bundle features with explicit features', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['media'], features: ['poll'] });
+      const config = await loadConfig('config.json');
+      expect(config.features).toContain('media-sync');
+      expect(config.features).toContain('poll');
+    });
+
+    it('deduplicates when a feature appears in both a bundle and the features list', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['whiteboard'], features: ['whiteboard'] });
+      const config = await loadConfig('config.json');
+      const count = config.features.filter((f) => f === 'whiteboard').length;
+      expect(count).toBe(1);
+    });
+
+    it('throws on an unknown bundle name', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['does-not-exist'] });
+      await expect(loadConfig('config.json')).rejects.toThrow("Unknown plugin bundle: 'does-not-exist'");
+    });
+
+    it('expands the chart bundle', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['chart'] });
+      const config = await loadConfig('config.json');
+      expect(config.plugins.processors).toContain('chart');
+    });
+
+    it('expands the css-doodle bundle', async () => {
+      mockFetchJson({ content: 'README.md', plugins: ['css-doodle'] });
+      const config = await loadConfig('config.json');
+      expect(config.plugins.preprocessors).toContain('css-doodle');
+      expect(config.plugins.processors).toContain('css-doodle');
+    });
+  });
+
+  describe('Default features', () => {
+    it('defaults features to empty array when not provided', async () => {
+      mockFetchJson({ content: 'README.md' });
+      const config = await loadConfig('config.json');
+      expect(config.features).toEqual([]);
+    });
+  });
+
   it('throws a clear error when the server returns HTML instead of JSON', async () => {
     mockFetchText(
       '<!DOCTYPE html><html><body>SPA fallback</body></html>',

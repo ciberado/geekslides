@@ -3,6 +3,7 @@
  */
 
 import { createLogger } from '../logging.ts';
+import { expandBundles } from '../plugins/plugin-bundles.ts';
 
 const log = createLogger('config');
 
@@ -39,7 +40,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
     preprocessors: ['header'],
     processors: ['iframe'],
   },
-  features: ['whiteboard', 'media-sync'],
+  features: [],
   aspectRatio: '16/9',
   sync: {
     enabled: true,
@@ -105,12 +106,21 @@ function normalizeLegacyConfig(obj: Record<string, unknown>): void {
     log.warn('Legacy config: root-level preprocessors/processors moved into plugins.*');
   }
 
-  // slideWhiteBoards: false → exclude whiteboard from default features
+  // slideWhiteBoards: false → exclude whiteboard; slideWhiteBoards: true → include whiteboard
   if (typeof obj['slideWhiteBoards'] === 'boolean') {
-    if (!obj['slideWhiteBoards'] && !Array.isArray(obj['features'])) {
-      obj['features'] = DEFAULT_CONFIG.features.filter((f) => f !== 'whiteboard');
+    const wantWhiteboard = obj['slideWhiteBoards'];
+    if (!Array.isArray(obj['features'])) {
+      obj['features'] = wantWhiteboard ? ['whiteboard'] : [];
+    } else {
+      const existing = obj['features'] as string[];
+      if (!wantWhiteboard) {
+        obj['features'] = existing.filter((f: string) => f !== 'whiteboard');
+      } else if (!existing.includes('whiteboard')) {
+        obj['features'] = [...existing, 'whiteboard'];
+      }
     }
     delete obj['slideWhiteBoards'];
+    log.warn('Legacy config: slideWhiteBoards is deprecated. Use features: ["whiteboard"] or plugins: ["whiteboard"] instead.');
   }
 
   // Silently drop fields that were dev-server or runtime options in v1
@@ -188,17 +198,35 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     ? obj['sync'] as Record<string, unknown>
     : {};
 
-  const rawPlugins = typeof obj['plugins'] === 'object' && obj['plugins'] !== null
-    ? obj['plugins'] as Record<string, unknown>
-    : {};
+  // plugins: string[]  → simplified bundle syntax (e.g. ["media", "whiteboard"])
+  // plugins: { ... }   → explicit preprocessors/processors object (legacy/advanced)
+  let preprocessors: string[];
+  let processors: string[];
+  let featuresFromBundles: string[] = [];
 
-  const preprocessors = Array.isArray(rawPlugins['preprocessors'])
-    ? (rawPlugins['preprocessors'] as string[])
-    : [...DEFAULT_CONFIG.plugins.preprocessors];
+  if (Array.isArray(obj['plugins'])) {
+    const bundleNames = (obj['plugins'] as unknown[]).filter((x): x is string => typeof x === 'string');
+    const expanded = expandBundles(bundleNames);
+    preprocessors = expanded.preprocessors;
+    processors = expanded.processors;
+    featuresFromBundles = expanded.features;
+  } else {
+    const rawPlugins = typeof obj['plugins'] === 'object' && obj['plugins'] !== null
+      ? obj['plugins'] as Record<string, unknown>
+      : {};
+    preprocessors = Array.isArray(rawPlugins['preprocessors'])
+      ? (rawPlugins['preprocessors'] as string[])
+      : [...DEFAULT_CONFIG.plugins.preprocessors];
+    processors = Array.isArray(rawPlugins['processors'])
+      ? (rawPlugins['processors'] as string[])
+      : [...DEFAULT_CONFIG.plugins.processors];
+  }
 
-  const processors = Array.isArray(rawPlugins['processors'])
-    ? (rawPlugins['processors'] as string[])
-    : [...DEFAULT_CONFIG.plugins.processors];
+  // Merge bundle features with any explicitly declared features, deduplicating.
+  const explicitFeatures = Array.isArray(obj['features'])
+    ? (obj['features'] as string[])
+    : [...DEFAULT_CONFIG.features];
+  const allFeatures = [...new Set([...featuresFromBundles, ...explicitFeatures])];
 
   return {
     title: typeof obj['title'] === 'string' ? obj['title'] : DEFAULT_CONFIG.title,
@@ -209,7 +237,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
       preprocessors,
       processors,
     },
-    features: Array.isArray(obj['features']) ? (obj['features'] as string[]) : [...DEFAULT_CONFIG.features],
+    features: allFeatures,
     aspectRatio: typeof obj['aspectRatio'] === 'string' ? obj['aspectRatio'] : DEFAULT_CONFIG.aspectRatio,
     sync: {
       enabled: typeof rawSync['enabled'] === 'boolean' ? rawSync['enabled'] : DEFAULT_CONFIG.sync.enabled,

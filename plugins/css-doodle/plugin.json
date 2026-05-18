@@ -1,0 +1,8 @@
+{
+  "name": "css-doodle",
+  "description": "Generative CSS doodle background patterns",
+  "dependsOn": [],
+  "preprocessors": ["css-doodle"],
+  "processors": ["css-doodle"],
+  "features": []
+}

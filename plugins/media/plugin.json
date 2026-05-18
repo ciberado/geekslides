@@ -1,0 +1,8 @@
+{
+  "name": "media",
+  "description": "YouTube, audio, video, and generic iframe embeds with cross-client playback sync",
+  "dependsOn": ["core"],
+  "preprocessors": ["youtube-url", "audio-url", "video-url", "iframe-url"],
+  "processors": ["video", "audio-url", "iframe-url"],
+  "features": ["media-sync"]
+}

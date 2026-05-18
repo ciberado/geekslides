@@ -1,0 +1,8 @@
+{
+  "name": "mermaid",
+  "description": "Mermaid diagram rendering inside slides",
+  "dependsOn": [],
+  "preprocessors": [],
+  "processors": ["mermaid"],
+  "features": []
+}
