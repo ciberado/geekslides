@@ -15,7 +15,7 @@
  *   ![My Demo](./demos/interactive.html)
  */
 
-import type { Plugin, Preprocessor, Processor } from '@engine/plugins/types.ts';
+import type { Preprocessor, Processor } from '../sdk/types.ts';
 
 const HTML_EXT_RE = /\.html?(\?[^)]*)?$/i;
 const IMAGE_SYNTAX_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -113,7 +113,7 @@ export const iframeOverlayProcessor: Processor = (slideElement: HTMLElement): vo
   }
 };
 
-export const iframeUrlPlugin: Plugin = {
+export const iframeUrlPlugin = {
   name: 'iframe-url',
   preprocessors: [iframeUrlPreprocessor],
   processors: [iframeOverlayProcessor],

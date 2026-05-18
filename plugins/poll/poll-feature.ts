@@ -25,13 +25,19 @@
  *   - Option C
  */
 
-import type { Feature, FeatureContext } from '@engine/features/types.ts';
+import type { Feature, FeatureContext } from '../sdk/types.ts';
 import { Chart, BarController, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js';
-import { createLogger } from '@engine/logging.ts';
+import type { CreateLogger } from '../sdk/types.ts';
 
 Chart.register(BarController, CategoryScale, LinearScale, BarElement, Tooltip);
 
-const log = createLogger('poll');
+const noop = (): void => {};
+const NOOP_LOGGER = {
+  trace: noop, debug: noop, info: noop, warn: noop, error: noop,
+} as ReturnType<CreateLogger>;
+
+/** Module-level logger — initialized by createPollFeature(). */
+let log: ReturnType<CreateLogger> = NOOP_LOGGER;
 
 /* ------------------------------------------------------------------ */
 /*  Yjs key helpers — all poll data lives in one shared Y.Map         */
@@ -808,10 +814,15 @@ function buildViewerPanel(
 }
 
 /* ------------------------------------------------------------------ */
-/*  Feature definition                                                 */
+/*  Feature factory                                                    */
 /* ------------------------------------------------------------------ */
 
-export const pollFeature: Feature = {
+export function createPollFeature(createLogger: CreateLogger): Feature {
+  log = createLogger('poll');
+  return pollFeature;
+}
+
+const pollFeature: Feature = {
   id: 'poll',
   label: 'Live audience poll with QR voting',
 

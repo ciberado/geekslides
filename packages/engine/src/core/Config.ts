@@ -16,6 +16,7 @@ export interface SyncConfig {
 export interface PluginsConfig {
   readonly preprocessors: readonly string[];
   readonly processors: readonly string[];
+  readonly remoteBundles: readonly string[];
 }
 
 export interface GeekSlidesConfig {
@@ -39,6 +40,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
   plugins: {
     preprocessors: ['header'],
     processors: ['iframe'],
+    remoteBundles: [],
   },
   features: [],
   aspectRatio: '16/9',
@@ -203,6 +205,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
   let preprocessors: string[];
   let processors: string[];
   let featuresFromBundles: string[] = [];
+  let remoteBundleUrls: string[] = [];
 
   if (Array.isArray(obj['plugins'])) {
     const bundleNames = (obj['plugins'] as unknown[]).filter((x): x is string => typeof x === 'string');
@@ -210,6 +213,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     preprocessors = expanded.preprocessors;
     processors = expanded.processors;
     featuresFromBundles = expanded.features;
+    remoteBundleUrls = expanded.remoteBundles;
   } else {
     const rawPlugins = typeof obj['plugins'] === 'object' && obj['plugins'] !== null
       ? obj['plugins'] as Record<string, unknown>
@@ -236,6 +240,7 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     plugins: {
       preprocessors,
       processors,
+      remoteBundles: remoteBundleUrls,
     },
     features: allFeatures,
     aspectRatio: typeof obj['aspectRatio'] === 'string' ? obj['aspectRatio'] : DEFAULT_CONFIG.aspectRatio,

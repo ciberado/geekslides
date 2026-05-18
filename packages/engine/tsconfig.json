@@ -20,11 +20,8 @@
     "forceConsistentCasingInFileNames": true,
     "typeRoots": ["../../node_modules/@types", "src/types"],
     "resolveJsonModule": true,
-    "isolatedModules": true,
-    "paths": {
-      "@engine/*": ["./src/*"]
-    }
+    "isolatedModules": true
   },
-  "include": ["src/**/*.ts", "../../plugins/**/*.ts"],
+  "include": ["src/**/*.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }

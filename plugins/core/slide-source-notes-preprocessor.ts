@@ -15,7 +15,7 @@
  *   - Content before the first slide separator (preamble) is left untouched.
  */
 
-import type { Preprocessor } from '@engine/plugins/types.ts';
+import type { Preprocessor } from '../sdk/types.ts';
 
 /**
  * Remove all ::: Notes … ::: blocks from a string, leaving other content.

@@ -22,7 +22,7 @@
  *   { "plugins": { "preprocessors": ["header", "youtube-url"] } }
  */
 
-import type { Plugin, Preprocessor } from '@engine/plugins/types.ts';
+import type { Preprocessor } from '../sdk/types.ts';
 
 const YOUTUBE_HOSTS = new Set(['youtube.com', 'www.youtube.com', 'm.youtube.com', 'youtu.be']);
 
@@ -74,7 +74,7 @@ export const youtubeUrlPreprocessor: Preprocessor = (markdown: string): string =
     return `<geek-youtube data-id="${escapeAttr(id)}"${titleAttr}></geek-youtube>`;
   });
 
-export const youtubeUrlPlugin: Plugin = {
+export const youtubeUrlPlugin = {
   name: 'youtube-url',
   preprocessors: [youtubeUrlPreprocessor],
 };

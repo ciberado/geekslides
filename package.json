@@ -10,6 +10,7 @@
     "prepare": "npm run build -w @geekslides/server && npm run build -w @geekslides/cli && npm run build -w @geekslides/vscode",
     "dev": "concurrently --kill-others \"tsx packages/server/src/index.ts\" \"vite --config vite.config.ts --host 0.0.0.0\"",
     "dev:hub": "npm run dev -w @geekslides/hub",
+    "build:plugins": "vite build --config plugins/vite.config.ts",
     "build:hub": "npm run build -w @geekslides/hub",
     "dev:nosync": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "npm run build -w @geekslides/engine && npm run build -w @geekslides/server && npm run build -w @geekslides/cli && npm run build -w @geekslides/vscode",

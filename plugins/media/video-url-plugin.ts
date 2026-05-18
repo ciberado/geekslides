@@ -12,7 +12,7 @@
  *   ![](relative/clip.webm)
  */
 
-import type { Plugin, Preprocessor } from '@engine/plugins/types.ts';
+import type { Preprocessor } from '../sdk/types.ts';
 
 const VIDEO_EXT_RE = /\.(mp4|webm|ogv|mov)(\?[^)]*)?$/i;
 const IMAGE_SYNTAX_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -29,7 +29,7 @@ export const videoUrlPreprocessor: Preprocessor = (markdown: string): string =>
     return `<video src="${escapeAttr(url)}" controls${titleAttr}></video>`;
   });
 
-export const videoUrlPlugin: Plugin = {
+export const videoUrlPlugin = {
   name: 'video-url',
   preprocessors: [videoUrlPreprocessor],
 };

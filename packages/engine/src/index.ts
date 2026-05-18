@@ -27,29 +27,12 @@ export type { PreprocessorOutput, PreprocessorResult } from './plugins/types.ts'
 export { isLocalPluginPath, isRemotePluginUrl, importRemotePlugin, extractPreprocessor, extractProcessor } from './plugins/local-plugin.ts';
 export { BUILTIN_BUNDLES, expandBundles } from './plugins/plugin-bundles.ts';
 export type { PluginBundleDef } from './plugins/plugin-bundles.ts';
-export { headerPreprocessor } from '../../../plugins/core/header-preprocessor.ts';
-export { slideSourceNotesPreprocessor } from '../../../plugins/core/slide-source-notes-preprocessor.ts';
-export { cssDoodlePreprocessor } from '../../../plugins/css-doodle/css-doodle-preprocessor.ts';
 export {
   applyPreprocessorResult,
   composeLineMappings,
   createIdentityLineMapping,
   normalizePreprocessorResult,
 } from './plugins/preprocessor-utils.ts';
-export { iframeProcessor } from '../../../plugins/core/iframe-processor.ts';
-export { chartProcessor } from '../../../plugins/chart/chart-processor.ts';
-export { videoProcessor } from '../../../plugins/media/video-processor.ts';
-export { mermaidProcessor } from '../../../plugins/mermaid/mermaid-processor.ts';
-export { cssDoodleProcessor } from '../../../plugins/css-doodle/css-doodle-processor.ts';
-export { buildColorVars, parseConfig as parseDoodleConfig } from '../../../plugins/css-doodle/css-doodle-processor.ts';
-export { youtubeUrlPlugin, youtubeUrlPreprocessor } from '../../../plugins/media/youtube-url-plugin.ts';
-export { audioUrlPlugin, audioUrlPreprocessor, audioProcessor } from '../../../plugins/media/audio-url-plugin.ts';
-export { videoUrlPlugin, videoUrlPreprocessor } from '../../../plugins/media/video-url-plugin.ts';
-export { iframeUrlPlugin, iframeUrlPreprocessor, iframeOverlayProcessor } from '../../../plugins/media/iframe-url-plugin.ts';
-
-// CSS Doodle pattern registry and types
-export { patternRegistry } from '../../../plugins/css-doodle/css-doodle-patterns/index.ts';
-export type { DoodlePattern, DoodlePatternConfig, ParsedDoodleConfig } from '../../../plugins/css-doodle/css-doodle-patterns/types.ts';
 
 // Phase 6: Rich Components
 import { ChartSlide as ChartSlideImpl } from './components/ChartSlide.ts';
@@ -96,6 +79,10 @@ export type { DeckManifest } from './sync/DeckUploader.ts';
 // Utilities for deck-local custom components
 export { waitForProcessedElement } from './utils/waitForProcessedElement.ts';
 
+// Logging (exposed for plugin runtime API)
+export { createLogger } from './logging.ts';
+export type { Logger, LogLevel } from './logging.ts';
+
 // Phase 9: Feature System
 export { FeatureManager, loadFeature } from './features/index.ts';
 export type {
@@ -107,8 +94,6 @@ export type {
   FeatureSyncAPI,
   FeatureOutputAPI,
 } from './features/index.ts';
-export { whiteboardFeature } from '../../../plugins/whiteboard/whiteboard-feature.ts';
-export { mediaSyncFeature } from '../../../plugins/media/media-sync-feature.ts';
 
 // Register custom elements
 function registerElements(): void {

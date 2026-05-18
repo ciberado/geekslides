@@ -219,24 +219,24 @@ describe('buildColorVars', () => {
 // css-doodle processor — data attribute tests
 // ────────────────────────────────────────────────────────────────────────────
 
-const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }));
-vi.mock('../../src/logging.ts', () => ({
-  createLogger: () => ({
-    trace: vi.fn(),
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: warnMock,
-    error: vi.fn(),
-    fatal: vi.fn(),
-    child: vi.fn(),
-  }),
-}));
+const warnMock = vi.fn();
+const mockCreateLogger = (): never => ({
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: warnMock,
+  error: vi.fn(),
+}) as never;
 
 vi.mock('css-doodle', () => ({}));
 
 describe('css-doodle processor data attributes', () => {
+  let cssDoodleProcessor: (el: HTMLElement) => void;
+
   beforeEach(async () => {
     warnMock.mockClear();
+    const mod = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
+    cssDoodleProcessor = mod.createCssDoodleProcessor(mockCreateLogger);
   });
 
   afterEach(() => {
@@ -244,7 +244,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-pattern attribute on created css-doodle element', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = '<div class="gs-doodle" data-doodle="triangles"></div>';
 
@@ -258,7 +257,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-grid attribute from pattern default', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = '<div class="gs-doodle" data-doodle="triangles"></div>';
 
@@ -273,7 +271,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-grid from explicit config override', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,grid=24')}"></div>`;
 
@@ -286,7 +283,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-animate when animate flag is present', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('squares,animate')}"></div>`;
 
@@ -300,7 +296,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('does not set data-animate when animate flag is absent', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = '<div class="gs-doodle" data-doodle="triangles"></div>';
 
@@ -314,7 +309,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-speed when speed is specified', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('squares,speed=2.5')}"></div>`;
 
@@ -327,7 +321,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-opacity when opacity is specified', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,opacity=0.3')}"></div>`;
 
@@ -340,7 +333,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-size when size is specified', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,size=70%')}"></div>`;
 
@@ -353,7 +345,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-shape when shape is specified', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,shape=150')}"></div>`;
 
@@ -366,7 +357,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-nohole when nohole flag is present', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,nohole')}"></div>`;
 
@@ -379,7 +369,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-colors when custom colors are specified', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('triangles,colors=#ff0000|#00ff00')}"></div>`;
 
@@ -392,7 +381,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets data-seed and seed attribute when seed is specified', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent('confetti,seed=42')}"></div>`;
 
@@ -406,7 +394,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('injects CSS content as textContent', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = '<div class="gs-doodle" data-doodle="triangles"></div>';
 
@@ -422,7 +409,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('skips slides without gs-doodle placeholders', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = '<p>No doodle here</p>';
 
@@ -432,7 +418,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('warns and skips unknown pattern names', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = '<div class="gs-doodle" data-doodle="nonexistent"></div>';
 
@@ -451,7 +436,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('handles multiple doodle placeholders in one slide', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     el.innerHTML = `
       <div class="gs-doodle" data-doodle="triangles"></div>
@@ -469,7 +453,6 @@ describe('css-doodle processor data attributes', () => {
   });
 
   it('sets all data attributes together on a fully configured doodle', async () => {
-    const { cssDoodleProcessor } = await import('../../../../plugins/css-doodle/css-doodle-processor.ts');
     const el = document.createElement('div');
     const config = 'confetti,grid=16,shape=140,animate,speed=2,opacity=0.5,nohole,colors=red|blue,seed=7';
     el.innerHTML = `<div class="gs-doodle" data-doodle="${encodeURIComponent(config)}"></div>`;

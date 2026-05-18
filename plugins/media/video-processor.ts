@@ -4,7 +4,7 @@
  * Wraps <video> elements in <geek-video> components for timestamp control.
  */
 
-import type { Processor } from '@engine/plugins/types.ts';
+import type { Processor } from '../sdk/types.ts';
 
 export const videoProcessor: Processor = (slideElement: HTMLElement): void => {
   const videos = slideElement.querySelectorAll('video');

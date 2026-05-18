@@ -3,20 +3,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import type { FeatureContext } from '../../src/features/types.ts';
 import type { WhiteboardStroke } from '../../src/sync/types.ts';
 
-vi.mock('../../src/logging.ts', () => ({
-  createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
-}));
-
-// --- Stub WhiteboardSync ---
-const mockWbSyncActivate = vi.fn();
-const mockWbSyncDeactivate = vi.fn();
-vi.mock('../../src/sync/WhiteboardSync.ts', () => ({
-  WhiteboardSync: vi.fn().mockImplementation(() => ({
-    activate: mockWbSyncActivate,
-    deactivate: mockWbSyncDeactivate,
-  })),
-}));
-
 // --- Stub geek-whiteboard element ---
 class StubWhiteboard extends HTMLElement {
   slideIndex = 0;
@@ -67,8 +53,23 @@ if (!customElements.get('geek-whiteboard-toolbar')) {
   customElements.define('geek-whiteboard-toolbar', StubToolbar);
 }
 
-import { whiteboardFeature } from '../../../../plugins/whiteboard/whiteboard-feature.ts';
+import { activate } from '../../../../plugins/whiteboard/index.ts';
 import type { SyncManager } from '../../src/sync/SyncManager.ts';
+
+const mockWbSyncActivate = vi.fn();
+const mockWbSyncDeactivate = vi.fn();
+const MockWhiteboardSync = vi.fn().mockImplementation(() => ({
+  activate: mockWbSyncActivate,
+  deactivate: mockWbSyncDeactivate,
+}));
+
+const mockApi = {
+  version: 1,
+  createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), trace: vi.fn() }),
+  WhiteboardSync: MockWhiteboardSync,
+};
+const { features } = activate(mockApi as never);
+const whiteboardFeature = features!['whiteboard']!;
 
 // ---------------------------------------------------------------------------
 // Helpers

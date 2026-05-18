@@ -32,8 +32,10 @@ vi.mock('qrcode', () => ({
   toDataURL: vi.fn().mockResolvedValue('data:image/png;base64,stub'),
 }));
 
-import { getPollSlides, countVotes, pollFeature } from '../../../../plugins/poll/poll-feature.ts';
+import { getPollSlides, countVotes, createPollFeature } from '../../../../plugins/poll/poll-feature.ts';
 import type { FeatureContext, FeatureSyncAPI } from '../../src/features/types.ts';
+
+const pollFeature = createPollFeature(() => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), trace: vi.fn() }) as never);
 
 // ---------------------------------------------------------------------------
 // Helpers

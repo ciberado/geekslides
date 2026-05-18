@@ -13,18 +13,8 @@ const log = createLogger('feature-loader');
 
 /** Registry of built-in feature names → lazy loaders. */
 const BUILTIN_FEATURES: Record<string, () => Promise<Feature>> = {
-  whiteboard: async () => {
-    const mod = await import('../../../../plugins/whiteboard/whiteboard-feature.ts');
-    return mod.whiteboardFeature;
-  },
-  poll: async () => {
-    const mod = await import('../../../../plugins/poll/poll-feature.ts');
-    return mod.pollFeature;
-  },
-  'media-sync': async () => {
-    const mod = await import('../../../../plugins/media/media-sync-feature.ts');
-    return mod.mediaSyncFeature;
-  },
+  // Built-in features are now loaded dynamically via plugin-loader.js in the CLI app.
+  // This registry is kept for backwards compatibility with direct engine API consumers.
 };
 
 /**

@@ -8,10 +8,15 @@
  * add weight when the processor isn't active.
  */
 
-import type { Processor } from '@engine/plugins/types.ts';
-import { createLogger } from '@engine/logging.ts';
+import type { Processor } from '../sdk/types.ts';
+import type { PluginLogger, CreateLogger } from '../sdk/types.ts';
 
-const log = createLogger('mermaid');
+const noop = (): void => {};
+const NOOP_LOGGER: PluginLogger = {
+  trace: noop, debug: noop, info: noop, warn: noop, error: noop,
+} as PluginLogger;
+
+let log: PluginLogger = NOOP_LOGGER;
 
 let mermaidReady: Promise<typeof import('mermaid')['default']> | null = null;
 
@@ -27,6 +32,14 @@ function getMermaid(): Promise<typeof import('mermaid')['default']> {
 
 let renderCounter = 0;
 
+/**
+ * Create the mermaid processor with injected logger.
+ */
+export function createMermaidProcessor(createLogger: CreateLogger): Processor {
+  log = createLogger('mermaid');
+  return mermaidProcessor;
+}
+
 export const mermaidProcessor: Processor = (slideElement: HTMLElement): void => {
   const codeBlocks = slideElement.querySelectorAll<HTMLElement>('pre > code.language-mermaid');
   if (codeBlocks.length === 0) return;
@@ -41,7 +54,6 @@ export const mermaidProcessor: Processor = (slideElement: HTMLElement): void => 
     renderCounter++;
     const id = `gs-mermaid-${String(renderCounter)}`;
 
-    // Async render — replaces element when SVG is ready
     void getMermaid()
       .then(async (mermaid) => mermaid.render(id, definition))
       .then(({ svg }) => {
@@ -56,3 +68,4 @@ export const mermaidProcessor: Processor = (slideElement: HTMLElement): void => 
       });
   }
 };
+

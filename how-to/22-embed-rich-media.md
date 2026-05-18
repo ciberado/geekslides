@@ -9,7 +9,19 @@ participate in the layout system including full-cover backgrounds.
 
 ## Enable the plugins
 
-Add the media plugins to your deck's `config.json`:
+The simplest way to enable all media support is the `media` plugin bundle:
+
+```json
+{
+  "plugins": ["media"]
+}
+```
+
+This single line activates all YouTube, audio, video, and iframe preprocessors and processors, plus real-time media sync across devices. The `core` bundle (slide separators and basic iframes) is pulled in automatically as a dependency.
+
+### Selective setup
+
+If you only want specific media types, list them explicitly using the object form:
 
 ```json
 {
@@ -17,11 +29,11 @@ Add the media plugins to your deck's `config.json`:
     "preprocessors": ["header", "youtube-url", "audio-url", "video-url", "iframe-url"],
     "processors": ["iframe", "video", "audio-url", "iframe-url"]
   },
-  "features": ["whiteboard", "media-sync"]
+  "features": ["media-sync"]
 }
 ```
 
-You only need to list the types you use. The table below shows which plugins each media type requires:
+The table below shows which plugins each media type requires:
 
 | Media type | Preprocessor(s) | Processor(s) |
 |---|---|---|
@@ -162,7 +174,7 @@ media children cover the slide.
 
 ## Real-time sync across devices
 
-Enable the `media-sync` feature (listed above in `config.json`). With a
+Enable the `media-sync` feature (included automatically when you use the `media` bundle). With a
 running [y-websocket server](05-deploy-the-server.md), play/pause/seek actions
 by the **presenter** are automatically mirrored to all **viewers** with
 latency correction.

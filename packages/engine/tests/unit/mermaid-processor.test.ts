@@ -1,21 +1,18 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mermaidProcessor } from '../../../../plugins/mermaid/mermaid-processor.ts';
+import { createMermaidProcessor } from '../../../../plugins/mermaid/mermaid-processor.ts';
 import { DEFAULT_CONFIG } from '../../src/core/Config.ts';
 import type { ProcessorContext } from '../../src/plugins/types.ts';
 
-const { warnMock } = vi.hoisted(() => ({ warnMock: vi.fn() }));
-vi.mock('../../src/logging.ts', () => ({
-  createLogger: () => ({
-    trace: vi.fn(),
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: warnMock,
-    error: vi.fn(),
-    fatal: vi.fn(),
-    child: vi.fn(),
-  }),
-}));
+const warnMock = vi.fn();
+const mockLogger = {
+  trace: vi.fn(),
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: warnMock,
+  error: vi.fn(),
+};
+const mermaidProcessor = createMermaidProcessor(() => mockLogger as never);
 
 // Mock the mermaid module
 vi.mock('mermaid', () => {

@@ -5,17 +5,6 @@ vi.mock('../../src/logging.ts', () => ({
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
 }));
 
-// Mock the built-in whiteboard-feature module
-const mockWhiteboardFeature: Feature = {
-  id: 'whiteboard',
-  label: 'Drawing whiteboard overlay',
-  activate: vi.fn(() => vi.fn()),
-};
-
-vi.mock('../../../../plugins/whiteboard/whiteboard-feature.ts', () => ({
-  whiteboardFeature: mockWhiteboardFeature,
-}));
-
 // Mock remote plugin importer used by local-plugin.ts
 vi.mock('../../src/plugins/local-plugin.ts', () => ({
   isRemotePluginUrl: (name: string) => name.startsWith('https://'),
@@ -34,19 +23,16 @@ describe('loadFeature', () => {
   });
 
   describe('built-in features', () => {
-    it('resolves the whiteboard built-in', async () => {
-      const feature = await loadFeature('whiteboard', resolveUrl);
-      expect(feature).toBe(mockWhiteboardFeature);
+    it('throws for any bare name (built-ins now handled by plugin-loader)', async () => {
+      await expect(loadFeature('whiteboard', resolveUrl)).rejects.toThrow(
+        "Unknown built-in feature: 'whiteboard'",
+      );
     });
 
     it('throws for unknown built-in name', async () => {
       await expect(loadFeature('unknown-builtin', resolveUrl)).rejects.toThrow(
         "Unknown built-in feature: 'unknown-builtin'",
       );
-    });
-
-    it('error message lists available built-ins', async () => {
-      await expect(loadFeature('nope', resolveUrl)).rejects.toThrow('whiteboard');
     });
   });
 

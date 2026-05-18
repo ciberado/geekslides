@@ -21,13 +21,22 @@
  *   { "features": ["whiteboard", "media-sync"] }
  */
 
-import type { Feature, FeatureContext } from '@engine/features/types.ts';
-import type { YoutubeSlide } from '@engine/components/YoutubeSlide.ts';
-import type { AudioSlide } from '@engine/components/AudioSlide.ts';
-import type { VideoSlide } from '@engine/components/VideoSlide.ts';
-import type { MediaState } from '@engine/sync/types.ts';
+import type { Feature, FeatureContext } from '../sdk/types.ts';
 
-type MediaComponent = YoutubeSlide | AudioSlide | VideoSlide;
+/** Minimal interface for media web components (geek-youtube, geek-audio, geek-video). */
+interface MediaComponent extends HTMLElement {
+  getCurrentTime?(): number;
+  seekTo?(time: number): void;
+  play?(): void;
+  pause?(): void;
+  applyRemoteState?(state: MediaState): void;
+}
+
+interface MediaState {
+  readonly playing: boolean;
+  readonly currentTime: number;
+  readonly timestamp: number;
+}
 
 const MEDIA_SELECTORS = 'geek-youtube, geek-audio, geek-video';
 const MEDIA_OR_IFRAME_SELECTORS = 'geek-youtube, geek-audio, geek-video, .gs-iframe-wrapper';

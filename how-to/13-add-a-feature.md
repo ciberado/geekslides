@@ -4,15 +4,37 @@ Features are interactive extensions that run throughout your presentation — th
 
 ## Built-in features
 
-GeekSlides ships with one built-in feature:
+GeekSlides ships with three built-in features:
 
 | Name | What it does |
 |---|---|
 | `whiteboard` | Drawing overlay with pen, highlighter, eraser, and real-time sync |
+| `media-sync` | Syncs YouTube/audio/video play, pause, and seek across all clients |
+| `poll` | Live audience polling with real-time vote aggregation |
 
-New decks include the whiteboard by default.
+> **Tip:** The `media` plugin bundle enables `media-sync` automatically. The `whiteboard` bundle enables the whiteboard. You can also enable them via `plugins: ["media"]` or `plugins: ["whiteboard"]` instead of the `features` array.
 
-## Enable a feature
+## Enable a feature via plugin bundle
+
+The cleanest way to enable the whiteboard or media sync is through the `plugins` array:
+
+```json
+{
+  "title": "My Talk",
+  "content": "README.md",
+  "plugins": ["whiteboard"]
+}
+```
+
+Or combine both:
+
+```json
+{
+  "plugins": ["whiteboard", "media"]
+}
+```
+
+## Enable a feature explicitly
 
 Add a `features` array to your `config.json`:
 
@@ -30,15 +52,7 @@ Features listed here are loaded and activated when the presentation starts.
 
 ## Disable all features
 
-Set `features` to an empty array:
-
-```json
-{
-  "features": []
-}
-```
-
-The whiteboard overlay, toolbar, and all `wb-*` terminal commands will be gone.
+Omit the `features` key (and don't list any feature bundles under `plugins`). No features are active by default.
 
 ## Load a local feature
 

@@ -120,15 +120,23 @@ export function expandBundles(bundleNames: readonly string[]): {
   preprocessors: string[];
   processors: string[];
   features: string[];
+  remoteBundles: string[];
 } {
   const preprocessors: string[] = [];
   const processors: string[] = [];
   const features: string[] = [];
+  const remoteBundles: string[] = [];
   const visited = new Set<string>();
 
   function visit(name: string): void {
     if (visited.has(name)) return;
     visited.add(name);
+
+    // Remote URLs are passed through for the plugin loader to handle at runtime
+    if (name.startsWith('https://') || name.startsWith('http://')) {
+      remoteBundles.push(name);
+      return;
+    }
 
     const bundle = BUILTIN_BUNDLES[name];
     if (!bundle) {
@@ -155,5 +163,5 @@ export function expandBundles(bundleNames: readonly string[]): {
     visit(name);
   }
 
-  return { preprocessors, processors, features };
+  return { preprocessors, processors, features, remoteBundles };
 }

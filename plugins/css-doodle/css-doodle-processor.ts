@@ -6,12 +6,17 @@
  * theme-aware colors and applying positioning modes.
  */
 
-import type { Processor } from '@engine/plugins/types.ts';
+import type { Processor } from '../sdk/types.ts';
+import type { PluginLogger, CreateLogger } from '../sdk/types.ts';
 import type { ParsedDoodleConfig, DoodlePatternConfig } from './css-doodle-patterns/types.ts';
 import { patternRegistry } from './css-doodle-patterns/index.ts';
-import { createLogger } from '@engine/logging.ts';
 
-const log = createLogger('css-doodle');
+const noop = (): void => {};
+const NOOP_LOGGER: PluginLogger = {
+  trace: noop, debug: noop, info: noop, warn: noop, error: noop,
+} as PluginLogger;
+
+let log: PluginLogger = NOOP_LOGGER;
 
 /**
  * Lazy-load the css-doodle library only when needed.
@@ -232,6 +237,14 @@ function enqueueRender(task: () => void): void {
     renderScheduled = true;
     requestAnimationFrame(drainRenderQueue);
   }
+}
+
+/**
+ * Create the CSS doodle processor with injected logger.
+ */
+export function createCssDoodleProcessor(createLogger: CreateLogger): Processor {
+  log = createLogger('css-doodle');
+  return cssDoodleProcessor;
 }
 
 /**

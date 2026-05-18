@@ -17,7 +17,7 @@
  *   { "plugins": { "preprocessors": ["header", "audio-url"], "processors": ["iframe", "video", "audio-url"] } }
  */
 
-import type { Plugin, Preprocessor, Processor } from '@engine/plugins/types.ts';
+import type { Preprocessor, Processor } from '../sdk/types.ts';
 
 const AUDIO_EXT_RE = /\.(mp3|wav|ogg|flac|aac|m4a|opus|weba)(\?[^)]*)?$/i;
 const IMAGE_SYNTAX_RE = /!\[([^\]]*)\]\(([^)]+)\)/g;
@@ -52,7 +52,7 @@ export const audioProcessor: Processor = (slideElement: HTMLElement): void => {
   });
 };
 
-export const audioUrlPlugin: Plugin = {
+export const audioUrlPlugin = {
   name: 'audio-url',
   preprocessors: [audioUrlPreprocessor],
   processors: [audioProcessor],

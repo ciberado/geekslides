@@ -2,25 +2,11 @@ import {
   loadConfig,
   parse,
   computeSlideMap,
-  headerPreprocessor,
-  slideSourceNotesPreprocessor,
-  cssDoodlePreprocessor,
-  youtubeUrlPreprocessor,
-  audioUrlPreprocessor,
-  videoUrlPreprocessor,
-  iframeUrlPreprocessor,
   CommandSystem,
   KeyBindings,
   TouchInput,
   SyncManager,
   FeatureManager,
-  loadFeature,
-  iframeProcessor,
-  chartProcessor,
-  videoProcessor,
-  cssDoodleProcessor,
-  audioProcessor,
-  iframeOverlayProcessor,
   uploadDeck,
   buildManifest,
   getProxyBaseUrl,
@@ -32,13 +18,21 @@ import {
   createIdentityLineMapping,
   normalizePreprocessorResult,
   composeLineMappings,
-  patternRegistry,
-  buildColorVars,
-  parseDoodleConfig,
+  createLogger,
+  WhiteboardSync,
   waitForProcessedElement,
   registerLayoutTransform,
 } from '@geekslides/engine';
-import { registerHotClient } from '@geekslides/engine/hot-client';
+import { registerHotClient } from '../../engine/src/hmr/hot-client.ts';
+import { patternRegistry } from '../../../plugins/css-doodle/css-doodle-patterns/index.ts';
+import { buildColorVars, parseConfig as parseDoodleConfig } from '../../../plugins/css-doodle/css-doodle-processor.ts';
+import {
+  initPluginLoader,
+  expandPluginBundles,
+  resolvePlugin,
+  resolveFeature,
+  isKnownBundle,
+} from './plugin-loader.js';
 
 // Built-in theme CSS strings (imported as raw text for runtime switching)
 import themeDefaultRaw from '../src/templates/theme-default.css?raw';
@@ -68,24 +62,13 @@ const BUILTIN_THEMES = [
   { name: 'volcano',     label: 'Volcano',     description: 'Near-black, fiery orange-red accents (Oswald)',           dark: true,  css: themeVolcanoRaw },
 ];
 
-const PREPROCESSORS = {
-  header: headerPreprocessor,
-  'source-notes': slideSourceNotesPreprocessor,
-  'css-doodle': cssDoodlePreprocessor,
-  'youtube-url': youtubeUrlPreprocessor,
-  'audio-url': audioUrlPreprocessor,
-  'video-url': videoUrlPreprocessor,
-  'iframe-url': iframeUrlPreprocessor,
+// Initialize the plugin runtime API — plugins receive this via activate(api)
+const PLUGIN_API = {
+  version: 1,
+  createLogger,
+  WhiteboardSync,
 };
-
-const PROCESSORS = {
-  chart: chartProcessor,
-  iframe: iframeProcessor,
-  video: videoProcessor,
-  'css-doodle': cssDoodleProcessor,
-  'audio-url': audioProcessor,
-  'iframe-url': iframeOverlayProcessor,
-};
+initPluginLoader(PLUGIN_API);
 
 // Expose engine utilities for deck-local custom components.
 // Scripts loaded via config.scripts can use window.__geekslides to access
@@ -332,7 +315,8 @@ async function applyPreprocessors(markdown, config) {
       const mod = await import(/* @vite-ignore */ url);
       pp = extractPreprocessor(mod, name);
     } else {
-      pp = PREPROCESSORS[name];
+      // Resolve from plugin bundles
+      pp = await resolvePlugin(name, 'preprocessor', resolveUrl);
     }
     if (pp) {
       const next = normalizePreprocessorResult(pp(result, config));
@@ -369,7 +353,8 @@ async function getActiveProcessors(config) {
       const mod = await import(/* @vite-ignore */ url);
       processors.push(extractProcessor(mod, name));
     } else {
-      const proc = PROCESSORS[name];
+      // Resolve from plugin bundles
+      const proc = await resolvePlugin(name, 'processor', resolveUrl);
       if (proc) processors.push(proc);
     }
   }
@@ -817,7 +802,19 @@ try {
         // Load features from config
         for (const featureName of config.features) {
           try {
-            const feature = await loadFeature(featureName, resolveUrl);
+            let feature;
+            if (isRemotePluginUrl(featureName) || isLocalPluginPath(featureName)) {
+              // Remote or local feature — use legacy loading
+              const { loadFeature } = await import('@geekslides/engine');
+              feature = await loadFeature(featureName, resolveUrl);
+            } else {
+              // Built-in feature — resolve from plugin bundles
+              feature = await resolveFeature(featureName, resolveUrl);
+              if (!feature) {
+                console.warn(`[features] Unknown feature: '${featureName}'`);
+                continue;
+              }
+            }
             featureManager.register(feature);
           } catch (err) {
             console.warn(`[features] Failed to load feature '${featureName}':`, err.message);
@@ -1231,7 +1228,17 @@ try {
     // Load features from config
     for (const featureName of config.features) {
       try {
-        const feature = await loadFeature(featureName, resolveUrl);
+        let feature;
+        if (isRemotePluginUrl(featureName) || isLocalPluginPath(featureName)) {
+          const { loadFeature } = await import('@geekslides/engine');
+          feature = await loadFeature(featureName, resolveUrl);
+        } else {
+          feature = await resolveFeature(featureName, resolveUrl);
+          if (!feature) {
+            console.warn(`[features] Unknown feature: '${featureName}'`);
+            continue;
+          }
+        }
         featureManager.register(feature);
       } catch (err) {
         console.warn(`[features] Failed to load feature '${featureName}':`, err.message);
