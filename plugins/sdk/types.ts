@@ -105,6 +105,62 @@ export interface FeatureSyncAPI {
   getSharedMap(): any;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   getSharedArray(): any;
+  /**
+   * Feature-scoped ephemeral Y.Map for per-client live state.
+   * Entries are keyed by client ID and should be cleared on deactivate.
+   */
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  getEphemeralMap(): any;
+  /**
+   * Create an EventBridge — a generic DOM-event-to-sync bridge.
+   * Generalizes the WhiteboardSync pattern for any plugin:
+   *
+   *   const bridge = ctx.sync.createEventBridge({
+   *     actions: [
+   *       { event: 'my:data', target: 'map', key: 'state' },
+   *       { event: 'my:item', target: 'array' },
+   *       { event: 'my:progress', target: 'ephemeral' },
+   *       { event: 'my:done', target: 'ephemeral', clear: true },
+   *     ],
+   *   });
+   *   bridge.activate();
+   */
+  createEventBridge(config: EventBridgeConfig): EventBridgeInstance;
+}
+
+/**
+ * Configuration for an EventBridge instance.
+ */
+export interface EventBridgeConfig {
+  /** DOM EventTarget to listen on. Defaults to document. */
+  readonly eventTarget?: EventTarget;
+  /** List of event-to-sync action mappings. */
+  readonly actions: readonly EventBridgeAction[];
+}
+
+/**
+ * Describes how a single DOM event maps to a sync operation.
+ */
+export interface EventBridgeAction {
+  /** DOM event name to listen for. */
+  readonly event: string;
+  /** Where to store the event data: shared map, ordered array, or ephemeral per-client state. */
+  readonly target: 'map' | 'array' | 'ephemeral';
+  /** For 'map' target: the key to set. Defaults to event name. */
+  readonly key?: string;
+  /** Optional transform applied to event.detail before storing. */
+  readonly transform?: (detail: unknown) => unknown;
+  /** For 'ephemeral' target: if true, clears instead of setting. */
+  readonly clear?: boolean;
+}
+
+/**
+ * An active EventBridge instance with lifecycle control.
+ */
+export interface EventBridgeInstance {
+  activate(): void;
+  deactivate(): void;
+  readonly isActive: boolean;
 }
 
 export interface FeatureOutputAPI {
@@ -174,13 +230,16 @@ export interface WhiteboardSyncInstance {
 /**
  * The runtime API injected into plugins via the `activate()` function.
  * This is the only coupling point between plugins and the host.
+ *
+ * Note: Features also receive EventBridge capability via `ctx.sync.createEventBridge()`
+ * at feature activation time — see FeatureSyncAPI.
  */
 export interface PluginAPI {
   /** SDK version for compatibility checks. */
   readonly version: number;
   /** Create a namespaced logger. */
   readonly createLogger: CreateLogger;
-  /** WhiteboardSync constructor (for the whiteboard feature). */
+  /** WhiteboardSync constructor (for the whiteboard feature — kept for backward compat). */
   readonly WhiteboardSync: WhiteboardSyncClass;
 }
 

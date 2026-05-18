@@ -10,6 +10,8 @@ import type { GeekSlidesConfig } from '../core/Config.ts';
 import type { Slideshow } from '../core/Slideshow.ts';
 import type { CommandSystem } from '../input/CommandSystem.ts';
 import type { SyncManager } from '../sync/SyncManager.ts';
+import { EventBridge } from '../sync/EventBridge.ts';
+import type { EventBridgeConfig } from '../sync/EventBridge.ts';
 import type {
   Feature,
   FeatureContext,
@@ -189,6 +191,18 @@ export class FeatureManager {
           featureMap.set('items', arr);
         }
         return arr;
+      },
+      getEphemeralMap(): Y.Map<unknown> {
+        const featureMap = this.getSharedMap();
+        let eph = featureMap.get('ephemeral') as Y.Map<unknown> | undefined;
+        if (!eph) {
+          eph = new Y.Map();
+          featureMap.set('ephemeral', eph);
+        }
+        return eph;
+      },
+      createEventBridge(config: EventBridgeConfig): EventBridge {
+        return new EventBridge(this, config);
       },
     } : null;
 

@@ -1,15 +1,15 @@
 /**
  * GeekSlides v2 — Plugin proxy HTTP handler.
  *
- * Fetches remote JavaScript plugin files on behalf of the browser,
- * avoiding CORS issues that would block direct cross-origin dynamic imports.
+ * Fetches remote JavaScript plugin files and JSON manifests on behalf of the
+ * browser, avoiding CORS issues that would block direct cross-origin dynamic imports.
  *
  * Route: GET /api/plugin-proxy?url=<encoded-url>
  *
  * Security constraints:
  * - Only https: URLs are accepted (http: rejected in production)
- * - Only .js files are fetched
- * - Response must have a JavaScript content type
+ * - Only .js and .json files are fetched
+ * - Response must have a JavaScript or JSON content type
  * - Maximum response size: 1 MB
  */
 
@@ -84,10 +84,12 @@ export async function handlePluginProxy(req: IncomingMessage, res: ServerRespons
     return true;
   }
 
-  if (!parsed.pathname.endsWith('.js')) {
-    sendProxyError(res, 400, 'Only .js files can be proxied');
+  if (!parsed.pathname.endsWith('.js') && !parsed.pathname.endsWith('.json')) {
+    sendProxyError(res, 400, 'Only .js and .json files can be proxied');
     return true;
   }
+
+  const isJson = parsed.pathname.endsWith('.json');
 
   try {
     const controller = new AbortController();
@@ -95,7 +97,7 @@ export async function handlePluginProxy(req: IncomingMessage, res: ServerRespons
 
     const response = await fetch(targetUrl, {
       signal: controller.signal,
-      headers: { 'Accept': 'application/javascript, text/javascript, */*' },
+      headers: { 'Accept': isJson ? 'application/json, */*' : 'application/javascript, text/javascript, */*' },
     });
 
     clearTimeout(timeout);
@@ -118,8 +120,12 @@ export async function handlePluginProxy(req: IncomingMessage, res: ServerRespons
       return true;
     }
 
+    const responseContentType = isJson
+      ? 'application/json; charset=utf-8'
+      : 'application/javascript; charset=utf-8';
+
     res.writeHead(200, {
-      'Content-Type': 'application/javascript; charset=utf-8',
+      'Content-Type': responseContentType,
       'Content-Length': bodyBuffer.length,
       'Cache-Control': 'public, max-age=300',
     });

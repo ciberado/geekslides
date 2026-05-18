@@ -79,6 +79,17 @@ export interface FeatureSyncAPI {
    * Lives under `features.<featureId>.items` in the Yjs doc.
    */
   getSharedArray(): Y.Array<unknown>;
+  /**
+   * Feature-scoped ephemeral Y.Map for per-client live state (e.g. cursors, progress).
+   * Lives under `features.<featureId>.ephemeral` in the Yjs doc.
+   * Keyed by client ID — entries should be cleared on deactivate.
+   */
+  getEphemeralMap(): Y.Map<unknown>;
+  /**
+   * Create an EventBridge that listens for DOM events and forwards data to sync.
+   * Generalizes the WhiteboardSync pattern for any plugin.
+   */
+  createEventBridge(config: import('../sync/EventBridge.ts').EventBridgeConfig): import('../sync/EventBridge.ts').EventBridge;
 }
 
 export interface FeatureOutputAPI {

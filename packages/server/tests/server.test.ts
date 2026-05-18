@@ -352,7 +352,7 @@ describe('plugin proxy', () => {
         `${baseUrl}/api/plugin-proxy?url=${encodeURIComponent('http://example.com/style.css')}`,
       );
       expect(res.status).toBe(400);
-      expect(res.body).toContain('Only .js files');
+      expect(res.body).toContain('Only .js and .json files');
     } finally {
       await new Promise<void>((resolve) => { server.close(() => resolve()); });
     }
