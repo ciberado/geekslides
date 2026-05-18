@@ -26,7 +26,7 @@ describe('plugin-loader', () => {
 
   describe('initPluginLoader', () => {
     it('accepts a PluginAPI object without throwing', () => {
-      const api = { version: 1, createLogger: vi.fn(), WhiteboardSync: class {} };
+      const api = { version: 1, createLogger: vi.fn() };
       expect(() => initPluginLoader(api)).not.toThrow();
     });
   });
@@ -78,7 +78,7 @@ describe('plugin-loader', () => {
 
     it('resolves a preprocessor from its known bundle', async () => {
       // Initialize the plugin API so activate() can succeed
-      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }), WhiteboardSync: class { activate() {} deactivate() {} } };
+      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }) };
       initPluginLoader(api);
       // 'youtube-url' maps to 'media' bundle
       const result = await resolvePlugin('youtube-url', 'preprocessor');
@@ -93,7 +93,7 @@ describe('plugin-loader', () => {
     });
 
     it('resolves a feature from its known bundle', async () => {
-      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }), WhiteboardSync: class { activate() {} deactivate() {} } };
+      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }) };
       initPluginLoader(api);
       const result = await resolveFeature('whiteboard');
       expect(result).toBeDefined();
@@ -119,7 +119,7 @@ describe('plugin-loader', () => {
     });
 
     it('loads and expands a known bundle', async () => {
-      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }), WhiteboardSync: class { activate() {} deactivate() {} } };
+      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }) };
       initPluginLoader(api);
       const result = await expandPluginBundles(['core']);
       expect(result.preprocessors).toHaveProperty('header');
@@ -128,7 +128,7 @@ describe('plugin-loader', () => {
     });
 
     it('loads bundle with dependencies', async () => {
-      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }), WhiteboardSync: class { activate() {} deactivate() {} } };
+      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }) };
       initPluginLoader(api);
       // 'media' depends on 'core' — loading media should load core into cache
       const result = await expandPluginBundles(['media']);
@@ -143,7 +143,7 @@ describe('plugin-loader', () => {
     });
 
     it('caches bundles (loading same bundle twice returns same exports)', async () => {
-      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }), WhiteboardSync: class { activate() {} deactivate() {} } };
+      const api = { version: 1, createLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() }) };
       initPluginLoader(api);
       const r1 = await expandPluginBundles(['core']);
       const r2 = await expandPluginBundles(['core']);
@@ -154,7 +154,7 @@ describe('plugin-loader', () => {
 
   describe('resetPluginLoader', () => {
     it('clears state while keeping static registries', () => {
-      const api = { version: 1, createLogger: vi.fn(), WhiteboardSync: class {} };
+      const api = { version: 1, createLogger: vi.fn() };
       initPluginLoader(api);
       resetPluginLoader();
       // Static data still accessible

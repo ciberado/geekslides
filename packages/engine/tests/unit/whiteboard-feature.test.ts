@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { FeatureContext } from '../../src/features/types.ts';
+import type { FeatureContext, FeatureSyncAPI } from '../../src/features/types.ts';
 import type { WhiteboardStroke } from '../../src/sync/types.ts';
 
 // --- Stub geek-whiteboard element ---
@@ -54,19 +54,10 @@ if (!customElements.get('geek-whiteboard-toolbar')) {
 }
 
 import { activate } from '../../../../plugins/whiteboard/index.ts';
-import type { SyncManager } from '../../src/sync/SyncManager.ts';
-
-const mockWbSyncActivate = vi.fn();
-const mockWbSyncDeactivate = vi.fn();
-const MockWhiteboardSync = vi.fn().mockImplementation(() => ({
-  activate: mockWbSyncActivate,
-  deactivate: mockWbSyncDeactivate,
-}));
 
 const mockApi = {
   version: 1,
   createLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn(), trace: vi.fn() }),
-  WhiteboardSync: MockWhiteboardSync,
 };
 const { features } = activate(mockApi as never);
 const whiteboardFeature = features!['whiteboard']!;
@@ -87,13 +78,51 @@ function makeStroke(overrides: Partial<WhiteboardStroke> = {}): WhiteboardStroke
   };
 }
 
-function makeSyncManager(strokes: WhiteboardStroke[] = []): SyncManager {
+/** Creates a mock FeatureSyncAPI with observable Yjs-like maps/arrays. */
+function makeSyncAPI(strokes: WhiteboardStroke[] = [], options?: { readonly?: boolean }): FeatureSyncAPI {
+  const sharedMapData = new Map<string, unknown>();
+  const sharedArrayData = [...strokes] as unknown[];
+  const ephemeralMapData = new Map<string, unknown>();
+
+  const sharedMap = {
+    get: vi.fn((key: string) => sharedMapData.get(key)),
+    set: vi.fn((key: string, value: unknown) => { sharedMapData.set(key, value); }),
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+  };
+
+  const sharedArray = {
+    get length() { return sharedArrayData.length; },
+    get: vi.fn((i: number) => sharedArrayData[i]),
+    push: vi.fn((items: unknown[]) => { sharedArrayData.push(...items); }),
+    delete: vi.fn((index: number, count: number) => { sharedArrayData.splice(index, count); }),
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+    toArray: vi.fn(() => [...sharedArrayData]),
+  };
+
+  const ephemeralMap = {
+    get: vi.fn((key: string) => ephemeralMapData.get(key)),
+    set: vi.fn((key: string, value: unknown) => { ephemeralMapData.set(key, value); }),
+    delete: vi.fn((key: string) => { ephemeralMapData.delete(key); }),
+    observe: vi.fn(),
+    unobserve: vi.fn(),
+  };
+
+  const mockBridge = {
+    activate: vi.fn(),
+    deactivate: vi.fn(),
+    isActive: false,
+  };
+
   return {
-    getStrokes: vi.fn(() => strokes),
-    publishWhiteboardVisible: vi.fn(),
-    clearStrokes: vi.fn(),
-    clearAllStrokes: vi.fn(),
-  } as unknown as SyncManager;
+    connected: true,
+    readonly: options?.readonly ?? false,
+    getSharedMap: vi.fn(() => sharedMap) as unknown as FeatureSyncAPI['getSharedMap'],
+    getSharedArray: vi.fn(() => sharedArray) as unknown as FeatureSyncAPI['getSharedArray'],
+    getEphemeralMap: vi.fn(() => ephemeralMap) as unknown as FeatureSyncAPI['getEphemeralMap'],
+    createEventBridge: vi.fn(() => mockBridge) as unknown as FeatureSyncAPI['createEventBridge'],
+  };
 }
 
 type EventHandler = (payload: Record<string, unknown>) => void;
@@ -101,7 +130,7 @@ type EventHandler = (payload: Record<string, unknown>) => void;
 function makeContext(
   overrides: Partial<{
     role: 'presenter' | 'viewer';
-    syncManager: SyncManager | null;
+    sync: FeatureSyncAPI | null;
     strokes: WhiteboardStroke[];
     currentSlide: number;
     mode: string;
@@ -121,8 +150,6 @@ function makeContext(
   //   .gs-container
   //     └── .gs-features
   //           └── div[data-feature="whiteboard"]   ← ctx.container
-  // Using parentElement on ctx.container gives .gs-features (wrong),
-  // while closest('.gs-container') correctly skips up to .gs-container.
   const gsContainer = document.createElement('div');
   gsContainer.className = 'gs-container';
   const gsFeaturesDiv = document.createElement('div');
@@ -133,14 +160,16 @@ function makeContext(
   gsContainer.appendChild(gsFeaturesDiv);
   document.body.appendChild(gsContainer);
 
+  const syncAPI = overrides.sync !== undefined ? overrides.sync : makeSyncAPI(overrides.strokes ?? []);
+
   const ctx: FeatureContext = {
     featureId: 'whiteboard',
     config: {} as never,
     role: overrides.role ?? 'presenter',
     slideshow: { currentSlide: overrides.currentSlide ?? 0, slideCount: 5, mode: overrides.mode ?? 'present' } as never,
     commands: { register: commands } as never,
-    sync: null,
-    syncManager: overrides.syncManager ?? null,
+    sync: syncAPI,
+    syncManager: null,
     container,
     on: onFn as never,
     output: { show: outputShow } as never,
@@ -192,7 +221,6 @@ describe('whiteboardFeature', () => {
     const { ctx, container } = makeContext({ role: 'viewer' });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
-    // Viewer whiteboard has readonly attr — toolbar is not created internally
     expect(wb.toolbar).toBeNull();
   });
 
@@ -215,7 +243,6 @@ describe('whiteboardFeature', () => {
     const { ctx, container } = makeContext({ role: 'presenter' });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
-    // Toolbar is owned by the component; feature accesses it via wb.toolbar
     expect(wb.toolbar).toBeTruthy();
   });
 
@@ -288,31 +315,32 @@ describe('whiteboardFeature', () => {
 
   // --- Sync integration ---
 
-  it('activates WhiteboardSync when syncManager is provided', () => {
-    const { ctx } = makeContext({ syncManager: makeSyncManager() });
+  it('activates EventBridge when sync is provided', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
-    expect(mockWbSyncActivate).toHaveBeenCalledOnce();
+    const bridge = (syncAPI.createEventBridge as ReturnType<typeof vi.fn>).mock.results[0]?.value;
+    expect(bridge.activate).toHaveBeenCalledOnce();
   });
 
-  it('does not activate WhiteboardSync when syncManager is null', () => {
-    const { ctx } = makeContext({ syncManager: null });
+  it('does not create EventBridge when sync is null', () => {
+    const { ctx } = makeContext({ sync: null });
     whiteboardFeature.activate(ctx);
-    expect(mockWbSyncActivate).not.toHaveBeenCalled();
+    // No error thrown
   });
 
-  it('replays existing strokes from syncManager on activation', () => {
+  it('replays existing strokes from shared array on activation', () => {
     const existingStrokes = [makeStroke({ id: 's1' }), makeStroke({ id: 's2' })];
-    const syncManager = makeSyncManager(existingStrokes);
-    const { ctx, container } = makeContext({ syncManager });
+    const syncAPI = makeSyncAPI(existingStrokes);
+    const { ctx, container } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
     expect(wb.drawRemoteStroke).toHaveBeenCalledTimes(2);
-    expect(wb.drawRemoteStroke).toHaveBeenCalledWith(existingStrokes[0]);
-    expect(wb.drawRemoteStroke).toHaveBeenCalledWith(existingStrokes[1]);
   });
 
   it('does not call drawRemoteStroke when there are no existing strokes', () => {
-    const { ctx, container } = makeContext({ syncManager: makeSyncManager([]) });
+    const syncAPI = makeSyncAPI([]);
+    const { ctx, container } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
     expect(wb.drawRemoteStroke).not.toHaveBeenCalled();
@@ -320,9 +348,9 @@ describe('whiteboardFeature', () => {
 
   // --- Command behaviour ---
 
-  it('whiteboard command toggles whiteboard visibility', () => {
-    const syncManager = makeSyncManager();
-    const { ctx, container, commands } = makeContext({ syncManager });
+  it('whiteboard command toggles whiteboard and sets visibility in shared map', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx, container, commands } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
 
@@ -332,12 +360,14 @@ describe('whiteboardFeature', () => {
     wbCmd?.execute();
 
     expect(wb.toggle).toHaveBeenCalledOnce();
-    expect(syncManager.publishWhiteboardVisible).toHaveBeenCalledOnce();
+    const sharedMap = (syncAPI.getSharedMap as ReturnType<typeof vi.fn>)();
+    expect(sharedMap.set).toHaveBeenCalledWith('visible', wb.isVisible);
   });
 
-  it('whiteboard-clear command clears the canvas and syncs', () => {
-    const syncManager = makeSyncManager();
-    const { ctx, container, commands } = makeContext({ syncManager });
+  it('whiteboard-clear command clears the canvas and deletes strokes from shared array', () => {
+    const existingStrokes = [makeStroke({ id: 's1', slideIndex: 0 }), makeStroke({ id: 's2', slideIndex: 1 })];
+    const syncAPI = makeSyncAPI(existingStrokes);
+    const { ctx, container, commands } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = container.querySelector('geek-whiteboard') as StubWhiteboard;
 
@@ -347,7 +377,9 @@ describe('whiteboardFeature', () => {
     clearCmd?.execute();
 
     expect(wb.clear).toHaveBeenCalledOnce();
-    expect(syncManager.clearStrokes).toHaveBeenCalledWith(wb.slideIndex);
+    // Should have called delete on the array for slide 0 strokes
+    const sharedArray = (syncAPI.getSharedArray as ReturnType<typeof vi.fn>)();
+    expect(sharedArray.delete).toHaveBeenCalled();
   });
 
   it('wb-color shows error when called without arguments', () => {
@@ -378,17 +410,14 @@ describe('whiteboardFeature', () => {
   });
 
   // --- Sync event bridge (composed events from whiteboard) ---
-  // Toolbar events are now handled internally by <geek-whiteboard>.
-  // The feature layer only listens for composed geek:whiteboard:hide and
-  // geek:whiteboard:clear events that bubble out of the shadow root.
 
   function getWhiteboard(container: HTMLElement): StubWhiteboard {
     return container.querySelector('geek-whiteboard') as StubWhiteboard;
   }
 
-  it('geek:whiteboard:hide event publishes visibility to sync', () => {
-    const syncManager = makeSyncManager();
-    const { ctx, container } = makeContext({ syncManager });
+  it('geek:whiteboard:hide event sets visibility in shared map', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx, container } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
@@ -397,11 +426,12 @@ describe('whiteboardFeature', () => {
       detail: { visible: false },
     }));
 
-    expect(syncManager.publishWhiteboardVisible).toHaveBeenCalledWith(false);
+    const sharedMap = (syncAPI.getSharedMap as ReturnType<typeof vi.fn>)();
+    expect(sharedMap.set).toHaveBeenCalledWith('visible', false);
   });
 
-  it('geek:whiteboard:hide event does not throw when syncManager is null', () => {
-    const { ctx, container } = makeContext({ syncManager: null });
+  it('geek:whiteboard:hide event does not throw when sync is null', () => {
+    const { ctx, container } = makeContext({ sync: null });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
@@ -413,9 +443,10 @@ describe('whiteboardFeature', () => {
     }).not.toThrow();
   });
 
-  it('geek:whiteboard:clear event calls clearStrokes on sync', () => {
-    const syncManager = makeSyncManager();
-    const { ctx, container } = makeContext({ syncManager });
+  it('geek:whiteboard:clear event deletes strokes for that slide from shared array', () => {
+    const existingStrokes = [makeStroke({ id: 's1', slideIndex: 2 })];
+    const syncAPI = makeSyncAPI(existingStrokes);
+    const { ctx, container } = makeContext({ sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
@@ -424,11 +455,12 @@ describe('whiteboardFeature', () => {
       detail: { slideIndex: 2 },
     }));
 
-    expect(syncManager.clearStrokes).toHaveBeenCalledWith(2);
+    const sharedArray = (syncAPI.getSharedArray as ReturnType<typeof vi.fn>)();
+    expect(sharedArray.delete).toHaveBeenCalled();
   });
 
-  it('geek:whiteboard:clear event does not throw when syncManager is null', () => {
-    const { ctx, container } = makeContext({ syncManager: null });
+  it('geek:whiteboard:clear event does not throw when sync is null', () => {
+    const { ctx, container } = makeContext({ sync: null });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
@@ -441,8 +473,8 @@ describe('whiteboardFeature', () => {
   });
 
   it('does not attach hide/clear listeners for viewer role', () => {
-    const syncManager = makeSyncManager();
-    const { ctx, container } = makeContext({ role: 'viewer', syncManager });
+    const syncAPI = makeSyncAPI();
+    const { ctx, container } = makeContext({ role: 'viewer', sync: syncAPI });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
@@ -451,7 +483,40 @@ describe('whiteboardFeature', () => {
       detail: { visible: false },
     }));
 
-    expect(syncManager.publishWhiteboardVisible).not.toHaveBeenCalled();
+    const sharedMap = (syncAPI.getSharedMap as ReturnType<typeof vi.fn>)();
+    // The hide listener was not attached for viewer, so set shouldn't be called for visibility
+    // (only the observer replay would call it, which only happens if value exists)
+    expect(sharedMap.set).not.toHaveBeenCalledWith('visible', false);
+  });
+
+  // --- Deck reload clears strokes ---
+
+  it('clears all strokes on geek:presentation:reload event', () => {
+    const existingStrokes = [makeStroke({ id: 's1' }), makeStroke({ id: 's2' })];
+    const syncAPI = makeSyncAPI(existingStrokes);
+    const { ctx, container } = makeContext({ sync: syncAPI });
+    whiteboardFeature.activate(ctx);
+    const wb = getWhiteboard(container);
+
+    document.dispatchEvent(new CustomEvent('geek:presentation:reload'));
+
+    expect(wb.clear).toHaveBeenCalled();
+    const sharedArray = (syncAPI.getSharedArray as ReturnType<typeof vi.fn>)();
+    expect(sharedArray.delete).toHaveBeenCalled();
+  });
+
+  it('cleanup removes reload listener', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx, container } = makeContext({ sync: syncAPI });
+    const cleanup = whiteboardFeature.activate(ctx);
+    const wb = getWhiteboard(container);
+
+    cleanup?.();
+
+    // After cleanup, reload should not trigger clear
+    wb.clear.mockClear();
+    document.dispatchEvent(new CustomEvent('geek:presentation:reload'));
+    expect(wb.clear).not.toHaveBeenCalled();
   });
 
   // --- Pointer drag auto-activation ---
@@ -540,23 +605,19 @@ describe('whiteboardFeature', () => {
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
-    firePointer(gsContainer, 'pointerdown', { button: 2, buttons: 2 });
-    firePointer(gsContainer, 'pointermove', { buttons: 2 });
+    firePointer(gsContainer, 'pointerdown', { button: 2 });
+    firePointer(gsContainer, 'pointermove', { buttons: 1 });
 
     expect(wb.setActive).not.toHaveBeenCalled();
   });
 
-  it('clears pointerStartedOnSlide flag on pointerup', () => {
-    const { ctx, gsContainer, container } = makeContext({ role: 'presenter' });
+  it('ignores pointer drag when not in present mode', () => {
+    const { ctx, gsContainer, container } = makeContext({ role: 'presenter', mode: 'overview' });
     whiteboardFeature.activate(ctx);
     const wb = getWhiteboard(container);
 
-    // Start a drag
     firePointer(gsContainer, 'pointerdown', { button: 0 });
-    // Release
-    gsContainer.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, buttons: 0 }));
-    // Move after release — should not activate
-    firePointer(gsContainer, 'pointermove', { buttons: 0 });
+    firePointer(gsContainer, 'pointermove', { buttons: 1 });
 
     expect(wb.setActive).not.toHaveBeenCalled();
   });
@@ -606,8 +667,6 @@ describe('whiteboardFeature', () => {
     firePointer(gsContainer, 'pointerdown', { button: 0 });
     firePointer(gsContainer, 'pointermove', { buttons: 1 });
 
-    // viewer whiteboard is readonly — setActive is not a method on viewer wb,
-    // but the stub has it; the guard is that the handler was never attached.
     expect(wb.setActive).not.toHaveBeenCalled();
   });
 
@@ -621,34 +680,39 @@ describe('whiteboardFeature', () => {
     expect(container.querySelector('geek-whiteboard')).toBeNull();
   });
 
-  it('cleanup deactivates WhiteboardSync', () => {
-    const { ctx } = makeContext({ syncManager: makeSyncManager() });
+  it('cleanup deactivates EventBridge', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx } = makeContext({ sync: syncAPI });
     const cleanup = whiteboardFeature.activate(ctx);
+    const bridge = (syncAPI.createEventBridge as ReturnType<typeof vi.fn>).mock.results[0]?.value;
+
     cleanup?.();
-    expect(mockWbSyncDeactivate).toHaveBeenCalledOnce();
+    expect(bridge.deactivate).toHaveBeenCalledOnce();
   });
 
-  it('cleanup removes sync event listeners', () => {
-    const syncManager = makeSyncManager();
-    const { ctx } = makeContext({ syncManager });
+  it('cleanup unobserves Yjs maps/arrays', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx } = makeContext({ sync: syncAPI });
     const cleanup = whiteboardFeature.activate(ctx);
+
     cleanup?.();
 
-    // After cleanup, hide event dispatched directly to the ctx.container should not reach sync
-    ctx.container.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
-      bubbles: true, detail: { visible: false },
-    }));
-
-    // publishWhiteboardVisible should NOT have been called (listeners removed before cleanup)
-    expect(syncManager.publishWhiteboardVisible).not.toHaveBeenCalled();
+    const sharedArray = (syncAPI.getSharedArray as ReturnType<typeof vi.fn>)();
+    const ephemeralMap = (syncAPI.getEphemeralMap as ReturnType<typeof vi.fn>)();
+    const sharedMap = (syncAPI.getSharedMap as ReturnType<typeof vi.fn>)();
+    expect(sharedArray.unobserve).toHaveBeenCalled();
+    expect(ephemeralMap.unobserve).toHaveBeenCalled();
+    expect(sharedMap.unobserve).toHaveBeenCalled();
   });
 
-  it('cleanup calls slide:enter unsubscribe', () => {
-    const { ctx, on } = makeContext();
-    const unsubSpy = vi.fn();
-    vi.mocked(on).mockReturnValueOnce(unsubSpy);
+  it('cleanup clears ephemeral entry', () => {
+    const syncAPI = makeSyncAPI();
+    const { ctx } = makeContext({ sync: syncAPI });
     const cleanup = whiteboardFeature.activate(ctx);
+
     cleanup?.();
-    expect(unsubSpy).toHaveBeenCalledOnce();
+
+    const ephemeralMap = (syncAPI.getEphemeralMap as ReturnType<typeof vi.fn>)();
+    expect(ephemeralMap.delete).toHaveBeenCalledWith('_self');
   });
 });

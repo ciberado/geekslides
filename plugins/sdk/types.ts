@@ -216,18 +216,6 @@ export interface PluginLogger {
 export type CreateLogger = (namespace: string) => PluginLogger;
 
 /**
- * WhiteboardSync class interface — used by the whiteboard feature.
- */
-export interface WhiteboardSyncClass {
-  new (syncManager: unknown, eventTarget?: EventTarget): WhiteboardSyncInstance;
-}
-
-export interface WhiteboardSyncInstance {
-  activate(): void;
-  deactivate(): void;
-}
-
-/**
  * The runtime API injected into plugins via the `activate()` function.
  * This is the only coupling point between plugins and the host.
  *
@@ -239,8 +227,6 @@ export interface PluginAPI {
   readonly version: number;
   /** Create a namespaced logger. */
   readonly createLogger: CreateLogger;
-  /** WhiteboardSync constructor (for the whiteboard feature — kept for backward compat). */
-  readonly WhiteboardSync: WhiteboardSyncClass;
 }
 
 /* ------------------------------------------------------------------ */

@@ -7,7 +7,6 @@
 
 import * as Y from 'yjs';
 import { WebsocketProvider } from 'y-websocket';
-import type { WhiteboardStroke } from './types.ts';
 import { createLogger } from '../logging.ts';
 
 const log = createLogger('sync');
@@ -23,8 +22,6 @@ export interface SyncTarget {
 export class SyncManager {
   readonly doc: Y.Doc;
   readonly #sessionState: Y.Map<unknown>;
-  readonly #whiteboardStrokes: Y.Array<unknown>;
-  readonly #liveStrokes: Y.Map<unknown>;
   #provider: WebsocketProvider | null = null;
   #currentRoom: string | null = null;
   #target: SyncTarget | null = null;
@@ -37,8 +34,6 @@ export class SyncManager {
   constructor(eventTarget: EventTarget = document, options?: { readonly?: boolean }) {
     this.doc = new Y.Doc();
     this.#sessionState = this.doc.getMap('sessionState');
-    this.#whiteboardStrokes = this.doc.getArray('whiteboardStrokes');
-    this.#liveStrokes = this.doc.getMap('liveStrokes');
     this.#clientId = Math.random().toString(36).slice(2, 10);
     this.#eventTarget = eventTarget;
     this.#readonly = options?.readonly === true;
@@ -159,85 +154,6 @@ export class SyncManager {
   }
 
   /**
-   * Return all existing whiteboard strokes (for late-joining clients).
-   */
-  getStrokes(): WhiteboardStroke[] {
-    const result: WhiteboardStroke[] = [];
-    for (let i = 0; i < this.#whiteboardStrokes.length; i++) {
-      result.push(this.#whiteboardStrokes.get(i) as WhiteboardStroke);
-    }
-    return result;
-  }
-
-  /**
-   * Add a whiteboard stroke to the shared array.
-   * No-op in readonly mode.
-   */
-  addStroke(stroke: WhiteboardStroke): void {
-    if (this.#readonly) return;
-    this.#whiteboardStrokes.push([stroke]);
-  }
-
-  /**
-   * Update the in-progress (live) stroke for this client.
-   * Remote observers will see incremental drawing progress.
-   * No-op in readonly mode.
-   */
-  updateLiveStroke(stroke: WhiteboardStroke): void {
-    if (this.#readonly) return;
-    this.#liveStrokes.set(this.#clientId, stroke);
-  }
-
-  /**
-   * Clear the live stroke for this client (called on finalization).
-   * No-op in readonly mode.
-   */
-  clearLiveStroke(): void {
-    if (this.#readonly) return;
-    this.#liveStrokes.delete(this.#clientId);
-  }
-
-  /**
-   * Clear whiteboard strokes for a specific slide.
-   * No-op in readonly mode.
-   */
-  clearStrokes(slideIndex: number): void {
-    if (this.#readonly) return;
-    const arr = this.#whiteboardStrokes;
-    this.doc.transact(() => {
-      for (let i = arr.length - 1; i >= 0; i--) {
-        const item = arr.get(i) as WhiteboardStroke | undefined;
-        if (item?.slideIndex === slideIndex) {
-          arr.delete(i, 1);
-        }
-      }
-    });
-  }
-
-  /**
-   * Clear all whiteboard strokes across every slide.
-   * Called when a new deck is loaded to discard drawings from the previous deck.
-   * No-op in readonly mode.
-   */
-  clearAllStrokes(): void {
-    if (this.#readonly) return;
-    const arr = this.#whiteboardStrokes;
-    if (arr.length === 0) return;
-    this.doc.transact(() => {
-      arr.delete(0, arr.length);
-    });
-  }
-
-  /**
-   * Publish whiteboard canvas visibility to all connected sessions.
-   * No-op in readonly mode.
-   */
-  publishWhiteboardVisible(visible: boolean): void {
-    if (this.#readonly) return;
-    this.#sessionState.set('whiteboardVisible', visible);
-  }
-
-  /**
    * Toggle follow-presenter mode.
    */
   toggleFollow(): void {
@@ -285,18 +201,6 @@ export class SyncManager {
     this.#sessionState.observe((event) => {
       if (event.transaction.local) return;
 
-      // Whiteboard visibility is independent of follow-presenter mode.
-      if (event.keysChanged.has('whiteboardVisible')) {
-        const visible = this.#sessionState.get('whiteboardVisible') as boolean | undefined;
-        if (visible !== undefined) {
-          this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-visibility', {
-            bubbles: true,
-            detail: { visible },
-          }));
-        }
-      }
-
-
       if (!this.#followPresenter) return;
       if (!this.#target) return;
 
@@ -314,57 +218,6 @@ export class SyncManager {
       }
 
       this.#isRemoteUpdate = false;
-    });
-
-    // Observe remote whiteboard strokes
-    this.#whiteboardStrokes.observe((event) => {
-      if (event.transaction.local) return;
-
-      for (const item of event.changes.added) {
-        const content = item.content.getContent() as unknown[];
-        for (const stroke of content) {
-          this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke', {
-            bubbles: true,
-            detail: stroke,
-          }));
-        }
-      }
-
-      // Handle stroke deletions — notify clients to clear and redraw.
-      if (event.changes.deleted.size > 0) {
-        const clearedSlides = new Set<number>();
-        for (const item of event.changes.deleted) {
-          const content = item.content.getContent() as WhiteboardStroke[];
-          for (const stroke of content) {
-            clearedSlides.add(stroke.slideIndex);
-          }
-        }
-        const remaining = this.getStrokes();
-        for (const slideIndex of clearedSlides) {
-          this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-clear', {
-            bubbles: true,
-            detail: {
-              slideIndex,
-              remaining: remaining.filter((s) => s.slideIndex === slideIndex),
-            },
-          }));
-        }
-      }
-    });
-
-    // Observe live (in-progress) stroke updates
-    this.#liveStrokes.observe((event) => {
-      if (event.transaction.local) return;
-
-      for (const [clientId, change] of event.changes.keys) {
-        if (change.action === 'delete') continue;
-        const stroke = this.#liveStrokes.get(clientId);
-        if (!stroke) continue;
-        this.#eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke-progress', {
-          bubbles: true,
-          detail: stroke,
-        }));
-      }
     });
   }
 }

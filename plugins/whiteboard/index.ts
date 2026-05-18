@@ -2,10 +2,12 @@
  * GeekSlides Whiteboard Plugin Bundle — Entry point.
  *
  * Exports: whiteboard feature.
- * Runtime dependency: WhiteboardSync (received from PluginAPI).
+ * Uses EventBridge + feature-scoped Yjs sync (no legacy WhiteboardSync dependency).
  */
 
-import type { PluginAPI, PluginExports, PluginActivate, Feature, FeatureContext } from '../sdk/types.ts';
+/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
+
+import type { PluginAPI, PluginExports, PluginActivate, Feature, FeatureContext, FeatureSyncAPI, EventBridgeInstance } from '../sdk/types.ts';
 
 /** Minimal interface for the <geek-whiteboard> custom element. */
 interface Whiteboard extends HTMLElement {
@@ -30,19 +32,140 @@ interface WhiteboardToolbar {
   setColor(color: string): void;
 }
 
-/**
- * Creates the whiteboard feature with an injected WhiteboardSync constructor.
- */
-function createWhiteboardFeature(api: PluginAPI): Feature {
-  const { WhiteboardSync } = api;
+interface WhiteboardStroke {
+  readonly id: string;
+  readonly slideIndex: number;
+  readonly points: readonly [number, number][];
+  readonly color: string;
+  readonly width: number;
+  readonly clientId: string;
+  readonly compositeOp?: string;
+  readonly alpha?: number;
+}
 
+/**
+ * Clear strokes for a specific slide from the shared array.
+ */
+function clearStrokesForSlide(sync: FeatureSyncAPI, slideIndex: number): void {
+  const arr = sync.getSharedArray();
+  // Iterate in reverse to safely delete by index
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const item = arr.get(i) as WhiteboardStroke | undefined;
+    if (item?.slideIndex === slideIndex) {
+      arr.delete(i, 1);
+    }
+  }
+}
+
+/**
+ * Clear all strokes from the shared array.
+ */
+function clearAllStrokes(sync: FeatureSyncAPI): void {
+  const arr = sync.getSharedArray();
+  if (arr.length > 0) {
+    arr.delete(0, arr.length);
+  }
+}
+
+/**
+ * Set up Yjs observers for remote sync → local DOM events.
+ * Returns a cleanup function to detach all observers.
+ */
+function setupSyncObservers(sync: FeatureSyncAPI, eventTarget: EventTarget): () => void {
+  const sharedArray = sync.getSharedArray();
+  const ephemeralMap = sync.getEphemeralMap();
+  const sharedMap = sync.getSharedMap();
+
+  // Remote stroke additions and deletions
+  const arrayObserver = (event: { transaction: { local: boolean }; changes: { added: Set<{ content: { getContent(): unknown[] } }>; deleted: Set<{ content: { getContent(): unknown[] } }> } }): void => {
+    if (event.transaction.local) return;
+
+    for (const item of event.changes.added) {
+      const content = item.content.getContent();
+      for (const stroke of content) {
+        eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke', {
+          bubbles: true,
+          detail: stroke,
+        }));
+      }
+    }
+
+    if (event.changes.deleted.size > 0) {
+      const clearedSlides = new Set<number>();
+      for (const item of event.changes.deleted) {
+        const content = item.content.getContent() as WhiteboardStroke[];
+        for (const stroke of content) {
+          clearedSlides.add(stroke.slideIndex);
+        }
+      }
+      // Get remaining strokes for affected slides
+      const allStrokes: WhiteboardStroke[] = [];
+      for (let i = 0; i < sharedArray.length; i++) {
+        allStrokes.push(sharedArray.get(i) as WhiteboardStroke);
+      }
+      for (const slideIndex of clearedSlides) {
+        eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-clear', {
+          bubbles: true,
+          detail: {
+            slideIndex,
+            remaining: allStrokes.filter((s) => s.slideIndex === slideIndex),
+          },
+        }));
+      }
+    }
+  };
+
+  // Remote ephemeral (live stroke progress)
+  const ephemeralObserver = (event: { transaction: { local: boolean }; changes: { keys: Map<string, { action: string }> } }): void => {
+    if (event.transaction.local) return;
+
+    for (const [clientId, change] of event.changes.keys) {
+      if (change.action === 'delete') continue;
+      const stroke = ephemeralMap.get(clientId);
+      if (!stroke) continue;
+      eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke-progress', {
+        bubbles: true,
+        detail: stroke,
+      }));
+    }
+  };
+
+  // Remote visibility changes
+  const mapObserver = (event: { transaction: { local: boolean }; keysChanged: Set<string> }): void => {
+    if (event.transaction.local) return;
+    if (event.keysChanged.has('visible')) {
+      const visible = sharedMap.get('visible') as boolean | undefined;
+      if (visible !== undefined) {
+        eventTarget.dispatchEvent(new CustomEvent('geek:whiteboard:remote-visibility', {
+          bubbles: true,
+          detail: { visible },
+        }));
+      }
+    }
+  };
+
+  sharedArray.observe(arrayObserver);
+  ephemeralMap.observe(ephemeralObserver);
+  sharedMap.observe(mapObserver);
+
+  return () => {
+    sharedArray.unobserve(arrayObserver);
+    ephemeralMap.unobserve(ephemeralObserver);
+    sharedMap.unobserve(mapObserver);
+  };
+}
+
+/**
+ * Creates the whiteboard feature using feature-scoped sync via EventBridge.
+ */
+function createWhiteboardFeature(): Feature {
   return {
     id: 'whiteboard',
     label: 'Drawing whiteboard overlay',
 
     activate(ctx: FeatureContext): () => void {
       const isReadonly = ctx.role === 'viewer';
-      const syncManager = ctx.syncManager;
+      const sync = ctx.sync;
 
       const whiteboard = document.createElement('geek-whiteboard') as unknown as Whiteboard;
       if (isReadonly) {
@@ -51,18 +174,69 @@ function createWhiteboardFeature(api: PluginAPI): Feature {
       ctx.container.appendChild(whiteboard as unknown as Node);
       whiteboard.slideIndex = ctx.slideshow.currentSlide;
 
+      // Sync: local → remote via EventBridge + manual handlers
+      let eventBridge: EventBridgeInstance | null = null;
+      let observerCleanup: (() => void) | null = null;
+
       const onHide = (e: Event): void => {
         const { visible } = (e as CustomEvent<{ visible: boolean }>).detail;
-        if (syncManager) (syncManager as { publishWhiteboardVisible(v: boolean): void }).publishWhiteboardVisible(visible);
+        if (sync) sync.getSharedMap().set('visible', visible);
       };
       const onClear = (e: Event): void => {
         const { slideIndex } = (e as CustomEvent<{ slideIndex: number }>).detail;
-        if (syncManager) (syncManager as { clearStrokes(i: number): void }).clearStrokes(slideIndex);
+        if (sync && !sync.readonly) clearStrokesForSlide(sync, slideIndex);
       };
       if (!isReadonly) {
         (whiteboard as unknown as EventTarget).addEventListener('geek:whiteboard:hide', onHide);
         (whiteboard as unknown as EventTarget).addEventListener('geek:whiteboard:clear', onClear);
       }
+
+      if (sync) {
+        // EventBridge: forward completed strokes to array, progress to ephemeral
+        eventBridge = sync.createEventBridge({
+          actions: [
+            {
+              event: 'geek:whiteboard:stroke',
+              target: 'array',
+              transform: (detail: unknown) => {
+                // Also clear ephemeral live stroke on finalization
+                sync.getEphemeralMap().delete('_self');
+                return detail;
+              },
+            },
+            { event: 'geek:whiteboard:stroke-progress', target: 'ephemeral' },
+          ],
+        });
+        eventBridge.activate();
+
+        // Set up remote → local observers
+        observerCleanup = setupSyncObservers(sync, document);
+
+        // Replay existing strokes
+        const arr = sync.getSharedArray();
+        for (let i = 0; i < arr.length; i++) {
+          whiteboard.drawRemoteStroke(arr.get(i) as { points: Array<{ x: number; y: number }>; color: string; width: number; slideIndex: number });
+        }
+
+        // Replay current visibility state
+        const visible = sync.getSharedMap().get('visible') as boolean | undefined;
+        if (visible !== undefined) {
+          document.dispatchEvent(new CustomEvent('geek:whiteboard:remote-visibility', {
+            bubbles: true,
+            detail: { visible },
+          }));
+        }
+      }
+
+      // Listen for deck reload (clear all strokes)
+      const onDeckReload = (): void => {
+        if (sync && !sync.readonly) {
+          clearAllStrokes(sync);
+          sync.getEphemeralMap().delete('_self');
+        }
+        whiteboard.clear();
+      };
+      document.addEventListener('geek:presentation:reload', onDeckReload);
 
       const unsubSlideEnter = ctx.on('slide:enter', ({ slideIndex }) => {
         whiteboard.slideIndex = slideIndex;
@@ -136,24 +310,13 @@ function createWhiteboardFeature(api: PluginAPI): Feature {
         }
       }
 
-      // Sync bridge
-      let wbSync: { activate(): void; deactivate(): void } | null = null;
-      if (syncManager) {
-        wbSync = new WhiteboardSync(syncManager as unknown as EventTarget);
-        wbSync.activate();
-
-        for (const stroke of (syncManager as { getStrokes(): unknown[] }).getStrokes()) {
-          whiteboard.drawRemoteStroke(stroke as { points: Array<{ x: number; y: number }>; color: string; width: number; slideIndex: number });
-        }
-      }
-
       // Register commands (presenter only)
       if (!isReadonly) {
         ctx.commands.register({
           name: 'whiteboard', label: 'Toggle whiteboard',
           execute: () => {
             whiteboard.toggle();
-            if (syncManager) (syncManager as { publishWhiteboardVisible(v: boolean): void }).publishWhiteboardVisible(whiteboard.isVisible);
+            if (sync) sync.getSharedMap().set('visible', whiteboard.isVisible);
           },
           category: 'whiteboard',
         });
@@ -161,7 +324,7 @@ function createWhiteboardFeature(api: PluginAPI): Feature {
           name: 'whiteboard-clear', label: 'Clear whiteboard on current slide',
           execute: () => {
             whiteboard.clear();
-            if (syncManager) (syncManager as { clearStrokes(i: number): void }).clearStrokes(whiteboard.slideIndex);
+            if (sync && !sync.readonly) clearStrokesForSlide(sync, whiteboard.slideIndex);
           },
           category: 'whiteboard',
         });
@@ -190,20 +353,23 @@ function createWhiteboardFeature(api: PluginAPI): Feature {
 
       return () => {
         unsubSlideEnter();
+        document.removeEventListener('geek:presentation:reload', onDeckReload);
         if (!isReadonly) {
           (whiteboard as unknown as EventTarget).removeEventListener('geek:whiteboard:hide', onHide);
           (whiteboard as unknown as EventTarget).removeEventListener('geek:whiteboard:clear', onClear);
         }
         pointerCleanup?.();
-        wbSync?.deactivate();
+        eventBridge?.deactivate();
+        observerCleanup?.();
+        if (sync) sync.getEphemeralMap().delete('_self');
         (whiteboard as unknown as HTMLElement).remove();
       };
     },
   };
 }
 
-export const activate: PluginActivate = (api: PluginAPI): PluginExports => ({
+export const activate: PluginActivate = (_api: PluginAPI): PluginExports => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
   features: {
-    'whiteboard': createWhiteboardFeature(api),
+    'whiteboard': createWhiteboardFeature(),
   },
 });

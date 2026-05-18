@@ -19,7 +19,6 @@ import {
   normalizePreprocessorResult,
   composeLineMappings,
   createLogger,
-  WhiteboardSync,
   waitForProcessedElement,
   registerLayoutTransform,
 } from '@geekslides/engine';
@@ -66,7 +65,6 @@ const BUILTIN_THEMES = [
 const PLUGIN_API = {
   version: 1,
   createLogger,
-  WhiteboardSync,
 };
 initPluginLoader(PLUGIN_API);
 
@@ -1002,8 +1000,8 @@ try {
         markdown = newMarkdown;
 
         if (sync && sync.isConnected) {
-          // Clear whiteboard data from the previous deck for all clients
-          sync.clearAllStrokes();
+          // Notify plugins (e.g. whiteboard) to clear state from the previous deck
+          document.dispatchEvent(new CustomEvent('geek:presentation:reload'));
 
           sync.publishState(0, 0, 'present');
           console.log(`[reloadDeck:${reloadId}] published state(0,0,present)`);

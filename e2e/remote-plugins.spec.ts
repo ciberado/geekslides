@@ -248,7 +248,6 @@ test.describe('Remote Bundle Manifest', () => {
           trace: () => {}, debug: () => {}, info: (msg: string) => logs.push(`[${ns}] ${msg}`),
           warn: () => {}, error: () => {},
         }),
-        WhiteboardSync: class { activate() {} deactivate() {} },
       };
       const exports = mod.activate(mockApi);
 
