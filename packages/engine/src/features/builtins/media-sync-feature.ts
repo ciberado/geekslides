@@ -80,25 +80,44 @@ function injectFeatureUI(
       top: 50%;
       transform: translateY(-50%);
       pointer-events: auto;
-      background: oklch(0% 0 0 / 0.25);
+      background: oklch(12% 0 0 / 0.62);
       color: white;
-      border: none;
-      border-radius: 4px;
-      width: 28px;
-      height: 56px;
+      border: 1px solid oklch(100% 0 0 / 0.18);
+      border-radius: 6px;
+      width: 36px;
+      height: 80px;
       cursor: pointer;
-      font-size: 1.4rem;
+      font-size: 1.6rem;
       line-height: 1;
       display: flex;
       align-items: center;
       justify-content: center;
-      opacity: 0.45;
-      transition: opacity 0.2s, background 0.2s;
+      opacity: 0.72;
+      transition: opacity 0.15s, background 0.15s;
       user-select: none;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.45);
     }
-    .gs-media-nav-btn:hover { opacity: 0.85; background: oklch(0% 0 0 / 0.55); }
-    .gs-media-nav-prev { left: 6px; }
-    .gs-media-nav-next { right: 6px; }
+    .gs-media-nav-btn:hover { opacity: 1; background: oklch(18% 0 0 / 0.82); }
+    .gs-media-nav-prev { left: 8px; }
+    .gs-media-nav-next { right: 8px; }
+    .gs-keyboard-captured {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      pointer-events: auto;
+      background: oklch(22% 0.04 240 / 0.92);
+      color: #c8deff;
+      padding: 7px 18px;
+      border-radius: 20px;
+      font-family: system-ui, sans-serif;
+      font-size: 0.78rem;
+      white-space: nowrap;
+      border: 1px solid oklch(60% 0.1 240 / 0.4);
+      z-index: 200;
+      cursor: pointer;
+    }
+    .gs-keyboard-captured:hover { background: oklch(28% 0.06 240 / 0.95); }
     .gs-autoplay-banner {
       position: absolute;
       bottom: 14px;
@@ -125,19 +144,44 @@ function injectFeatureUI(
   const prevBtn = document.createElement('button');
   prevBtn.className = 'gs-media-nav-btn gs-media-nav-prev';
   prevBtn.setAttribute('aria-label', 'Previous slide');
-  prevBtn.textContent = '‹';
+  prevBtn.innerHTML = '&#8249;';
   prevBtn.addEventListener('click', onPrev);
 
   const nextBtn = document.createElement('button');
   nextBtn.className = 'gs-media-nav-btn gs-media-nav-next';
   nextBtn.setAttribute('aria-label', 'Next slide');
-  nextBtn.textContent = '›';
+  nextBtn.innerHTML = '&#8250;';
   nextBtn.addEventListener('click', onNext);
 
   layer.appendChild(prevBtn);
   layer.appendChild(nextBtn);
   container.appendChild(style);
   container.appendChild(layer);
+
+  // Show a banner when an iframe captures keyboard focus (window loses focus).
+  // Clicking the banner returns keyboard navigation.
+  let keyboardBanner: HTMLElement | null = null;
+  const showKeyboardCapturedBanner = (): void => {
+    if (keyboardBanner) return;
+    keyboardBanner = document.createElement('div');
+    keyboardBanner.className = 'gs-keyboard-captured';
+    keyboardBanner.setAttribute('title', 'Click to return keyboard navigation to the presentation');
+    keyboardBanner.innerHTML = '⌨ Keyboard captured · <strong>click ‹ › or here</strong> to navigate';
+    keyboardBanner.addEventListener('click', () => {
+      keyboardBanner?.remove();
+      keyboardBanner = null;
+    });
+    layer.appendChild(keyboardBanner);
+  };
+  const hideKeyboardCapturedBanner = (): void => {
+    keyboardBanner?.remove();
+    keyboardBanner = null;
+  };
+
+  const onWindowBlur = (): void => { showKeyboardCapturedBanner(); };
+  const onWindowFocus = (): void => { hideKeyboardCapturedBanner(); };
+  window.addEventListener('blur', onWindowBlur);
+  window.addEventListener('focus', onWindowFocus);
 
   let banner: HTMLElement | null = null;
 
@@ -147,7 +191,7 @@ function injectFeatureUI(
     banner.className = 'gs-autoplay-banner';
     banner.setAttribute('role', 'button');
     banner.setAttribute('tabindex', '0');
-    banner.innerHTML = '▶ Media is playing — <strong>click here to enable audio/video</strong>';
+    banner.innerHTML = '▶ Media is paused — <strong>click here to enable audio/video</strong>';
     banner.addEventListener('click', () => {
       banner?.remove();
       banner = null;
@@ -161,7 +205,12 @@ function injectFeatureUI(
 
   return {
     showAutoplayBanner,
-    removeUI: () => { style.remove(); layer.remove(); },
+    removeUI: () => {
+      window.removeEventListener('blur', onWindowBlur);
+      window.removeEventListener('focus', onWindowFocus);
+      style.remove();
+      layer.remove();
+    },
   };
 }
 

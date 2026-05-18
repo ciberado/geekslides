@@ -57,12 +57,12 @@ export const iframeOverlayProcessor: Processor = (slideElement: HTMLElement): vo
     overlay.setAttribute('tabindex', '0');
     overlay.setAttribute(
       'aria-label',
-      'Click to interact with embedded content. Press Escape to return to presentation navigation.',
+      'Click to interact with embedded content. Use ‹ › buttons or click here again to restore keyboard navigation.',
     );
 
     const hint = document.createElement('span');
     hint.className = 'gs-iframe-overlay-hint';
-    hint.textContent = 'Click to interact · Esc to navigate';
+    hint.textContent = 'Click to interact · use ‹ › to navigate';
     overlay.appendChild(hint);
 
     // Forward navigation keys to the document while the overlay has focus.
@@ -75,15 +75,37 @@ export const iframeOverlayProcessor: Processor = (slideElement: HTMLElement): vo
       );
     });
 
-    // Clicking the overlay removes it so the user can interact with the iframe.
+    // A small "restore" badge shown when the overlay is dismissed.
+    const restoreBtn = document.createElement('button');
+    restoreBtn.className = 'gs-iframe-restore';
+    restoreBtn.setAttribute('aria-label', 'Restore keyboard navigation');
+    restoreBtn.setAttribute('title', 'Restore keyboard navigation');
+    restoreBtn.textContent = '⌨';
+    restoreBtn.style.cssText = [
+      'position:absolute', 'top:6px', 'right:6px', 'z-index:20',
+      'display:none', 'pointer-events:auto',
+      'background:oklch(15% 0 0 / 0.72)', 'color:#fff',
+      'border:1px solid oklch(60% 0 0 / 0.35)', 'border-radius:4px',
+      'padding:3px 7px', 'font-size:0.8rem', 'cursor:pointer', 'line-height:1.4',
+    ].join(';');
+    restoreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      overlay.style.display = '';
+      restoreBtn.style.display = 'none';
+    });
+    wrapper.appendChild(restoreBtn);
+
+    // Clicking the overlay yields control to the iframe; restore badge appears.
     overlay.addEventListener('click', () => {
       overlay.style.display = 'none';
+      restoreBtn.style.display = 'block';
     });
 
     // Restore the overlay when the slide is no longer active.
     new MutationObserver(() => {
       if (!hostSlide.hasAttribute('active')) {
         overlay.style.display = '';
+        restoreBtn.style.display = 'none';
       }
     }).observe(hostSlide, { attributes: true, attributeFilter: ['active'] });
 

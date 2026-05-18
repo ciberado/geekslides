@@ -19,7 +19,10 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`mod-media-cover` modifier** — add to a slide marker to fill the slide with any media element; implemented via CSS injection (no JS class detection needed)
 - **Media sync feature** (`media-sync`) — presenter play/pause/seek is propagated to viewers via Yjs `mediaState` map; drift-corrected via wall-clock timestamp
 - **Autoplay banner** — when viewer's browser blocks autoplay, a clickable banner appears; resolves on user click and retries media playback
-- **Nav arrow buttons** — subtle ‹ › buttons injected by `media-sync` feature allow slide navigation when iframes or YouTube embeds have keyboard focus
+- **Nav arrow buttons** — clearly visible ‹ › buttons (36×80px with drop-shadow) injected by `media-sync` feature allow slide navigation when iframes or YouTube embeds have keyboard focus
+- **Keyboard-captured banner** — when an iframe steals keyboard focus (window `blur`), a notification banner appears reminding users to use ‹ › buttons or click the banner to dismiss it
+- **Iframe restore button** — small ⌨ badge appears in the top-right of an iframe wrapper after the overlay is dismissed; clicking it restores the click-to-activate overlay and returns keyboard navigation
+- **Symmetric audio waveform** — `<geek-audio>` now draws 64 bars radiating up AND down from a vertical centre line on a transparent canvas; colour configurable via `data-color` attribute; gradient fades at bar tips; CSS fallback also uses symmetric bars
 - **Terminal commands** — `media-play`, `media-pause`, `media-seek <seconds>` control media on the current slide from the terminal
 - **`decks/media-demo/`** — demo deck exercising all media types with local Firefox-compatible assets
 
@@ -27,6 +30,8 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - **`layouts.css` media section** — missing `*/` comment terminator caused all media CSS rules to be treated as a comment and never applied
 - **Missing deck CSS directory** — `decks/media-demo/css/` was absent so `layouts.css` and `theme-default.css` were not loaded; deck now includes both files
+- **Nav arrow visibility** — buttons were too small (28×56px) and too faint (opacity 0.45, no shadow); now 36×80px with `box-shadow` for contrast on any background
+- **Iframe keyboard trap** — after clicking the overlay, keyboard stayed locked in the iframe; fixed with restore button and keyboard-captured banner
 
 <!-- Add new entries above this line -->
 

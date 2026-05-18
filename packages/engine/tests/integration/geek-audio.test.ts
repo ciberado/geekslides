@@ -97,10 +97,10 @@ describe('geek-audio', () => {
       expect(getBars(el)).not.toBeNull();
     });
 
-    it('renders exactly 5 .gs-audio-bar children inside .gs-audio-bars', () => {
+    it('renders exactly 9 .gs-audio-bar children inside .gs-audio-bars', () => {
       const el = createElement();
       const bars = el.shadowRoot!.querySelectorAll('.gs-audio-bar');
-      expect(bars.length).toBe(5);
+      expect(bars.length).toBe(9);
     });
 
     it('canvas is visible (no display:none) by default', () => {

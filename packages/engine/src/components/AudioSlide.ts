@@ -1,11 +1,15 @@
 /**
  * GeekSlides v2 — <geek-audio> Web Component.
  *
- * Wraps an `<audio>` element with a real-time frequency visualiser:
+ * Wraps an `<audio>` element with a real-time symmetric frequency visualiser:
  *  - Short files (≤ `data-vis-threshold` seconds, default 300): Web Audio API
- *    `AnalyserNode` → animated frequency bars on a Canvas.
- *  - Long files or CORS-blocked sources: CSS-only animated equaliser bars
+ *    `AnalyserNode` → symmetric bars radiating up AND down from a centre line.
+ *  - Long files or CORS-blocked sources: CSS-only animated symmetric bars
  *    (decorative, no real audio data).
+ *
+ * Visualiser colour is configurable via the `data-color` attribute (CSS colour
+ * string, default `oklch(65% 0.25 255)`).  A gradient from centre outward is
+ * always applied for a more polished look.
  *
  * Pauses audio when the parent `<geek-slide>` becomes inactive.
  *
@@ -19,8 +23,8 @@
 import type { MediaState } from '../sync/types.ts';
 
 const DEFAULT_VIS_THRESHOLD = 300; // seconds
-const BAR_COUNT = 48;
-const BAR_COLOR = 'oklch(70% 0.2 260)';
+const BAR_COUNT = 64;
+const DEFAULT_BAR_COLOR = 'oklch(65% 0.25 255)';
 
 export class AudioSlide extends HTMLElement {
   #observer: MutationObserver | null = null;
@@ -33,7 +37,7 @@ export class AudioSlide extends HTMLElement {
   #onAutoplayUnblocked: () => void;
 
   static get observedAttributes(): string[] {
-    return ['src', 'data-vis-threshold'];
+    return ['src', 'data-vis-threshold', 'data-color'];
   }
 
   constructor() {
@@ -209,14 +213,27 @@ export class AudioSlide extends HTMLElement {
 
     const w = canvas.width;
     const h = canvas.height;
-    ctx.clearRect(0, 0, w, h);
+    const cy = h / 2;            // vertical centre for symmetric bars
+    ctx.clearRect(0, 0, w, h);   // transparent background
 
-    const barWidth = (w / BAR_COUNT) - 1;
+    const barColor = this.getAttribute('data-color') ?? DEFAULT_BAR_COLOR;
+    const barWidth = w / BAR_COUNT - 1;
+
     for (let i = 0; i < BAR_COUNT; i++) {
-      const value = data[Math.floor((i / BAR_COUNT) * data.length)] ?? 0;
-      const barH = (value / 255) * h;
-      ctx.fillStyle = BAR_COLOR;
-      ctx.fillRect(i * (barWidth + 1), h - barH, barWidth, barH);
+      const value = data[Math.floor((i / BAR_COUNT) * (data.length * 0.75))] ?? 0;
+      const halfH = Math.max(1, (value / 255) * cy * 0.95);
+
+      // Build a vertical gradient: brighter at centre, dimmer at edges.
+      const grad = ctx.createLinearGradient(0, cy - halfH, 0, cy + halfH);
+      grad.addColorStop(0, barColor + '44');   // top edge (faded)
+      grad.addColorStop(0.35, barColor);       // upper body
+      grad.addColorStop(0.5, barColor);        // centre (full colour)
+      grad.addColorStop(0.65, barColor);       // lower body
+      grad.addColorStop(1, barColor + '44');   // bottom edge (faded)
+
+      ctx.fillStyle = grad;
+      const x = i * (barWidth + 1);
+      ctx.fillRect(x, cy - halfH, barWidth, halfH * 2);
     }
 
     this.#animationId = requestAnimationFrame(() => { this.#drawFrame(); });
@@ -245,11 +262,13 @@ export class AudioSlide extends HTMLElement {
 
     const src = this.getAttribute('src') ?? '';
     const title = this.getAttribute('title') ?? '';
+    const barColor = this.getAttribute('data-color') ?? DEFAULT_BAR_COLOR;
 
-    // CSS equaliser bars (decorative, for large files or CORS-blocked sources)
+    // CSS fallback: 9 symmetric bars that bounce both up and down from centre.
+    const NUM_CSS_BARS = 9;
     let barsHtml = '<div class="gs-audio-bars" style="display:none">';
-    for (let i = 0; i < 5; i++) {
-      barsHtml += `<span class="gs-audio-bar" style="animation-delay:${String(i * 0.12)}s"></span>`;
+    for (let i = 0; i < NUM_CSS_BARS; i++) {
+      barsHtml += `<span class="gs-audio-bar" style="animation-delay:${String(i * 0.08)}s"></span>`;
     }
     barsHtml += '</div>';
 
@@ -269,52 +288,57 @@ export class AudioSlide extends HTMLElement {
 
       canvas {
         width: 100%;
-        height: 60px;
+        height: 80px;
         display: block;
-        border-radius: 4px;
-        background: oklch(15% 0 0 / 0.5);
+        border-radius: 6px;
+        /* transparent background — bars float on whatever is behind */
+        background: transparent;
       }
 
-      /* CSS-only animated equaliser bars */
+      /* CSS-only animated symmetric equaliser bars */
       .gs-audio-bars {
-        align-items: flex-end;
+        align-items: center;       /* vertically centre bars */
         justify-content: center;
-        gap: 4px;
-        height: 48px;
+        gap: 3px;
+        height: 80px;
         padding: 4px 8px;
-        background: oklch(15% 0 0 / 0.5);
-        border-radius: 4px;
+        background: transparent;
+        border-radius: 6px;
       }
 
       .gs-audio-bar {
-        flex: 0 0 10px;
-        height: 8px;
-        background: oklch(70% 0.2 260);
+        flex: 0 0 8px;
+        height: 4px;
+        background: ${barColor};
         border-radius: 2px;
-        transition: height 0.1s ease;
       }
 
       .gs-audio-bars.playing .gs-audio-bar {
-        animation: gs-eq-bounce 0.8s ease-in-out infinite alternate;
+        animation: gs-eq-sym 0.8s ease-in-out infinite alternate;
       }
 
-      @keyframes gs-eq-bounce {
-        0%   { height: 8px; }
-        100% { height: 44px; }
+      /* Bar grows symmetrically (transform scales from centre via scaleY) */
+      @keyframes gs-eq-sym {
+        0%   { height: 4px; opacity: 0.6; }
+        100% { height: 64px; opacity: 1; }
       }
 
-      .gs-audio-bar:nth-child(1) { animation-duration: 0.7s; }
-      .gs-audio-bar:nth-child(2) { animation-duration: 0.9s; }
-      .gs-audio-bar:nth-child(3) { animation-duration: 0.6s; }
-      .gs-audio-bar:nth-child(4) { animation-duration: 1.0s; }
-      .gs-audio-bar:nth-child(5) { animation-duration: 0.75s; }
+      .gs-audio-bar:nth-child(1) { animation-duration: 0.65s; }
+      .gs-audio-bar:nth-child(2) { animation-duration: 0.90s; }
+      .gs-audio-bar:nth-child(3) { animation-duration: 0.55s; }
+      .gs-audio-bar:nth-child(4) { animation-duration: 1.05s; }
+      .gs-audio-bar:nth-child(5) { animation-duration: 0.70s; }
+      .gs-audio-bar:nth-child(6) { animation-duration: 0.80s; }
+      .gs-audio-bar:nth-child(7) { animation-duration: 0.60s; }
+      .gs-audio-bar:nth-child(8) { animation-duration: 0.95s; }
+      .gs-audio-bar:nth-child(9) { animation-duration: 0.75s; }
     `;
 
     const titleAttr = title ? ` title="${title.replace(/"/g, '&quot;')}"` : '';
     const wrapper = document.createElement('div');
     wrapper.className = 'gs-audio-wrapper';
     wrapper.innerHTML = `
-      <canvas width="480" height="60"></canvas>
+      <canvas width="640" height="80"></canvas>
       ${barsHtml}
       <audio controls src="${src.replace(/"/g, '&quot;')}"${titleAttr}></audio>
     `;

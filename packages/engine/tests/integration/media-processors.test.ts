@@ -188,7 +188,7 @@ describe('iframeOverlayProcessor', () => {
     iframeOverlayProcessor(slide, makeCtx());
 
     const hint = slide.querySelector('.gs-iframe-overlay-hint');
-    expect(hint?.textContent).toBe('Click to interact · Esc to navigate');
+    expect(hint?.textContent).toBe('Click to interact · use ‹ › to navigate');
   });
 
   it('clicking the overlay hides it (sets display:none)', () => {
