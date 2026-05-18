@@ -122,22 +122,73 @@ function injectFeatureUI(
     .gs-keyboard-captured:hover { background: rgba(40, 50, 80, 0.95); }
     .gs-autoplay-banner {
       position: absolute;
-      bottom: 14px;
-      left: 50%;
-      transform: translateX(-50%);
+      inset: 0;
       pointer-events: auto;
-      background: rgba(25, 25, 25, 0.92);
-      color: white;
-      padding: 10px 22px;
-      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: rgba(0, 0, 0, 0.72);
+      backdrop-filter: blur(4px);
       cursor: pointer;
-      font-family: system-ui, sans-serif;
-      font-size: 0.85rem;
-      white-space: nowrap;
-      border: 1px solid rgba(128, 128, 128, 0.5);
       z-index: 200;
+      animation: gs-autoplay-fadein 0.3s ease;
     }
-    .gs-autoplay-banner strong { font-weight: 600; }
+    @keyframes gs-autoplay-fadein {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    .gs-autoplay-banner__icon {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.12);
+      border: 3px solid rgba(255, 255, 255, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      line-height: 1;
+      animation: gs-autoplay-pulse 1.8s ease-in-out infinite;
+    }
+    @keyframes gs-autoplay-pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(255,255,255,0.35); }
+      50%       { box-shadow: 0 0 0 22px rgba(255,255,255,0); }
+    }
+    .gs-autoplay-banner__title {
+      font-family: system-ui, sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      letter-spacing: 0.01em;
+      text-align: center;
+    }
+    .gs-autoplay-banner__sub {
+      font-family: system-ui, sans-serif;
+      font-size: 0.95rem;
+      color: rgba(255, 255, 255, 0.72);
+      text-align: center;
+    }
+    .gs-autoplay-banner__btn {
+      margin-top: 8px;
+      padding: 12px 36px;
+      border-radius: 40px;
+      background: white;
+      color: #111;
+      font-family: system-ui, sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+      letter-spacing: 0.02em;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .gs-autoplay-banner__btn:hover {
+      transform: scale(1.04);
+      box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+    }
   `;
 
   const layer = document.createElement('div');
@@ -218,11 +269,21 @@ function injectFeatureUI(
     banner.className = 'gs-autoplay-banner';
     banner.setAttribute('role', 'button');
     banner.setAttribute('tabindex', '0');
-    banner.innerHTML = '▶ Media is paused — <strong>click here to enable audio/video</strong>';
-    banner.addEventListener('click', () => {
+    banner.setAttribute('aria-label', 'Click to enable media playback');
+    banner.innerHTML = `
+      <div class="gs-autoplay-banner__icon">▶</div>
+      <div class="gs-autoplay-banner__title">Media playback is paused</div>
+      <div class="gs-autoplay-banner__sub">Your browser requires a click before playing audio or video.</div>
+      <button class="gs-autoplay-banner__btn">Click to enable playback</button>
+    `;
+    const dismiss = (): void => {
       banner?.remove();
       banner = null;
       document.dispatchEvent(new CustomEvent('geek:autoplay:unblocked'));
+    };
+    banner.addEventListener('click', dismiss);
+    banner.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') dismiss();
     });
     layer.appendChild(banner);
   };
