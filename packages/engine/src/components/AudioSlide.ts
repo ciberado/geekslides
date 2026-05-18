@@ -28,7 +28,7 @@ const BAR_COUNT = 64;
 const DEFAULT_BAR_COLOR = '#5b8def';
 
 /** Convert a CSS color to an rgba() string with the given alpha (0–1). */
-function colorWithAlpha(color: string, alpha: number): string {
+export function colorWithAlpha(color: string, alpha: number): string {
   // For hex colors, parse and apply alpha directly.
   if (color.startsWith('#')) {
     const hex = color.slice(1);
