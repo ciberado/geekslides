@@ -13,18 +13,23 @@ export interface LaunchResult {
   readonly role: 'presenter' | 'viewer';
 }
 
+export interface LaunchError {
+  readonly error: string;
+  readonly status: 400 | 404 | 500;
+}
+
 export async function launchPresentation(
   db: HubDatabase,
   presentationId: string,
   userId: string,
   repoDir: string,
   serverBaseUrl: string,
-): Promise<LaunchResult | { error: string }> {
+): Promise<LaunchResult | LaunchError> {
   const access = checkAccess(db, presentationId, userId);
-  if (!access) return { error: 'Access denied' };
+  if (!access) return { error: 'Not found', status: 404 };
 
   const pres = getPresentationById(db, presentationId);
-  if (!pres) return { error: 'Presentation not found' };
+  if (!pres) return { error: 'Not found', status: 404 };
 
   const room = `hub-${presentationId.slice(0, 8)}-${String(Date.now())}`;
 
@@ -32,7 +37,10 @@ export async function launchPresentation(
   try {
     roomTokens = await createRoom(serverBaseUrl, room);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : `Failed to create room: ${String(err)}` };
+    return {
+      error: `Launch backend unavailable: ${err instanceof Error ? err.message : String(err)}`,
+      status: 500,
+    };
   }
 
   const repoPath = path.join(repoDir, pres.ownerId, pres.slug);
@@ -41,7 +49,10 @@ export async function launchPresentation(
   try {
     await uploadContent(serverBaseUrl, room, files);
   } catch (err) {
-    return { error: err instanceof Error ? err.message : `Failed to upload content: ${String(err)}` };
+    return {
+      error: `Failed to upload presentation content: ${err instanceof Error ? err.message : String(err)}`,
+      status: 500,
+    };
   }
 
   const isPresenter = access === 'owner' || access === 'copresenter';

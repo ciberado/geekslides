@@ -83,4 +83,64 @@ describe('server-client service', () => {
     expect(result.totalSize).toBe(12);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
+
+  it('createRoom continues to next candidate when fetch() throws a network error', async () => {
+    let callCount = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+      const url = toUrlString(input);
+      callCount++;
+      if (url === 'https://example.com/hub/api/rooms/room-3/share') {
+        throw new TypeError('fetch failed');
+      }
+      if (url === 'https://example.com/api/rooms/room-3/share') {
+        return new Response(
+          JSON.stringify({ room: 'room-3', presenterToken: 'p2', viewerToken: 'v2' }),
+          { status: 201, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response('', { status: 500 });
+    });
+
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const result = await createRoom('https://example.com/hub', 'room-3');
+    expect(result.room).toBe('room-3');
+    expect(callCount).toBe(2);
+  });
+
+  it('uploadContent continues to next candidate when fetch() throws a network error', async () => {
+    let callCount = 0;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL): Promise<Response> => {
+      const url = toUrlString(input);
+      callCount++;
+      if (url === 'https://example.com/hub/api/rooms/room-4/content') {
+        throw new TypeError('fetch failed');
+      }
+      if (url === 'https://example.com/api/rooms/room-4/content') {
+        return new Response(
+          JSON.stringify({ room: 'room-4', files: ['config.json'], totalSize: 10 }),
+          { status: 201, headers: { 'Content-Type': 'application/json' } },
+        );
+      }
+      return new Response('', { status: 500 });
+    });
+
+    globalThis.fetch = fetchMock as typeof fetch;
+
+    const result = await uploadContent('https://example.com/hub', 'room-4', [
+      { path: 'config.json', data: Buffer.from('{}') },
+    ]);
+    expect(result.room).toBe('room-4');
+    expect(callCount).toBe(2);
+  });
+
+  it('createRoom throws with descriptive message when all candidates fail with network error', async () => {
+    globalThis.fetch = vi.fn(async () => {
+      throw new TypeError('fetch failed');
+    }) as typeof fetch;
+
+    await expect(createRoom('http://localhost:1234', 'room-x')).rejects.toThrow(
+      'Cannot reach yjs-server at http://localhost:1234: fetch failed',
+    );
+  });
 });

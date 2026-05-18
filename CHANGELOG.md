@@ -9,6 +9,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **Hub launch endpoint** — `POST /hub/api/presentations/:id/launch` now returns HTTP 500 (not 400) when the launch backend (yjs-server) is unreachable, with a descriptive error message including the target URL and underlying cause (e.g. "Launch backend unavailable: Cannot reach yjs-server at http://localhost:1234: fetch failed")
+- **Hub server-client** — network-level `fetch()` failures (e.g. connection refused) now continue to the next `SERVER_BASE_URL` candidate instead of aborting immediately; the final error includes which URL failed and why
+
 <!-- Add new entries above this line -->
 
 ## [2.1.0] - 2026-05-18

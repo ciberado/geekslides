@@ -22,7 +22,7 @@ export function registerLaunchRoutes(
       );
 
       if ('error' in result) {
-        await reply.status(400).send({ error: result.error });
+        await reply.status(result.status).send({ error: result.error });
         return;
       }
 

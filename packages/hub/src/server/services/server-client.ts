@@ -61,9 +61,17 @@ export async function createRoom(serverBaseUrl: string, room: string): Promise<S
   let lastError: Error | null = null;
 
   for (const baseUrl of getServerBaseUrlCandidates(serverBaseUrl)) {
-    const res = await fetch(`${baseUrl}/api/rooms/${encodeURIComponent(room)}/share`, {
-      method: 'POST',
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${baseUrl}/api/rooms/${encodeURIComponent(room)}/share`, {
+        method: 'POST',
+      });
+    } catch (err) {
+      lastError = new Error(
+        `Cannot reach yjs-server at ${baseUrl}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      continue;
+    }
 
     if (res.ok) {
       return (await res.json()) as ServerRoomTokens;
@@ -76,7 +84,7 @@ export async function createRoom(serverBaseUrl: string, room: string): Promise<S
     );
   }
 
-  throw lastError ?? new Error('Failed to create room');
+  throw lastError ?? new Error('Failed to create room: no SERVER_BASE_URL candidates');
 }
 
 export async function uploadContent(
@@ -103,14 +111,22 @@ export async function uploadContent(
   let lastError: Error | null = null;
 
   for (const baseUrl of getServerBaseUrlCandidates(serverBaseUrl)) {
-    const res = await fetch(
-      `${baseUrl}/api/rooms/${encodeURIComponent(room)}/content`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
-        body,
-      },
-    );
+    let res: Response;
+    try {
+      res = await fetch(
+        `${baseUrl}/api/rooms/${encodeURIComponent(room)}/content`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+          body,
+        },
+      );
+    } catch (err) {
+      lastError = new Error(
+        `Cannot reach yjs-server at ${baseUrl}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      continue;
+    }
 
     if (res.ok) {
       return (await res.json()) as ServerContentUploadResult;
@@ -123,5 +139,5 @@ export async function uploadContent(
     );
   }
 
-  throw lastError ?? new Error('Failed to upload content');
+  throw lastError ?? new Error('Failed to upload content: no SERVER_BASE_URL candidates');
 }
