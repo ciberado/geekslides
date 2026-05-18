@@ -2,9 +2,9 @@
 
 ## Status
 
-**Proposed** — Design document for the feature platform extension to the plugin system.
+**Implemented** — The feature platform is live. Whiteboard, media-sync, and poll are all built-in features activated per-deck via `config.json`.
 
-Rollback tag: `pre-feature-system`
+Reference tag: `pre-feature-system` (before the feature platform was added)
 
 ## Problem
 
@@ -238,7 +238,21 @@ This prevents features from accidentally corrupting each other's state while avo
 
 ## Config Integration
 
-Features are declared in `config.json` under a `features` key:
+Features are activated per-deck in `config.json`. Two forms are supported.
+
+### Bundle syntax (recommended)
+
+```json
+{
+  "title": "My Talk",
+  "content": "README.md",
+  "plugins": ["media", "whiteboard"]
+}
+```
+
+Bundles that include features (`media` → `media-sync`, `whiteboard` → `whiteboard`) resolve their feature list automatically.
+
+### Explicit `features` array
 
 ```json
 {
@@ -253,9 +267,11 @@ Features are declared in `config.json` under a `features` key:
 ```
 
 Feature resolution follows the same three-source pattern as plugins:
-- **Built-in name** → resolved from engine's built-in feature registry
+- **Built-in name** → resolved from engine's built-in feature registry (`whiteboard`, `media-sync`, `poll`)
 - **Relative path** (`./features/survey.js`) → loaded via dynamic import
 - **HTTPS URL** → fetched via plugin proxy, loaded as ESM module
+
+> **Note:** No features are active by default — decks explicitly opt in.
 
 ### Feature Module Format
 
@@ -431,49 +447,24 @@ Features mount their UI into a dedicated container element inside the slideshow 
 
 Each feature gets its own `<div data-feature="{id}">` container, passed as `context.container`. Features manage their own DOM within this container.
 
-## Implementation Plan
+## Implementation Status
 
-### Phase 1: Types and FeatureManager (engine)
+All phases are complete. Key files:
 
-Files to create:
-- `packages/engine/src/features/types.ts` — Feature, FeatureContext, FeatureLifecycleEvents
-- `packages/engine/src/features/FeatureManager.ts` — Registration, lifecycle, event dispatch
-- `packages/engine/src/features/FeatureContext.ts` — Context factory
-- `packages/engine/src/features/index.ts` — Public exports
+| File | Purpose |
+|------|---------|
+| `packages/engine/src/features/types.ts` | `Feature`, `FeatureContext`, `FeatureLifecycleEvents` interfaces |
+| `packages/engine/src/features/FeatureManager.ts` | Registration, lifecycle, event dispatch |
+| `packages/engine/src/features/feature-loader.ts` | Resolves built-in / local / remote feature names |
+| `packages/engine/src/features/index.ts` | Public exports |
+| `plugins/whiteboard/whiteboard-feature.ts` | Whiteboard wiring |
+| `plugins/media/media-sync-feature.ts` | Media playback sync |
+| `plugins/poll/poll-feature.ts` | Live audience polling |
+| `packages/cli/app/main.js` | Uses `FeatureManager`; no hardwired feature setup |
 
-Files to modify:
-- `packages/engine/src/index.ts` — Export feature system types and classes
-- `packages/engine/src/core/Config.ts` — Add `features` field to GeekSlidesConfig
+## Open Questions (resolved)
 
-### Phase 2: WhiteboardFeature (engine)
-
-Files to create:
-- `packages/engine/src/features/builtins/whiteboard-feature.ts` — All whiteboard wiring
-
-Files to modify:
-- `packages/engine/src/features/index.ts` — Export built-in whiteboard feature
-
-### Phase 3: Integration (cli)
-
-Files to modify:
-- `packages/cli/app/main.js` — Replace hardwired whiteboard setup with FeatureManager
-
-### Phase 4: Tests
-
-Files to create:
-- `packages/engine/tests/unit/features/FeatureManager.test.ts`
-- `packages/engine/tests/unit/features/whiteboard-feature.test.ts`
-
-### Phase 5: Documentation
-
-Files to modify:
-- `vibe/features/architecture-v2.md` — Add feature system to architecture overview
-- `vibe/features/plugin-system.md` — Add cross-reference to feature system
-- `how-to/08-write-a-custom-plugin.md` — Add section on features vs plugins
-
-## Open Questions
-
-1. **Feature ordering**: Should features have explicit ordering, or is parallel activation fine? (Proposed: parallel, no ordering guarantees.)
-2. **Feature-to-feature communication**: Should features be able to discover each other? (Proposed: no — use Yjs shared state if needed, keep features independent.)
-3. **Hot reload**: Should features support HMR during development? (Proposed: yes for Phase 2, using the same Vite HMR infrastructure as plugins.)
-4. **Print rendering**: Should features contribute to PDF export? (Proposed: defer to a later phase — features are runtime-only for now.)
+1. **Feature ordering** — parallel activation, no ordering guarantees. ✅
+2. **Feature-to-feature communication** — via Yjs shared state only. ✅
+3. **Hot reload** — features reload on HMR via the standard Vite HMR infrastructure. ✅
+4. **Print rendering** — features are runtime-only; PDF export renders flat HTML without them. ✅

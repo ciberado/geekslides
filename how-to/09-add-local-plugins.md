@@ -2,12 +2,23 @@
 
 You can ship plain JavaScript plugins alongside your deck files — no need to touch the engine source. Drop a `.js` file in your deck directory, reference it in `config.json` with a relative path, and it loads automatically. You can also load plugins from **remote URLs** to share plugins across decks.
 
+## Quick start — use a built-in bundle
+
+The easiest way to add a group of related plugins is to reference one of the built-in **bundle names**:
+
+```json
+{ "plugins": ["media", "whiteboard"] }
+```
+
+Each bundle enables a curated set of preprocessors, processors, and features — see [`plugins/README.md`](../plugins/README.md) for the full list. Bundles resolve their own dependencies automatically, so `"media"` also brings in `"core"`.
+
 ## How it works
 
 GeekSlides recognises three plugin formats in `config.json`:
 
 | Format | Example | How it loads |
 |---|---|---|
+| Bundle name | `"media"` | Expands all preprocessors/processors/features from the bundle |
 | Built-in name | `"header"` | Looked up in the engine's registry |
 | Relative path | `"./plugins/emoji.js"` | Dynamically imported from the deck directory |
 | Remote URL | `"https://cdn.example.com/plugins/emoji.js"` | Fetched through the server proxy, then imported |

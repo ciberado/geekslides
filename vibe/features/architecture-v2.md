@@ -71,6 +71,14 @@ browser as interactive slide decks with real-time synchronization, and exported 
 geekslides/
 ├── package.json                  # root workspace config
 ├── vite.config.ts                # dev server config
+├── plugins/                      # built-in plugin bundles (source + manifest + docs)
+│   ├── core/                     # header, iframe, source-notes
+│   ├── media/                    # youtube, audio, video, iframe-url, media-sync
+│   ├── whiteboard/               # whiteboard feature
+│   ├── chart/                    # Chart.js processor
+│   ├── mermaid/                  # Mermaid diagram processor
+│   ├── css-doodle/               # generative background patterns
+│   └── poll/                     # live audience polling
 ├── packages/
 │   ├── engine/                   # @geekslides/engine
 │   │   ├── package.json
@@ -97,18 +105,12 @@ geekslides/
 │   │   │   │   ├── PluginManager.ts      # register/execute pipeline
 │   │   │   │   ├── types.ts              # Preprocessor, Processor interfaces
 │   │   │   │   ├── local-plugin.ts       # local/remote plugin loader utilities
-│   │   │   │   ├── builtins/
-│   │   │   │   │   ├── header-preprocessor.ts
-│   │   │   │   │   ├── chart-processor.ts
-│   │   │   │   │   ├── video-processor.ts
-│   │   │   │   │   └── iframe-processor.ts
+│   │   │   │   ├── plugin-bundles.ts     # BUILTIN_BUNDLES registry + expandBundles()
 │   │   │   │   └── index.ts
 │   │   │   ├── features/
 │   │   │   │   ├── types.ts              # Feature, FeatureContext interfaces
 │   │   │   │   ├── FeatureManager.ts     # registration, lifecycle, events
-│   │   │   │   ├── FeatureContext.ts     # context factory
-│   │   │   │   ├── builtins/
-│   │   │   │   │   └── whiteboard-feature.ts  # whiteboard as feature
+│   │   │   │   ├── feature-loader.ts     # built-in / local / remote loader
 │   │   │   │   └── index.ts
 │   │   │   ├── sync/
 │   │   │   │   ├── SyncManager.ts        # Yjs Y.Map ↔ slideshow state

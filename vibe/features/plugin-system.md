@@ -9,6 +9,62 @@ v2 provides a clean, function-based plugin architecture with two extension point
 
 Plugins are simple functions registered via config. No classes, no complex lifecycle.
 
+## Plugin Bundles
+
+Plugins are grouped into named **bundles** — directories under `plugins/` at the repo root, each containing the TypeScript source, a `plugin.json` manifest, and a `README.md`.
+
+### Available bundles
+
+| Bundle | Preprocessors | Processors | Features |
+|--------|---------------|------------|----------|
+| `core` | `header`, `source-notes` | `iframe` | — |
+| `media` | `youtube-url`, `audio-url`, `video-url`, `iframe-url` | `video`, `audio-url`, `iframe-url` | `media-sync` |
+| `whiteboard` | — | — | `whiteboard` |
+| `chart` | — | `chart` | — |
+| `mermaid` | — | `mermaid` | — |
+| `css-doodle` | `css-doodle` | `css-doodle` | — |
+| `poll` | — | — | `poll` |
+
+The `media` bundle declares `dependsOn: ['core']`, so it automatically pulls in the `core` preprocessors and processors.
+
+### Bundle directory layout
+
+```
+plugins/
+  core/
+    plugin.json                   ← manifest (name, dependsOn, preprocessors, processors, features)
+    README.md
+    header-preprocessor.ts
+    iframe-processor.ts
+    slide-source-notes-preprocessor.ts
+  media/
+    plugin.json
+    README.md
+    youtube-url-plugin.ts
+    audio-url-plugin.ts
+    video-url-plugin.ts
+    video-processor.ts
+    iframe-url-plugin.ts
+    media-sync-feature.ts
+  whiteboard/   …
+  chart/        …
+  mermaid/      …
+  css-doodle/   css-doodle-preprocessor.ts, css-doodle-processor.ts, css-doodle-patterns/
+  poll/         …
+```
+
+The runtime registry lives in `packages/engine/src/plugins/plugin-bundles.ts` (`BUILTIN_BUNDLES`). Plugin files import engine internals through the `@engine/*` path alias (maps to `packages/engine/src/*`).
+
+### Activating bundles in config.json
+
+```json
+{
+  "plugins": ["media", "whiteboard"]
+}
+```
+
+`expandBundles()` resolves `dependsOn` chains, deduplicates, and returns the merged list of preprocessors, processors, and features. The result is identical to writing them all out in the explicit form.
+
 ## Plugin Types
 
 Defined in `packages/engine/src/plugins/types.ts`:
@@ -35,7 +91,10 @@ Defined in `packages/engine/src/plugins/types.ts`:
 
 ## Built-in Plugins
 
-### header-preprocessor
+All built-in plugin source files live in `plugins/{bundle}/` at the monorepo root.
+They import engine internals through the `@engine/*` path alias.
+
+### header-preprocessor (`plugins/core/`)
 
 Converts `##` headers into slide separators with auto-generated anchors (same logic as v1's `headerPreprocessor`).
 
@@ -43,39 +102,51 @@ A single preprocessor function uses a regex to match lines starting with `## `. 
 
 > **Important:** The header preprocessor inserts a separator before *every* heading level (h1–h6). Decks that use explicit `[]()` slide markers and sub-headings within slides (e.g. `####` column breaks or `##` sub-titles) must disable it to avoid unintended slide splits. Set `"preprocessors": []` in `config.json`. The CLI `create` command scaffolds new decks with the preprocessor disabled by default.
 
-### chart-processor
+### chart-processor (`plugins/chart/`)
 
 Converts `<table>` elements inside slides marked with the `.chart` class into Chart.js canvases (replacing v1's `ChartSlideController`).
 
 A single processor function checks if the slide element has the `chart` class. If so, it queries all `<table>` elements, and for each one creates a `<geek-chart>` custom element, sets its `type` attribute based on additional CSS classes on the slide (`.bar`, `.line`, `.pie`, `.doughnut`, `.radar` — defaulting to `bar`), moves the table HTML inside the chart element, and replaces the table in the DOM.
 
-### video-processor
+### video-processor (`plugins/media/`)
 
 Handles `<video>` elements with timestamp-based partials (replacing v1's `VideoSlideController`).
 
 A single processor function queries for a `<video>` element inside the slide. If found, it creates a `<geek-video>` custom element, replaces the original `<video>` in the DOM, and appends the `<video>` as a child of the new component.
 
-### iframe-processor
+### iframe-processor (`plugins/core/`)
 
 Lazy-loads iframes by converting `data-src` to `src` only when the slide becomes active.
 
 A single processor function queries all `iframe[data-src]` elements in the slide. It sets up a `MutationObserver` on the slide element watching for changes to the `active` attribute. When the slide becomes active, each iframe's `data-src` value is copied to `src` (only once — it checks that `src` isn't already set).
 
-### mermaid-processor
+### mermaid-processor (`plugins/mermaid/`)
 
 Renders Mermaid diagram code blocks into SVG diagrams at runtime.
 
 A single processor function finds `<pre><code class="language-mermaid">` elements in the slide, extracts the text content as a Mermaid definition, dynamically imports the `mermaid` library (lazy — only loaded on first use), calls `mermaid.render()` to produce SVG, and replaces the `<pre>` with a `<div class="gs-mermaid">` containing the rendered SVG. The mermaid library is initialized with the `dark` theme. Render errors are caught and logged as `console.warn`, and the original `<pre>` element gains a `gs-mermaid-error` CSS class.
 
-Users opt in via `config.json`: `"processors": ["iframe", "mermaid"]`.
+Users opt in via `config.json`: `"plugins": ["mermaid"]` (or `"processors": ["mermaid"]` in the explicit form).
 
 ## Plugin Registration via Config
 
-Plugins are registered in `config.json` using three resolution modes:
+Plugins are registered in `config.json` in one of two forms.
 
-### Built-in plugins (short names)
+### Bundle syntax (recommended)
 
-The engine maintains a registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`, `'mermaid'`) to their bundled plugin functions:
+A simple string array of bundle names:
+
+```json
+{
+  "plugins": ["media", "chart"]
+}
+```
+
+`expandBundles()` resolves dependencies and merges preprocessors/processors/features from all named bundles. Unknown bundle names throw a clear error listing available options.
+
+### Explicit syntax (advanced / local plugins)
+
+An object with separate `preprocessors` and `processors` arrays. Each entry is a built-in name, a local relative path, or a remote URL:
 
 ```json
 {
@@ -85,6 +156,10 @@ The engine maintains a registry mapping short names (`'header'`, `'chart'`, `'vi
   }
 }
 ```
+
+### Built-in plugins (short names)
+
+The engine maintains a registry mapping short names (`'header'`, `'chart'`, `'video'`, `'iframe'`, `'mermaid'`) to their bundled plugin functions.
 
 ### Local plugins (relative paths)
 

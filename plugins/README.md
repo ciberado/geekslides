@@ -1,8 +1,19 @@
 # GeekSlides Plugin Bundles
 
-This directory contains the canonical manifest for each built-in plugin bundle.
-Each subdirectory holds a `plugin.json` that describes the bundle's preprocessors,
-processors, features, and dependencies.
+This directory contains the source code, manifest, and documentation for each built-in plugin bundle.
+Each subdirectory is self-contained:
+
+```
+plugins/{bundle}/
+  plugin.json      ← manifest (name, dependsOn, preprocessors, processors, features)
+  README.md        ← user-facing documentation
+  *.ts             ← TypeScript source files
+```
+
+Plugin source files import engine internals via the `@engine/*` alias
+(maps to `packages/engine/src/*`). The runtime registry that maps bundle names
+to their preprocessors/processors/features lives in
+`packages/engine/src/plugins/plugin-bundles.ts`.
 
 ## Using a bundle
 
@@ -34,6 +45,7 @@ Bundles can also be mixed with explicit plugin lists using the object form:
 | `chart` | Chart.js-powered data visualisation |
 | `mermaid` | Mermaid diagram rendering |
 | `css-doodle` | Generative CSS doodle background patterns |
+| `poll` | Live audience polling with real-time vote aggregation |
 
 ## Manifest format
 
