@@ -27,4 +27,7 @@ vitest.config.js
 vitest.config.d.ts
 vitest.config.js.map
 
-.playwright-mcp*.png
+# Playwright MCP snapshots and screenshots
+.playwright-mcp/
+/*.png
+/*.jpeg
