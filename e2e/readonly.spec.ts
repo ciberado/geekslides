@@ -162,4 +162,53 @@ test.describe('Read-only viewer mode', () => {
     // Green (#4ade80) = rgb(74, 222, 128)
     expect(dotColor).toBe('rgb(74, 222, 128)');
   });
+
+  test('readonly viewer does not see media nav arrows', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('readonly-nav');
+
+    // Open presenter first (loads media features with nav arrows)
+    const presenter = await context.newPage();
+    await presenter.goto(`/?config=decks/media-demo/config.json&room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(2000);
+
+    // Navigate to a media slide (YouTube inline, index 1)
+    await presenter.evaluate(() => {
+      (document.getElementById('slideshow') as any).goTo(1);
+    });
+    await presenter.waitForTimeout(500);
+
+    // Verify presenter HAS nav arrows
+    const presenterHasArrows = await presenter.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const fc = ss?.shadowRoot?.querySelector('.gs-features');
+      const btns = fc?.querySelectorAll('.gs-media-nav-btn');
+      return (btns?.length ?? 0) > 0;
+    });
+    expect(presenterHasArrows).toBe(true);
+
+    // Open readonly viewer
+    const viewer = await context.newPage();
+    await viewer.goto(`/?config=decks/media-demo/config.json&room=${room}&readonly`);
+    await viewer.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await viewer.waitForTimeout(2000);
+
+    // Verify viewer does NOT have nav arrows
+    const viewerHasArrows = await viewer.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const fc = ss?.shadowRoot?.querySelector('.gs-features');
+      const btns = fc?.querySelectorAll('.gs-media-nav-btn');
+      return (btns?.length ?? 0) > 0;
+    });
+    expect(viewerHasArrows).toBe(false);
+
+    await context.close();
+  });
 });

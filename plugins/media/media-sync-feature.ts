@@ -76,6 +76,7 @@ function injectFeatureUI(
   container: HTMLElement,
   onPrev: () => void,
   onNext: () => void,
+  options?: { hideNavArrows?: boolean },
 ): { showAutoplayBanner: () => void; setHasMedia: (value: boolean) => void; removeUI: () => void } {
   const style = document.createElement('style');
   style.textContent = `
@@ -203,20 +204,22 @@ function injectFeatureUI(
   const layer = document.createElement('div');
   layer.className = 'gs-media-layer';
 
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'gs-media-nav-btn gs-media-nav-prev';
-  prevBtn.setAttribute('aria-label', 'Previous slide');
-  prevBtn.innerHTML = '&#8249;';
-  prevBtn.addEventListener('click', onPrev);
+  if (!options?.hideNavArrows) {
+    const prevBtn = document.createElement('button');
+    prevBtn.className = 'gs-media-nav-btn gs-media-nav-prev';
+    prevBtn.setAttribute('aria-label', 'Previous slide');
+    prevBtn.innerHTML = '&#8249;';
+    prevBtn.addEventListener('click', onPrev);
 
-  const nextBtn = document.createElement('button');
-  nextBtn.className = 'gs-media-nav-btn gs-media-nav-next';
-  nextBtn.setAttribute('aria-label', 'Next slide');
-  nextBtn.innerHTML = '&#8250;';
-  nextBtn.addEventListener('click', onNext);
+    const nextBtn = document.createElement('button');
+    nextBtn.className = 'gs-media-nav-btn gs-media-nav-next';
+    nextBtn.setAttribute('aria-label', 'Next slide');
+    nextBtn.innerHTML = '&#8250;';
+    nextBtn.addEventListener('click', onNext);
 
-  layer.appendChild(prevBtn);
-  layer.appendChild(nextBtn);
+    layer.appendChild(prevBtn);
+    layer.appendChild(nextBtn);
+  }
   container.appendChild(style);
   container.appendChild(layer);
 
@@ -344,6 +347,7 @@ export const mediaSyncFeature: Feature = {
       ctx.container,
       () => { ctx.slideshow.prev(); },
       () => { ctx.slideshow.next(); },
+      { hideNavArrows: isViewer },
     );
 
     // ── 1. Pause on slide:leave ──────────────────────────────────────────────

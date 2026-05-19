@@ -1342,6 +1342,44 @@ geek-video {
   display: block;
   width: 100%;
   height: auto;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+/* Inline media (non-cover) needs to fit the remaining vertical space.
+   Make the default slide section a flex column so media can shrink. */
+section.content:has(geek-youtube:not([cover])),
+section.content:has(geek-video:not([cover])),
+section.content:has(.gs-iframe-wrapper) {
+  display: flex;
+  flex-direction: column;
+}
+
+section.content:has(geek-youtube:not([cover])) > *,
+section.content:has(geek-video:not([cover])) > *,
+section.content:has(.gs-iframe-wrapper) > * {
+  flex-shrink: 0;
+}
+
+/* The element (or its wrapper p) containing the media shrinks to fill space */
+section.content:has(geek-youtube:not([cover])) > :has(geek-youtube),
+section.content:has(geek-youtube:not([cover])) > geek-youtube,
+section.content:has(geek-video:not([cover])) > :has(geek-video),
+section.content:has(geek-video:not([cover])) > geek-video,
+section.content:has(.gs-iframe-wrapper) > .gs-iframe-wrapper,
+section.content:has(.gs-iframe-wrapper) > :has(.gs-iframe-wrapper) {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The actual media component fills its parent flex container */
+section.content:has(geek-youtube:not([cover])) > :has(geek-youtube) > geek-youtube,
+section.content:has(geek-video:not([cover])) > :has(geek-video) > geek-video,
+section.content:has(.gs-iframe-wrapper) > :has(.gs-iframe-wrapper) > .gs-iframe-wrapper {
+  flex: 1 1 0;
+  min-height: 0;
 }
 
 /* ── Cover variant: fill the entire slide ── */
@@ -1387,8 +1425,8 @@ section.content.layout-cover.mod-media-cover > *:not(geek-video):not(geek-youtub
 .gs-iframe-wrapper {
   position: relative;
   width: 100%;
-  height: 0;
-  padding-bottom: 56.25%;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
 }
 
 .gs-iframe-wrapper iframe {

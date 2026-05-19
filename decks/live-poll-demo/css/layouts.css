@@ -378,44 +378,50 @@ section.content.layout-two-col {
 
 /**
  * @layout layout-img-text
- * @detail Image left, text right — float-based
+ * @detail Image left, text right — CSS grid
  * @markdown
  * [](.layout-img-text#product)
+ * ### Title
  * ![Product](img.jpg)
- * #### Details
  * - Feature 1
  * - Feature 2
  * @structure
  * ┌─────────┬─────────────┐
- * │         │ #### Title  │
+ * │ ### Heading (full row) │
+ * ├─────────┼─────────────┤
  * │  IMAGE  │ - Feature 1 │
  * │ (50%)   │ - Feature 2 │
- * │         │ - Feature 3 │  ← multiple content OK
+ * │         │ - Feature 3 │
  * └─────────┴─────────────┘
  * @usage
- * Image floats left at 50% width. Heading spans full width.
- * Text/lists flow right with automatic wrapping. Supports multiple content elements.
+ * Two-column grid: image occupies the left column, heading + text/lists the right.
+ * An optional ### heading spans both columns at the top.
  */
 section.content.layout-img-text {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gs-gap);
+  align-content: start;
+
   > h3 {
-    width: 100%;
+    grid-column: 1 / -1;
   }
 
   > .block-image {
-    float: left;
-    width: 50%;
-    margin-inline-end: var(--gs-gap);
-    margin-block-end: var(--gs-gap);
+    grid-column: 1;
 
     img {
       width: 100%;
-      height: auto;
+      height: 100%;
+      object-fit: cover;
       display: block;
     }
   }
 
-  > ul, > ol, > p {
-    margin-inline-start: calc(50% + var(--gs-gap));
+  > ul,
+  > ol,
+  > p {
+    grid-column: 2;
   }
 
   > doodle-controls,
@@ -425,7 +431,7 @@ section.content.layout-img-text {
     position: absolute;
     bottom: var(--gs-pad-y);
     right: var(--gs-pad-x);
-    margin-inline-start: 0;
+    grid-column: unset;
   }
 }
 
@@ -529,6 +535,7 @@ section.content.layout-img-text-bleed {
 
 /**
  * @layout layout-three-col
+ * @transform Wraps each h4 and its following content sibling into a .gs-card div
  * @detail Three-column grid layout
  * @markdown
  * [](.layout-three-col#pillars)
@@ -544,29 +551,67 @@ section.content.layout-img-text-bleed {
  * │ Col 1 │ Col 2 │ Col 3 │
  * └───────┴───────┴───────┘
  * @usage
- * Use #### Heading (h4) to head each card.
+ * Use #### Heading (h4) to head each card. Each h4 and its following paragraph,
+ * list, or image are automatically wrapped in a .gs-card container for styling.
+ * Use an optional ### heading before the cards for a section title.
  */
 section.content.layout-three-col {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  grid-template-rows: auto auto minmax(0, 1fr);
   column-gap: var(--gs-gap);
-  row-gap: calc(var(--gs-gap) / 2);
   align-content: start;
   align-items: stretch;
 
   > h3 { grid-column: 1 / -1; }
 
-  > h4:nth-of-type(1) { grid-column: 1; grid-row: 2; }
-  > h4:nth-of-type(2) { grid-column: 2; grid-row: 2; }
-  > h4:nth-of-type(3) { grid-column: 3; grid-row: 2; }
+  /* ── With DOM transform: .gs-card wrappers (browser / engine path) ── */
+  > .gs-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
 
-  > h4:nth-of-type(1) + :is(p, ul, ol, .block-image) { grid-column: 1; grid-row: 3; }
-  > h4:nth-of-type(2) + :is(p, ul, ol, .block-image) { grid-column: 2; grid-row: 3; }
-  > h4:nth-of-type(3) + :is(p, ul, ol, .block-image) { grid-column: 3; grid-row: 3; }
+    > h4 {
+      padding: 0.6em 0.8em 0.4em;
+      margin-block-end: 0;
+    }
 
-  /* Card spacing — visual treatment (bg, radius) in theme */
+    > :is(p, ul, ol) {
+      flex: 1;
+      padding: 0.5em 0.8em 0.8em;
+      margin-block: 0;
+    }
+
+    > :is(ul, ol) {
+      padding-inline-start: 2em;
+    }
+
+    > .block-image {
+      flex: 1;
+      margin: 0;
+
+      img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+    }
+
+    > p img {
+      display: block;
+      width: 100%;
+      max-height: 220px;
+      object-fit: cover;
+      margin-block: 0.5em;
+    }
+  }
+
+  /* ── Fallback: direct child selectors (print / renderPrint path) ── */
+  > h4:nth-of-type(1) { grid-column: 1; }
+  > h4:nth-of-type(2) { grid-column: 2; }
+  > h4:nth-of-type(3) { grid-column: 3; }
+
   > h4 {
+    grid-row: 2;
     padding: 0.6em 0.8em 0.4em;
     margin-block-end: 0;
   }
@@ -579,6 +624,10 @@ section.content.layout-three-col {
   > h4 + :is(ul, ol) {
     padding-inline-start: 2em;
   }
+
+  > h4:nth-of-type(1) + :is(p, ul, ol, .block-image) { grid-column: 1; grid-row: 3; }
+  > h4:nth-of-type(2) + :is(p, ul, ol, .block-image) { grid-column: 2; grid-row: 3; }
+  > h4:nth-of-type(3) + :is(p, ul, ol, .block-image) { grid-column: 3; grid-row: 3; }
 
   > h4 + .block-image {
     margin: 0;
@@ -743,7 +792,7 @@ section.content.layout-chart {
 
 /* ─── 13. LAYOUT: COMPARISON (A vs B) ───────────────────────────────────────
  *
- * Two panels side by side. <h4> separates the groups (hidden).
+ * Two panels side by side. The middle h4 becomes the VS badge.
  *
  *   [](.layout-compare#id)
  *   ### Heading
@@ -754,23 +803,23 @@ section.content.layout-chart {
 
 /**
  * @layout layout-compare
+ * @transform Replaces the h4 VS-badge element with a semantic span.gs-vs-badge
  * @detail Comparison layout — 3-col with VS badge
  * @markdown
  * [](.layout-compare#comparison)
- * #### Option A
  * - Feature 1
  * - Feature 2
  * #### VS
- * #### Option B
  * - Feature 3
  * - Feature 4
  * @structure
  * ┌─────────┬────┬─────────┐
- * │ #### A  │ VS │ #### B  │  ← 1fr auto 1fr grid
+ * │  List   │ VS │  List   │  ← 1fr auto 1fr grid
  * │ Content │    │ Content │
  * └─────────┴────┴─────────┘
  * @usage
- * The middle #### Heading becomes styled VS badge in centre column.
+ * Write a single #### heading between the two lists — it becomes the VS badge in the
+ * centre column. Optionally add a ### heading above both lists as a slide title.
  */
 section.content.layout-compare {
   display: grid;
@@ -781,13 +830,20 @@ section.content.layout-compare {
   align-items: start;
 
   > h3 { grid-column: 1 / -1; grid-row: 1; }
-  > h4 { grid-column: 2; grid-row: 2; align-self: center; text-align: center; }
+
+  /* VS badge — targets both the DOM-transformed span and the h4 fallback */
+  > :is(h4, .gs-vs-badge) {
+    grid-column: 2;
+    grid-row: 2;
+    align-self: center;
+    text-align: center;
+  }
 
   /* Lists */
   > ul:first-of-type, > ol:first-of-type { grid-column: 1; grid-row: 2; }
   > ul:last-of-type, > ol:last-of-type { grid-column: 3; grid-row: 2; }
 
-  /* Tables — span left + right columns, hiding the VS badge */
+  /* Tables */
   > table:first-of-type { grid-column: 1; grid-row: 2; }
   > table:last-of-type { grid-column: 3; grid-row: 2; }
 }
@@ -1101,4 +1157,310 @@ section.content.layout-agenda {
       }
     }
   }
+}
+
+
+/* ─── 17. LAYOUT: PULL QUOTE ─────────────────────────────────────────────────
+ *
+ * Centered full-slide blockquote with an optional attribution line.
+ *
+ *   [](.layout-quote#testimonial)
+ *   > "The best way to predict the future is to invent it."
+ *   #### — Alan Kay
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-quote
+ * @detail Full-slide centered pull quote with attribution
+ * @markdown
+ * [](.layout-quote#testimonial)
+ * > "The best way to predict the future is to invent it."
+ * #### — Alan Kay
+ * @structure
+ * ┌────────────────────────────────┐
+ * │                                │
+ * │   "Quote text goes here        │
+ * │    spanning multiple lines."   │
+ * │                                │
+ * │         — Attribution          │
+ * │                                │
+ * └────────────────────────────────┘
+ * @usage
+ * Use a blockquote (> text) for the quote body and #### — Name for attribution.
+ * Content is centered vertically and horizontally. Decorative quote marks are
+ * injected by the theme.
+ */
+section.content.layout-quote {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+
+  > blockquote {
+    max-width: 80%;
+    margin: 0;
+    padding: 0;
+    border: none;
+
+    > p {
+      margin: 0;
+    }
+  }
+
+  > h4 {
+    margin-block: 0.6em 0;
+  }
+}
+
+
+/* ─── 18. LAYOUT: FEATURE CARDS (2 × 2) ─────────────────────────────────────
+ *
+ * Two-column grid of feature cards. Each card starts with an #### heading
+ * and body content. A DOM transform wraps each (h4 + content) pair into
+ * a .gs-card div — the same transform used by layout-three-col.
+ *
+ *   [](.layout-features#features)
+ *   ### Key Features
+ *   #### ⚡ Fast
+ *   Processes 1M events/sec.
+ *   #### 🔒 Secure
+ *   End-to-end encryption.
+ *   #### 📦 Simple
+ *   One-line install.
+ *   #### 🌐 Global
+ *   50 edge locations.
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+/**
+ * @layout layout-features
+ * @transform Wraps each h4 and its following content sibling into a .gs-card div
+ * @detail 2×2 feature cards with heading and body
+ * @markdown
+ * [](.layout-features#features)
+ * ### Key Features
+ * #### ⚡ Fast
+ * Processes 1M events/sec.
+ * #### 🔒 Secure
+ * End-to-end encryption.
+ * #### 📦 Simple
+ * One-line install.
+ * #### 🌐 Global
+ * 50 edge locations.
+ * @structure
+ * ┌───────────────┬───────────────┐
+ * │ #### Fast     │ #### Secure   │
+ * │ Description   │ Description   │
+ * ├───────────────┼───────────────┤
+ * │ #### Simple   │ #### Global   │
+ * │ Description   │ Description   │
+ * └───────────────┴───────────────┘
+ * @usage
+ * Use #### Heading (h4) to head each feature card. Each h4 and its following
+ * paragraph or list are automatically wrapped in a .gs-card container.
+ * An optional ### heading spans both columns at the top.
+ */
+section.content.layout-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--gs-gap);
+  align-content: start;
+
+  > h3 { grid-column: 1 / -1; }
+
+  /* ── With DOM transform: .gs-card wrappers (browser / engine path) ── */
+  > .gs-card {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+
+    > h4 {
+      padding: 0.6em 0.8em 0.4em;
+      margin-block-end: 0;
+    }
+
+    > :is(p, ul, ol) {
+      flex: 1;
+      padding: 0.5em 0.8em 0.8em;
+      margin-block: 0;
+    }
+
+    > :is(ul, ol) {
+      padding-inline-start: 2em;
+    }
+  }
+
+  /* ── Fallback: direct child selectors (print / renderPrint path) ── */
+  > h4:nth-of-type(1) { grid-column: 1; grid-row: 2; }
+  > h4:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+  > h4:nth-of-type(3) { grid-column: 1; grid-row: 4; }
+  > h4:nth-of-type(4) { grid-column: 2; grid-row: 4; }
+
+  > h4 {
+    padding: 0.6em 0.8em 0.4em;
+    margin-block-end: 0;
+  }
+
+  > h4:nth-of-type(1) + :is(p, ul, ol) { grid-column: 1; grid-row: 3; }
+  > h4:nth-of-type(2) + :is(p, ul, ol) { grid-column: 2; grid-row: 3; }
+  > h4:nth-of-type(3) + :is(p, ul, ol) { grid-column: 1; grid-row: 5; }
+  > h4:nth-of-type(4) + :is(p, ul, ol) { grid-column: 2; grid-row: 5; }
+
+  > h4 + :is(p, ul, ol) {
+    padding: 0.5em 0.8em 0.8em;
+    margin-block: 0;
+  }
+
+  > h4 + :is(ul, ol) {
+    padding-inline-start: 2em;
+  }
+}
+
+
+/* ─── MEDIA ELEMENTS ─────────────────────────────────────────────────────────
+ *
+ * Structural rules for embedded media components (<geek-youtube>, <geek-audio>,
+ * <geek-video>) and iframe wrappers produced by the media URL plugins.
+ *
+ * This CSS is injected into every slide's shadow DOM via Slideshow.injectStyles(),
+ * so selectors like `section.content.mod-media-cover geek-youtube` work correctly
+ * inside the slide shadow root.
+ *
+ * Default: block, full-width, auto height — participates in grid/flex layouts
+ * exactly like <img>.
+ *
+ * Cover variant — fill the slide like a background:
+ *   Add `.mod-media-cover` to the slide marker:
+ *     [](#slide-id,.mod-media-cover)
+ *     ![My Talk](https://youtu.be/dQw4w9WgXcQ)
+ *
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+geek-youtube,
+geek-audio,
+geek-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+/* Inline media (non-cover) needs to fit the remaining vertical space.
+   Make the default slide section a flex column so media can shrink. */
+section.content:has(geek-youtube:not([cover])),
+section.content:has(geek-video:not([cover])),
+section.content:has(.gs-iframe-wrapper) {
+  display: flex;
+  flex-direction: column;
+}
+
+section.content:has(geek-youtube:not([cover])) > *,
+section.content:has(geek-video:not([cover])) > *,
+section.content:has(.gs-iframe-wrapper) > * {
+  flex-shrink: 0;
+}
+
+/* The element (or its wrapper p) containing the media shrinks to fill space */
+section.content:has(geek-youtube:not([cover])) > :has(geek-youtube),
+section.content:has(geek-youtube:not([cover])) > geek-youtube,
+section.content:has(geek-video:not([cover])) > :has(geek-video),
+section.content:has(geek-video:not([cover])) > geek-video,
+section.content:has(.gs-iframe-wrapper) > .gs-iframe-wrapper,
+section.content:has(.gs-iframe-wrapper) > :has(.gs-iframe-wrapper) {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The actual media component fills its parent flex container */
+section.content:has(geek-youtube:not([cover])) > :has(geek-youtube) > geek-youtube,
+section.content:has(geek-video:not([cover])) > :has(geek-video) > geek-video,
+section.content:has(.gs-iframe-wrapper) > :has(.gs-iframe-wrapper) > .gs-iframe-wrapper {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* ── Cover variant: fill the entire slide ── */
+section.content.mod-media-cover {
+  padding: 0;
+}
+
+section.content.mod-media-cover geek-youtube,
+section.content.mod-media-cover geek-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+  z-index: 0;
+}
+
+section.content.mod-media-cover .gs-iframe-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 0;
+}
+
+/* When layout-cover and mod-media-cover are combined, the media element acts as
+   the slide background (z-index 0), the gradient overlay sits on top (z-index 1),
+   and text content floats above the gradient (z-index 2). */
+section.content.layout-cover.mod-media-cover > geek-video,
+section.content.layout-cover.mod-media-cover > geek-youtube {
+  z-index: 0;
+}
+
+section.content.layout-cover.mod-media-cover::before {
+  z-index: 1;
+}
+
+section.content.layout-cover.mod-media-cover > *:not(geek-video):not(geek-youtube) {
+  z-index: 2;
+}
+
+/* ── Iframe wrapper (16:9 default) ── */
+.gs-iframe-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}
+
+.gs-iframe-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Overlay that prevents keyboard-focus stealing */
+.gs-iframe-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: pointer;
+  background: transparent;
+  outline: none;
+}
+
+.gs-iframe-overlay-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.gs-iframe-overlay:hover .gs-iframe-overlay-hint,
+.gs-iframe-overlay:focus .gs-iframe-overlay-hint {
+  opacity: 1;
 }

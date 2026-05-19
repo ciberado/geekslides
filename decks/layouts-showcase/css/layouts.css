@@ -1315,3 +1315,152 @@ section.content.layout-features {
     padding-inline-start: 2em;
   }
 }
+
+
+/* ─── MEDIA ELEMENTS ─────────────────────────────────────────────────────────
+ *
+ * Structural rules for embedded media components (<geek-youtube>, <geek-audio>,
+ * <geek-video>) and iframe wrappers produced by the media URL plugins.
+ *
+ * This CSS is injected into every slide's shadow DOM via Slideshow.injectStyles(),
+ * so selectors like `section.content.mod-media-cover geek-youtube` work correctly
+ * inside the slide shadow root.
+ *
+ * Default: block, full-width, auto height — participates in grid/flex layouts
+ * exactly like <img>.
+ *
+ * Cover variant — fill the slide like a background:
+ *   Add `.mod-media-cover` to the slide marker:
+ *     [](#slide-id,.mod-media-cover)
+ *     ![My Talk](https://youtu.be/dQw4w9WgXcQ)
+ *
+ * ─────────────────────────────────────────────────────────────────────────── */
+
+geek-youtube,
+geek-audio,
+geek-video {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  flex-shrink: 1;
+}
+
+/* Inline media (non-cover) needs to fit the remaining vertical space.
+   Make the default slide section a flex column so media can shrink. */
+section.content:has(geek-youtube:not([cover])),
+section.content:has(geek-video:not([cover])),
+section.content:has(.gs-iframe-wrapper) {
+  display: flex;
+  flex-direction: column;
+}
+
+section.content:has(geek-youtube:not([cover])) > *,
+section.content:has(geek-video:not([cover])) > *,
+section.content:has(.gs-iframe-wrapper) > * {
+  flex-shrink: 0;
+}
+
+/* The element (or its wrapper p) containing the media shrinks to fill space */
+section.content:has(geek-youtube:not([cover])) > :has(geek-youtube),
+section.content:has(geek-youtube:not([cover])) > geek-youtube,
+section.content:has(geek-video:not([cover])) > :has(geek-video),
+section.content:has(geek-video:not([cover])) > geek-video,
+section.content:has(.gs-iframe-wrapper) > .gs-iframe-wrapper,
+section.content:has(.gs-iframe-wrapper) > :has(.gs-iframe-wrapper) {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The actual media component fills its parent flex container */
+section.content:has(geek-youtube:not([cover])) > :has(geek-youtube) > geek-youtube,
+section.content:has(geek-video:not([cover])) > :has(geek-video) > geek-video,
+section.content:has(.gs-iframe-wrapper) > :has(.gs-iframe-wrapper) > .gs-iframe-wrapper {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+/* ── Cover variant: fill the entire slide ── */
+section.content.mod-media-cover {
+  padding: 0;
+}
+
+section.content.mod-media-cover geek-youtube,
+section.content.mod-media-cover geek-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+  z-index: 0;
+}
+
+section.content.mod-media-cover .gs-iframe-wrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 0;
+}
+
+/* When layout-cover and mod-media-cover are combined, the media element acts as
+   the slide background (z-index 0), the gradient overlay sits on top (z-index 1),
+   and text content floats above the gradient (z-index 2). */
+section.content.layout-cover.mod-media-cover > geek-video,
+section.content.layout-cover.mod-media-cover > geek-youtube {
+  z-index: 0;
+}
+
+section.content.layout-cover.mod-media-cover::before {
+  z-index: 1;
+}
+
+section.content.layout-cover.mod-media-cover > *:not(geek-video):not(geek-youtube) {
+  z-index: 2;
+}
+
+/* ── Iframe wrapper (16:9 default) ── */
+.gs-iframe-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 0;
+}
+
+.gs-iframe-wrapper iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* Overlay that prevents keyboard-focus stealing */
+.gs-iframe-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  cursor: pointer;
+  background: transparent;
+  outline: none;
+}
+
+.gs-iframe-overlay-hint {
+  position: absolute;
+  bottom: 10px;
+  right: 12px;
+  background: rgba(0 0 0 / 0.55);
+  color: #fff;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 4px;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.gs-iframe-overlay:hover .gs-iframe-overlay-hint,
+.gs-iframe-overlay:focus .gs-iframe-overlay-hint {
+  opacity: 1;
+}

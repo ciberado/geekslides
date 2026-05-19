@@ -269,6 +269,7 @@ export class YoutubeSlide extends HTMLElement {
         display: block;
         width: 100%;
         aspect-ratio: 16 / 9;
+        min-height: 0;
       }
       :host([cover]) {
         position: absolute;
