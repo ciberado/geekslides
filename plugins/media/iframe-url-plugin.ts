@@ -45,8 +45,32 @@ export const iframeOverlayProcessor: Processor = (slideElement: HTMLElement): vo
   const wrappers = slideElement.querySelectorAll<HTMLElement>('.gs-iframe-wrapper');
   if (wrappers.length === 0) return;
 
+  const isCover = slideElement.classList.contains('mod-media-cover');
   const root = slideElement.getRootNode();
   const hostSlide = root instanceof ShadowRoot ? root.host : slideElement;
+
+  // Constrain inline iframes to available vertical space
+  if (!isCover) {
+    requestAnimationFrame(() => {
+      const style = getComputedStyle(slideElement);
+      const paddingTop = parseFloat(style.paddingTop) || 0;
+      const paddingBottom = parseFloat(style.paddingBottom) || 0;
+      const contentHeight = slideElement.clientHeight - paddingTop - paddingBottom;
+
+      for (const wrapper of wrappers) {
+        let siblingsHeight = 0;
+        const parent = wrapper.parentElement;
+        const container = parent?.tagName === 'P' ? slideElement : slideElement;
+        for (const child of container.children) {
+          if (child === wrapper || child === parent || child.contains(wrapper)) continue;
+          siblingsHeight += (child as HTMLElement).offsetHeight ?? 0;
+        }
+        const available = Math.max(200, contentHeight - siblingsHeight - 60);
+        wrapper.style.paddingBottom = '0';
+        wrapper.style.height = `${String(Math.min(available, wrapper.clientWidth * 9 / 16))}px`;
+      }
+    });
+  }
 
   for (const wrapper of wrappers) {
     if (wrapper.querySelector('.gs-iframe-overlay')) continue;
