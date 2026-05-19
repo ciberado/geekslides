@@ -696,6 +696,8 @@ try {
     if (syncEnabled) {
       try {
         sync = new SyncManager(document, { readonly: isReadonly });
+        // Expose sync for e2e testing (Yjs doc access)
+        window.__geekslides_sync = sync;
         const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
         const room = params.get('room') || syncConfig.room || 'default';
         const token = params.get('token') || undefined;
@@ -1030,6 +1032,15 @@ try {
           // Notify plugins (e.g. whiteboard) to clear state from the previous deck
           document.dispatchEvent(new CustomEvent('geek:presentation:reload'));
 
+          // Clear all Yjs feature state from the previous deck so viewers don't
+          // see stale data (e.g. poll votes from a previous presentation).
+          sync.doc.transact(() => {
+            const featuresRoot = sync.doc.getMap('features');
+            featuresRoot.forEach((_value, key) => {
+              featuresRoot.delete(key);
+            });
+          });
+
           sync.publishState(0, 0, 'present');
           console.log(`[reloadDeck:${reloadId}] published state(0,0,present)`);
 
@@ -1077,6 +1088,14 @@ try {
         config = newConfig;
         await applyProcessors(slideshow, newConfig);
         slideshow.setAspectRatio(newConfig.aspectRatio);
+
+        // Clear Yjs feature state from previous deck before registering new features
+        sync.doc.transact(() => {
+          const featuresRoot = sync.doc.getMap('features');
+          featuresRoot.forEach((_value, key) => {
+            featuresRoot.delete(key);
+          });
+        });
 
         // Reload features from new config
         featureManager.deactivateAll();

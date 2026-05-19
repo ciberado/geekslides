@@ -636,5 +636,66 @@ test.describe('Load command deck switching', () => {
 
     await context.close();
   });
-});
 
+  test('Yjs features map is cleared when presenter loads a new deck', async ({ browser, baseURL }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('features-clear');
+
+    // --- Presenter loads poll deck (which writes to Yjs features map) ---
+    const presenter = await context.newPage();
+    const presenterLogs: string[] = [];
+    presenter.on('console', (msg) => presenterLogs.push(msg.text()));
+    await presenter.goto(`/?config=e2e/fixtures/poll-deck/config.json&room=${room}`);
+
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as unknown as { slideCount: number } | null;
+      return ss && ss.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(2000);
+
+    // Navigate to a poll slide to trigger poll state in Yjs
+    await presenter.evaluate(() => {
+      const ss = document.getElementById('slideshow') as unknown as { goTo: (n: number) => void };
+      ss.goTo(2);
+    });
+    await presenter.waitForTimeout(1000);
+
+    // Verify Yjs has poll feature data
+    const hasPollState = await presenter.evaluate(() => {
+      const sync = (window as any).__geekslides_sync;
+      if (!sync) return false;
+      return sync.doc.getMap('features').has('poll');
+    });
+    expect(hasPollState).toBe(true);
+
+    // --- Presenter loads a different deck (sync-deck, no poll) via terminal ---
+    // Open terminal and run load command
+    await presenter.keyboard.press('Escape');
+    await presenter.waitForFunction(() => {
+      const term = document.querySelector('geek-terminal') as HTMLElement | null;
+      return term?.style.display === 'block';
+    });
+    await presenter.evaluate(() => {
+      const terminal = document.querySelector('geek-terminal');
+      const input = terminal?.shadowRoot?.querySelector('input') as HTMLInputElement;
+      input.value = 'load e2e/fixtures/sync-deck/config.json';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    });
+
+    // Wait for reload to complete
+    await presenter.waitForFunction(() => {
+      return document.title === 'Sync Test Deck';
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(1000);
+
+    // Verify Yjs features map has been cleared (no poll key)
+    const pollStateAfterReload = await presenter.evaluate(() => {
+      const sync = (window as any).__geekslides_sync;
+      if (!sync) return false;
+      return sync.doc.getMap('features').has('poll');
+    });
+    expect(pollStateAfterReload).toBe(false);
+
+    await context.close();
+  });
+});
