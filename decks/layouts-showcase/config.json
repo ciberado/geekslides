@@ -4,6 +4,6 @@
   "styles": ["css/layouts.css", "css/theme-default.css"],
   "aspectRatio": "16/9",
   "plugins": {
-    "preprocessors": []
+    "preprocessors": ["source-notes"]
   }
 }

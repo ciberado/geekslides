@@ -9,6 +9,11 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Speaker notes for all demo decks** — every slide in all `decks/` now has `::: Notes` explaining the feature being demonstrated, useful for learning
+- **`source-notes` preprocessor enabled for layouts-showcase** — the speaker view automatically shows each slide's markdown source alongside the explanatory notes, keeping them in sync
+
 <!-- Add new entries above this line -->
 
 ## [2.2.0] - 2026-05-19
