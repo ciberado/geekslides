@@ -506,7 +506,14 @@ try {
         const processedMd = await applyPreprocessors(newMarkdown, newConfig);
         slides = parse(processedMd.content, { lineMapping: processedMd.lineMapping });
         speaker.setAspectRatio(newConfig.aspectRatio);
-        if (newCss) speaker.loadStyles(newCss);
+        combinedCss = newCss;
+        const themeCss = lastAppliedThemeName
+          ? (BUILTIN_THEMES.find((t) => t.name === lastAppliedThemeName)?.css || '')
+          : '';
+        const fullCss = themeCss
+          ? (newCss ? newCss + '\n' + themeCss : themeCss)
+          : newCss;
+        if (fullCss) speaker.loadStyles(fullCss);
         speaker.loadSlides(slides);
         const activeProcessors = await getActiveProcessors(newConfig);
         if (activeProcessors.length > 0) speaker.loadProcessors(activeProcessors, newConfig);
@@ -611,10 +618,28 @@ try {
       }
     };
 
+    // Track the last theme applied so we don't re-apply unchanged theme.
+    let lastAppliedThemeName = '';
+
+    const applySpeakerTheme = () => {
+      const state = sync.doc.getMap('sessionState');
+      const themeName = state.get('theme');
+      if (typeof themeName !== 'string' || themeName === lastAppliedThemeName) return;
+      lastAppliedThemeName = themeName;
+      const found = BUILTIN_THEMES.find((t) => t.name === themeName);
+      const themeCss = found ? found.css : '';
+      const fullCss = themeCss
+        ? (combinedCss ? combinedCss + '\n' + themeCss : themeCss)
+        : combinedCss;
+      if (fullCss) speaker.loadStyles(fullCss);
+      console.log(`[speaker] Theme synced: ${themeName}`);
+    };
+
     sync.doc.getMap('sessionState').observe(() => {
       checkRoomTransfer();
       checkSpeakerContentProxy();
       applySpeakerSyncState();
+      applySpeakerTheme();
     });
 
     // Apply current room state immediately so speaker view opens in sync,
@@ -622,6 +647,7 @@ try {
     checkRoomTransfer();
     checkSpeakerContentProxy();
     applySpeakerSyncState();
+    applySpeakerTheme();
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ') {
@@ -1008,6 +1034,7 @@ try {
     // we append the new theme CSS on top so its :host tokens win by cascade.
     let activeThemeOverrideCss = '';
     let activeThemeIndex = -1;
+    let activeThemeName = '';
 
     function showCmdOutput(msg) {
       terminal.setOutput(msg);
@@ -1599,7 +1626,9 @@ try {
         return;
       }
       activeThemeOverrideCss = found.css;
+      activeThemeName = name;
       slideshow.loadStyles(combinedCss + '\n' + activeThemeOverrideCss);
+      if (sync) sync.doc.getMap('sessionState').set('theme', name);
       showCmdOutput(`✓ Theme switched to: ${found.label}`);
       console.log('[theme] Switched to:', found.name);
     }, category: 'theme' });
@@ -1608,7 +1637,9 @@ try {
       activeThemeIndex = (activeThemeIndex + 1) % BUILTIN_THEMES.length;
       const next = BUILTIN_THEMES[activeThemeIndex];
       activeThemeOverrideCss = next.css;
+      activeThemeName = next.name;
       slideshow.loadStyles(combinedCss + '\n' + activeThemeOverrideCss);
+      if (sync) sync.doc.getMap('sessionState').set('theme', next.name);
     }, category: 'theme' });
 
     if (sync) {
