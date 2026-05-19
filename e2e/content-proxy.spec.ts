@@ -13,7 +13,7 @@ test.describe('Content Proxy', () => {
     const presenter = await context.newPage();
     const presenterLogs: string[] = [];
     presenter.on('console', (msg) => presenterLogs.push(msg.text()));
-    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
+    const deckUrl = `/?config=e2e/fixtures/sync-deck/config.json&room=${room}`;
     await presenter.goto(deckUrl);
 
     // Wait for slideshow to fully load
@@ -35,7 +35,7 @@ test.describe('Content Proxy', () => {
     expect(configRes.status()).toBe(200);
 
     const config = await configRes.json();
-    expect(config.title).toBe('4 Cosicas Sobre Tus Servicios Favoritos');
+    expect(config.title).toBe('Sync Test Deck');
     expect(config.content).toBe('README.md');
 
     // Verify markdown is accessible
@@ -44,7 +44,7 @@ test.describe('Content Proxy', () => {
     );
     expect(mdRes.status()).toBe(200);
     const mdText = await mdRes.text();
-    expect(mdText).toContain('Cosicas');
+    expect(mdText).toContain('Sync Test Deck');
 
     // Verify CSS is accessible
     const cssRes = await presenter.request.get(
@@ -60,7 +60,7 @@ test.describe('Content Proxy', () => {
     // Audience opens the same deck URL (simulates remote viewer already having config)
     // In a real scenario, audience might just have the room and no config,
     // but for now they also have the config URL and will pick up contentProxy from Yjs.
-    await audience.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await audience.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     // Wait for audience to load
     await audience.waitForFunction(() => {
@@ -105,7 +105,7 @@ test.describe('Content Proxy', () => {
     // Upload a deck with images referenced in markdown
     const presenter = await context.newPage();
     await presenter.goto(
-      `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`,
+      `/?config=e2e/fixtures/sync-deck/config.json&room=${room}`,
     );
 
     await presenter.waitForFunction(() => {
@@ -120,7 +120,7 @@ test.describe('Content Proxy', () => {
     // The DeckUploader scans markdown for image references like ![](images/basilica.png)
     // Since these are relative paths, they should have been uploaded
     const imgRes = await presenter.request.get(
-      `${baseURL ?? 'http://localhost:5173'}/api/rooms/${room}/content/images/basilica.png`,
+      `${baseURL ?? 'http://localhost:5173'}/api/rooms/${room}/content/images/test.png`,
     );
 
     // Image might be uploaded if the fetch from /@fs/ path succeeds during upload,
@@ -150,7 +150,7 @@ test.describe('Content Proxy', () => {
 
     // --- Tab A: load deck A and upload to content proxy ---
     const tabA = await context.newPage();
-    await tabA.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await tabA.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     await tabA.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as HTMLElement & { slideCount: number };
@@ -167,7 +167,7 @@ test.describe('Content Proxy', () => {
     // --- Tab B: load the SAME deck in the SAME room ---
     // This tests that multiple presenters with the same deck can sync properly
     const tabB = await context.newPage();
-    await tabB.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await tabB.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     await tabB.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as HTMLElement & { slideCount: number };
@@ -212,7 +212,7 @@ test.describe('Content Proxy', () => {
     const presenterLogs: string[] = [];
     presenter.on('console', (msg) => presenterLogs.push(msg.text()));
 
-    await presenter.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await presenter.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     await presenter.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
@@ -232,7 +232,7 @@ test.describe('Content Proxy', () => {
     audience.on('console', (msg) => audienceLogs.push(msg.text()));
 
     // Audience joins with same config (simulates having been given the URL)
-    await audience.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await audience.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     await audience.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
@@ -290,7 +290,7 @@ test.describe('Content Proxy', () => {
     // deduplication issues. The lastProxyRaw check should handle this.
 
     const presenter = await context.newPage();
-    await presenter.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await presenter.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     await presenter.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
@@ -298,7 +298,7 @@ test.describe('Content Proxy', () => {
     }, undefined, { timeout: 10000 });
 
     const audience = await context.newPage();
-    await audience.goto(`/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`);
+    await audience.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
 
     await audience.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
@@ -569,6 +569,70 @@ test.describe('Load command deck switching', () => {
       l.includes('[proxyReload') || l.includes('[checkContentProxy'),
     );
     console.log('Bounce test proxy logs:\n', proxyLogs.join('\n'));
+
+    await context.close();
+  });
+
+  test('features are loaded during proxy reload', async ({ browser, baseURL }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('proxy-features');
+
+    // --- Presenter tab: load poll deck with the "poll" feature ---
+    const presenter = await context.newPage();
+    const presenterLogs: string[] = [];
+    presenter.on('console', (msg) => presenterLogs.push(msg.text()));
+    const deckUrl = `/?config=e2e/fixtures/poll-deck/config.json&room=${room}`;
+    await presenter.goto(deckUrl);
+
+    // Wait for slideshow and upload to complete
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as unknown as { slideCount: number } | null;
+      return ss && ss.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    await presenter.waitForTimeout(3000);
+
+    // Verify presenter has the poll feature loaded
+    const presenterHasPoll = await presenter.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const sr = ss?.shadowRoot;
+      return !!sr?.querySelector('[data-feature="poll"]');
+    });
+    expect(presenterHasPoll).toBe(true);
+
+    // --- Audience tab: load a DIFFERENT deck first (sync-deck has no features),
+    // then the proxy reload from Yjs should switch to poll-deck and load the poll feature ---
+    const audience = await context.newPage();
+    const audienceLogs: string[] = [];
+    audience.on('console', (msg) => audienceLogs.push(msg.text()));
+
+    // Audience joins the same room — will auto-reload from proxy
+    await audience.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
+
+    // Wait for proxy reload to bring in poll deck
+    await audience.waitForFunction(() => {
+      return document.title === 'Poll E2E Fixture';
+    }, undefined, { timeout: 10000 });
+
+    // Wait for features to activate after proxy reload
+    await audience.waitForFunction(() => {
+      const ss = document.getElementById('slideshow');
+      const sr = ss?.shadowRoot;
+      return !!sr?.querySelector('[data-feature="poll"]');
+    }, undefined, { timeout: 10000 });
+
+    // Verify the poll feature got loaded via proxy reload
+    const audienceHasPoll = await audience.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const sr = ss?.shadowRoot;
+      return !!sr?.querySelector('[data-feature="poll"]');
+    });
+    expect(audienceHasPoll).toBe(true);
+
+    // Debug: log relevant messages
+    const proxyLogs = audienceLogs.filter(
+      (l) => l.includes('[proxyReload') || l.includes('[content-proxy') || l.includes('[features'),
+    );
+    console.log('Audience proxy+feature logs:\n', proxyLogs.join('\n'));
 
     await context.close();
   });

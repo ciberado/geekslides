@@ -858,6 +858,27 @@ try {
             await applyProcessors(slideshow, newConfig);
             slideshow.setAspectRatio(newConfig.aspectRatio);
 
+            // Reload features from new config
+            featureManager.deactivateAll();
+            for (const featureName of newConfig.features || []) {
+              try {
+                let feature;
+                if (isRemotePluginUrl(featureName) || isLocalPluginPath(featureName)) {
+                  const { loadFeature } = await import('@geekslides/engine');
+                  feature = await loadFeature(featureName, resolveUrl);
+                } else {
+                  feature = await resolveFeature(featureName, resolveUrl);
+                  if (!feature) {
+                    console.warn(`[content-proxy] Unknown feature: '${featureName}'`);
+                    continue;
+                  }
+                }
+                featureManager.register(feature);
+              } catch (err) {
+                console.warn(`[content-proxy] Failed to load feature '${featureName}':`, err.message);
+              }
+            }
+
             // Restore sync position after reloading slides
             const state = sync.doc.getMap('sessionState');
             const slide = state.get('slide');
@@ -865,6 +886,9 @@ try {
             if (typeof slide === 'number') {
               slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
             }
+
+            // Emit presentation:ready for newly loaded features
+            featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
 
             console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
           } catch (err) {
@@ -1051,6 +1075,27 @@ try {
         await applyProcessors(slideshow, newConfig);
         slideshow.setAspectRatio(newConfig.aspectRatio);
 
+        // Reload features from new config
+        featureManager.deactivateAll();
+        for (const featureName of newConfig.features || []) {
+          try {
+            let feature;
+            if (isRemotePluginUrl(featureName) || isLocalPluginPath(featureName)) {
+              const { loadFeature } = await import('@geekslides/engine');
+              feature = await loadFeature(featureName, resolveUrl);
+            } else {
+              feature = await resolveFeature(featureName, resolveUrl);
+              if (!feature) {
+                console.warn(`[proxyReload:${proxyId}] Unknown feature: '${featureName}'`);
+                continue;
+              }
+            }
+            featureManager.register(feature);
+          } catch (err) {
+            console.warn(`[proxyReload:${proxyId}] Failed to load feature '${featureName}':`, err.message);
+          }
+        }
+
         // Restore sync position after reloading slides
         const state = sync.doc.getMap('sessionState');
         const slide = state.get('slide');
@@ -1058,6 +1103,9 @@ try {
         if (typeof slide === 'number') {
           slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
         }
+
+        // Emit presentation:ready for newly loaded features
+        featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
 
         console.log(`[proxyReload:${proxyId}] DONE title=${newConfig.title} slideCount=${slideshow.slideCount} slide=${slide}`);
       } catch (err) {
