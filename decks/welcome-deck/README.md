@@ -48,7 +48,7 @@ Press **`Escape`** to open the terminal, type a command and press `Enter`.
 | `help` | List all available commands |
 | `go <n>` | Jump to slide number N |
 | `room <name>` | Join a sync room (real-time co-navigation) |
-| `sync-follow` | Follow the presenter in the room |
+| `sync-toggle` | Toggle following the presenter |
 | `sync-disconnect` | Leave the sync room |
 | `speaker` | Open speaker view |
 | `overview` | Toggle slide grid overview |
@@ -58,7 +58,7 @@ Press **`Escape`** to open the terminal, type a command and press `Enter`.
 ::: Notes
 The command terminal is GeekSlides' power-user interface. Press Escape to open it,
 then type commands and press Enter. Commands cover navigation (`go`), real-time sync
-(`room`, `sync-follow`), viewing modes (`speaker`, `overview`, `fullscreen`), and
+(`room`, `sync-toggle`), viewing modes (`speaker`, `overview`, `fullscreen`), and
 the whiteboard overlay. Type `help` to see all available commands.
 :::
 
@@ -81,6 +81,31 @@ Decks are loaded dynamically via their `config.json` URL. You can load a deck ei
 through the terminal `load` command or by passing a `?config=` query parameter in the
 browser URL. This means any deck hosted on GitHub, a CDN, or your own server can be
 presented instantly — no build step required.
+:::
+
+## Custom Keybindings
+
+Bind any key (or key combination) to a command for instant access:
+
+| Action | How |
+|---|---|
+| **Open panel** | Press `?` to open the shortcuts panel |
+| **Assign a key** | Click the key slot next to a command, then press your desired key |
+| **Cycle commands** | Bind multiple commands to the same key — each press cycles through them |
+| **Terminal binding** | `bind Ctrl+W whiteboard` or `bind S sync-toggle` |
+| **Remove binding** | Click ✕ in the panel or type `unbind Ctrl+W` |
+| **Export / Import** | Use the buttons in the panel or `export-bindings` / `import-bindings` |
+
+A subtle notification appears in the top-right corner confirming which command was executed.
+
+**Note:** Only commands available for the current deck and loaded plugins are shown. Bindings for unloaded plugins are preserved but inactive.
+
+::: Notes
+Custom keybindings are stored per-user in localStorage and portable across sessions.
+You can export your configuration to a JSON file and import it on another device.
+When multiple commands are bound to the same key, pressing it cycles through them —
+useful for toggling (e.g., start/stop sync, show/hide whiteboard). Commands that
+require parameters (like `load` or `room`) cannot be bound to keys.
 :::
 
 ## Deploy Your Own Deck

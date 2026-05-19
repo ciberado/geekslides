@@ -25,6 +25,7 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Add CSS Doodle Backgrounds](20-add-css-doodle-backgrounds.md) | Add beautiful generative parametric patterns as decorative backgrounds with automatic theme integration |
 | [Embed Custom Components](21-embed-custom-components.md) | Load custom web components via config.scripts and embed them in slides for interactive controls and visualizations |
 | [Embed Rich Media](22-embed-rich-media.md) | Add YouTube videos, audio players, video files, and embedded pages to slides using image-link syntax with lazy-load, layout, and sync support |
+| [Configure Custom Keybindings](23-configure-custom-keybindings.md) | Bind keys to commands, cycle multiple commands on one key, export/import configurations |
 
 ## Screenshots
 
