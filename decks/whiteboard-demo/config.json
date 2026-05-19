@@ -1,0 +1,7 @@
+{
+  "title": "Whiteboard Demo",
+  "content": ["README.md"],
+  "styles": ["css/layouts.css", "css/theme-default.css"],
+  "plugins": ["whiteboard"],
+  "aspectRatio": "16/9"
+}
