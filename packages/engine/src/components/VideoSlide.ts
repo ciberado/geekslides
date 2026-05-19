@@ -168,7 +168,7 @@ export class VideoSlide extends HTMLElement {
     const style = document.createElement('style');
     style.textContent = `
       :host { display: block; width: 100%; }
-      video { width: 100%; height: auto; display: block; }
+      video { width: 100%; height: auto; max-height: 60vh; display: block; }
       :host([cover]) {
         position: absolute;
         inset: 0;
@@ -177,9 +177,23 @@ export class VideoSlide extends HTMLElement {
       }
       :host([cover]) video {
         height: 100%;
+        max-height: none;
         object-fit: cover;
       }
     `;
+
+    // Check if video is already in shadow (re-connection after DOM move)
+    const existingVideo = shadow.querySelector('video');
+    if (existingVideo) {
+      // Just update the style element
+      const existingStyle = shadow.querySelector('style');
+      if (existingStyle) {
+        existingStyle.textContent = style.textContent;
+      } else {
+        shadow.prepend(style);
+      }
+      return;
+    }
 
     // Move the <video> from light DOM into shadow
     const video = this.querySelector('video');
