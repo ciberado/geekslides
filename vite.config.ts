@@ -3,7 +3,7 @@ import { resolve } from 'path';
 import { posix } from 'node:path';
 import { geekSlidesHmr } from './packages/engine/src/hmr/vite-plugin-geekslides-hmr';
 
-const DEFAULT_DEV_DECK_BASE = '/decks/css-doodle-demo';
+const DEFAULT_DEV_DECK_BASE = '/decks/welcome-deck';
 
 function resolveDevDeckBase(): string {
   const configuredBase = process.env['GEEKSLIDES_DEV_DECK_BASE'] ?? DEFAULT_DEV_DECK_BASE;

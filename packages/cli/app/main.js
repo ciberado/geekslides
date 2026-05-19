@@ -710,6 +710,11 @@ try {
     const syncEnabled = syncConfig.enabled !== false;
     let sync = null;
 
+    // The initial room — used to disable navigation sync in the default room
+    // so multiple users don't fight for slide control.
+    const initialRoom = params.get('room') || syncConfig.room || 'default';
+    let isDefaultRoom = initialRoom === 'default';
+
     // --- Content-proxy tracking (hoisted to shared scope so both the initial
     //     upload IIFE and the interactive block can access them) ---------------
     // lastProxyRaw: deduplicates consecutive contentProxy Yjs values so we
@@ -726,13 +731,20 @@ try {
         // Expose sync for e2e testing (Yjs doc access)
         window.__geekslides_sync = sync;
         const wsUrl = syncConfig.server || `${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`;
-        const room = params.get('room') || syncConfig.room || 'default';
+        const room = initialRoom;
         const token = params.get('token') || undefined;
-        sync.bind(slideshow);
+        // In the default room, navigation is independent for each user to
+        // avoid conflicts. We still connect for contentProxy/features but
+        // don't bind the slideshow (no remote nav) and don't publish state.
+        if (!isDefaultRoom) {
+          sync.bind(slideshow);
+        }
         sync.connect(wsUrl, room, { token, viewerToken: vtoken ?? undefined });
 
         slideshow.addEventListener('geek:navigate', (e) => {
-          sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
+          if (!isDefaultRoom) {
+            sync.publishState(e.detail.slide, e.detail.partial, e.detail.mode);
+          }
         });
 
         // Content proxy: upload deck assets to server so remote viewers can access them.
@@ -1195,12 +1207,15 @@ try {
           }
         }
 
-        // Restore sync position after reloading slides
-        const state = sync.doc.getMap('sessionState');
-        const slide = state.get('slide');
-        const partial = state.get('partial');
-        if (typeof slide === 'number') {
-          slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
+        // Restore sync position after reloading slides (skip in default room
+        // where navigation is independent per user — always start at slide 0).
+        if (!isDefaultRoom) {
+          const state = sync.doc.getMap('sessionState');
+          const slide = state.get('slide');
+          const partial = state.get('partial');
+          if (typeof slide === 'number') {
+            slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
+          }
         }
 
         // Emit presentation:ready and slide:enter for newly loaded features.
@@ -1251,6 +1266,14 @@ try {
         sync.disconnect();
         await new Promise((r) => setTimeout(r, 100));
 
+        // Update default-room flag and bind slideshow for nav sync if leaving
+        // the default room (or unbind if returning to it).
+        const wasDefault = isDefaultRoom;
+        isDefaultRoom = roomName === 'default';
+        if (wasDefault && !isDefaultRoom) {
+          sync.bind(slideshow);
+        }
+
         // 2. Reset contentProxy tracking so stale values from the old room
         //    don't interfere with the new room's state.
         lastProxyRaw = '';
@@ -1288,11 +1311,15 @@ try {
           sync.doc.transact(() => {
             sync.doc.getMap('sessionState').set('contentProxy', correctProxyJson);
           });
-          sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+          if (!isDefaultRoom) {
+            sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+          }
           showCmdOutput(`✓ Room changed: ${roomName} (loaded room deck)`);
         } else {
           // 4b. Empty room — upload our current deck so peers who join see it.
-          sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+          if (!isDefaultRoom) {
+            sync.publishState(slideshow.currentSlide, slideshow.currentPartial, slideshow.mode);
+          }
           void uploadDeckToRoom(roomName);
           showCmdOutput(`✓ Room changed: ${roomName}`);
         }
@@ -1315,6 +1342,11 @@ try {
       }
     }, category: 'navigation' });
     commands.register({ name: 'load', label: 'Load a different deck (usage: load config.json)', execute: (args) => {
+      const currentRoom = sync?.currentRoom ?? params.get('room') ?? 'default';
+      if (currentRoom === 'default') {
+        showCmdOutput('✗ Cannot load a deck in the default room. Use "room <name>" to switch to your own room first.');
+        return;
+      }
       const deckUrl = args?.[0];
       if (!deckUrl) {
         showCmdOutput('✗ Usage: load <config-url>');

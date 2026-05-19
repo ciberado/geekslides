@@ -9,13 +9,30 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+<!-- Add new entries above this line -->
+
+## [2.2.0] - 2026-05-19
+
+### Added
+
+- **Whiteboard demo deck** (`decks/whiteboard-demo/`) — showcases the whiteboard plugin with drawing, colour picker, clear, and Yjs sync across presenter and viewers
+- **Default room isolation** — the `default` room no longer syncs navigation between users, preventing slide-control conflicts; the `load` command is disabled in the default room with a message directing users to switch rooms first
+- **Welcome deck updated** — instructions now guide users to switch rooms before loading decks
+
 ### Fixed
 
-- **Hub launch endpoint** — `POST /hub/api/presentations/:id/launch` now returns HTTP 500 (not 400) when the launch backend (yjs-server) is unreachable, with a descriptive error message including the target URL and underlying cause (e.g. "Launch backend unavailable: Cannot reach yjs-server at http://localhost:1234: fetch failed")
-- **Hub server-client** — network-level `fetch()` failures (e.g. connection refused) now continue to the next `SERVER_BASE_URL` candidate instead of aborting immediately; the final error includes which URL failed and why
-- **Docker: yjs-server fails to start** — `Dockerfile` runtime stage was missing `COPY node_modules` so `pino` (marked `--external` in the esbuild bundle) was not found at startup; added the copy step matching the hub Dockerfile pattern
-
-<!-- Add new entries above this line -->
+- **Hub launch endpoint** — `POST /hub/api/presentations/:id/launch` now returns HTTP 500 (not 400) when the launch backend (yjs-server) is unreachable, with a descriptive error message including the target URL and underlying cause
+- **Hub server-client** — network-level `fetch()` failures (e.g. connection refused) now continue to the next `SERVER_BASE_URL` candidate instead of aborting immediately
+- **Docker: yjs-server fails to start** — `Dockerfile` runtime stage was missing `COPY node_modules` so `pino` was not found at startup; added the copy step
+- **Whiteboard strokes lost on reload** — localStorage proxy cache "skip first reload" optimization prevented features from re-activating after Yjs sync; replaced with a FAST PATH that skips deck fetch but re-activates features so strokes are replayed
+- **localStorage proxy cache for instant reload** — cache the last-known content proxy URL per room in `localStorage`; on reload, load from cache immediately (no flash of wrong deck); graceful fallback to default deck if cached URL returns 404
+- **Inline media overflow** — YouTube embeds, inline videos, and iframe wrappers were overflowing the slide bottom when heading/text consumed vertical space; added flex-column layout rules so media elements shrink to fit remaining space
+- **Iframe wrapper aspect-ratio** — replaced `padding-bottom: 56.25%` hack with native `aspect-ratio: 16/9` for proper flex shrink
+- **Nav arrows visible in readonly mode** — the ‹ › media navigation buttons are now hidden for viewers in readonly mode (they can't navigate independently)
+- **Yjs features map not cleared on deck reload** — loading a new deck now clears stale Yjs feature data
+- **Play button overlay UX** — replaced native media controls with a centred play button overlay for video and audio; control bar only appears on hover
+- **Inline iframe overflow** — constrained embedded pages to available slide space
+- **Video cover layout** — fixed `<geek-video>` cover mode: video fills slide, content floats above with proper z-index
 
 ## [2.1.0] - 2026-05-18
 

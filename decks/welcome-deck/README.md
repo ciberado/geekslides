@@ -9,14 +9,17 @@ No deck is loaded yet. Here's how to get started:
 | Step | What to do |
 |---|---|
 | **1** | Press **`Escape`** to open the command terminal |
-| **2** | Type `load <config-url>` and press `Enter` to load any deck by URL |
-| **3** | Or mount your deck directory via `CONTENT_DIR` in `.env` |
+| **2** | Type `room <name>` and press `Enter` to join your own room |
+| **3** | Then use `load <config-url>` to load any deck by URL |
+
+**Why?** The default room is shared by everyone — switch to your own room to present without conflicts.
 
 **Tip:** type `help` in the terminal for the full command list.
 
 ::: Notes
 This is the built-in welcome deck bundled with the GeekSlides Docker image.
-It is displayed when no CONTENT_DIR is mounted at /srv/content.
+It is displayed when no deck has been loaded into the current room.
+The default room does not allow loading decks — users must switch to their own room first.
 :::
 
 ## Keyboard Shortcuts
