@@ -698,4 +698,82 @@ test.describe('Load command deck switching', () => {
 
     await context.close();
   });
+
+  test('page reload uses localStorage proxy cache for instant deck recovery', async ({ browser, baseURL }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('proxy-cache');
+
+    // --- Presenter loads deck and uploads to room ---
+    const presenter = await context.newPage();
+    const logs: string[] = [];
+    presenter.on('console', (msg) => logs.push(msg.text()));
+
+    await presenter.goto(`/?config=e2e/fixtures/sync-deck/config.json&room=${room}`);
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Wait for upload to complete
+    await presenter.waitForTimeout(3000);
+
+    // Verify localStorage has the proxy cache
+    const cachedProxy = await presenter.evaluate((r) => {
+      return localStorage.getItem(`geekslides:proxy:${r}`);
+    }, room);
+    expect(cachedProxy).not.toBeNull();
+    const parsed = JSON.parse(cachedProxy!);
+    expect(parsed.configUrl).toContain(`/api/rooms/${room}/content/config.json`);
+
+    // --- Reload the page ---
+    logs.length = 0; // Clear previous logs
+    await presenter.reload();
+    await presenter.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // The deck should be loaded from the cached proxy immediately (no flash of default deck)
+    const title = await presenter.evaluate(() => document.title);
+    expect(title).toBe('Sync Test Deck');
+
+    await context.close();
+  });
+
+  test('localStorage proxy cache falls back to default deck when proxy is unavailable', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('proxy-cache-stale');
+
+    // Pre-set a stale localStorage entry pointing to a non-existent room
+    const page = await context.newPage();
+    await page.goto('/');
+    await page.evaluate((r) => {
+      localStorage.setItem(`geekslides:proxy:${r}`, JSON.stringify({
+        configUrl: `/api/rooms/nonexistent-room-xyz/content/config.json`,
+      }));
+    }, room);
+
+    // Navigate with the stale cache
+    const logs: string[] = [];
+    page.on('console', (msg) => logs.push(msg.text()));
+    await page.goto(`/?room=${room}`);
+
+    // Should fall back to default deck when proxy returns 404
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 15000 });
+
+    // Verify the fallback log was emitted
+    const fallbackLog = logs.find((l) => l.includes('Cached proxy config unavailable'));
+    expect(fallbackLog).toBeDefined();
+
+    // localStorage should be cleared after failed proxy
+    const clearedCache = await page.evaluate((r) => {
+      return localStorage.getItem(`geekslides:proxy:${r}`);
+    }, room);
+    expect(clearedCache).toBeNull();
+
+    await context.close();
+  });
 });

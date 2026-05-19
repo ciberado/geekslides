@@ -125,7 +125,20 @@ function updateDocumentBase(baseHref) {
   base.href = new URL(baseHref, window.location.origin).href;
 }
 
-let configUrl = normalizeConfigUrl(params.get('config') || '/deck/config.json');
+// On reload, prefer the last-known content proxy URL from localStorage so the
+// user doesn't see a flash of the default filesystem deck before Yjs connects.
+const _room = params.get('room') || 'default';
+const _cachedProxy = (() => {
+  try {
+    const raw = localStorage.getItem(`geekslides:proxy:${_room}`);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return null;
+})();
+
+let configUrl = _cachedProxy?.configUrl
+  ? _cachedProxy.configUrl
+  : normalizeConfigUrl(params.get('config') || '/deck/config.json');
 let configBase = getConfigBase(configUrl);
 
 /**
@@ -378,7 +391,21 @@ async function applyProcessors(slideshow, config) {
 }
 
 try {
-  let config = await fetchConfig();
+  // If we're loading from a cached proxy and it fails, fall back to default deck
+  let config;
+  try {
+    config = await fetchConfig();
+  } catch (proxyErr) {
+    if (_cachedProxy?.configUrl) {
+      console.warn('[init] Cached proxy config unavailable, falling back to default deck:', proxyErr.message);
+      localStorage.removeItem(`geekslides:proxy:${_room}`);
+      configUrl = normalizeConfigUrl(params.get('config') || '/deck/config.json');
+      configBase = getConfigBase(configUrl);
+      config = await fetchConfig();
+    } else {
+      throw proxyErr;
+    }
+  }
   let markdown = await fetchMarkdown(config);
   let combinedCss = await fetchStyles(config);
   await loadScripts(config);
@@ -727,6 +754,10 @@ try {
                 // be ignored (do not skip upload; let the correct proxy be set).
                 if (existingProxy.room === room) {
                   console.log('[initial-upload] Room has existing deck \u2014 skipping. existingProxy:', existingProxyRaw);
+                  // Still cache the proxy URL for instant reload
+                  try {
+                    localStorage.setItem(`geekslides:proxy:${room}`, JSON.stringify({ configUrl: `${existingProxy.baseUrl}config.json` }));
+                  } catch { /* localStorage unavailable */ }
                   return;
                 }
                 console.log(`[initial-upload] Existing proxy is for room=${existingProxy.room}, not ${room} \u2014 proceeding with upload`);
@@ -752,6 +783,10 @@ try {
               sync?.doc.getMap('sessionState').set('contentProxy', proxyJson);
             });
             console.log('[initial-upload] DONE. proxyBase:', proxyBase);
+            // Cache for instant reload
+            try {
+              localStorage.setItem(`geekslides:proxy:${room}`, JSON.stringify({ configUrl: `${proxyBase}config.json` }));
+            } catch { /* localStorage unavailable */ }
           } catch (err) {
             console.warn('[initial-upload] FAILED:', err.message);
           }
@@ -896,6 +931,10 @@ try {
             featureManager.emit('slide:enter', { slideIndex: currentSlideAfterReload, previousIndex: -1 });
 
             console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
+            // Cache for instant reload
+            try {
+              localStorage.setItem(`geekslides:proxy:${_room}`, JSON.stringify({ configUrl: `${proxyBaseUrl}config.json` }));
+            } catch { /* localStorage unavailable */ }
           } catch (err) {
             console.warn('[content-proxy] Failed to load from proxy:', err.message);
           }
@@ -983,6 +1022,10 @@ try {
           sync.doc.getMap('sessionState').set('contentProxy', proxyJson);
         });
         console.log(`[upload:${uploadId}] contentProxy set in Yjs, proxyBase=${proxyBase}`);
+        // Cache the proxy URL so page reload instantly uses it
+        try {
+          localStorage.setItem(`geekslides:proxy:${targetRoom}`, JSON.stringify({ configUrl: `${proxyBase}config.json` }));
+        } catch { /* localStorage unavailable */ }
       } catch (err) {
         console.warn(`[upload:${uploadId}] FAILED for room:`, targetRoom, err.message);
       }
@@ -1059,11 +1102,23 @@ try {
       }
     }
 
+    // Track whether the first proxy check should be skipped (loaded from localStorage cache)
+    let skipNextProxyReloadIfSameUrl = !!_cachedProxy?.configUrl;
+
     async function reloadDeckFromProxy(proxyBaseUrl) {
       const proxyId = Math.random().toString(36).slice(2, 8);
       console.log(`[proxyReload:${proxyId}] START proxyBaseUrl=${proxyBaseUrl} currentTitle=${config?.title}`);
       try {
         const proxyConfigUrl = `${proxyBaseUrl}config.json`;
+
+        // Skip the first redundant reload when we already loaded from localStorage cache
+        if (skipNextProxyReloadIfSameUrl && configUrl === proxyConfigUrl) {
+          skipNextProxyReloadIfSameUrl = false;
+          console.log(`[proxyReload:${proxyId}] SKIPPED (already loaded from this proxy)`);
+          return;
+        }
+        skipNextProxyReloadIfSameUrl = false;
+
         const newConfig = await loadConfig(proxyConfigUrl);
         console.log(`[proxyReload:${proxyId}] config loaded: title=${newConfig.title} content=${newConfig.content}`);
 
@@ -1134,6 +1189,12 @@ try {
         const currentSlideAfterReload = slideshow.currentSlide;
         lastSlide = currentSlideAfterReload;
         featureManager.emit('slide:enter', { slideIndex: currentSlideAfterReload, previousIndex: -1 });
+
+        // Cache the proxy URL so page reload instantly uses it (no Yjs wait).
+        try {
+          const currentRoom = sync?.currentRoom ?? 'default';
+          localStorage.setItem(`geekslides:proxy:${currentRoom}`, JSON.stringify({ configUrl: proxyConfigUrl }));
+        } catch { /* localStorage unavailable */ }
 
         console.log(`[proxyReload:${proxyId}] DONE title=${newConfig.title} slideCount=${slideshow.slideCount} slide=${slide}`);
       } catch (err) {
