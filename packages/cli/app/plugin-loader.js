@@ -41,6 +41,7 @@ const MEMBER_TO_BUNDLE = {
   'media-sync': 'media',
   // whiteboard bundle
   'whiteboard': 'whiteboard',
+  'whiteboard-canvas': 'whiteboard',
   // chart bundle
   'chart': 'chart',
   // mermaid bundle

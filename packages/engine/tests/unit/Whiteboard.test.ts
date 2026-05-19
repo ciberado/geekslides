@@ -877,3 +877,113 @@ describe('Whiteboard toolbar ownership', () => {
     expect(canvas.style.pointerEvents).toBe('none');
   });
 });
+
+describe('Whiteboard canvas-mode', () => {
+  let container: HTMLElement;
+
+  beforeEach(() => {
+    container = document.createElement('div');
+    document.body.appendChild(container);
+    HTMLCanvasElement.prototype.getContext = (() => fakeCtx) as typeof origGetContext;
+  });
+
+  afterEach(() => {
+    container.remove();
+    HTMLCanvasElement.prototype.getContext = origGetContext;
+  });
+
+  function makeCanvasWb(): Whiteboard {
+    const wb = document.createElement('geek-whiteboard') as Whiteboard;
+    wb.setAttribute('canvas-mode', '');
+    wb.setAttribute('data-event-ns', 'whiteboard-canvas');
+    container.appendChild(wb);
+    return wb;
+  }
+
+  it('canvasMode returns true when canvas-mode attribute is set', () => {
+    const wb = makeCanvasWb();
+    expect(wb.canvasMode).toBe(true);
+  });
+
+  it('uses CANVAS_SLIDE_INDEX as fixed slideIndex', () => {
+    const wb = makeCanvasWb();
+    expect(wb.slideIndex).toBe(Whiteboard.CANVAS_SLIDE_INDEX);
+  });
+
+  it('ignores slideIndex setter in canvas mode', () => {
+    const wb = makeCanvasWb();
+    wb.slideIndex = 5;
+    expect(wb.slideIndex).toBe(Whiteboard.CANVAS_SLIDE_INDEX);
+  });
+
+  it('renders a white background div in shadow root', () => {
+    const wb = makeCanvasWb();
+    const bg = wb.shadowRoot!.querySelector('.canvas-bg');
+    expect(bg).not.toBeNull();
+  });
+
+  it('shows background div when canvas is toggled visible', () => {
+    const wb = makeCanvasWb();
+    wb.toggle();
+    const bg = wb.shadowRoot!.querySelector('.canvas-bg') as HTMLElement;
+    expect(bg.style.display).toBe('block');
+  });
+
+  it('hides background div when canvas is toggled hidden', () => {
+    const wb = makeCanvasWb();
+    wb.toggle(); // show
+    wb.toggle(); // hide
+    const bg = wb.shadowRoot!.querySelector('.canvas-bg') as HTMLElement;
+    expect(bg.style.display).toBe('none');
+  });
+
+  it('uses custom event namespace for stroke events', () => {
+    vi.useFakeTimers();
+    const wb = makeCanvasWb();
+    wb.toggle();
+    const spy = vi.fn();
+    wb.addEventListener('geek:whiteboard-canvas:stroke', spy);
+
+    const canvas = wb.shadowRoot!.querySelector<HTMLCanvasElement>('canvas.main')!;
+    canvas.getBoundingClientRect = () => ({ x: 0, y: 0, width: 100, height: 100, top: 0, left: 0, bottom: 100, right: 100, toJSON: () => '' });
+
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: 10, clientY: 10, button: 0, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: 20, clientY: 20, buttons: 1, bubbles: true }));
+    canvas.dispatchEvent(new PointerEvent('pointerup', { bubbles: true }));
+    vi.advanceTimersByTime(Whiteboard.COALESCE_MS + 10);
+
+    expect(spy).toHaveBeenCalledTimes(1);
+    vi.useRealTimers();
+  });
+
+  it('uses custom event namespace for remote-stroke listener', () => {
+    const wb = makeCanvasWb();
+    const stroke: WhiteboardStroke = {
+      id: 'remote-1', slideIndex: Whiteboard.CANVAS_SLIDE_INDEX,
+      points: [[0.1, 0.1], [0.2, 0.2]], color: '#00ff00', width: 3, clientId: 'other',
+    };
+    document.dispatchEvent(new CustomEvent('geek:whiteboard-canvas:remote-stroke', {
+      bubbles: true, detail: stroke,
+    }));
+    // Should not throw and the stroke should be rendered (no error)
+    expect(wb.isVisible).toBe(true); // auto-show on remote stroke
+  });
+
+  it('does not react to default namespace remote-stroke events', () => {
+    const wb = makeCanvasWb();
+    const stroke: WhiteboardStroke = {
+      id: 'remote-2', slideIndex: Whiteboard.CANVAS_SLIDE_INDEX,
+      points: [[0.1, 0.1], [0.2, 0.2]], color: '#00ff00', width: 3, clientId: 'other',
+    };
+    document.dispatchEvent(new CustomEvent('geek:whiteboard:remote-stroke', {
+      bubbles: true, detail: stroke,
+    }));
+    expect(wb.isVisible).toBe(false); // should NOT auto-show
+  });
+
+  it('has higher z-index than regular whiteboard', () => {
+    const wb = makeCanvasWb();
+    const style = wb.shadowRoot!.querySelector('style')!;
+    expect(style.textContent).toContain('z-index: 150');
+  });
+});

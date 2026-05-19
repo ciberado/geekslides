@@ -56,7 +56,7 @@ export const BUILTIN_BUNDLES: Readonly<Record<string, PluginBundleDef>> = {
     dependsOn: [],
     preprocessors: [],
     processors: [],
-    features: ['whiteboard'],
+    features: ['whiteboard', 'whiteboard-canvas'],
   },
 
   /**

@@ -142,7 +142,9 @@ describe('WhiteboardToolbar', () => {
   });
 
   it('toggleVisibility hides when visible, shows when hidden', () => {
-    // Initially visible
+    // Start hidden by default — show first
+    expect(toolbar.isHidden).toBe(true);
+    toolbar.show();
     expect(toolbar.isHidden).toBe(false);
 
     toolbar.toggleVisibility();
@@ -155,6 +157,9 @@ describe('WhiteboardToolbar', () => {
   });
 
   it('toggleVisibility is independent from collapse state', () => {
+    // Show toolbar first (starts hidden)
+    toolbar.show();
+
     // Collapse the toolbar first
     toolbar.toggleCollapse();
     expect(toolbar.collapsed).toBe(true);

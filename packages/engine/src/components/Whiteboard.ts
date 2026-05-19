@@ -19,6 +19,9 @@ interface SlideSnapshot {
 }
 
 export class Whiteboard extends HTMLElement {
+  /** Sentinel slideIndex used for blank canvas mode (global, not per-slide). */
+  static readonly CANVAS_SLIDE_INDEX = -1;
+
   #canvas: HTMLCanvasElement | null = null;
   #ctx: CanvasRenderingContext2D | null = null;
   #tempCanvas: HTMLCanvasElement | null = null;
@@ -64,7 +67,24 @@ export class Whiteboard extends HTMLElement {
     this.attachShadow({ mode: 'open' });
   }
 
+  /** Whether this whiteboard is in blank canvas mode (white background, global strokes). */
+  get canvasMode(): boolean {
+    return this.hasAttribute('canvas-mode');
+  }
+
+  /**
+   * Event namespace prefix for custom events.
+   * Defaults to 'whiteboard'. Set via `data-event-ns` attribute.
+   * Events are emitted as `geek:<ns>:stroke`, `geek:<ns>:hide`, etc.
+   */
+  get eventNamespace(): string {
+    return this.getAttribute('data-event-ns') ?? 'whiteboard';
+  }
+
   connectedCallback(): void {
+    if (this.canvasMode) {
+      this.#slideIndex = Whiteboard.CANVAS_SLIDE_INDEX;
+    }
     this.#render();
     this.#setupListeners();
     this.#listenForRemoteStrokes();
@@ -88,6 +108,8 @@ export class Whiteboard extends HTMLElement {
 
   set slideIndex(value: number) {
     if (value === this.#slideIndex) return;
+    // In canvas mode, slideIndex is fixed — ignore external changes.
+    if (this.canvasMode) return;
 
     // Hide canvas immediately during slide transition
     if (this.#canvas && this.#visible) {
@@ -456,6 +478,8 @@ export class Whiteboard extends HTMLElement {
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
+    const isCanvas = this.canvasMode;
+
     const style = document.createElement('style');
     style.textContent = `
       :host {
@@ -465,7 +489,16 @@ export class Whiteboard extends HTMLElement {
         width: 100%;
         height: 100%;
         pointer-events: none;
-        z-index: 100;
+        z-index: ${isCanvas ? '150' : '100'};
+      }
+      .canvas-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: #ffffff;
+        display: none;
       }
       canvas {
         position: absolute;
@@ -497,7 +530,13 @@ export class Whiteboard extends HTMLElement {
     this.#tempCanvas.height = 1080;
     this.#tempCtx = this.#tempCanvas.getContext('2d');
 
-    shadow.replaceChildren(style, this.#canvas, this.#tempCanvas);
+    if (isCanvas) {
+      const bg = document.createElement('div');
+      bg.className = 'canvas-bg';
+      shadow.replaceChildren(style, bg, this.#canvas, this.#tempCanvas);
+    } else {
+      shadow.replaceChildren(style, this.#canvas, this.#tempCanvas);
+    }
 
     // Create toolbar for presenter (non-readonly) mode.
     if (!this.hasAttribute('readonly')) {
@@ -526,7 +565,7 @@ export class Whiteboard extends HTMLElement {
     // Re-emit as composed events so the feature layer can intercept for sync.
     toolbar.addEventListener('geek:whiteboard:hide-request', () => {
       this.toggleCanvas();
-      this.dispatchEvent(new CustomEvent('geek:whiteboard:hide', {
+      this.dispatchEvent(new CustomEvent(`geek:${this.eventNamespace}:hide`, {
         bubbles: true, composed: true,
         detail: { visible: this.#visible },
       }));
@@ -534,7 +573,7 @@ export class Whiteboard extends HTMLElement {
 
     toolbar.addEventListener('geek:whiteboard:clear-request', () => {
       this.clear();
-      this.dispatchEvent(new CustomEvent('geek:whiteboard:clear', {
+      this.dispatchEvent(new CustomEvent(`geek:${this.eventNamespace}:clear`, {
         bubbles: true, composed: true,
         detail: { slideIndex: this.#slideIndex },
       }));
@@ -576,6 +615,7 @@ export class Whiteboard extends HTMLElement {
   }
 
   #listenForRemoteStrokes(): void {
+    const ns = this.eventNamespace;
     this.#onRemoteStroke = (e: Event) => {
       const stroke = (e as CustomEvent<WhiteboardStroke>).detail;
       this.drawRemoteStroke(stroke);
@@ -584,37 +624,38 @@ export class Whiteboard extends HTMLElement {
       const stroke = (e as CustomEvent<WhiteboardStroke>).detail;
       this.drawLiveStroke(stroke);
     };
-    document.addEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
-    document.addEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
+    document.addEventListener(`geek:${ns}:remote-stroke`, this.#onRemoteStroke);
+    document.addEventListener(`geek:${ns}:remote-stroke-progress`, this.#onRemoteProgress);
 
     this.#onRemoteClear = (e: Event) => {
       const { slideIndex, remaining } = (e as CustomEvent<{ slideIndex: number; remaining: WhiteboardStroke[] }>).detail;
       this.#handleRemoteClear(slideIndex, remaining);
     };
-    document.addEventListener('geek:whiteboard:remote-clear', this.#onRemoteClear);
+    document.addEventListener(`geek:${ns}:remote-clear`, this.#onRemoteClear);
 
     this.#onRemoteVisibility = (e: Event) => {
       const { visible } = (e as CustomEvent<{ visible: boolean }>).detail;
       this.#setActiveInternal(visible);
     };
-    document.addEventListener('geek:whiteboard:remote-visibility', this.#onRemoteVisibility);
+    document.addEventListener(`geek:${ns}:remote-visibility`, this.#onRemoteVisibility);
   }
 
   #stopListeningForRemoteStrokes(): void {
+    const ns = this.eventNamespace;
     if (this.#onRemoteStroke) {
-      document.removeEventListener('geek:whiteboard:remote-stroke', this.#onRemoteStroke);
+      document.removeEventListener(`geek:${ns}:remote-stroke`, this.#onRemoteStroke);
       this.#onRemoteStroke = null;
     }
     if (this.#onRemoteProgress) {
-      document.removeEventListener('geek:whiteboard:remote-stroke-progress', this.#onRemoteProgress);
+      document.removeEventListener(`geek:${ns}:remote-stroke-progress`, this.#onRemoteProgress);
       this.#onRemoteProgress = null;
     }
     if (this.#onRemoteClear) {
-      document.removeEventListener('geek:whiteboard:remote-clear', this.#onRemoteClear);
+      document.removeEventListener(`geek:${ns}:remote-clear`, this.#onRemoteClear);
       this.#onRemoteClear = null;
     }
     if (this.#onRemoteVisibility) {
-      document.removeEventListener('geek:whiteboard:remote-visibility', this.#onRemoteVisibility);
+      document.removeEventListener(`geek:${ns}:remote-visibility`, this.#onRemoteVisibility);
       this.#onRemoteVisibility = null;
     }
   }
@@ -651,6 +692,11 @@ export class Whiteboard extends HTMLElement {
   #showCanvas(): void {
     if (!this.#canvas) return;
     this.#cancelFade();
+    // Show white background in canvas mode
+    if (this.canvasMode) {
+      const bg = this.shadowRoot?.querySelector('.canvas-bg') as HTMLElement | null;
+      if (bg) bg.style.display = 'block';
+    }
     // Make visible, start transparent, animate to opaque
     this.#canvas.style.display = 'block';
     if (this.#tempCanvas) this.#tempCanvas.style.display = 'block';
@@ -682,6 +728,11 @@ export class Whiteboard extends HTMLElement {
   #hideCanvas(): void {
     if (!this.#canvas) return;
     this.#cancelFade();
+    // Hide white background in canvas mode
+    if (this.canvasMode) {
+      const bg = this.shadowRoot?.querySelector('.canvas-bg') as HTMLElement | null;
+      if (bg) bg.style.display = 'none';
+    }
     this.#canvas.style.display = 'none';
     this.#canvas.style.opacity = '';
     this.#canvas.style.transition = '';
@@ -755,7 +806,7 @@ export class Whiteboard extends HTMLElement {
 
   #emitProgress(): void {
     if (this.#currentPoints.length < 2) return;
-    this.dispatchEvent(new CustomEvent('geek:whiteboard:stroke-progress', {
+    this.dispatchEvent(new CustomEvent(`geek:${this.eventNamespace}:stroke-progress`, {
       bubbles: true,
       composed: true,
       detail: {
@@ -865,7 +916,7 @@ export class Whiteboard extends HTMLElement {
       }
       snapshot.strokes.push(stroke);
 
-      this.dispatchEvent(new CustomEvent('geek:whiteboard:stroke', {
+      this.dispatchEvent(new CustomEvent(`geek:${this.eventNamespace}:stroke`, {
         bubbles: true,
         composed: true,
         detail: stroke,

@@ -27,6 +27,24 @@ export class CommandSystem {
   }
 
   /**
+   * Unregister a command by name.
+   */
+  unregister(name: string): void {
+    this.#commands.delete(name);
+  }
+
+  /**
+   * Unregister all commands belonging to a specific category.
+   */
+  unregisterByCategory(category: string): void {
+    for (const [name, cmd] of this.#commands) {
+      if (cmd.category === category) {
+        this.#commands.delete(name);
+      }
+    }
+  }
+
+  /**
    * Execute a command by name.
    */
   execute(name: string, args?: string[]): void {

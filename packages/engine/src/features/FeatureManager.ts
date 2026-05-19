@@ -27,6 +27,7 @@ interface ActiveFeature {
   readonly context: FeatureContext;
   readonly container: HTMLElement;
   readonly cleanup: (() => void) | null;
+  readonly registeredCommands: string[];
 }
 
 type EventHandler<K extends keyof FeatureLifecycleEvents> =
@@ -76,7 +77,8 @@ export class FeatureManager {
     container.setAttribute('data-feature', feature.id);
     this.#featuresContainer.appendChild(container);
 
-    const context = this.#createContext(feature.id, container);
+    const registeredCommands: string[] = [];
+    const context = this.#createContext(feature.id, container, registeredCommands);
     let cleanup: (() => void) | null = null;
 
     try {
@@ -84,11 +86,15 @@ export class FeatureManager {
       cleanup = typeof result === 'function' ? result : null;
     } catch (err: unknown) {
       log.error({ featureId: feature.id, err }, 'feature activation failed');
+      // Undo any commands registered before the error
+      for (const name of registeredCommands) {
+        this.#commands.unregister(name);
+      }
       container.remove();
       return;
     }
 
-    this.#active.set(feature.id, { feature, context, container, cleanup });
+    this.#active.set(feature.id, { feature, context, container, cleanup, registeredCommands });
     log.info({ featureId: feature.id }, 'feature activated');
   }
 
@@ -109,6 +115,11 @@ export class FeatureManager {
       entry.cleanup?.();
     } catch (err: unknown) {
       log.warn({ featureId, err }, 'feature cleanup threw');
+    }
+
+    // Unregister all commands this feature registered
+    for (const name of entry.registeredCommands) {
+      this.#commands.unregister(name);
     }
 
     entry.container.remove();
@@ -153,7 +164,7 @@ export class FeatureManager {
     return [...this.#active.keys()];
   }
 
-  #createContext(featureId: string, container: HTMLElement): FeatureContext {
+  #createContext(featureId: string, container: HTMLElement, registeredCommands: string[]): FeatureContext {
     const slideshow = this.#slideshow;
     const commands = this.#commands;
     const sync = this.#sync;
@@ -220,7 +231,10 @@ export class FeatureManager {
         prev: () => { slideshow.prev(); },
       },
       commands: {
-        register: (command) => { commands.register(command); },
+        register: (command) => {
+          commands.register(command);
+          registeredCommands.push(command.name);
+        },
       },
       sync: syncAPI,
       container,

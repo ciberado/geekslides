@@ -1083,6 +1083,29 @@ try {
         // correct images when uploading the new deck.
         markdown = newMarkdown;
 
+        // Reload features from new config (deck may have different plugins)
+        featureManager.deactivateAll();
+        for (const featureName of newConfig.features || []) {
+          try {
+            let feature;
+            if (isRemotePluginUrl(featureName) || isLocalPluginPath(featureName)) {
+              const { loadFeature } = await import('@geekslides/engine');
+              feature = await loadFeature(featureName, resolveUrl);
+            } else {
+              feature = await resolveFeature(featureName, resolveUrl);
+              if (!feature) {
+                console.warn(`[reloadDeck:${reloadId}] Unknown feature: '${featureName}'`);
+                continue;
+              }
+            }
+            featureManager.register(feature);
+          } catch (err) {
+            console.warn(`[reloadDeck:${reloadId}] Failed to load feature '${featureName}':`, err.message);
+          }
+        }
+        featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
+        featureManager.emit('slide:enter', { slideIndex: 0, previousIndex: -1 });
+
         if (sync && sync.isConnected) {
           // Notify plugins (e.g. whiteboard) to clear state from the previous deck
           document.dispatchEvent(new CustomEvent('geek:presentation:reload'));
@@ -1233,7 +1256,7 @@ try {
           localStorage.setItem(`geekslides:proxy:${currentRoom}`, JSON.stringify({ configUrl: proxyConfigUrl }));
         } catch { /* localStorage unavailable */ }
 
-        console.log(`[proxyReload:${proxyId}] DONE title=${newConfig.title} slideCount=${slideshow.slideCount} slide=${slide}`);
+        console.log(`[proxyReload:${proxyId}] DONE title=${newConfig.title} slideCount=${slideshow.slideCount} slide=${slideshow.currentSlide}`);
       } catch (err) {
         console.warn(`[proxyReload:${proxyId}] FAILED:`, err.message);
       }

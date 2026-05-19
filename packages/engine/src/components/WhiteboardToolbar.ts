@@ -31,7 +31,7 @@ export const PALETTE_COLORS: readonly string[] = [
 
 export class WhiteboardToolbar extends HTMLElement {
   #collapsed = false;
-  #hidden = false;
+  #hidden = true;
   #tool: WhiteboardTool = 'pen';
   #color = '#ff0000';
   #confirmPending = false;
@@ -46,6 +46,10 @@ export class WhiteboardToolbar extends HTMLElement {
 
   connectedCallback(): void {
     this.#render();
+    // Start hidden — toolbar is shown explicitly via show() or wb-show command
+    if (this.#hidden) {
+      this.style.display = 'none';
+    }
   }
 
   get tool(): WhiteboardTool {
