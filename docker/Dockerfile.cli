@@ -14,6 +14,7 @@ COPY tsconfig.json vite.config.ts index.html ./
 COPY packages/engine/ packages/engine/
 COPY packages/cli/ packages/cli/
 COPY packages/server/ packages/server/
+COPY plugins/ plugins/
 
 # Engine exports raw TS source (resolved by esbuild/Vite at build time).
 # Build server (esbuild → CJS), then CLI binary (esbuild → CJS) and app shell (Vite).
@@ -43,6 +44,9 @@ COPY --from=builder /build/packages/engine ./packages/engine
 COPY --from=builder /build/packages/server/package.json ./packages/server/package.json
 COPY --from=builder /build/packages/server/dist ./packages/server/dist
 COPY --from=builder /build/packages/server/src ./packages/server/src
+
+# Plugins (Vite resolves plugin TS source at dev/build time)
+COPY --from=builder /build/plugins ./plugins
 
 # Workspace root (needed for module resolution)
 COPY --from=builder /build/package.json ./package.json
@@ -114,6 +118,9 @@ COPY --from=builder /build/packages/engine ./packages/engine
 COPY --from=builder /build/packages/server/package.json ./packages/server/package.json
 COPY --from=builder /build/packages/server/dist ./packages/server/dist
 COPY --from=builder /build/packages/server/src ./packages/server/src
+
+# Plugins
+COPY --from=builder /build/plugins ./plugins
 
 # Workspace root
 COPY --from=builder /build/package.json ./package.json

@@ -13,6 +13,7 @@ RUN npm ci --ignore-scripts
 COPY tsconfig.json vite.config.ts ./
 COPY packages/engine/ packages/engine/
 COPY packages/cli/ packages/cli/
+COPY plugins/ plugins/
 COPY index.html ./
 
 RUN npm run build:app --workspace=@geekslides/cli
