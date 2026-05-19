@@ -4,7 +4,7 @@ function uniqueRoom(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-const DECK_URL = 'decks/slides-cuatro-cosas-aws/config.json';
+const DECK_URL = 'e2e/fixtures/sync-deck/config.json';
 
 test.describe('Read-only viewer mode', () => {
   test('readonly viewer sees slides but has no terminal or keyboard nav', async ({ page }) => {

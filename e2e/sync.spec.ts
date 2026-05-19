@@ -11,8 +11,8 @@ test.describe('Sync between tabs', () => {
     const page2 = await context.newPage();
     const room = uniqueRoom('test-sync-room');
 
-    // Both open with slides-cuatro-cosas-aws deck in the same room
-    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
+    // Both open with the sync-deck fixture in the same room
+    const deckUrl = `/?config=e2e/fixtures/sync-deck/config.json&room=${room}`;
     await page1.goto(deckUrl);
     await page2.goto(deckUrl);
 
@@ -60,8 +60,8 @@ test.describe('Sync between tabs', () => {
     await context.close();
   });
 
-  test('slides-cuatro-cosas-aws deck renders with images and text', async ({ page }) => {
-    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${uniqueRoom('deck-render')}`;
+  test('sync-deck renders with images and text', async ({ page }) => {
+    const deckUrl = `/?config=e2e/fixtures/sync-deck/config.json&room=${uniqueRoom('deck-render')}`;
     await page.goto(deckUrl);
 
     // Wait for slideshow to load
@@ -100,7 +100,7 @@ test.describe('Sync between tabs', () => {
     const room1 = uniqueRoom('room-1');
     const room2 = uniqueRoom('room-2');
 
-    const deckUrl = '/?config=decks/slides-cuatro-cosas-aws/config.json';
+    const deckUrl = '/?config=e2e/fixtures/sync-deck/config.json';
 
     // Open same deck but in different rooms
     await room1Page.goto(`${deckUrl}&room=${room1}`);
@@ -154,7 +154,7 @@ test.describe('Sync between tabs', () => {
     const speakerPage = await context.newPage();
     const room = uniqueRoom('speaker-test');
 
-    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
+    const deckUrl = `/?config=e2e/fixtures/sync-deck/config.json&room=${room}`;
 
     await presenterPage.goto(deckUrl);
     await speakerPage.goto(`${deckUrl}&view=speaker`);
@@ -205,7 +205,7 @@ test.describe('Sync between tabs', () => {
     const context = await browser.newContext();
     const presenterPage = await context.newPage();
     const room = uniqueRoom('speaker-command');
-    const deckUrl = `/?config=decks/slides-cuatro-cosas-aws/config.json&room=${room}`;
+    const deckUrl = `/?config=e2e/fixtures/sync-deck/config.json&room=${room}`;
 
     await presenterPage.goto(deckUrl);
     await presenterPage.waitForFunction(() => {
