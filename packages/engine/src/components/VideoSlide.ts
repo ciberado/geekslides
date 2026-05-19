@@ -14,6 +14,7 @@ export class VideoSlide extends HTMLElement {
   #timestamps: number[] = [];
   #observer: MutationObserver | null = null;
   #pendingState: MediaState | null = null;
+  #constrainRaf: number | null = null;
   #onAutoplayUnblocked: () => void;
 
   static get observedAttributes(): string[] {
@@ -42,6 +43,7 @@ export class VideoSlide extends HTMLElement {
     this.#parseTimestamps();
     this.#observeSlide();
     this.#wireEvents();
+    this.#constrainToFreeSpace();
     document.addEventListener('geek:autoplay:unblocked', this.#onAutoplayUnblocked);
   }
 
@@ -161,36 +163,101 @@ export class VideoSlide extends HTMLElement {
     }
   }
 
+  /** Compute available vertical space in the slide and constrain video height. */
+  #constrainToFreeSpace(): void {
+    // Cancel any pending rAF from a prior connect
+    if (this.#constrainRaf !== null) {
+      cancelAnimationFrame(this.#constrainRaf);
+      this.#constrainRaf = null;
+    }
+    if (this.hasAttribute('cover')) {
+      const video = this.shadowRoot?.querySelector('video');
+      if (video) video.style.maxHeight = '';
+      return;
+    }
+    this.#constrainRaf = requestAnimationFrame(() => {
+      this.#constrainRaf = null;
+      if (this.hasAttribute('cover')) return;
+      const section = this.closest('section.content') ??
+        (this.getRootNode() as ShadowRoot).host?.querySelector?.('section.content');
+      if (!(section instanceof HTMLElement)) return;
+
+      const style = getComputedStyle(section);
+      const paddingTop = parseFloat(style.paddingTop) || 0;
+      const paddingBottom = parseFloat(style.paddingBottom) || 0;
+      const contentHeight = section.clientHeight - paddingTop - paddingBottom;
+
+      let siblingsHeight = 0;
+      const parent = this.parentElement;
+      for (const child of section.children) {
+        if (child === parent || child.contains(this)) continue;
+        siblingsHeight += (child as HTMLElement).offsetHeight ?? 0;
+      }
+      const available = Math.max(200, contentHeight - siblingsHeight - 60);
+      const video = this.shadowRoot?.querySelector('video');
+      if (video) {
+        video.style.maxHeight = `${String(available)}px`;
+      }
+    });
+  }
+
   #render(): void {
     const shadow = this.shadowRoot;
     if (!shadow) return;
 
     const style = document.createElement('style');
     style.textContent = `
-      :host { display: block; width: 100%; }
-      video { width: 100%; height: auto; max-height: 60vh; display: block; }
-      :host([cover]) {
+      :host { display: block; width: 100%; position: relative; }
+      .gs-video-container { position: relative; width: 100%; }
+      video { width: 100%; height: auto; display: block; }
+
+      .gs-play-btn {
         position: absolute;
         inset: 0;
-        width: 100%;
-        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background: transparent;
+        transition: opacity 0.3s;
+        z-index: 1;
+        pointer-events: none;
       }
-      :host([cover]) video {
-        height: 100%;
-        max-height: none;
-        object-fit: cover;
+      .gs-play-btn svg {
+        width: 64px;
+        height: 64px;
+        filter: drop-shadow(0 2px 8px rgba(0,0,0,0.5));
+        opacity: 0.85;
+        transition: opacity 0.2s, transform 0.2s;
       }
+      .gs-play-btn:hover svg {
+        opacity: 1;
+        transform: scale(1.1);
+      }
+      .gs-play-btn.hidden { opacity: 0; pointer-events: none; }
+      .gs-play-btn:not(.hidden) { pointer-events: auto; }
+
+      :host([cover]) { position: absolute; inset: 0; width: 100%; height: 100%; }
+      :host([cover]) .gs-video-container { height: 100%; }
+      :host([cover]) video { height: 100%; max-height: none; object-fit: cover; }
     `;
+
+    const playBtn = document.createElement('div');
+    playBtn.className = 'gs-play-btn';
+    playBtn.innerHTML = `<svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="rgba(0,0,0,0.45)"/><polygon points="26,20 26,44 46,32" fill="white"/></svg>`;
 
     // Check if video is already in shadow (re-connection after DOM move)
     const existingVideo = shadow.querySelector('video');
     if (existingVideo) {
-      // Just update the style element
       const existingStyle = shadow.querySelector('style');
       if (existingStyle) {
         existingStyle.textContent = style.textContent;
       } else {
         shadow.prepend(style);
+      }
+      if (!shadow.querySelector('.gs-play-btn')) {
+        existingVideo.parentElement?.appendChild(playBtn);
+        this.#wirePlayButton(playBtn, existingVideo);
       }
       return;
     }
@@ -198,9 +265,42 @@ export class VideoSlide extends HTMLElement {
     // Move the <video> from light DOM into shadow
     const video = this.querySelector('video');
     if (video) {
-      shadow.replaceChildren(style, video);
+      video.removeAttribute('controls');
+      const container = document.createElement('div');
+      container.className = 'gs-video-container';
+      container.append(video, playBtn);
+      shadow.replaceChildren(style, container);
+      this.#wirePlayButton(playBtn, video);
     } else {
       shadow.replaceChildren(style);
+    }
+  }
+
+  #wirePlayButton(btn: HTMLElement, video: HTMLVideoElement): void {
+    const container = video.parentElement;
+    btn.addEventListener('click', () => {
+      void video.play();
+    });
+    video.addEventListener('play', () => {
+      btn.classList.add('hidden');
+      video.controls = true;
+    });
+    video.addEventListener('pause', () => {
+      btn.classList.remove('hidden');
+      video.controls = false;
+    });
+    video.addEventListener('ended', () => {
+      btn.classList.remove('hidden');
+      video.controls = false;
+    });
+    // Show controls on hover even while paused
+    if (container) {
+      container.addEventListener('mouseenter', () => {
+        if (!video.paused) video.controls = true;
+      });
+      container.addEventListener('mouseleave', () => {
+        if (!video.paused) video.controls = false;
+      });
     }
   }
 }

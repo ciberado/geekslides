@@ -346,12 +346,43 @@ export class AudioSlide extends HTMLElement {
       .gs-audio-wrapper {
         display: flex;
         flex-direction: column;
-        gap: 8px;
         align-items: stretch;
         width: 100%;
+        position: relative;
       }
 
-      audio { width: 100%; display: block; }
+      .gs-audio-vis {
+        position: relative;
+        width: 100%;
+        cursor: pointer;
+      }
+
+      audio { width: 100%; display: block; height: 0; overflow: hidden; transition: height 0.3s, opacity 0.3s; opacity: 0; }
+      .gs-audio-vis:hover audio { height: 54px; opacity: 1; }
+      .gs-audio-wrapper.playing audio { height: 54px; opacity: 1; }
+
+      .gs-audio-play-btn {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 2;
+        transition: opacity 0.3s;
+      }
+      .gs-audio-play-btn svg {
+        width: 48px;
+        height: 48px;
+        filter: drop-shadow(0 2px 6px rgba(0,0,0,0.4));
+        opacity: 0.85;
+        transition: opacity 0.2s, transform 0.2s;
+      }
+      .gs-audio-play-btn:hover svg { opacity: 1; transform: scale(1.1); }
+      .gs-audio-play-btn.hidden { opacity: 0; pointer-events: none; }
 
       canvas {
         width: 100%;
@@ -405,11 +436,37 @@ export class AudioSlide extends HTMLElement {
     const wrapper = document.createElement('div');
     wrapper.className = 'gs-audio-wrapper';
     wrapper.innerHTML = `
-      <canvas width="640" height="80"></canvas>
-      ${barsHtml}
-      <audio controls src="${src.replace(/"/g, '&quot;')}"${titleAttr}></audio>
+      <div class="gs-audio-vis">
+        <div class="gs-audio-play-btn"><svg viewBox="0 0 64 64" fill="none"><circle cx="32" cy="32" r="30" fill="rgba(0,0,0,0.45)"/><polygon points="26,20 26,44 46,32" fill="white"/></svg></div>
+        <canvas width="640" height="80"></canvas>
+        ${barsHtml}
+        <audio controls src="${src.replace(/"/g, '&quot;')}"${titleAttr}></audio>
+      </div>
     `;
 
     shadow.replaceChildren(style, wrapper);
+
+    // Wire play button
+    const playBtn = wrapper.querySelector('.gs-audio-play-btn') as HTMLElement;
+    const audio = wrapper.querySelector('audio') as HTMLAudioElement;
+    playBtn.addEventListener('click', () => {
+      if (audio.paused) {
+        void audio.play();
+      } else {
+        audio.pause();
+      }
+    });
+    audio.addEventListener('play', () => {
+      playBtn.classList.add('hidden');
+      wrapper.classList.add('playing');
+    });
+    audio.addEventListener('pause', () => {
+      playBtn.classList.remove('hidden');
+      wrapper.classList.remove('playing');
+    });
+    audio.addEventListener('ended', () => {
+      playBtn.classList.remove('hidden');
+      wrapper.classList.remove('playing');
+    });
   }
 }

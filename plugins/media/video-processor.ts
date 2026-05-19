@@ -29,6 +29,7 @@ export const videoProcessor: Processor = (slideElement: HTMLElement): void => {
     // resolves against the slide section rather than a zero-height paragraph.
     if (isCover) {
       geekVideo.setAttribute('cover', '');
+      geekVideo.style.zIndex = '0';
       const parent = geekVideo.parentElement;
       if (parent && parent.tagName === 'P' && parent.children.length === 1 && parent.textContent?.trim() === '') {
         parent.replaceWith(geekVideo);
