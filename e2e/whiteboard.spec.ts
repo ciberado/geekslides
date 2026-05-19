@@ -1470,4 +1470,115 @@ test.describe('Whiteboard + Overview interaction', () => {
     });
     expect(toolbarHiddenAgain).toBe(true);
   });
+
+  test('whiteboard strokes persist after page reload', async ({ browser }) => {
+    const context = await browser.newContext();
+    const room = uniqueRoom('wb-persist');
+    const page = await context.newPage();
+
+    await page.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${room}`);
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Wait for whiteboard feature and Yjs sync
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow');
+      return !!ss?.shadowRoot?.querySelector('geek-whiteboard');
+    }, undefined, { timeout: 10000 });
+    await page.waitForTimeout(2000); // Wait for Yjs sync + upload
+
+    // Draw a stroke via the whiteboard command + drag
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.keyboard.type('whiteboard');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    // Draw a line
+    const box = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const container = ss?.shadowRoot?.querySelector('.gs-container');
+      const rect = container?.getBoundingClientRect();
+      return rect ? { x: rect.x, y: rect.y, w: rect.width, h: rect.height } : null;
+    });
+    expect(box).not.toBeNull();
+
+    await page.mouse.move(box!.x + box!.w * 0.3, box!.y + box!.h * 0.5);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.w * 0.7, box!.y + box!.h * 0.5, { steps: 10 });
+    await page.mouse.up();
+    await page.waitForTimeout(500);
+
+    // Verify stroke was stored in Yjs
+    const strokeCountBeforeReload = await page.evaluate(() => {
+      const sync = (window as any).__geekslides_sync;
+      if (!sync) return 0;
+      const features = sync.doc.getMap('features');
+      const wbMap = features.get('whiteboard');
+      if (!wbMap) return 0;
+      const items = wbMap.get('items');
+      return items ? items.length : 0;
+    });
+    expect(strokeCountBeforeReload).toBeGreaterThan(0);
+
+    // Open a peer page in the same room to keep the Yjs doc alive on the server
+    // (y-websocket drops docs when the last client disconnects)
+    const peerPage = await context.newPage();
+    await peerPage.goto(`/?config=e2e/fixtures/layouts-deck/config.json&room=${room}`);
+    await peerPage.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+    // Wait for peer to sync the Yjs state from server
+    await peerPage.waitForFunction(() => {
+      const sync = (window as any).__geekslides_sync;
+      if (!sync) return false;
+      const features = sync.doc.getMap('features');
+      const wbMap = features.get('whiteboard');
+      if (!wbMap) return false;
+      const items = wbMap.get('items');
+      return items && items.length > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Reload the main page (peer keeps room alive)
+    await page.reload();
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow') as any;
+      return ss?.slideCount > 0;
+    }, undefined, { timeout: 10000 });
+
+    // Wait for Yjs to sync strokes back from server (poll until they appear)
+    await page.waitForFunction((expected: number) => {
+      const sync = (window as any).__geekslides_sync;
+      if (!sync) return false;
+      const features = sync.doc.getMap('features');
+      const wbMap = features.get('whiteboard');
+      if (!wbMap) return false;
+      const items = wbMap.get('items');
+      return items && items.length >= expected;
+    }, strokeCountBeforeReload, { timeout: 15000 });
+
+    // Verify whiteboard canvas has content (strokes were drawn after Yjs sync)
+    await page.waitForFunction(() => {
+      const ss = document.getElementById('slideshow');
+      const wb = ss?.shadowRoot?.querySelector('geek-whiteboard') as any;
+      if (!wb?.shadowRoot) return false;
+      const canvas = wb.shadowRoot.querySelector('canvas');
+      if (!canvas) return false;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return false;
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) {
+        if (data[i] > 0) return true;
+      }
+      return false;
+    }, undefined, { timeout: 10000 });
+
+    await peerPage.close();
+    await context.close();
+  });
 });

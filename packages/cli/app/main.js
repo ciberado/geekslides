@@ -1102,8 +1102,8 @@ try {
       }
     }
 
-    // Track whether the first proxy check should be skipped (loaded from localStorage cache)
-    let skipNextProxyReloadIfSameUrl = !!_cachedProxy?.configUrl;
+    // Track whether the first proxy check loaded from localStorage cache
+    let firstProxyReloadFromCache = !!_cachedProxy?.configUrl;
 
     async function reloadDeckFromProxy(proxyBaseUrl) {
       const proxyId = Math.random().toString(36).slice(2, 8);
@@ -1111,13 +1111,35 @@ try {
       try {
         const proxyConfigUrl = `${proxyBaseUrl}config.json`;
 
-        // Skip the first redundant reload when we already loaded from localStorage cache
-        if (skipNextProxyReloadIfSameUrl && configUrl === proxyConfigUrl) {
-          skipNextProxyReloadIfSameUrl = false;
-          console.log(`[proxyReload:${proxyId}] SKIPPED (already loaded from this proxy)`);
+        // When the page was loaded from localStorage cache and the same proxy is
+        // confirmed via Yjs, skip the full deck reload (slides, markdown, CSS) but
+        // still re-activate features so Yjs-synced data (e.g. strokes) is replayed.
+        if (firstProxyReloadFromCache && configUrl === proxyConfigUrl) {
+          firstProxyReloadFromCache = false;
+          console.log(`[proxyReload:${proxyId}] FAST PATH (same proxy, re-activating features only)`);
+
+          // Re-activate features now that Yjs has synced
+          featureManager.deactivateAll();
+          for (const featureName of config.features || []) {
+            try {
+              let feature;
+              if (isRemotePluginUrl(featureName) || isLocalPluginPath(featureName)) {
+                const { loadFeature } = await import('@geekslides/engine');
+                feature = await loadFeature(featureName, resolveUrl);
+              } else {
+                feature = await resolveFeature(featureName, resolveUrl);
+                if (!feature) continue;
+              }
+              featureManager.register(feature);
+            } catch (err) {
+              console.warn(`[proxyReload:${proxyId}] Failed to load feature '${featureName}':`, err.message);
+            }
+          }
+          featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
+          featureManager.emit('slide:enter', { slideIndex: slideshow.currentSlide, previousIndex: -1 });
           return;
         }
-        skipNextProxyReloadIfSameUrl = false;
+        firstProxyReloadFromCache = false;
 
         const newConfig = await loadConfig(proxyConfigUrl);
         console.log(`[proxyReload:${proxyId}] config loaded: title=${newConfig.title} content=${newConfig.content}`);
