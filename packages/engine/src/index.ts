@@ -61,6 +61,10 @@ export type { Command } from './input/CommandSystem.ts';
 export { KeyBindings } from './input/KeyBindings.ts';
 export { TouchInput } from './input/TouchInput.ts';
 export type { TouchInputOptions } from './input/TouchInput.ts';
+export { UserKeyBindings, normalizeKeyDescriptor, formatKeyForDisplay } from './input/UserKeyBindings.ts';
+export type { KeyBindingEntry, KeyBindingsConfig } from './input/UserKeyBindings.ts';
+export { KeybindingNotification } from './input/KeybindingNotification.ts';
+export { ShortcutsPanel } from './input/ShortcutsPanel.ts';
 import { Terminal as TerminalImpl } from './components/Terminal.ts';
 export { Terminal } from './components/Terminal.ts';
 

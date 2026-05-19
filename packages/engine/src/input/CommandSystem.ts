@@ -14,6 +14,10 @@ export interface Command {
   readonly label: string;
   readonly execute: (args?: string[]) => void;
   readonly category?: string;
+  /** When true, this command requires arguments and cannot be bound to a key. */
+  readonly hasArgs?: boolean;
+  /** When false, this command is excluded from the keybinding panel (e.g. output-only commands). Defaults to true. */
+  readonly bindable?: boolean;
 }
 
 export class CommandSystem {
@@ -72,5 +76,19 @@ export class CommandSystem {
    */
   all(): Command[] {
     return [...this.#commands.values()];
+  }
+
+  /**
+   * Return all commands that can be bound to keys (no required arguments, bindable not false).
+   */
+  bindable(): Command[] {
+    return this.all().filter((cmd) => !cmd.hasArgs && cmd.bindable !== false);
+  }
+
+  /**
+   * Check whether a command with the given name is currently registered.
+   */
+  has(name: string): boolean {
+    return this.#commands.has(name);
   }
 }

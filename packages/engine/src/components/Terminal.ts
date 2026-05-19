@@ -36,6 +36,7 @@ export class Terminal extends HTMLElement {
       name: 'help',
       label: 'Show available commands',
       category: 'terminal',
+      bindable: false,
       execute: () => { this.#showHelp(); },
     });
   }

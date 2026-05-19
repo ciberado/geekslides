@@ -4,9 +4,13 @@
  * Two-mode state machine: normal / terminal.
  * Navigation keys (arrows, space, etc.) are direct — no prefix needed.
  * Pressing `Escape` toggles the terminal command prompt for all other actions.
+ * User-configured bindings are checked after direct bindings and support cycling.
  */
 
 import type { CommandSystem } from './CommandSystem.ts';
+import type { UserKeyBindings } from './UserKeyBindings.ts';
+import type { KeybindingNotification } from './KeybindingNotification.ts';
+import { normalizeKeyDescriptor } from './UserKeyBindings.ts';
 
 type KeyMode = 'normal' | 'terminal';
 
@@ -22,8 +26,18 @@ const DIRECT_BINDINGS: Record<string, string> = {
   'End': 'go-last',
 };
 
+/** Keys that cannot be rebound by users. */
+const RESERVED_KEYS = new Set([
+  'ArrowRight', 'ArrowDown', ' ', 'PageDown',
+  'ArrowLeft', 'ArrowUp', 'PageUp',
+  'Home', 'End', 'Escape', '?',
+]);
+
 export class KeyBindings {
   #commandSystem: CommandSystem;
+  #userBindings: UserKeyBindings | null = null;
+  #notification: KeybindingNotification | null = null;
+  #panelIsOpen: (() => boolean) | null = null;
   #mode: KeyMode = 'normal';
   #target: EventTarget;
   #onTerminalToggle: (() => void) | null = null;
@@ -32,6 +46,27 @@ export class KeyBindings {
   constructor(commandSystem: CommandSystem, target: EventTarget = document) {
     this.#commandSystem = commandSystem;
     this.#target = target;
+  }
+
+  /**
+   * Set the user key bindings manager for custom shortcuts.
+   */
+  setUserBindings(userBindings: UserKeyBindings): void {
+    this.#userBindings = userBindings;
+  }
+
+  /**
+   * Set the notification component for showing command feedback.
+   */
+  setNotification(notification: KeybindingNotification): void {
+    this.#notification = notification;
+  }
+
+  /**
+   * Set a function that returns whether the shortcuts panel is currently open.
+   */
+  setPanelIsOpen(fn: () => boolean): void {
+    this.#panelIsOpen = fn;
   }
 
   /**
@@ -76,9 +111,13 @@ export class KeyBindings {
   #handleKeydown = (e: Event): void => {
     const event = e as KeyboardEvent;
 
-    // Escape toggles the terminal regardless of current mode or focus
+    // Escape: close panel if open, otherwise toggle terminal
     if (event.key === 'Escape') {
       event.preventDefault();
+      if (this.#panelIsOpen?.()) {
+        this.#onShortcutsToggle?.();
+        return;
+      }
       this.#mode = this.#mode === 'terminal' ? 'normal' : 'terminal';
       this.#onTerminalToggle?.();
       return;
@@ -105,11 +144,27 @@ export class KeyBindings {
       return;
     }
 
-    // Direct navigation bindings
-    const command = DIRECT_BINDINGS[event.key];
-    if (command) {
+    // Direct navigation bindings (reserved, not rebindable)
+    const directCommand = DIRECT_BINDINGS[event.key];
+    if (directCommand && !event.ctrlKey && !event.altKey && !event.metaKey) {
       event.preventDefault();
-      this.#commandSystem.execute(command);
+      this.#commandSystem.execute(directCommand);
+      return;
+    }
+
+    // User-configured bindings
+    if (this.#userBindings) {
+      const executedName = this.#userBindings.execute(event);
+      if (executedName) {
+        event.preventDefault();
+        if (this.#notification) {
+          const cmd = this.#commandSystem.all().find((c) => c.name === executedName);
+          const label = cmd?.label ?? executedName;
+          const keyDesc = normalizeKeyDescriptor(event);
+          this.#notification.show(label, keyDesc);
+        }
+      }
     }
   };
 }
+

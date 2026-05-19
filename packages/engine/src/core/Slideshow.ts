@@ -511,66 +511,6 @@ export class Slideshow extends HTMLElement {
 
       .gs-shortcuts-overlay {
         display: none;
-        position: fixed;
-        inset: 0;
-        z-index: 200;
-        background: rgba(0, 0, 0, 0.85);
-        backdrop-filter: blur(6px);
-        justify-content: center;
-        align-items: center;
-        font-family: system-ui, sans-serif;
-        color: #e5eefb;
-      }
-
-      .gs-shortcuts-overlay[open] {
-        display: flex;
-      }
-
-      .gs-shortcuts-panel {
-        max-width: 540px;
-        width: 90%;
-        max-height: 80vh;
-        overflow-y: auto;
-        padding: 2rem;
-        border-radius: 12px;
-        background: rgba(15, 23, 42, 0.95);
-        border: 1px solid rgba(148, 163, 184, 0.2);
-        box-shadow: 0 24px 48px rgba(0, 0, 0, 0.4);
-      }
-
-      .gs-shortcuts-panel h2 {
-        margin: 0 0 1.2rem;
-        font-size: 1.1rem;
-        font-weight: 700;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: #7dd3fc;
-      }
-
-      .gs-shortcuts-panel dl {
-        display: grid;
-        grid-template-columns: auto 1fr;
-        gap: 0.4rem 1.2rem;
-        margin: 0 0 1.4rem;
-        font-size: 0.95rem;
-      }
-
-      .gs-shortcuts-panel dt {
-        font-family: 'Cascadia Code', 'Fira Code', monospace;
-        color: #8be9fd;
-        text-align: right;
-      }
-
-      .gs-shortcuts-panel dd {
-        margin: 0;
-        color: #cbd5e1;
-      }
-
-      .gs-shortcuts-hint {
-        margin-top: 1rem;
-        text-align: center;
-        font-size: 0.8rem;
-        color: #64748b;
       }
 
       .gs-toolbar {
@@ -657,40 +597,6 @@ export class Slideshow extends HTMLElement {
     ariaLive.setAttribute('aria-live', 'polite');
     ariaLive.setAttribute('aria-atomic', 'true');
 
-    const shortcutsOverlay = document.createElement('div');
-    shortcutsOverlay.classList.add('gs-shortcuts-overlay');
-    shortcutsOverlay.innerHTML = `
-      <div class="gs-shortcuts-panel">
-        <h2>Keyboard Shortcuts</h2>
-        <dl>
-          <dt>→ ↓ Space</dt><dd>Next slide / partial</dd>
-          <dt>← ↑</dt><dd>Previous slide / partial</dd>
-          <dt>Home</dt><dd>First slide</dd>
-          <dt>End</dt><dd>Last slide</dd>
-          <dt>Esc</dt><dd>Toggle command terminal</dd>
-          <dt>?</dt><dd>Toggle this help</dd>
-        </dl>
-        <h2>Terminal Commands</h2>
-        <dl>
-          <dt>help</dt><dd>List all commands</dd>
-          <dt>go &lt;n&gt;</dt><dd>Jump to slide n</dd>
-          <dt>load &lt;url&gt;</dt><dd>Load a different deck</dd>
-          <dt>room &lt;name&gt;</dt><dd>Switch sync room</dd>
-          <dt>speaker</dt><dd>Open speaker view</dd>
-          <dt>overview</dt><dd>Toggle overview mode</dd>
-          <dt>fullscreen</dt><dd>Toggle fullscreen</dd>
-          <dt>whiteboard</dt><dd>Toggle whiteboard</dd>
-        </dl>
-        <div class="gs-shortcuts-hint">Press <strong>?</strong> or <strong>Esc</strong> to close</div>
-      </div>
-    `;
-    shortcutsOverlay.addEventListener('click', (e) => {
-      if (e.target === shortcutsOverlay) this.toggleShortcutsOverlay();
-    });
-    shortcutsOverlay.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.key === 'Escape') this.toggleShortcutsOverlay();
-    });
-
     const toolbar = document.createElement('div');
     toolbar.classList.add('gs-toolbar');
     toolbar.setAttribute('role', 'toolbar');
@@ -725,20 +631,15 @@ export class Slideshow extends HTMLElement {
       toolbar.appendChild(button);
     }
 
-    shadow.replaceChildren(style, container, progress, ariaLive, shortcutsOverlay, toolbar);
+    shadow.replaceChildren(style, container, progress, ariaLive, toolbar);
   }
 
   /**
    * Toggle the keyboard shortcuts overlay.
+   * Dispatches a custom event so external panels can handle it.
    */
   toggleShortcutsOverlay(): void {
-    const overlay = this.shadowRoot?.querySelector('.gs-shortcuts-overlay');
-    if (!overlay) return;
-    if (overlay.hasAttribute('open')) {
-      overlay.removeAttribute('open');
-    } else {
-      overlay.setAttribute('open', '');
-    }
+    this.dispatchEvent(new CustomEvent('geek:shortcuts:toggle', { bubbles: true }));
   }
 
   /**
