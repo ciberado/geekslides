@@ -80,6 +80,7 @@ export default defineConfig({
   },
   server: {
     allowedHosts : ['vscode-gs.snow-burbot.ts.net'],
+    host: '0.0.0.0',
     port: 5173,
     proxy: {
       '/ws': {

@@ -130,8 +130,11 @@ function updateDocumentBase(baseHref) {
 
 // On reload, prefer the last-known content proxy URL from localStorage so the
 // user doesn't see a flash of the default filesystem deck before Yjs connects.
+// Speaker view skips the cached proxy: it always uses the explicit config URL
+// from its query params (faster — served directly from filesystem by Vite).
+// The speaker view will sync content via Yjs after connecting anyway.
 const _room = params.get('room') || 'default';
-const _cachedProxy = (() => {
+const _cachedProxy = viewMode === 'speaker' ? null : (() => {
   try {
     const raw = localStorage.getItem(`geekslides:proxy:${_room}`);
     if (raw) return JSON.parse(raw);
@@ -418,7 +421,11 @@ try {
   let combinedCss = await fetchStyles(config);
   await loadScripts(config);
   updateDocumentTitle(config);
-  await registerHmrFiles(config);
+  // Speaker view doesn't need HMR file watching or slide-map publishing
+  // (those are presenter-only concerns). Skipping them speeds up initial load.
+  if (viewMode !== 'speaker') {
+    await registerHmrFiles(config);
+  }
   let currentSlideMap = [];
   let currentLineMapping = createIdentityLineMapping(markdown);
 
@@ -430,7 +437,9 @@ try {
   currentLineMapping = processedMarkdown.lineMapping;
   let slides = parse(processedMarkdown.content, { lineMapping: currentLineMapping });
   currentSlideMap = computeSlideMap(slides);
-  await publishSlideMap(currentSlideMap);
+  if (viewMode !== 'speaker') {
+    await publishSlideMap(currentSlideMap);
+  }
 
   if (viewMode === 'speaker') {
     document.body.innerHTML = '<geek-speaker-view id="speaker"></geek-speaker-view>';
