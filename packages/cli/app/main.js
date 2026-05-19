@@ -5,6 +5,9 @@ import {
   CommandSystem,
   KeyBindings,
   TouchInput,
+  UserKeyBindings,
+  KeybindingNotification,
+  ShortcutsPanel,
   SyncManager,
   FeatureManager,
   uploadDeck,
@@ -147,7 +150,12 @@ let configBase = getConfigBase(configUrl);
  */
 function proxyUrlIfNeeded(url) {
   if (url.startsWith('http://') && window.location.protocol === 'https:') {
-    return `/api/deck-proxy?url=${encodeURIComponent(url)}`;
+    return `${window.location.origin}/api/deck-proxy?url=${encodeURIComponent(url)}`;
+  }
+  // Resolve absolute-path URLs against the actual origin so they are immune
+  // to <base href> pointing at a different (previously-loaded) remote origin.
+  if (url.startsWith('/')) {
+    return `${window.location.origin}${url}`;
   }
   return url;
 }
@@ -990,6 +998,7 @@ try {
     // override CSS. When the user switches themes via the `theme` command,
     // we append the new theme CSS on top so its :host tokens win by cascade.
     let activeThemeOverrideCss = '';
+    let activeThemeIndex = -1;
 
     function showCmdOutput(msg) {
       terminal.setOutput(msg);
@@ -1049,6 +1058,12 @@ try {
       showCmdOutput('Loading...');
       try {
         const resolvedConfigUrl = normalizeConfigUrl(newConfigUrl);
+        // Reset <base> to the current origin before fetching so that a stale
+        // <base href> from a previously-loaded remote deck doesn't redirect
+        // local fetches to the wrong origin.
+        if (!resolvedConfigUrl.startsWith('http')) {
+          updateDocumentBase(getConfigBase(resolvedConfigUrl));
+        }
         const proxiedConfigUrl = proxyUrlIfNeeded(resolvedConfigUrl);
         console.log(`[reloadDeck:${reloadId}] loading config from ${proxiedConfigUrl}`);
         const newConfig = await loadConfig(proxiedConfigUrl);
@@ -1358,13 +1373,13 @@ try {
     commands.register({ name: 'prev', label: 'Previous slide/partial', execute: () => slideshow.prev(), category: 'navigation' });
     commands.register({ name: 'go-first', label: 'Go to first slide', execute: () => slideshow.goTo(0), category: 'navigation' });
     commands.register({ name: 'go-last', label: 'Go to last slide', execute: () => slideshow.goTo(slideshow.slideCount - 1), category: 'navigation' });
-    commands.register({ name: 'go', label: 'Go to slide N (usage: go 5)', execute: (args) => {
+    commands.register({ name: 'go', label: 'Go to slide N (usage: go 5)', hasArgs: true, execute: (args) => {
       const n = Number.parseInt(args?.[0], 10);
       if (!Number.isNaN(n) && n >= 1 && n <= slideshow.slideCount) {
         slideshow.goTo(n - 1);
       }
     }, category: 'navigation' });
-    commands.register({ name: 'load', label: 'Load a different deck (usage: load config.json)', execute: (args) => {
+    commands.register({ name: 'load', label: 'Load a different deck (usage: load config.json)', hasArgs: true, execute: (args) => {
       const currentRoom = sync?.currentRoom ?? params.get('room') ?? 'default';
       if (currentRoom === 'default') {
         showCmdOutput('✗ Cannot load a deck in the default room. Use "room <name>" to switch to your own room first.');
@@ -1377,7 +1392,7 @@ try {
       }
       void reloadDeck(deckUrl);
     }, category: 'config' });
-    commands.register({ name: 'room', label: 'Switch sync room (usage: room my-talk)', execute: (args) => {
+    commands.register({ name: 'room', label: 'Switch sync room (usage: room my-talk)', hasArgs: true, execute: (args) => {
       const roomName = args?.[0];
       if (!roomName) {
         showCmdOutput('✗ Usage: room <room-name>');
@@ -1409,8 +1424,32 @@ try {
     terminal.setCommandSystem(commands);
 
     const keys = new KeyBindings(commands);
+    const userBindings = new UserKeyBindings(commands);
+    keys.setUserBindings(userBindings);
+
+    // Shortcuts panel and notification (attached to slideshow shadow root)
+    const shadowRoot = slideshow.shadowRoot;
+    let shortcutsPanel;
+    if (shadowRoot) {
+      // Inject panel + notification styles
+      const panelStyle = document.createElement('style');
+      panelStyle.textContent = ShortcutsPanel.styles() + KeybindingNotification.styles();
+      shadowRoot.appendChild(panelStyle);
+
+      const notification = new KeybindingNotification(shadowRoot);
+      keys.setNotification(notification);
+
+      shortcutsPanel = new ShortcutsPanel(shadowRoot, commands, userBindings);
+      keys.setPanelIsOpen(() => shortcutsPanel.isOpen);
+    }
+
     keys.onTerminalToggle(() => terminal.toggle());
-    keys.onShortcutsToggle(() => slideshow.toggleShortcutsOverlay());
+    keys.onShortcutsToggle(() => {
+      if (shortcutsPanel) shortcutsPanel.toggle();
+    });
+    slideshow.addEventListener('geek:shortcuts:toggle', () => {
+      if (shortcutsPanel) shortcutsPanel.toggle();
+    });
     keys.activate();
 
     const touch = new TouchInput(commands, slideshow);
@@ -1530,7 +1569,7 @@ try {
       slideshow.toggleToolbar();
     }, category: 'built-in' });
 
-    commands.register({ name: 'theme-list', label: 'List all available built-in themes', execute: () => {
+    commands.register({ name: 'theme-list', label: 'List all available built-in themes', bindable: false, execute: () => {
       const lines = BUILTIN_THEMES.map((t) => {
         const dark = t.dark ? ' [dark]' : '';
         return `  ${t.name.padEnd(12)} — ${t.description}${dark}`;
@@ -1538,7 +1577,7 @@ try {
       showCmdOutput('Built-in themes:\n' + lines.join('\n'));
     }, category: 'theme' });
 
-    commands.register({ name: 'theme', label: 'Switch to a built-in theme (usage: theme aurora)', execute: (args) => {
+    commands.register({ name: 'theme', label: 'Switch to a built-in theme (usage: theme aurora)', hasArgs: true, execute: (args) => {
       const name = args?.[0];
       if (!name) {
         showCmdOutput('✗ Usage: theme <name>  (run theme-list to see available themes)');
@@ -1556,16 +1595,23 @@ try {
       console.log('[theme] Switched to:', found.name);
     }, category: 'theme' });
 
+    commands.register({ name: 'theme-cycle', label: 'Cycle to next theme', execute: () => {
+      activeThemeIndex = (activeThemeIndex + 1) % BUILTIN_THEMES.length;
+      const next = BUILTIN_THEMES[activeThemeIndex];
+      activeThemeOverrideCss = next.css;
+      slideshow.loadStyles(combinedCss + '\n' + activeThemeOverrideCss);
+    }, category: 'theme' });
+
     if (sync) {
-      commands.register({ name: 'sync-follow', label: 'Toggle follow presenter', execute: () => {
+      commands.register({ name: 'sync-toggle', label: 'Toggle sync (pause/resume following)', execute: () => {
         sync.toggleFollow();
       }, category: 'sync' });
-      commands.register({ name: 'sync-disconnect', label: 'Disconnect from sync', execute: () => {
+      commands.register({ name: 'sync-disconnect', label: 'Disconnect from sync', bindable: false, execute: () => {
         sync.disconnect();
         showCmdOutput('✓ Sync disconnected');
         console.log('[sync] Disconnected');
       }, category: 'sync' });
-      commands.register({ name: 'share', label: 'Create a viewer share link for this room', execute: () => {
+      commands.register({ name: 'share', label: 'Create a viewer share link for this room', bindable: false, execute: () => {
         const room = sync.currentRoom;
         if (!room) {
           showCmdOutput('✗ Not connected to a room');
@@ -1617,6 +1663,54 @@ try {
         })();
       }, category: 'sync' });
     }
+
+    // --- Keybinding terminal commands ---
+    commands.register({ name: 'bind', label: 'Bind a key to a command (usage: bind Ctrl+S sync-toggle)', hasArgs: true, execute: (args) => {
+      if (!args || args.length < 2) {
+        showCmdOutput('✗ Usage: bind <key> <command> [command2 ...]');
+        return;
+      }
+      const [key, ...cmdNames] = args;
+      for (const cmdName of cmdNames) {
+        if (!commands.has(cmdName)) {
+          showCmdOutput(`✗ Unknown command: "${cmdName}"`);
+          return;
+        }
+        userBindings.bind(key, cmdName);
+      }
+      showCmdOutput(`✓ Bound ${key} → ${cmdNames.join(', ')}`);
+    }, category: 'config' });
+
+    commands.register({ name: 'unbind', label: 'Remove a key binding (usage: unbind Ctrl+S)', hasArgs: true, execute: (args) => {
+      const key = args?.[0];
+      if (!key) {
+        showCmdOutput('✗ Usage: unbind <key> [command]');
+        return;
+      }
+      const cmdName = args?.[1];
+      userBindings.unbind(key, cmdName);
+      showCmdOutput(`✓ Unbound ${key}${cmdName ? ` → ${cmdName}` : ''}`);
+    }, category: 'config' });
+
+    commands.register({ name: 'export-bindings', label: 'Export keybindings to console', bindable: false, execute: () => {
+      const json = userBindings.exportConfig();
+      showCmdOutput('Keybindings:\n' + json);
+      console.log('[keybindings] Export:', json);
+    }, category: 'config' });
+
+    commands.register({ name: 'import-bindings', label: 'Import keybindings from JSON (usage: import-bindings {"key":["cmd"]})', hasArgs: true, execute: (args) => {
+      const json = args?.join(' ');
+      if (!json) {
+        showCmdOutput('✗ Usage: import-bindings <json>');
+        return;
+      }
+      try {
+        userBindings.importConfig(json, true);
+        showCmdOutput('✓ Keybindings imported');
+      } catch {
+        showCmdOutput('✗ Invalid JSON');
+      }
+    }, category: 'config' });
 
     if (import.meta.hot) {
       registerHotClient(import.meta.hot, {
