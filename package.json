@@ -12,6 +12,7 @@
     "dev:hub": "npm run dev -w @geekslides/hub",
     "build:plugins": "vite build --config plugins/vite.config.ts",
     "build:hub": "npm run build -w @geekslides/hub",
+    "stop": "fuser -k 1234/tcp 5173/tcp 2>/dev/null; true",
     "dev:nosync": "vite --config vite.config.ts --host 0.0.0.0",
     "build": "npm run build -w @geekslides/engine && npm run build -w @geekslides/server && npm run build -w @geekslides/cli && npm run build -w @geekslides/vscode",
     "test": "vitest run",
