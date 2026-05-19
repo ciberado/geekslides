@@ -137,11 +137,12 @@ export class SyncManager {
 
   /**
    * Publish local state to the shared document.
-   * No-op in readonly mode.
+   * No-op in readonly mode or when following is paused (sneak-preview mode).
    */
   publishState(slide: number, partial: number, mode: string): void {
     if (this.#readonly) return;
     if (this.#isRemoteUpdate) return;
+    if (!this.#followPresenter) return;
 
     log.trace({ slide, partial, mode }, 'publishing state');
     this.doc.transact(() => {
@@ -160,13 +161,13 @@ export class SyncManager {
     this.#followPresenter = !this.#followPresenter;
 
     if (this.#followPresenter && this.#target) {
-      // Snap to presenter's current position
-      const slide = this.#sessionState.get('slide') as number | undefined;
-      const partial = this.#sessionState.get('partial') as number | undefined;
-      if (slide !== undefined) {
-        this.#isRemoteUpdate = true;
-        this.#target.goTo(slide, partial);
-        this.#isRemoteUpdate = false;
+      // Publish the local position to sync so this instance becomes the leader
+      // rather than snapping to the remote state.
+      if (!this.#readonly) {
+        const slide = this.#target.currentSlide;
+        const partial = this.#target.currentPartial;
+        const mode = this.#target.mode;
+        this.publishState(slide, partial, mode);
       }
     }
 

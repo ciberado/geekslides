@@ -95,22 +95,28 @@ describe('SyncManager', () => {
     expect(target.goTo).not.toHaveBeenCalled();
   });
 
-  it('toggleFollow snaps to presenter position when re-enabled', () => {
+  it('toggleFollow publishes local position when re-enabled', () => {
     const sm = new SyncManager(new EventTarget());
     const target = createMockTarget();
     sm.bind(target);
 
-    // First publish some state
-    sm.publishState(7, 3, 'present');
+    // Set the target's local position
+    target.currentSlide = 5;
+    target.currentPartial = 2;
 
     // Disable follow
     sm.toggleFollow();
     expect(sm.isFollowing).toBe(false);
 
-    // Re-enable follow — should snap to current state
+    // Re-enable follow — should publish local state, not snap to remote
     sm.toggleFollow();
     expect(sm.isFollowing).toBe(true);
-    expect(target.goTo).toHaveBeenCalledWith(7, 3);
+    // Local position is published to the Y.Doc
+    const state = sm.doc.getMap('sessionState');
+    expect(state.get('slide')).toBe(5);
+    expect(state.get('partial')).toBe(2);
+    // goTo is NOT called (we don't snap to remote)
+    expect(target.goTo).not.toHaveBeenCalled();
   });
 
 });
