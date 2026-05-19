@@ -887,8 +887,11 @@ try {
               slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
             }
 
-            // Emit presentation:ready for newly loaded features
+            // Emit presentation:ready and slide:enter for newly loaded features.
             featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
+            const currentSlideAfterReload = slideshow.currentSlide;
+            lastSlide = currentSlideAfterReload;
+            featureManager.emit('slide:enter', { slideIndex: currentSlideAfterReload, previousIndex: -1 });
 
             console.log('[content-proxy] Loaded deck from proxy:', proxyBaseUrl);
           } catch (err) {
@@ -1104,8 +1107,14 @@ try {
           slideshow.goTo(slide, typeof partial === 'number' ? partial : 0);
         }
 
-        // Emit presentation:ready for newly loaded features
+        // Emit presentation:ready and slide:enter for newly loaded features.
+        // The slide:enter is needed because the navigate tracker's lastSlide may
+        // already equal the target slide (from the pre-reload Yjs state), causing
+        // the geek:navigate handler to skip the emission.
         featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
+        const currentSlideAfterReload = slideshow.currentSlide;
+        lastSlide = currentSlideAfterReload;
+        featureManager.emit('slide:enter', { slideIndex: currentSlideAfterReload, previousIndex: -1 });
 
         console.log(`[proxyReload:${proxyId}] DONE title=${newConfig.title} slideCount=${slideshow.slideCount} slide=${slide}`);
       } catch (err) {
