@@ -92,3 +92,7 @@ The JSON format for export/import:
 ```
 
 Keys are the key descriptors; values are arrays of command names (multiple = cycling).
+
+---
+
+Next: [Import a PowerPoint Presentation →](24-import-powerpoint.md)

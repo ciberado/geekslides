@@ -96,6 +96,7 @@ The first login matching `ADMIN_EMAIL` is automatically approved and granted adm
 | **Multi-file picker** | Select individual files from your file system |
 | **ZIP archive** | Upload a complete deck folder as a `.zip` |
 | **GitHub URL** | Import directly from a public GitHub repo |
+| **PPTX** | Upload a `.pptx` PowerPoint file — converted to HTML automatically |
 
 4. The upload must include a valid `config.json` with a `content` field pointing to your markdown file
 
