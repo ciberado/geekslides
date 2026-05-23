@@ -27,6 +27,10 @@ export interface GeekSlidesConfig {
   readonly plugins: PluginsConfig;
   readonly features: readonly string[];
   readonly aspectRatio: string;
+  /** Exact slide width in pixels (from PPTX import). Overrides aspectRatio-derived dimensions. */
+  readonly slideWidth?: number;
+  /** Exact slide height in pixels (from PPTX import). Overrides aspectRatio-derived dimensions. */
+  readonly slideHeight?: number;
   readonly sync: SyncConfig;
   readonly background: string;
   readonly class: string;
@@ -244,6 +248,12 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     },
     features: allFeatures,
     aspectRatio: typeof obj['aspectRatio'] === 'string' ? obj['aspectRatio'] : DEFAULT_CONFIG.aspectRatio,
+    ...(typeof obj['slideWidth'] === 'number' && obj['slideWidth'] > 0
+      ? { slideWidth: obj['slideWidth'] as number }
+      : {}),
+    ...(typeof obj['slideHeight'] === 'number' && obj['slideHeight'] > 0
+      ? { slideHeight: obj['slideHeight'] as number }
+      : {}),
     sync: {
       enabled: typeof rawSync['enabled'] === 'boolean' ? rawSync['enabled'] : DEFAULT_CONFIG.sync.enabled,
       server: typeof rawSync['server'] === 'string' ? rawSync['server'] : DEFAULT_CONFIG.sync.server,

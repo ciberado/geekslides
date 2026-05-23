@@ -150,6 +150,22 @@ export class Slideshow extends HTMLElement {
   }
 
   /**
+   * Set the design-space dimensions directly (in pixels).
+   * Use this when loading a PPTX-imported deck whose slide size is known
+   * (e.g. 960×540) rather than derived from an aspect-ratio string.
+   * Must be called after setAspectRatio() if both are used, as it overrides
+   * the values set by that method.
+   */
+  setDesignDimensions(width: number, height: number): void {
+    if (width > 0 && height > 0) {
+      this.#aspectRatio = width / height;
+      this.#designWidth = width;
+      this.#designHeight = height;
+      this.#rescale();
+    }
+  }
+
+  /**
    * Load external CSS to inject into every slide's shadow DOM.
    * Extracts @import rules (e.g. Google Fonts) and hoists them to
    * the main document <head> so fonts load globally.
@@ -225,6 +241,9 @@ export class Slideshow extends HTMLElement {
       }
       if (slideData.backgroundColor !== undefined) {
         slideOptions.backgroundColor = slideData.backgroundColor;
+      }
+      if (slideData.backgroundCss !== undefined) {
+        slideOptions.backgroundCss = slideData.backgroundCss;
       }
       if (slideData.rawCss !== undefined) {
         slideOptions.rawCss = slideData.rawCss;

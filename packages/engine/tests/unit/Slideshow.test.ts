@@ -48,4 +48,16 @@ describe('Slideshow', () => {
 
     document.body.removeChild(el);
   });
+
+  it('setDesignDimensions sets design space directly without aspect ratio formula', () => {
+    const el = document.createElement('geek-slideshow') as Slideshow;
+    document.body.appendChild(el);
+    // setAspectRatio would give 16/9 * 120 = 1920×1080
+    el.setAspectRatio('16/9');
+    // Override with exact PPTX dimensions
+    el.setDesignDimensions(960, 540);
+    // The element should not throw and should remain usable
+    expect(el.slideCount).toBe(0);
+    document.body.removeChild(el);
+  });
 });

@@ -111,6 +111,8 @@ export class Slide extends HTMLElement {
     classes: readonly string[];
     backgroundImage?: string;
     backgroundColor?: string;
+    /** Full CSS `background` shorthand (gradients, images). Takes priority over backgroundColor. */
+    backgroundCss?: string;
     rawCss?: string;
     notesHtml?: string;
     partialCount: number;
@@ -149,13 +151,16 @@ export class Slide extends HTMLElement {
     // Apply background and color styles to the content section (not :host)
     // so they render on top of the slide background, allowing theme colors
     // to coexist with background images
-    if (options.backgroundImage) {
+    if (options.backgroundCss) {
+      // Full CSS background (gradient, image, etc.) — set via cssText fragment
+      content.setAttribute('style', `${content.getAttribute('style') ?? ''}${options.backgroundCss};`);
+    } else if (options.backgroundImage) {
       content.style.backgroundImage = `url(${options.backgroundImage})`;
       content.style.backgroundSize = 'cover';
       content.style.backgroundPosition = 'center';
     }
 
-    if (options.backgroundColor) {
+    if (options.backgroundColor && !options.backgroundCss) {
       content.style.backgroundColor = options.backgroundColor;
     }
 

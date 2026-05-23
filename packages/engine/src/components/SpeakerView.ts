@@ -110,6 +110,20 @@ export class SpeakerView extends HTMLElement {
     }
   }
 
+  /**
+   * Set the design-space dimensions directly (in pixels).
+   * Use this when loading a PPTX-imported deck whose slide size is known.
+   * Must be called after setAspectRatio() if both are used.
+   */
+  setDesignDimensions(width: number, height: number): void {
+    if (width > 0 && height > 0) {
+      this.#designWidth = width;
+      this.#designHeight = height;
+      this.updateSlide(this.#currentIndex, this.#currentPartial);
+      this.#rescalePreviews();
+    }
+  }
+
   loadStyles(css: string): void {
     const importRegex = /@import\s+url\([^)]+\)[^;]*;/g;
     const imports = css.match(importRegex);

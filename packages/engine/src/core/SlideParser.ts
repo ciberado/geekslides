@@ -21,6 +21,8 @@ export interface SlideData {
   readonly classes: readonly string[];
   readonly backgroundImage: string | undefined;
   readonly backgroundColor: string | undefined;
+  /** Full CSS `background` shorthand for slides that use gradients or other non-solid fills. */
+  readonly backgroundCss: string | undefined;
   readonly rawCss: string | undefined;
   readonly notesHtml: string | undefined;
   readonly detailsHtml: string | undefined;
@@ -461,6 +463,7 @@ export function parse(markdown: string, options?: ParseOptions): SlideData[] {
         classes: attrs.classes,
         backgroundImage: attrs.backgroundImage,
         backgroundColor: attrs.backgroundColor,
+        backgroundCss: undefined,
         rawCss: css.length > 0 ? css : undefined,
         notesHtml,
         detailsHtml,

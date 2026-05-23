@@ -7,6 +7,8 @@ export { loadConfig, DEFAULT_CONFIG } from './core/Config.ts';
 export type { GeekSlidesConfig, SyncConfig, PluginsConfig } from './core/Config.ts';
 export { parse, computeSlideMap } from './core/SlideParser.ts';
 export type { SlideData, SlideMapEntry } from './core/SlideParser.ts';
+export { parseHtmlSlides } from './core/HtmlSlideParser.ts';
+export type { HtmlSlideParserOptions } from './core/HtmlSlideParser.ts';
 export { scope } from './core/StyleScoper.ts';
 
 // Phase 2: Web Components

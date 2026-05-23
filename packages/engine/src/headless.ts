@@ -13,6 +13,8 @@ export { loadConfig, DEFAULT_CONFIG } from './core/Config.ts';
 export type { GeekSlidesConfig, SyncConfig, PluginsConfig } from './core/Config.ts';
 export { parse } from './core/SlideParser.ts';
 export type { SlideData } from './core/SlideParser.ts';
+export { parseHtmlSlides } from './core/HtmlSlideParser.ts';
+export type { HtmlSlideParserOptions } from './core/HtmlSlideParser.ts';
 export { scope } from './core/StyleScoper.ts';
 
 // Print
