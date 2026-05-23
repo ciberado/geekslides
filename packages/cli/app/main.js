@@ -1,6 +1,7 @@
 import {
   loadConfig,
   parse,
+  parseHtmlSlides,
   computeSlideMap,
   CommandSystem,
   KeyBindings,
@@ -192,6 +193,18 @@ async function fetchConfig() {
 
 async function fetchMarkdown(config) {
   const contentPaths = Array.isArray(config.content) ? config.content : [config.content];
+
+  // HTML content (pptx-imported decks) — bypass markdown pipeline entirely.
+  // Only supported for a single .html content file.
+  if (contentPaths.length === 1 && contentPaths[0]?.endsWith('.html')) {
+    const url = proxyUrlIfNeeded(resolveUrl(contentPaths[0]));
+    const res = await fetch(`${url}${url.includes('?') ? '&' : '?'}t=${Date.now()}`, {
+      cache: 'no-store',
+    });
+    const html = await res.text();
+    return { __htmlSlides: parseHtmlSlides(html) };
+  }
+
   const parts = await Promise.all(
     contentPaths.map(async (path) => {
       const url = proxyUrlIfNeeded(resolveUrl(path));
@@ -203,6 +216,30 @@ async function fetchMarkdown(config) {
     }),
   );
   return parts.join('\n');
+}
+
+/**
+ * Process the result of fetchMarkdown() into slides, slide map, and line mapping.
+ * HTML decks (pptx-imported, .html content) bypass the markdown pipeline entirely.
+ * Returns { slides, slideMap, lineMapping, markdown } where markdown is '' for HTML decks.
+ */
+async function processContent(fetchResult, config) {
+  if (typeof fetchResult === 'object' && fetchResult.__htmlSlides !== undefined) {
+    return {
+      slides: fetchResult.__htmlSlides,
+      slideMap: [],
+      lineMapping: createIdentityLineMapping(''),
+      markdown: '',
+    };
+  }
+  const processed = await applyPreprocessors(fetchResult, config);
+  const parsedSlides = parse(processed.content, { lineMapping: processed.lineMapping });
+  return {
+    slides: parsedSlides,
+    slideMap: computeSlideMap(parsedSlides),
+    lineMapping: processed.lineMapping,
+    markdown: fetchResult,
+  };
 }
 
 async function fetchStyles(config) {
@@ -417,7 +454,7 @@ try {
       throw proxyErr;
     }
   }
-  let markdown = await fetchMarkdown(config);
+  const _rawContent = await fetchMarkdown(config);
   let combinedCss = await fetchStyles(config);
   await loadScripts(config);
   updateDocumentTitle(config);
@@ -427,16 +464,17 @@ try {
     await registerHmrFiles(config);
   }
   let currentSlideMap = [];
-  let currentLineMapping = createIdentityLineMapping(markdown);
+  let currentLineMapping = createIdentityLineMapping('');
 
   if (configBase) {
     updateDocumentBase(configBase);
   }
 
-  const processedMarkdown = await applyPreprocessors(markdown, config);
-  currentLineMapping = processedMarkdown.lineMapping;
-  let slides = parse(processedMarkdown.content, { lineMapping: currentLineMapping });
-  currentSlideMap = computeSlideMap(slides);
+  const _initContent = await processContent(_rawContent, config);
+  let markdown = _initContent.markdown;
+  currentLineMapping = _initContent.lineMapping;
+  let slides = _initContent.slides;
+  currentSlideMap = _initContent.slideMap;
   if (viewMode !== 'speaker') {
     await publishSlideMap(currentSlideMap);
   }
@@ -446,6 +484,9 @@ try {
     const speaker = document.getElementById('speaker');
     const activeProcessors = await getActiveProcessors(config);
     speaker.setAspectRatio(config.aspectRatio);
+    if (config.slideWidth && config.slideHeight) {
+      speaker.setDesignDimensions(config.slideWidth, config.slideHeight);
+    }
     if (combinedCss) {
       speaker.loadStyles(combinedCss);
     }
@@ -501,11 +542,14 @@ try {
         // proxy URL, not the original config URL.
         configBase = proxyBaseUrl;
         updateDocumentBase(proxyBaseUrl);
-        const newMarkdown = await fetchMarkdown(newConfig);
+        const _fetchResult2 = await fetchMarkdown(newConfig);
         const newCss = await fetchStyles(newConfig);
-        const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-        slides = parse(processedMd.content, { lineMapping: processedMd.lineMapping });
+        const _content2 = await processContent(_fetchResult2, newConfig);
+        slides = _content2.slides;
         speaker.setAspectRatio(newConfig.aspectRatio);
+        if (newConfig.slideWidth && newConfig.slideHeight) {
+          speaker.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
+        }
         combinedCss = newCss;
         const themeCss = lastAppliedThemeName
           ? (BUILTIN_THEMES.find((t) => t.name === lastAppliedThemeName)?.css || '')
@@ -748,6 +792,9 @@ try {
     slideshow.loadSlides(slides);
     await applyProcessors(slideshow, config);
     slideshow.setAspectRatio(config.aspectRatio);
+    if (config.slideWidth && config.slideHeight) {
+      slideshow.setDesignDimensions(config.slideWidth, config.slideHeight);
+    }
 
     const syncConfig = config.sync || {};
     const syncEnabled = syncConfig.enabled !== false;
@@ -934,21 +981,23 @@ try {
             configBase = proxyBaseUrl;
             updateDocumentBase(configBase);
 
-            const newMarkdown = await fetchMarkdown(newConfig);
+            const _fetchResult3 = await fetchMarkdown(newConfig);
             const newCss = await fetchStyles(newConfig);
 
             combinedCss = newCss;
             updateDocumentTitle(newConfig);
             slideshow.loadStyles(newCss);
 
-            const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-            currentLineMapping = processedMd.lineMapping;
-            const newSlides = parse(processedMd.content, { lineMapping: currentLineMapping });
-            currentSlideMap = computeSlideMap(newSlides);
-            slideshow.loadSlides(newSlides);
+            const _content3 = await processContent(_fetchResult3, newConfig);
+            currentLineMapping = _content3.lineMapping;
+            currentSlideMap = _content3.slideMap;
+            slideshow.loadSlides(_content3.slides);
             config = newConfig;
             await applyProcessors(slideshow, newConfig);
             slideshow.setAspectRatio(newConfig.aspectRatio);
+            if (newConfig.slideWidth && newConfig.slideHeight) {
+              slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
+            }
 
             // Reload features from new config
             featureManager.deactivateAll();
@@ -1044,6 +1093,9 @@ try {
       config = newConfig;
       updateDocumentTitle(newConfig);
       slideshow.setAspectRatio(newConfig.aspectRatio);
+      if (newConfig.slideWidth && newConfig.slideHeight) {
+        slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
+      }
 
       const newCss = await fetchStyles(newConfig);
       combinedCss = newCss;
@@ -1109,7 +1161,7 @@ try {
         configBase = getConfigBase(resolvedConfigUrl);
         updateDocumentBase(configBase);
 
-        const newMarkdown = await fetchMarkdown(newConfig);
+        const _fetchResult4 = await fetchMarkdown(newConfig);
         const newCss = await fetchStyles(newConfig);
         await loadScripts(newConfig);
 
@@ -1117,22 +1169,24 @@ try {
         updateDocumentTitle(newConfig);
         slideshow.loadStyles(newCss);
 
-        const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-        currentLineMapping = processedMd.lineMapping;
-        const newSlides = parse(processedMd.content, { lineMapping: currentLineMapping });
-        currentSlideMap = computeSlideMap(newSlides);
-        slideshow.loadSlides(newSlides);
+        const _content4 = await processContent(_fetchResult4, newConfig);
+        currentLineMapping = _content4.lineMapping;
+        currentSlideMap = _content4.slideMap;
+        slideshow.loadSlides(_content4.slides);
         config = newConfig;
         await applyProcessors(slideshow, newConfig);
         await registerHmrFiles(newConfig);
 
         slideshow.setAspectRatio(newConfig.aspectRatio);
+        if (newConfig.slideWidth && newConfig.slideHeight) {
+          slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
+        }
         slideshow.goTo(0);
         console.log(`[reloadDeck:${reloadId}] slides loaded, goTo(0), slideCount=${slideshow.slideCount}`);
 
         // Update the module-level markdown so buildManifest scans the
         // correct images when uploading the new deck.
-        markdown = newMarkdown;
+        markdown = _content4.markdown;
 
         // Reload features from new config (deck may have different plugins)
         featureManager.deactivateAll();
@@ -1234,23 +1288,25 @@ try {
         configBase = proxyBaseUrl;
         updateDocumentBase(configBase);
 
-        const newMarkdown = await fetchMarkdown(newConfig);
+        const _fetchResult5 = await fetchMarkdown(newConfig);
         const newCss = await fetchStyles(newConfig);
 
+        const _content5 = await processContent(_fetchResult5, newConfig);
         combinedCss = newCss;
         // Update module-level markdown for buildManifest
-        markdown = newMarkdown;
+        markdown = _content5.markdown;
         updateDocumentTitle(newConfig);
         slideshow.loadStyles(newCss);
 
-        const processedMd = await applyPreprocessors(newMarkdown, newConfig);
-        currentLineMapping = processedMd.lineMapping;
-        const newSlides = parse(processedMd.content, { lineMapping: currentLineMapping });
-        currentSlideMap = computeSlideMap(newSlides);
-        slideshow.loadSlides(newSlides);
+        currentLineMapping = _content5.lineMapping;
+        currentSlideMap = _content5.slideMap;
+        slideshow.loadSlides(_content5.slides);
         config = newConfig;
         await applyProcessors(slideshow, newConfig);
         slideshow.setAspectRatio(newConfig.aspectRatio);
+        if (newConfig.slideWidth && newConfig.slideHeight) {
+          slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
+        }
 
         // Clear Yjs feature state from previous deck before registering new features
         sync.doc.transact(() => {
@@ -1755,8 +1811,12 @@ try {
     if (import.meta.hot) {
       registerHotClient(import.meta.hot, {
         fetchMarkdown: async () => {
-          const md = await fetchMarkdown(config);
-          const processed = await applyPreprocessors(md, config);
+          const _hmrFetch = await fetchMarkdown(config);
+          if (typeof _hmrFetch === 'object' && _hmrFetch.__htmlSlides !== undefined) {
+            // HTML decks (pptx-imported) don't support HMR
+            return '';
+          }
+          const processed = await applyPreprocessors(_hmrFetch, config);
           currentLineMapping = processed.lineMapping;
           return processed.content;
         },
