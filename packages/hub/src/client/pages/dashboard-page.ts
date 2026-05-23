@@ -248,11 +248,12 @@ export class DashboardPage extends LitElement {
 
   @state() private _presentations: Presentation[] = [];
   @state() private _showUpload = false;
-  @state() private _uploadTab: 'files' | 'zip' | 'github' = 'files';
+  @state() private _uploadTab: 'files' | 'zip' | 'github' | 'pptx' = 'files';
   @state() private _uploadTitle = '';
   @state() private _titleManuallyEdited = false;
   @state() private _githubUrl = '';
   @state() private _uploading = false;
+  @state() private _uploadingLabel = 'Uploading…';
   @state() private _error = '';
   @state() private _launchResult: LaunchResult | null = null;
   @state() private _replaceTarget: Presentation | null = null;
@@ -312,6 +313,12 @@ export class DashboardPage extends LitElement {
         const file = input?.files?.[0];
         if (!file) { this._error = 'Select a zip file'; this._uploading = false; return; }
         await apiClient.createPresentationFromZip(this._uploadTitle, file);
+      } else if (this._uploadTab === 'pptx') {
+        const input = this.shadowRoot?.querySelector<HTMLInputElement>('#pptx-input');
+        const file = input?.files?.[0];
+        if (!file) { this._error = 'Select a .pptx file'; this._uploading = false; return; }
+        this._uploadingLabel = 'Converting…';
+        await apiClient.createPresentationFromPptx(this._uploadTitle, file);
       } else {
         const input = this.shadowRoot?.querySelector<HTMLInputElement>('#files-input');
         const files = input?.files;
@@ -322,6 +329,7 @@ export class DashboardPage extends LitElement {
       this._uploadTitle = '';
       this._titleManuallyEdited = false;
       this._githubUrl = '';
+      this._uploadingLabel = 'Uploading…';
       await this._load();
     } catch (err) {
       this._error = err instanceof Error ? err.message : 'Upload failed';
@@ -432,6 +440,7 @@ export class DashboardPage extends LitElement {
             <button class="tab ${this._uploadTab === 'files' ? 'active' : ''}" @click=${() => { this._uploadTab = 'files'; }}>Files</button>
             <button class="tab ${this._uploadTab === 'zip' ? 'active' : ''}" @click=${() => { this._uploadTab = 'zip'; }}>Zip</button>
             <button class="tab ${this._uploadTab === 'github' ? 'active' : ''}" @click=${() => { this._uploadTab = 'github'; }}>GitHub</button>
+            <button class="tab ${this._uploadTab === 'pptx' ? 'active' : ''}" @click=${() => { this._uploadTab = 'pptx'; }}>PPTX</button>
           </div>
 
           ${this._uploadTab === 'files' ? html`
@@ -459,10 +468,22 @@ export class DashboardPage extends LitElement {
               @input=${(e: Event) => { this._githubUrl = (e.target as HTMLInputElement).value; }}>
           ` : nothing}
 
+          ${this._uploadTab === 'pptx' ? html`
+            <label>Select PowerPoint file (.pptx)</label>
+            <input type="file" id="pptx-input" accept=".pptx"
+              @change=${(e: Event) => {
+                const input = e.target as HTMLInputElement;
+                const file = input.files?.[0];
+                if (file && !this._titleManuallyEdited) {
+                  this._uploadTitle = file.name.replace(/\.pptx$/i, '');
+                }
+              }}>
+          ` : nothing}
+
           <div class="modal-actions">
             <button class="tab" @click=${() => { this._showUpload = false; }}>Cancel</button>
             <button class="btn-primary" ?disabled=${this._uploading} @click=${(e: Event) => void this._upload(e)}>
-              ${this._uploading ? 'Uploading…' : 'Create'}
+              ${this._uploading ? this._uploadingLabel : 'Create'}
             </button>
           </div>
         </div>

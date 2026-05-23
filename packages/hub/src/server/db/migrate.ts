@@ -56,6 +56,17 @@ export function migrate(db: HubDatabase): void {
     ON presentations(owner_id, slug)
   `);
 
+  // Idempotent column additions — ALTER TABLE does not support IF NOT EXISTS in SQLite.
+  // Check PRAGMA first so re-running migrate() on an existing DB is safe.
+  const presColumns = db.all(sql`PRAGMA table_info(presentations)`) as Array<{ name: string }>;
+  const presColNames = new Set(presColumns.map((c) => c.name));
+  if (!presColNames.has('github_url')) {
+    db.run(sql`ALTER TABLE presentations ADD COLUMN github_url TEXT`);
+  }
+  if (!presColNames.has('github_sha')) {
+    db.run(sql`ALTER TABLE presentations ADD COLUMN github_sha TEXT`);
+  }
+
   db.run(sql`
     CREATE TABLE IF NOT EXISTS shares (
       id TEXT PRIMARY KEY,

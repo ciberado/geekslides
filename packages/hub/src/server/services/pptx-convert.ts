@@ -108,7 +108,14 @@ export async function convertPptx(
   const slidesHtml = processedSlides.join('\n');
   const fullCss = `${pptxCss}\n/* deck theme */\n${globalCSS}`;
   const configJson = JSON.stringify(
-    { title, content: 'slides.html', styles: ['pptx.css'], aspectRatio },
+    {
+      title,
+      content: 'slides.html',
+      styles: ['pptx.css'],
+      aspectRatio,
+      slideWidth: Math.round(slideSize.width),
+      slideHeight: Math.round(slideSize.height),
+    },
     null,
     2,
   );

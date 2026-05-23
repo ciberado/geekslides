@@ -138,6 +138,13 @@ class ApiClient {
     return this.request('/presentations', { method: 'POST', body: form });
   }
 
+  createPresentationFromPptx(title: string, pptxFile: File): Promise<Presentation> {
+    const form = new FormData();
+    form.append('title', title);
+    form.append('files', pptxFile, pptxFile.name);
+    return this.request('/presentations', { method: 'POST', body: form });
+  }
+
   createPresentationFromGitHub(title: string, githubUrl: string): Promise<Presentation> {
     return this.request('/presentations', {
       method: 'POST',

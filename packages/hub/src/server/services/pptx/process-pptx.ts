@@ -2549,6 +2549,9 @@ function getTextDirection (node, type, slideMasterTextStyles) {
         const schemeClr = getTextByPathList(bgRef, ['a:schemeClr', 'attrs', 'val'])
         phClr = getSchemeColorFromTheme('a:' + schemeClr, slideMasterContent) // #...
         // console.log("schemeClr",schemeClr,"phClr=",phClr)
+      } else if (bgRef['a:phClr'] !== undefined) {
+        // a:phClr = "placeholder color" → use the theme's background color (bg1 → lt1)
+        phClr = getSchemeColorFromTheme('a:bg1', slideMasterContent)
       }
       const idx = Number(bgRef['attrs']['idx'])
 
@@ -2625,7 +2628,6 @@ function getTextDirection (node, type, slideMasterTextStyles) {
     } else {
       bgPr = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:cSld', 'p:bg', 'p:bgPr'])
       bgRef = getTextByPathList(slideLayoutContent, ['p:sldLayout', 'p:cSld', 'p:bg', 'p:bgRef'])
-      // console.log("slideLayoutContent",bgPr,bgRef)
       if (bgPr !== undefined) {
         const bgFillTyp = getFillType(bgPr)
         if (bgFillTyp === 'SOLID_FILL') {
@@ -2686,7 +2688,75 @@ function getTextDirection (node, type, slideMasterTextStyles) {
         }
         // console.log("slideLayoutContent",bgcolor)
       } else if (bgRef !== undefined) {
-        bgcolor = 'background: red;'
+        // Resolve layout-level bgRef — same algorithm as slide-level and master-level
+        let phClr
+        if (bgRef['a:srgbClr'] !== undefined) {
+          phClr = getTextByPathList(bgRef, ['a:srgbClr', 'attrs', 'val'])
+        } else if (bgRef['a:schemeClr'] !== undefined) {
+          const schemeClr = getTextByPathList(bgRef, ['a:schemeClr', 'attrs', 'val'])
+          phClr = getSchemeColorFromTheme('a:' + schemeClr, slideMasterContent)
+        } else if (bgRef['a:phClr'] !== undefined) {
+          // a:phClr = "placeholder color" → use the theme's background color (bg1 → lt1)
+          phClr = getSchemeColorFromTheme('a:bg1', slideMasterContent)
+        }
+        const idx = Number(bgRef['attrs']['idx'])
+        if (idx === 0 || idx === 1000) {
+          // no background
+        } else if (idx > 0 && idx < 1000) {
+          // fillStyleLst — not implemented (same as slide-level stub)
+        } else if (idx > 1000) {
+          const trueIdx = idx - 1000
+          const bgFillLst = themeContent['a:theme']['a:themeElements']['a:fmtScheme']['a:bgFillStyleLst']
+          const sortblAry = []
+          Object.keys(bgFillLst).forEach(function (key) {
+            const bgFillLstTyp = bgFillLst[key]
+            if (key !== 'attrs') {
+              if (bgFillLstTyp.constructor === Array) {
+                for (let i = 0; i < bgFillLstTyp.length; i++) {
+                  const obj = {}
+                  obj[key] = bgFillLstTyp[i]
+                  obj['idex'] = bgFillLstTyp[i]['attrs']['order']
+                  sortblAry.push(obj)
+                }
+              } else {
+                const obj = {}
+                obj[key] = bgFillLst[key]
+                obj['idex'] = bgFillLstTyp['attrs']['order']
+                sortblAry.push(obj)
+              }
+            }
+          })
+          const sortByOrder = sortblAry.slice(0)
+          sortByOrder.sort(function (a, b) { return a.idex - b.idex })
+          const bgFillLstIdx = sortByOrder[trueIdx - 1]
+          const bgFillTyp = getFillType(bgFillLstIdx)
+          if (bgFillTyp === 'SOLID_FILL') {
+            const sldFill = bgFillLstIdx['a:solidFill']
+            const sldTint = getColorOpacity(sldFill)
+            bgcolor = 'background: rgba(' + hexToRgbNew(phClr) + ',' + sldTint + ');'
+          } else if (bgFillTyp === 'GRADIENT_FILL') {
+            const grdFill = bgFillLstIdx['a:gradFill']
+            const gsLst = grdFill['a:gsLst']['a:gs']
+            const tintArray = []
+            for (let i = 0; i < gsLst.length; i++) {
+              const loTint = getTextByPathList(gsLst[i], ['a:schemeClr', 'a:tint', 'attrs', 'val'])
+              tintArray[i] = (loTint !== undefined) ? parseInt(loTint) / 100000 : 1
+            }
+            const lin = grdFill['a:lin']
+            let rot = 90
+            if (lin !== undefined) {
+              rot = angleToDegrees(lin['attrs']['ang']) + 90
+            }
+            bgcolor = 'background: linear-gradient(' + rot + 'deg,'
+            for (let i = 0; i < gsLst.length; i++) {
+              if (i === gsLst.length - 1) {
+                bgcolor += 'rgba(' + hexToRgbNew(phClr) + ',' + tintArray[i] + ')' + ');'
+              } else {
+                bgcolor += 'rgba(' + hexToRgbNew(phClr) + ',' + tintArray[i] + ')' + ', '
+              }
+            }
+          }
+        }
       } else {
         bgPr = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:cSld', 'p:bg', 'p:bgPr'])
         bgRef = getTextByPathList(slideMasterContent, ['p:sldMaster', 'p:cSld', 'p:bg', 'p:bgRef'])
@@ -2763,6 +2833,9 @@ function getTextDirection (node, type, slideMasterTextStyles) {
 
             phClr = getSchemeColorFromTheme('a:' + schemeClr, slideMasterContent) // #...
             // console.log("phClr",phClr)
+          } else if (bgRef['a:phClr'] !== undefined) {
+            // a:phClr = "placeholder color" → use the theme's background color (bg1 → lt1)
+            phClr = getSchemeColorFromTheme('a:bg1', slideMasterContent)
           }
           const idx = Number(bgRef['attrs']['idx'])
           // console.log("phClr=",phClr,"idx=",idx)
@@ -3175,8 +3248,10 @@ function getTextDirection (node, type, slideMasterTextStyles) {
     // <p:clrMap ...> in slide master
     // e.g. tx2="dk2" bg2="lt2" tx1="dk1" bg1="lt1" slideLayoutClrOvride
 
-    if (slideLayoutClrOvride === '' || slideLayoutClrOvride === undefined) {
+    if (sldMasterNode !== undefined) {
       slideLayoutClrOvride = getTextByPathList(sldMasterNode, ['p:sldMaster', 'p:clrMap', 'attrs']) ?? {}
+    } else if (slideLayoutClrOvride === '' || slideLayoutClrOvride === undefined) {
+      slideLayoutClrOvride = {}
     }
     // console.log(slideLayoutClrOvride);
     const schmClrName = schemeClr.substr(2)
@@ -3195,6 +3270,8 @@ function getTextDirection (node, type, slideMasterTextStyles) {
     let color = getTextByPathList(refNode, ['a:srgbClr', 'attrs', 'val'])
     if (color === undefined) {
       color = getTextByPathList(refNode, ['a:sysClr', 'attrs', 'lastClr'])
+    }
+    if (color === undefined) {
     }
     return color
   }

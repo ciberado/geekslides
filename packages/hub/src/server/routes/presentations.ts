@@ -13,6 +13,7 @@ import {
   generateSlug,
 } from '../services/presentation.ts';
 import { validateDeckFiles, extractZip, importFromGitHub, fetchGitHubLatestSha } from '../services/upload.ts';
+import { convertPptx } from '../services/pptx-convert.ts';
 import { checkAccess } from '../services/share.ts';
 import { checkoutFiles } from '../services/git.ts';
 import type { RepoFile } from '../services/git.ts';
@@ -58,10 +59,12 @@ export function registerPresentationRoutes(
         const parts = request.parts();
         const uploaded: RepoFile[] = [];
         title = 'Untitled';
+        let titleManuallySet = false;
 
         for await (const part of parts) {
           if (part.type === 'field' && part.fieldname === 'title') {
             title = String(part.value);
+            titleManuallySet = true;
           } else if (part.type === 'file') {
             const chunks: Buffer[] = [];
             for await (const chunk of part.file) {
@@ -73,7 +76,17 @@ export function registerPresentationRoutes(
             // directory paths that busboy/multipart would strip).
             const filename = decodeURIComponent(part.filename || part.fieldname);
 
-            if (filename.endsWith('.zip')) {
+            if (filename.endsWith('.pptx')) {
+              // PPTX upload — convert to HTML deck
+              const { files: pptxFiles, extractedTitle } = await convertPptx(
+                data,
+                titleManuallySet ? title : undefined,
+              );
+              if (extractedTitle !== null && !titleManuallySet) {
+                title = extractedTitle;
+              }
+              uploaded.push(...pptxFiles);
+            } else if (filename.endsWith('.zip')) {
               // Zip upload
               const extracted = extractZip(data);
               uploaded.push(...extracted);
@@ -200,7 +213,11 @@ export function registerPresentationRoutes(
           // directory paths that busboy/multipart would strip).
           const filename = decodeURIComponent(part.filename || part.fieldname);
 
-          if (filename.endsWith('.zip')) {
+          if (filename.endsWith('.pptx')) {
+            // PPTX re-upload — convert to HTML deck
+            const { files: pptxFiles } = await convertPptx(data);
+            uploaded.push(...pptxFiles);
+          } else if (filename.endsWith('.zip')) {
             uploaded.push(...extractZip(data));
           } else {
             uploaded.push({ path: filename, data });

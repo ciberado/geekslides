@@ -115,7 +115,9 @@ function setCookies(
     secure = true;
   } else {
     effectiveDomain = undefined;
-    secure = host !== 'localhost' && host !== '127.0.0.1';
+    // ts.net (Tailscale) domains are accessed over HTTP even though they look like
+    // production hostnames — treat them like localhost for the Secure flag.
+    secure = host !== 'localhost' && host !== '127.0.0.1' && !host.endsWith('.ts.net');
   }
 
   reply.setCookie('hub_access', accessToken, {

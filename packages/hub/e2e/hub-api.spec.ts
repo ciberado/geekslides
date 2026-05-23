@@ -6,6 +6,9 @@
  * and signing JWT tokens.
  */
 import { test, expect } from '@playwright/test';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { startHubServer, stopHubServer, type HubTestContext } from './hub-test-helpers.ts';
 
 let ctx: HubTestContext;
@@ -152,8 +155,30 @@ test.describe('Presentations API', () => {
     expect(body.id).toBeTruthy();
   });
 
-  test('POST rejects upload without config.json', async ({ request }) => {
+  test('POST creates a presentation from .pptx upload', async ({ request }) => {
+    const fixturesDir = path.join(path.dirname(fileURLToPath(import.meta.url)), 'fixtures');
+    const pptxBuffer = fs.readFileSync(path.join(fixturesDir, 'sample.pptx'));
+
     const res = await request.post(`${ctx.baseUrl}/hub/api/presentations`, {
+      headers: auth(),
+      multipart: {
+        title: 'PPTX Import Test',
+        'deck.pptx': {
+          name: 'deck.pptx',
+          mimeType: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+          buffer: pptxBuffer,
+        },
+      },
+    });
+
+    expect(res.status()).toBe(201);
+    const body = await res.json() as Record<string, unknown>;
+    expect(body['title']).toBe('PPTX Import Test');
+    expect(body['id']).toBeTruthy();
+    expect(typeof body['id']).toBe('string');
+  });
+
+  test('POST rejects upload without config.json', async ({ request }) => {    const res = await request.post(`${ctx.baseUrl}/hub/api/presentations`, {
       headers: auth(),
       multipart: {
         title: 'Bad Deck',
