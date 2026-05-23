@@ -3176,7 +3176,7 @@ function getTextDirection (node, type, slideMasterTextStyles) {
     // e.g. tx2="dk2" bg2="lt2" tx1="dk1" bg1="lt1" slideLayoutClrOvride
 
     if (slideLayoutClrOvride === '' || slideLayoutClrOvride === undefined) {
-      slideLayoutClrOvride = getTextByPathList(sldMasterNode, ['p:sldMaster', 'p:clrMap', 'attrs'])
+      slideLayoutClrOvride = getTextByPathList(sldMasterNode, ['p:sldMaster', 'p:clrMap', 'attrs']) ?? {}
     }
     // console.log(slideLayoutClrOvride);
     const schmClrName = schemeClr.substr(2)
