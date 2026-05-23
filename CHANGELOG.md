@@ -9,12 +9,49 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+<!-- Add new entries above this line -->
+
+## [2.3.0] - 2026-05-23
+
 ### Added
 
-- **Speaker notes for all demo decks** — every slide in all `decks/` now has `::: Notes` explaining the feature being demonstrated, useful for learning
-- **`source-notes` preprocessor enabled for layouts-showcase** — the speaker view automatically shows each slide's markdown source alongside the explanatory notes, keeping them in sync
+- **PPTX import via Hub** — upload a `.pptx` file in the Hub dashboard to create a
+  fully presentable deck; slides are converted to HTML at upload time and stored as
+  `config.json` + `slides.html` + `pptx.css`; charts rendered server-side as inline SVG;
+  numeric bullets resolved; intended for clean, AI-generated presentations
+- **Internal fork of `pptx2html/process_pptx.js`** — replaces `@jvmr/pptx-to-html`;
+  higher fidelity: theme colors, PPTX chart data, numeric bullet types, correct background
+  cascade (slide → layout → master); zero jQuery dependency at runtime
+- **Server-side chart rendering** — D3 v7 + jsdom renders bar/line/area/pie charts as
+  inline SVG before storage (`packages/hub/.../chart-renderer.ts`)
+- **Numeric bullet resolution** — TypeScript port of `setNumericBullets` resolves ordered
+  list counters server-side (`packages/hub/.../bullet-numbering.ts`)
+- **`slideWidth` / `slideHeight` in config.json** — Hub now includes exact pixel dimensions
+  in the generated config so the engine scales slides correctly to fill the viewport
+- **`Slideshow.setDesignDimensions(w, h)`** — engine method to override the default
+  1920×1080 design space with exact PPTX canvas dimensions; `SpeakerView` exposes the
+  same method; `main.js` calls both after `setAspectRatio()` when config supplies the fields
+- **`backgroundCss` in `SlideData`** — engine supports gradient/image backgrounds from
+  PPTX slides (`background:` shorthand is forwarded to the slide shadow DOM)
+- **`npm run start` with tmux panels** — `scripts/start-dev.sh` starts viewer+yjs, hub,
+  and Caddy in a tmux window with three panes; falls back to background processes when
+  tmux is unavailable; `Caddyfile.dev` added for local reverse proxy on port 8080
 
-<!-- Add new entries above this line -->
+### Fixed
+
+- **PPTX background colors wrong for theme-colored slides** — `getSchemeColorFromTheme()`
+  cached `slideLayoutClrOvride` as `{}` when first called from text/border processing
+  (where `sldMasterNode` is `undefined`); subsequent calls to resolve theme backgrounds
+  (`bg1`, `tx1`) returned `undefined`, producing `rgba(0,0,0,1)` (black); fix: refresh
+  the cache whenever a valid master node is supplied, preserve it otherwise
+- **Hub `Secure` cookie flag on Tailscale HTTP** — `*.ts.net` hostnames are now treated
+  like `localhost` for the `Secure` cookie flag, fixing "cookie rejected" login failures
+  when accessing the Hub via Tailscale direct HTTP
+
+### Changed
+
+- **`HtmlSlideParser` background extraction** — now returns the full `background:`
+  shorthand (not just `background-color`) to support gradient and image backgrounds
 
 ## [2.2.0] - 2026-05-19
 

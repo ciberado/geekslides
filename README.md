@@ -266,6 +266,10 @@ Use `--no-cleanup` to keep the temporary screenshots and assembly HTML for debug
 
 - Archived under [archived/v1/](archived/v1/)
 
+## Acknowledgements
+
+PPTX import is powered by an internal fork of [pptx2html](https://github.com/meshesha/pptx2html) (MIT licence), located at `packages/hub/src/server/services/pptx/`. The fork adds D3-based server-side chart rendering, jQuery-free operation, background-colour bug fixes, and Node.js compatibility patches.
+
 ## License
 
 See [LICENCE.txt](LICENCE.txt).

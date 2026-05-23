@@ -211,6 +211,20 @@ curl -sI https://gs.aprender.cloud/ | head -5
 
 Should return `HTTP/2 200` with a Let's Encrypt certificate. Caddy obtains and renews the certificate automatically.
 
+## Accessing the Hub directly over HTTP (`.ts.net` hostname)
+
+During development or debugging it is convenient to bypass Caddy and reach the Hub server on its plain-HTTP port (3000) using the Tailscale machine name:
+
+```
+http://vscode-gs.snow-burbot.ts.net:3000/hub/
+```
+
+Because this URL is plain HTTP, the Hub sets its session cookies **without** the `Secure` flag. GeekSlides detects `*.ts.net` host suffixes and applies this exception automatically — no extra configuration is needed.
+
+> **Note:** browsers implement a "Secure cookie shadowing" rule: a non-Secure cookie cannot overwrite an existing Secure cookie of the same name. If you previously visited the Hub over HTTPS and still have a `hub_access` or `hub_refresh` cookie marked Secure, the HTTP session will fail silently. Clear the site cookies once (DevTools → Application → Cookies → Clear) and log in again.
+
+This exception only applies to `*.ts.net` hostnames. All other non-`localhost` hostnames continue to use `Secure=true`.
+
 ## WebSocket sync
 
 WebSocket sync (`/ws*`) requires special handling at the public proxy: Caddy prefers HTTP/2 for TLS upstreams, but the WebSocket Upgrade mechanism is HTTP/1.1 only. `Caddyfile.public` explicitly forces HTTP/1.1 for the WebSocket upstream:

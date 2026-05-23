@@ -123,6 +123,23 @@ Another process is listening on the same port.
 The WebSocket sync server port is busy.
 Use `--ws-port <n>` to choose a different port.
 
+## Hub Authentication Errors
+
+### "Cookie rejected because a 'secure' cookie already exists" (`.ts.net` access over HTTP)
+
+This happens when you open the Hub at a plain-HTTP URL such as `http://hostname.ts.net:3000/hub/` but your browser already holds a `hub_access` or `hub_refresh` cookie that was marked `Secure` from a previous HTTPS session.
+
+Browsers enforce a rule: a non-Secure cookie cannot overwrite an existing Secure cookie with the same name. The Hub detects `*.ts.net` hostnames and omits the `Secure` flag automatically (Tailscale HTTP access is trusted), but the stale Secure cookie blocks the new one.
+
+**Fix:** clear the site cookies once.
+
+- Chrome/Edge: DevTools (F12) → Application → Storage → Cookies → right-click → Clear
+- Firefox: DevTools → Storage → Cookies → Delete All
+
+Log in again after clearing. The new cookies will be set correctly and authentication will succeed.
+
+> **Note:** this is specific to direct HTTP access via a Tailscale hostname. The production path (browser → public Caddy over HTTPS) always uses `Secure=true` cookies and is not affected.
+
 ## Enable Debug Logging
 
 Set `GEEKSLIDES_LOG=debug` (or `trace` for maximum verbosity) before any GeekSlides command:
