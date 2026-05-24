@@ -187,6 +187,29 @@ docker compose -f docker/docker-compose.yml up -d --build
 
 The `caddy-data` volume preserves your certificates across rebuilds.
 
+## Releasing a new version
+
+The repository includes a single-command release script that handles git tagging and Docker publishing in the correct order:
+
+```bash
+# Preview what will happen
+npm run release:dry
+
+# Full release: tag → git push → docker build → docker push
+npm run release
+```
+
+The script:
+1. Reads the version from `package.json`
+2. Validates: clean working tree, tag not taken, all packages at same version
+3. Creates git tag `v<version>`
+4. Pushes commits + tag to origin
+5. Builds Docker images (tagged `:version` + `:latest`)
+6. Runs image smoke tests
+7. Pushes Docker images
+
+> **Tip:** The order matters — the git tag must exist before `docker:build` so images get clean version tags like `:2.5.0` instead of `:2.5.0-a958a65`.
+
 ## Troubleshooting
 
 **Certificate errors in browser**
