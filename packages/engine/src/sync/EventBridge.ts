@@ -72,6 +72,14 @@ export interface EventBridgeSyncAPI {
   getEphemeralMap(): Y.Map<unknown>;
 }
 
+function getEventDetail(event: Event): unknown {
+  if (!(event instanceof CustomEvent)) {
+    return undefined;
+  }
+
+  return (event as CustomEvent<unknown>).detail;
+}
+
 /**
  * A generic DOM-event-to-sync bridge with activate/deactivate lifecycle.
  */
@@ -99,7 +107,7 @@ export class EventBridge {
       const handler = (e: Event): void => {
         if (this.#syncAPI.readonly) return;
 
-        const detail = (e as CustomEvent).detail;
+        const detail = getEventDetail(e);
         const value = action.transform ? action.transform(detail) : detail;
 
         switch (action.target) {

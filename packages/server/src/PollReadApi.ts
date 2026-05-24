@@ -53,6 +53,8 @@ export function handlePollRead(req: IncomingMessage, res: ServerResponse): boole
     return true;
   }
 
+  const slideKey = String(slideIndex);
+
   const doc = docs.get(room);
   if (!doc) {
     json(res, 404, { error: 'Room not found or no active session' });
@@ -67,7 +69,7 @@ export function handlePollRead(req: IncomingMessage, res: ServerResponse): boole
     return true;
   }
 
-  const optionsJson = pollMap.get(`slide-${slideIndex}-options`);
+  const optionsJson = pollMap.get(`slide-${slideKey}-options`);
   if (typeof optionsJson !== 'string') {
     json(res, 404, { error: 'Poll options not found for this slide' });
     return true;
@@ -86,7 +88,7 @@ export function handlePollRead(req: IncomingMessage, res: ServerResponse): boole
     return true;
   }
 
-  const frozen = pollMap.get(`slide-${slideIndex}-frozen`) === true;
+  const frozen = pollMap.get(`slide-${slideKey}-frozen`) === true;
 
   log.debug({ room, slideIndex }, 'poll-options read');
   json(res, 200, { options, frozen });
