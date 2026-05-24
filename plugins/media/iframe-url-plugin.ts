@@ -42,7 +42,7 @@ export const iframeUrlPreprocessor: Preprocessor = (markdown: string): string =>
  * starts protected again.
  */
 export const iframeOverlayProcessor: Processor = (slideElement: HTMLElement): void => {
-  const wrappers = slideElement.querySelectorAll<HTMLElement>('.gs-iframe-wrapper');
+  const wrappers = Array.from(slideElement.querySelectorAll<HTMLElement>('.gs-iframe-wrapper'));
   if (wrappers.length === 0) return;
 
   const isCover = slideElement.classList.contains('mod-media-cover');
@@ -60,10 +60,10 @@ export const iframeOverlayProcessor: Processor = (slideElement: HTMLElement): vo
       for (const wrapper of wrappers) {
         let siblingsHeight = 0;
         const parent = wrapper.parentElement;
-        const container = parent?.tagName === 'P' ? slideElement : slideElement;
-        for (const child of container.children) {
+        const container = slideElement;
+        for (const child of Array.from(container.children)) {
           if (child === wrapper || child === parent || child.contains(wrapper)) continue;
-          siblingsHeight += (child as HTMLElement).offsetHeight ?? 0;
+          siblingsHeight += child instanceof HTMLElement ? child.offsetHeight : 0;
         }
         const available = Math.max(200, contentHeight - siblingsHeight - 60);
         wrapper.style.paddingBottom = '0';

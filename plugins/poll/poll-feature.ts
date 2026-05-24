@@ -28,8 +28,25 @@
 import type { Feature, FeatureContext } from '../sdk/types.ts';
 import { Chart, BarController, CategoryScale, LinearScale, BarElement, Tooltip } from 'chart.js';
 import type { CreateLogger } from '../sdk/types.ts';
+import * as Y from 'yjs';
 
 Chart.register(BarController, CategoryScale, LinearScale, BarElement, Tooltip);
+
+function isYMapLike(value: unknown): value is Y.Map<unknown> {
+  if (typeof value !== 'object' || value === null) return false;
+  return 'get' in value
+    && typeof value.get === 'function'
+    && 'set' in value
+    && typeof value.set === 'function'
+    && 'forEach' in value
+    && typeof value.forEach === 'function';
+}
+
+function getNestedMap(root: Y.Map<unknown> | null, key: string): Y.Map<unknown> | null {
+  if (!root) return null;
+  const value = root.get(key);
+  return isYMapLike(value) ? value : null;
+}
 
 const noop = (): void => {};
 const NOOP_LOGGER = {
@@ -59,8 +76,10 @@ const VOTER_ID_KEY = 'geekslides-voter-id';
 function generateUUID(): string {
   if (typeof crypto.randomUUID === 'function') return crypto.randomUUID();
   const bytes = crypto.getRandomValues(new Uint8Array(16));
-  bytes[6] = (bytes[6]! & 0x0f) | 0x40;
-  bytes[8] = (bytes[8]! & 0x3f) | 0x80;
+  const byte6 = bytes[6] ?? 0;
+  const byte8 = bytes[8] ?? 0;
+  bytes[6] = (byte6 & 0x0f) | 0x40;
+  bytes[8] = (byte8 & 0x3f) | 0x80;
   const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
 }
@@ -134,7 +153,7 @@ export function getPollSlides(container: HTMLElement): Map<number, PollSlideConf
 /* ------------------------------------------------------------------ */
 
 export function countVotes(
-  map: import('yjs').Map<unknown>,
+  map: Y.Map<unknown>,
   slideIndex: number,
   optionCount: number,
 ): number[] {
@@ -567,11 +586,18 @@ function buildPresenterPanel(
       document.body.appendChild(ta);
       ta.focus();
       ta.select();
-      try { document.execCommand('copy'); flash(); } catch { /* give up */ }
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-deprecated
+        document.execCommand('copy');
+        flash();
+      } catch {
+        /* give up */
+      }
       ta.remove();
     };
-    if (navigator.clipboard) {
-      void navigator.clipboard.writeText(text).then(flash).catch(fallback);
+    const clipboard = 'clipboard' in navigator ? navigator.clipboard : undefined;
+    if (clipboard) {
+      void clipboard.writeText(text).then(flash).catch(fallback);
     } else {
       fallback();
     }
@@ -583,7 +609,7 @@ function buildPresenterPanel(
 
   /* ---- Copy-link button ---- */
   const copyBtn = el.querySelector<HTMLButtonElement>('.gs-poll-qr-copy-btn');
-  copyBtn?.addEventListener('click', () => { if (copyBtn) copyText(voteUrl, copyBtn); });
+  copyBtn?.addEventListener('click', () => { copyText(voteUrl, copyBtn); });
 
   const optionEls: { bar: HTMLElement; pct: HTMLElement }[] = [];
   options.forEach((label) => {
@@ -841,10 +867,10 @@ const pollFeature: Feature = {
     // Raw doc/root for dynamic poll-map access after CRDT resolution.
     // Fall back to syncMap.doc so unit tests (where syncManager is null) work too.
     const doc = ctx.syncManager?.doc ?? syncMap?.doc ?? null;
-    const featuresRoot = doc?.getMap('features') ?? null;
+    const featuresRoot = doc?.getMap<unknown>('features') ?? null;
 
-    function getPollMap(): import('yjs').Map<unknown> | null {
-      return (featuresRoot?.get('poll') as import('yjs').Map<unknown> | undefined) ?? null;
+    function getPollMap(): Y.Map<unknown> | null {
+      return getNestedMap(featuresRoot, 'poll');
     }
 
     const styleEl = document.createElement('style');
@@ -963,9 +989,9 @@ const pollFeature: Feature = {
       // Shallow observer: re-write options whenever the 'poll' map reference
       // itself changes (i.e., CRDT resolution picked a different Y.Map).
       if (isPresenter) {
-        const rootObserver = (event: import('yjs').YMapEvent<unknown>): void => {
+        const rootObserver = (event: Y.YMapEvent<unknown>): void => {
           if (!event.keysChanged.has('poll')) return;
-          ctx.syncManager?.doc.transact(() => { writeOptions(); });
+          doc?.transact(() => { writeOptions(); });
         };
         featuresRoot.observe(rootObserver);
         cleanups.push(() => { featuresRoot.unobserve(rootObserver); });

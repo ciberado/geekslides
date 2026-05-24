@@ -251,7 +251,7 @@ export function createCssDoodleProcessor(createLogger: CreateLogger): Processor 
  * CSS Doodle processor.
  */
 export const cssDoodleProcessor: Processor = (slideElement: HTMLElement): void => {
-  const placeholders = slideElement.querySelectorAll<HTMLElement>('.gs-doodle');
+  const placeholders = Array.from(slideElement.querySelectorAll<HTMLElement>('.gs-doodle'));
   if (placeholders.length === 0) return;
 
   // Check if this slide is currently active — active slides render immediately

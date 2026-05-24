@@ -31,7 +31,7 @@ export const videoProcessor: Processor = (slideElement: HTMLElement): void => {
       geekVideo.setAttribute('cover', '');
       geekVideo.style.zIndex = '0';
       const parent = geekVideo.parentElement;
-      if (parent && parent.tagName === 'P' && parent.children.length === 1 && parent.textContent?.trim() === '') {
+      if (parent && parent.tagName === 'P' && parent.children.length === 1 && parent.textContent.trim() === '') {
         parent.replaceWith(geekVideo);
       }
     }

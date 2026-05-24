@@ -9,6 +9,8 @@
  * internal engine path. This ensures plugins can be compiled independently.
  */
 
+import type * as Y from 'yjs';
+
 /* ------------------------------------------------------------------ */
 /*  Core plugin types                                                  */
 /* ------------------------------------------------------------------ */
@@ -101,16 +103,13 @@ export interface FeatureCommandAPI {
 export interface FeatureSyncAPI {
   readonly connected: boolean;
   readonly readonly: boolean;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getSharedMap(): any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getSharedArray(): any;
+  getSharedMap(): Y.Map<unknown>;
+  getSharedArray(): Y.Array<unknown>;
   /**
    * Feature-scoped ephemeral Y.Map for per-client live state.
    * Entries are keyed by client ID and should be cleared on deactivate.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  getEphemeralMap(): any;
+  getEphemeralMap(): Y.Map<unknown>;
   /**
    * Create an EventBridge — a generic DOM-event-to-sync bridge.
    * Generalizes the WhiteboardSync pattern for any plugin:
@@ -181,8 +180,7 @@ export interface FeatureContext {
   ): () => void;
   readonly output: FeatureOutputAPI;
   /** Raw SyncManager for advanced features needing direct Yjs access. */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  readonly syncManager: any;
+  readonly syncManager: { readonly doc: Y.Doc } | null;
 }
 
 export interface Feature {

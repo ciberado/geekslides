@@ -22,6 +22,7 @@
  */
 
 import type { Feature, FeatureContext } from '../sdk/types.ts';
+import * as Y from 'yjs';
 
 /** Minimal interface for media web components (geek-youtube, geek-audio, geek-video). */
 interface MediaComponent extends HTMLElement {
@@ -38,6 +39,29 @@ interface MediaState {
   readonly timestamp: number;
 }
 
+function isMediaState(value: unknown): value is MediaState {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as Partial<Record<keyof MediaState, unknown>>;
+  return typeof candidate.playing === 'boolean'
+    && typeof candidate.currentTime === 'number'
+    && typeof candidate.timestamp === 'number';
+}
+
+function isYMapLike(value: unknown): value is Y.Map<unknown> {
+  if (typeof value !== 'object' || value === null) return false;
+  return 'get' in value
+    && typeof value.get === 'function'
+    && 'observe' in value
+    && typeof value.observe === 'function'
+    && 'unobserve' in value
+    && typeof value.unobserve === 'function';
+}
+
+function getFeatureMap(root: Y.Map<unknown>, key: string): Y.Map<unknown> | null {
+  const value = root.get(key);
+  return isYMapLike(value) ? value : null;
+}
+
 const MEDIA_SELECTORS = 'geek-youtube, geek-audio, geek-video';
 const MEDIA_OR_IFRAME_SELECTORS = 'geek-youtube, geek-audio, geek-video, .gs-iframe-wrapper';
 
@@ -51,7 +75,12 @@ function getMediaInSlide(
   if (!slideEl) return [];
   const content = slideEl.shadowRoot?.querySelector('section.content');
   if (!content) return [];
-  return [...content.querySelectorAll<MediaComponent>(MEDIA_SELECTORS)];
+
+  const components: MediaComponent[] = [];
+  for (const element of Array.from(content.querySelectorAll<HTMLElement>(MEDIA_SELECTORS))) {
+    components.push(element as MediaComponent);
+  }
+  return components;
 }
 
 /** Get current time from a media component (supports all 3 types). */
@@ -294,8 +323,8 @@ function injectFeatureUI(
       document.dispatchEvent(new CustomEvent('geek:autoplay:unblocked'));
     };
     banner.addEventListener('click', dismiss);
-    banner.addEventListener('keydown', (e) => {
-      if ((e as KeyboardEvent).key === 'Enter' || (e as KeyboardEvent).key === ' ') dismiss();
+    banner.addEventListener('keydown', (e: KeyboardEvent) => {
+      if (e.key === 'Enter' || e.key === ' ') dismiss();
     });
     layer.appendChild(banner);
   };
@@ -393,7 +422,8 @@ export const mediaSyncFeature: Feature = {
       const idx = slides ? [...slides].indexOf(slideEl) : -1;
       if (idx < 0) return;
 
-      ctx.sync.getSharedMap().set(String(idx), ce.detail);
+      const sharedMap = ctx.sync.getSharedMap();
+      sharedMap.set(String(idx), ce.detail);
     };
 
     document.addEventListener('geek:media:state', onMediaState);
@@ -412,7 +442,7 @@ export const mediaSyncFeature: Feature = {
     let mapUnsubscribe: (() => void) | null = null;
 
     if (isViewer && ctx.syncManager) {
-      const root = ctx.syncManager.doc.getMap('features');
+      const root = ctx.syncManager.doc.getMap<unknown>('features');
 
       const applyState = (state: MediaState, slideIndex: number): void => {
         if (!slideshow) return;
@@ -424,33 +454,32 @@ export const mediaSyncFeature: Feature = {
         }
       };
 
-      // Handler that observes the feature's nested map for media state changes.
-      type YMapEvent = { keysChanged: Set<string> };
-      const onFeatureMapChange = (event: YMapEvent): void => {
-        const featureMap = root.get('media-sync') as { get(k: string): unknown } | undefined;
+      const onFeatureMapChange = (event: Y.YMapEvent<unknown>): void => {
+        const featureMap = getFeatureMap(root, 'media-sync');
         if (!featureMap) return;
-        event.keysChanged.forEach((key: string) => {
+        event.keysChanged.forEach((key) => {
+          if (typeof key !== 'string') return;
           const slideIndex = parseInt(key, 10);
-          if (isNaN(slideIndex)) return;
-          const state = featureMap.get(key) as MediaState | undefined;
-          if (state) applyState(state, slideIndex);
+          if (Number.isNaN(slideIndex)) return;
+          const state = featureMap.get(key);
+          if (isMediaState(state)) applyState(state, slideIndex);
         });
       };
 
       // Try to attach observer to the existing feature map, or wait for it.
-      let currentFeatureMap: { observe(fn: (e: YMapEvent) => void): void; unobserve(fn: (e: YMapEvent) => void): void; get(k: string): unknown } | null = null;
+      let currentFeatureMap: Y.Map<unknown> | null = null;
 
       const attachFeatureMap = (): void => {
-        const map = root.get('media-sync') as typeof currentFeatureMap | undefined;
+        const map = getFeatureMap(root, 'media-sync');
         if (map && map !== currentFeatureMap) {
-          if (currentFeatureMap) currentFeatureMap.unobserve(onFeatureMapChange);
+          currentFeatureMap?.unobserve(onFeatureMapChange);
           currentFeatureMap = map;
           map.observe(onFeatureMapChange);
         }
       };
 
       // Observe root for the 'media-sync' key appearing (presenter creates it).
-      const onRootChange = (event: YMapEvent): void => {
+      const onRootChange = (event: Y.YMapEvent<unknown>): void => {
         if (event.keysChanged.has('media-sync')) {
           attachFeatureMap();
         }
@@ -466,14 +495,14 @@ export const mediaSyncFeature: Feature = {
         const idx = ctx.slideshow.currentSlide;
         const featureMap = currentFeatureMap;
         if (!featureMap) return;
-        const state = featureMap.get(String(idx)) as MediaState | undefined;
-        if (state) applyState(state, idx);
+        const state = featureMap.get(String(idx));
+        if (isMediaState(state)) applyState(state, idx);
       };
       document.addEventListener('geek:autoplay:unblocked', onAutoplayUnblocked);
 
       mapUnsubscribe = () => {
         root.unobserve(onRootChange);
-        if (currentFeatureMap) currentFeatureMap.unobserve(onFeatureMapChange);
+        currentFeatureMap?.unobserve(onFeatureMapChange);
         document.removeEventListener('geek:autoplay:unblocked', onAutoplayUnblocked);
       };
     }

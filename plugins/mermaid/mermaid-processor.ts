@@ -41,7 +41,7 @@ export function createMermaidProcessor(createLogger: CreateLogger): Processor {
 }
 
 export const mermaidProcessor: Processor = (slideElement: HTMLElement): void => {
-  const codeBlocks = slideElement.querySelectorAll<HTMLElement>('pre > code.language-mermaid');
+  const codeBlocks = Array.from(slideElement.querySelectorAll<HTMLElement>('pre > code.language-mermaid'));
   if (codeBlocks.length === 0) return;
 
   for (const code of codeBlocks) {
