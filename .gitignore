@@ -31,3 +31,6 @@ vitest.config.js.map
 .playwright-mcp/
 /*.png
 /*.jpeg
+
+# Runtime data — SQLite DB and uploaded presentation repos
+data/
