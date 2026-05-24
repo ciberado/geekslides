@@ -132,6 +132,16 @@ export class DashboardPage extends LitElement {
     .tab:last-child { border-radius: 0 var(--gs-radius) var(--gs-radius) 0; }
     .tab.active { background: var(--gs-accent); color: white; border-color: var(--gs-accent); }
     .error { color: var(--gs-danger); font-size: 0.8125rem; margin-bottom: 0.75rem; }
+    .pptx-warning {
+      background: #fffbeb;
+      border: 1px solid #f59e0b;
+      border-radius: 6px;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.8rem;
+      color: #78350f;
+      margin-bottom: 0.75rem;
+      line-height: 1.4;
+    }
     .share-url {
       display: flex;
       gap: 0.5rem;
@@ -473,6 +483,12 @@ export class DashboardPage extends LitElement {
           ` : nothing}
 
           ${this._uploadTab === 'pptx' ? html`
+            <div class="pptx-warning">
+              ⚠️ <strong>Limited feature.</strong> PPTX import is designed for
+              <strong>simple, AI-generated presentations</strong> (ChatGPT, Claude, Gemini,
+              Gamma, etc.) with clean layouts. Complex decks with animations, SmartArt,
+              custom masters, or heavy image use may produce low-fidelity output or fail.
+            </div>
             <label>Select PowerPoint file (.pptx)</label>
             <input type="file" id="pptx-input" accept=".pptx"
               @change=${(e: Event) => {
