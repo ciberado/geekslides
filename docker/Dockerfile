@@ -17,6 +17,9 @@ COPY plugins/ plugins/
 COPY index.html ./
 
 RUN npm run build:app --workspace=@geekslides/cli
+# Build plugin bundles (plugins/dist/ is gitignored and dockerignored so must
+# be built inside the container).
+RUN npm run build:plugins
 
 # ----- Stage 2: Build yjs server -----
 FROM node:22-alpine AS server-builder
@@ -40,6 +43,8 @@ RUN apk add --no-cache 'caddy~=2'
 WORKDIR /app
 
 COPY --from=app-builder /app/packages/cli/dist/app /srv/slides
+# Plugin bundles — served as /plugins/dist/{name}/index.js
+COPY --from=app-builder /app/plugins/dist /srv/slides/plugins/dist
 COPY --from=server-builder /app/packages/server/dist/index.cjs ./index.cjs
 # pino (and thread-stream) are marked --external in the esbuild bundle and
 # must be present at runtime; copy only the server's node_modules.

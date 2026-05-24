@@ -11,6 +11,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.4.5] - 2026-05-24
+
+### Fixed
+
+- **Plugin bundles missing from Docker image** — `plugins/dist/` is excluded from
+  both `.gitignore` and `.dockerignore` (matched by the `dist/` pattern), so it was
+  never copied into the build context. The app-builder Docker stage now runs
+  `npm run build:plugins` to compile all plugin bundles, and the runtime stage
+  copies `plugins/dist` to `/srv/slides/plugins/dist` so requests to
+  `/plugins/dist/{name}/index.js` are served correctly.
+
 ## [2.4.4] - 2026-05-24
 
 ### Fixed
