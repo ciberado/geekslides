@@ -341,4 +341,38 @@ describe('Config', () => {
     expect(error.message).toContain('404');
     expect(error.message).toContain('geekslides create');
   });
+
+  describe('Transition field', () => {
+    it('defaults transition to "slide" when not provided', async () => {
+      mockFetchJson({ content: 'README.md' });
+      const config = await loadConfig('config.json');
+      expect(config.transition).toBe('slide');
+    });
+
+    it('accepts valid transition values', async () => {
+      for (const t of ['slide', 'fade', 'none']) {
+        mockFetchJson({ content: 'README.md', transition: t });
+        const config = await loadConfig('config.json');
+        expect(config.transition).toBe(t);
+      }
+    });
+
+    it('falls back to "slide" for unknown transition values', async () => {
+      mockFetchJson({ content: 'README.md', transition: 'flip' });
+      const config = await loadConfig('config.json');
+      expect(config.transition).toBe('slide');
+    });
+
+    it('falls back to "slide" for non-string transition values', async () => {
+      mockFetchJson({ content: 'README.md', transition: 42 });
+      const config = await loadConfig('config.json');
+      expect(config.transition).toBe('slide');
+    });
+
+    it('normalizes transition value to lowercase', async () => {
+      mockFetchJson({ content: 'README.md', transition: 'Fade' });
+      const config = await loadConfig('config.json');
+      expect(config.transition).toBe('fade');
+    });
+  });
 });

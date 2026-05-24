@@ -240,6 +240,11 @@ export class Slide extends HTMLElement {
       }
 
       /* Transition variants — add class on <geek-slide> */
+      :host(.transition-slide) {
+        transition: left var(--gs-transition-duration, 0.5s) ease-in-out,
+                    opacity var(--gs-transition-duration, 0.5s) ease-out;
+      }
+
       :host(.transition-fade) {
         left: 50% !important;
         transition: opacity var(--gs-transition-duration, 0.5s) ease-out;

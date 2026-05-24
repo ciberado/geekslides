@@ -19,6 +19,11 @@ export interface PluginsConfig {
   readonly remoteBundles: readonly string[];
 }
 
+/** Valid slide transition names. */
+export type TransitionName = 'slide' | 'fade' | 'none';
+
+export const VALID_TRANSITIONS: readonly TransitionName[] = ['slide', 'fade', 'none'] as const;
+
 export interface GeekSlidesConfig {
   readonly title: string;
   readonly content: readonly string[];
@@ -34,6 +39,8 @@ export interface GeekSlidesConfig {
   readonly sync: SyncConfig;
   readonly background: string;
   readonly class: string;
+  /** Default slide transition effect. Per-slide classes override this. */
+  readonly transition: TransitionName;
 }
 
 const DEFAULT_CONFIG: GeekSlidesConfig = {
@@ -55,6 +62,7 @@ const DEFAULT_CONFIG: GeekSlidesConfig = {
   },
   background: '',
   class: '',
+  transition: 'slide',
 };
 
 function gcd(a: number, b: number): number {
@@ -249,10 +257,10 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     features: allFeatures,
     aspectRatio: typeof obj['aspectRatio'] === 'string' ? obj['aspectRatio'] : DEFAULT_CONFIG.aspectRatio,
     ...(typeof obj['slideWidth'] === 'number' && obj['slideWidth'] > 0
-      ? { slideWidth: obj['slideWidth'] as number }
+      ? { slideWidth: obj['slideWidth'] }
       : {}),
     ...(typeof obj['slideHeight'] === 'number' && obj['slideHeight'] > 0
-      ? { slideHeight: obj['slideHeight'] as number }
+      ? { slideHeight: obj['slideHeight'] }
       : {}),
     sync: {
       enabled: typeof rawSync['enabled'] === 'boolean' ? rawSync['enabled'] : DEFAULT_CONFIG.sync.enabled,
@@ -261,7 +269,19 @@ export async function loadConfig(url: string): Promise<GeekSlidesConfig> {
     },
     background: typeof obj['background'] === 'string' ? obj['background'] : DEFAULT_CONFIG.background,
     class: typeof obj['class'] === 'string' ? obj['class'] : DEFAULT_CONFIG.class,
+    transition: parseTransition(obj['transition']),
   };
+}
+
+function parseTransition(value: unknown): TransitionName {
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase().trim();
+    if (VALID_TRANSITIONS.includes(normalized as TransitionName)) {
+      return normalized as TransitionName;
+    }
+    log.warn(`Unknown transition "${value}", falling back to "${DEFAULT_CONFIG.transition}"`);
+  }
+  return DEFAULT_CONFIG.transition;
 }
 
 export { DEFAULT_CONFIG };

@@ -126,6 +126,7 @@ Handles swipe gestures and tap zones for mobile navigation. Long-press opens the
 | `speaker` | Open speaker view in new tab |
 | `overview` | Toggle overview mode |
 | `fullscreen` | Toggle fullscreen mode |
+| `transition <name>` | Set slide transition (`slide`, `fade`, `none`) |
 | `whiteboard` | Toggle whiteboard overlay |
 | `whiteboard-clear` | Clear whiteboard strokes on current slide |
 | `wb-toolbar` | Toggle whiteboard toolbar visibility (`toggleVisibility`) |

@@ -3,8 +3,8 @@
 export const VERSION = '2.0.0-alpha.0';
 
 // Phase 1: Core data pipeline
-export { loadConfig, DEFAULT_CONFIG } from './core/Config.ts';
-export type { GeekSlidesConfig, SyncConfig, PluginsConfig } from './core/Config.ts';
+export { loadConfig, DEFAULT_CONFIG, VALID_TRANSITIONS } from './core/Config.ts';
+export type { GeekSlidesConfig, SyncConfig, PluginsConfig, TransitionName } from './core/Config.ts';
 export { parse, computeSlideMap } from './core/SlideParser.ts';
 export type { SlideData, SlideMapEntry } from './core/SlideParser.ts';
 export { parseHtmlSlides } from './core/HtmlSlideParser.ts';

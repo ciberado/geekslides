@@ -6,6 +6,8 @@
  */
 
 import type { SlideData } from './SlideParser.ts';
+import type { TransitionName } from './Config.ts';
+import { VALID_TRANSITIONS } from './Config.ts';
 import { Slide } from './Slide.ts';
 
 export type SlideshowMode = 'present' | 'speaker' | 'overview';
@@ -28,6 +30,7 @@ export class Slideshow extends HTMLElement {
   #designWidth = 1920;
   #designHeight = 1080;
   #externalStyles = '';
+  #transition: TransitionName = 'slide';
 
   constructor() {
     super();
@@ -166,6 +169,51 @@ export class Slideshow extends HTMLElement {
   }
 
   /**
+   * Get the current default transition name.
+   */
+  get transition(): TransitionName {
+    return this.#transition;
+  }
+
+  /**
+   * Set the default slide transition. Slides with an explicit per-slide
+   * transition class (or `.succession`) are not affected.
+   */
+  setTransition(name: TransitionName): void {
+    if (!VALID_TRANSITIONS.includes(name)) return;
+    this.#transition = name;
+    this.#applyDefaultTransition();
+  }
+
+  /**
+   * Apply the current default transition class to all slides that do not
+   * have an explicit per-slide transition override.
+   */
+  #applyDefaultTransition(): void {
+    for (const el of this.#slideElements) {
+      if (this.#hasExplicitTransition(el)) continue;
+      // Remove any previously applied default transition classes
+      for (const t of VALID_TRANSITIONS) {
+        el.classList.remove(`transition-${t}`);
+      }
+      // 'slide' is the CSS default, so we only need to add a class for non-default
+      if (this.#transition !== 'slide') {
+        el.classList.add(`transition-${this.#transition}`);
+      }
+    }
+  }
+
+  /**
+   * Check whether a slide element has an explicit transition class set
+   * from the markdown slide marker (i.e. authored, not default-applied).
+   */
+  #hasExplicitTransition(el: Slide): boolean {
+    // .succession is also a transition override
+    if (el.classList.contains('succession')) return true;
+    return el.hasAttribute('data-explicit-transition');
+  }
+
+  /**
    * Load external CSS to inject into every slide's shadow DOM.
    * Extracts @import rules (e.g. Google Fonts) and hoists them to
    * the main document <head> so fonts load globally.
@@ -254,6 +302,12 @@ export class Slideshow extends HTMLElement {
 
       slideEl.loadContent(slideData.html, slideOptions);
 
+      // Mark slides that have an authored transition class so the global
+      // default doesn't override them.
+      if (slideData.classes.some((c) => c.startsWith('transition-') || c === 'succession')) {
+        slideEl.setAttribute('data-explicit-transition', '');
+      }
+
       if (options?.suppressTransition) {
         slideEl.classList.add('transition-none');
       }
@@ -264,6 +318,12 @@ export class Slideshow extends HTMLElement {
       }
 
       this.#slideElements.push(slideEl);
+    }
+
+    // Apply global default transition (skips slides with explicit overrides
+    // and respects suppressTransition which takes priority)
+    if (!options?.suppressTransition) {
+      this.#applyDefaultTransition();
     }
 
     // Activate first slide

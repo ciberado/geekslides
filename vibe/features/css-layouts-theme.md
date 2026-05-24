@@ -318,6 +318,38 @@ in the template files. They are available for use in any stylesheet.
 | `--gs-scale-factor` | `<geek-slideshow>` resize observer | Current scale ratio applied to slides (see [css-scaling.md](css-scaling.md)) |
 | `--gs-transition-duration` | Engine default (`0.3s`), overridable | Slide transition speed |
 
+### Slide Transition Effects
+
+The default transition between slides is configurable. The default is `slide`. Three built-in effects are available:
+
+| Value | Effect |
+|-------|--------|
+| `slide` | Horizontal slide with opacity **(default)** |
+| `fade` | Fade in/out (position stays centered) |
+| `none` | Instant, no animation |
+
+When no `transition` is specified in `config.json`, the `slide` transition is used.
+
+**Set via `config.json`:**
+
+```json
+{ "transition": "fade" }
+```
+
+**Per-slide override** using slide marker classes:
+
+```markdown
+[](.transition-fade#my-slide)
+```
+
+**Runtime override** via the terminal command:
+
+```
+> transition fade
+```
+
+Per-slide classes always take priority over the global default. The `.succession` class is also treated as an explicit transition override.
+
 Override `--gs-transition-duration` in any presentation CSS:
 
 ```css

@@ -28,16 +28,15 @@ import {
   PluginRegistryClient,
   RoomPluginManager,
   createQrOverlayFeature,
+  VALID_TRANSITIONS,
 } from '@geekslides/engine';
 import { registerHotClient } from '../../engine/src/hmr/hot-client.ts';
 import { patternRegistry } from '../../../plugins/css-doodle/css-doodle-patterns/index.ts';
 import { buildColorVars, parseConfig as parseDoodleConfig } from '../../../plugins/css-doodle/css-doodle-processor.ts';
 import {
   initPluginLoader,
-  expandPluginBundles,
   resolvePlugin,
   resolveFeature,
-  isKnownBundle,
 } from './plugin-loader.js';
 import { registerPluginCommands } from './plugin-commands.js';
 
@@ -799,6 +798,7 @@ try {
     if (config.slideWidth && config.slideHeight) {
       slideshow.setDesignDimensions(config.slideWidth, config.slideHeight);
     }
+    slideshow.setTransition(config.transition);
 
     const syncConfig = config.sync || {};
     const syncEnabled = syncConfig.enabled !== false;
@@ -1002,6 +1002,7 @@ try {
             if (newConfig.slideWidth && newConfig.slideHeight) {
               slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
             }
+            slideshow.setTransition(newConfig.transition);
 
             // Reload features from new config
             featureManager.deactivateAll();
@@ -1087,7 +1088,6 @@ try {
     // we append the new theme CSS on top so its :host tokens win by cascade.
     let activeThemeOverrideCss = '';
     let activeThemeIndex = -1;
-    let activeThemeName = '';
 
     function showCmdOutput(msg) {
       terminal.setOutput(msg);
@@ -1185,6 +1185,7 @@ try {
         if (newConfig.slideWidth && newConfig.slideHeight) {
           slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
         }
+        slideshow.setTransition(newConfig.transition);
         slideshow.goTo(0);
         console.log(`[reloadDeck:${reloadId}] slides loaded, goTo(0), slideCount=${slideshow.slideCount}`);
 
@@ -1311,6 +1312,7 @@ try {
         if (newConfig.slideWidth && newConfig.slideHeight) {
           slideshow.setDesignDimensions(newConfig.slideWidth, newConfig.slideHeight);
         }
+        slideshow.setTransition(newConfig.transition);
 
         // Clear Yjs feature state from previous deck before registering new features
         sync.doc.transact(() => {
@@ -1513,6 +1515,15 @@ try {
       if (currentRoom) speakerParams.set('room', currentRoom);
       if (token) speakerParams.set('token', token);
       window.open(`${location.pathname}?${speakerParams.toString()}`, '_blank');
+    }, category: 'view' });
+    commands.register({ name: 'transition', label: 'Set transition (slide, fade, none)', hasArgs: true, execute: (args) => {
+      const name = args?.[0];
+      if (!name || !VALID_TRANSITIONS.includes(name)) {
+        showCmdOutput(`Usage: transition <${VALID_TRANSITIONS.join('|')}>`);
+        return;
+      }
+      slideshow.setTransition(name);
+      showCmdOutput(`Transition set to: ${name}`);
     }, category: 'view' });
 
     // Activate keyboard and touch input early — before async feature loading —
@@ -1754,7 +1765,6 @@ try {
         return;
       }
       activeThemeOverrideCss = found.css;
-      activeThemeName = name;
       slideshow.loadStyles(combinedCss + '\n' + activeThemeOverrideCss);
       if (sync) sync.doc.getMap('sessionState').set('theme', name);
       showCmdOutput(`✓ Theme switched to: ${found.label}`);
@@ -1765,7 +1775,6 @@ try {
       activeThemeIndex = (activeThemeIndex + 1) % BUILTIN_THEMES.length;
       const next = BUILTIN_THEMES[activeThemeIndex];
       activeThemeOverrideCss = next.css;
-      activeThemeName = next.name;
       slideshow.loadStyles(combinedCss + '\n' + activeThemeOverrideCss);
       if (sync) sync.doc.getMap('sessionState').set('theme', next.name);
     }, category: 'theme' });
