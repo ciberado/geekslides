@@ -25,6 +25,9 @@ import {
   createLogger,
   waitForProcessedElement,
   registerLayoutTransform,
+  PluginRegistryClient,
+  RoomPluginManager,
+  createQrOverlayFeature,
 } from '@geekslides/engine';
 import { registerHotClient } from '../../engine/src/hmr/hot-client.ts';
 import { patternRegistry } from '../../../plugins/css-doodle/css-doodle-patterns/index.ts';
@@ -36,6 +39,7 @@ import {
   resolveFeature,
   isKnownBundle,
 } from './plugin-loader.js';
+import { registerPluginCommands } from './plugin-commands.js';
 
 // Built-in theme CSS strings (imported as raw text for runtime switching)
 import themeDefaultRaw from '../src/templates/theme-default.css?raw';
@@ -1588,6 +1592,74 @@ try {
       }
     }
 
+    // --- QR overlay feature (always active for room-synced share-qr) ---
+    if (sync) {
+      featureManager.register(createQrOverlayFeature());
+    }
+
+    // --- Plugin registry system (room-scoped) ---
+    const registryClient = new PluginRegistryClient();
+    const roomPluginManager = sync ? new RoomPluginManager(sync.doc) : null;
+
+    // Reprocess the deck when room plugins change (non-destructive: preserves navigation)
+    async function reprocessDeckForPlugins() {
+      try {
+        const _rawContent = await fetchMarkdown(config);
+        const result = await processContent(_rawContent, config);
+        markdown = result.markdown;
+        currentLineMapping = result.lineMapping;
+        slides = result.slides;
+        currentSlideMap = result.slideMap;
+        const currentSlide = slideshow.currentSlide;
+        const currentPartial = slideshow.currentPartial;
+        slideshow.loadSlides(slides);
+        await applyProcessors(slideshow, config);
+        // Also load room plugins' processors
+        if (roomPluginManager) {
+          const roomPlugins = roomPluginManager.listPlugins();
+          for (const rp of roomPlugins) {
+            try {
+              const { importRemotePlugin } = await import('@geekslides/engine');
+              const mod = await importRemotePlugin(rp.manifestUrl);
+              if (mod.activate) {
+                const exports = mod.activate(PLUGIN_API);
+                if (exports?.processors) {
+                  const slideElements = slideshow.shadowRoot?.querySelectorAll('geek-slide') || [];
+                  for (const slideEl of slideElements) {
+                    const content = slideEl.shadowRoot?.querySelector('section.content');
+                    if (!content) continue;
+                    for (const proc of Object.values(exports.processors)) {
+                      if (typeof proc === 'function') proc(content);
+                    }
+                  }
+                }
+              }
+            } catch (err) {
+              console.warn(`[room-plugins] Failed to apply processor from '${rp.name}':`, err.message);
+            }
+          }
+        }
+        slideshow.goTo(currentSlide, currentPartial);
+      } catch (err) {
+        console.warn('[room-plugins] Reprocess failed:', err.message);
+      }
+    }
+
+    if (roomPluginManager) {
+      roomPluginManager.onChange(() => {
+        void reprocessDeckForPlugins();
+      });
+    }
+
+    registerPluginCommands({
+      commands,
+      roomPluginManager,
+      registryClient,
+      showOutput: showCmdOutput,
+      showError: (msg) => terminal.setOutput(msg, true),
+      reprocessDeck: reprocessDeckForPlugins,
+    });
+
     // Content proxy: watch for proxy info published by the active presenter.
     // lastProxyRaw and lastUploadStartedAt are hoisted at the top of this block.
     if (sync) {
@@ -1755,6 +1827,68 @@ try {
             window.history.replaceState(null, '', presenterUrl.toString());
           } catch (err) {
             showCmdOutput(`✗ Share failed: ${err.message}`);
+          }
+        })();
+      }, category: 'sync' });
+
+      // --- share-qr command: display QR code across all room clients ---
+      commands.register({ name: 'share-qr', label: 'Show QR code with viewer link on all room screens', bindable: false, execute: () => {
+        const room = sync.currentRoom;
+        if (!room) {
+          showCmdOutput('✗ Not connected to a room');
+          return;
+        }
+        void (async () => {
+          try {
+            const serverBaseUrl = `${location.protocol}//${location.host}`;
+            // Create or reuse share link
+            const res = await fetch(`${serverBaseUrl}/api/rooms/${encodeURIComponent(room)}/share`, {
+              method: 'POST',
+            });
+            if (!res.ok) {
+              showCmdOutput(`✗ Failed to create share link: ${res.statusText}`);
+              return;
+            }
+            const data = await res.json();
+            const viewerUrl = new URL(window.location.href);
+            viewerUrl.searchParams.delete('token');
+            viewerUrl.searchParams.delete('readonly');
+            viewerUrl.searchParams.set('room', room);
+            viewerUrl.searchParams.set('vtoken', data.viewerToken);
+            const viewerLink = viewerUrl.toString();
+
+            // Create short URL for denser QR code
+            let qrUrl = viewerLink;
+            try {
+              const shortRes = await fetch(`${serverBaseUrl}/api/short`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url: viewerLink }),
+              });
+              if (shortRes.ok) {
+                const shortData = await shortRes.json();
+                qrUrl = shortData.short;
+              }
+            } catch {
+              // Fall back to full URL if shortening fails
+            }
+
+            // Store presenter token
+            sync.updateConnectionToken(data.presenterToken);
+
+            // Broadcast QR URL to all room clients via feature shared state
+            const featuresMap = sync.doc.getMap('features');
+            let qrMap = featuresMap.get('qr-overlay');
+            if (!qrMap) {
+              const Y = await import('yjs');
+              qrMap = new Y.Map();
+              featuresMap.set('qr-overlay', qrMap);
+            }
+            qrMap.set('qrUrl', qrUrl);
+
+            showCmdOutput(`✓ QR code shown (${qrUrl})`);
+          } catch (err) {
+            showCmdOutput(`✗ Share QR failed: ${err.message}`);
           }
         })();
       }, category: 'sync' });

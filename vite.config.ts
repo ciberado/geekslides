@@ -90,6 +90,9 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:1234',
       },
+      '/s/': {
+        target: 'http://localhost:1234',
+      },
     },
   },
 });

@@ -149,6 +149,7 @@ export function registerDevCommand(program: Command): void {
                 proxy: {
                   '/ws': { target: `ws://localhost:${String(wsPort)}`, ws: true },
                   '/api': { target: `http://localhost:${String(wsPort)}` },
+                  '/s/': { target: `http://localhost:${String(wsPort)}` },
                 },
               }
             : {}),
