@@ -15,41 +15,76 @@
 import JSZip from 'jszip';
 import tXml from './txml.ts';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type TxmlTree = Record<string, any>;
-
-/** Parse XML string using the txml fork. Returns the root object. */
-function parseXml(xml: string): TxmlTree {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-return
-  return (tXml as (s: string) => TxmlTree)(xml);
+interface TxmlText {
+  readonly valueOf: () => string;
 }
 
-/** Ensure a value is always an array (wraps single items, passes arrays through). */
-function toArray<T>(v: T | T[] | undefined): T[] {
-  if (v === undefined || v === null) return [];
-  return Array.isArray(v) ? v : [v];
+type TxmlAttrs = Readonly<Record<string, string | number>>;
+type TxmlValue = string | TxmlText | TxmlNode | TxmlNode[] | TxmlAttrs;
+
+interface TxmlNode {
+  readonly [key: string]: TxmlValue | undefined;
+  readonly attrs?: TxmlAttrs;
+}
+
+/** Parse XML string using the txml fork. Returns the root object. */
+function parseXml(xml: string): TxmlNode {
+  return (tXml as (input: string) => TxmlNode)(xml);
+}
+
+function isTxmlText(value: TxmlValue | undefined): value is TxmlText {
+  return value instanceof String;
+}
+
+function isTxmlNode(value: TxmlValue | undefined): value is TxmlNode {
+  return typeof value === 'object' && !Array.isArray(value) && !isTxmlText(value);
+}
+
+function getChild(node: TxmlNode | undefined, key: string): TxmlNode | undefined {
+  const value = node?.[key];
+  return isTxmlNode(value) ? value : undefined;
+}
+
+function getChildren(node: TxmlNode | undefined, key: string): TxmlNode[] {
+  const value = node?.[key];
+  if (Array.isArray(value)) {
+    const children: TxmlNode[] = [];
+    for (const child of value) {
+      if (isTxmlNode(child)) children.push(child);
+    }
+    return children;
+  }
+  return isTxmlNode(value) ? [value] : [];
+}
+
+function getAttr(node: TxmlNode | undefined, key: string): string | undefined {
+  const value = node?.attrs?.[key];
+  return typeof value === 'string' ? value : undefined;
+}
+
+function getText(value: TxmlValue | undefined): string {
+  if (typeof value === 'string') return value;
+  return isTxmlText(value) ? value.valueOf() : '';
 }
 
 /**
  * Convert a single `a:p` paragraph object (txml format) to an HTML string.
  * Returns an empty string if the paragraph has no text content.
  */
-function paragraphToHtml(para: TxmlTree): string {
-  const runs = toArray<TxmlTree>(para['a:r'] as TxmlTree | TxmlTree[] | undefined);
+function paragraphToHtml(para: TxmlNode): string {
+  const runs = getChildren(para, 'a:r');
   if (runs.length === 0) return '';
 
   const parts: string[] = [];
 
   for (const run of runs) {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const rPr = run['a:rPr'] as TxmlTree | undefined;
-    // a:t is a String wrapper object — use String() to extract the text
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    const text = String(run['a:t'] ?? '');
+    const rPr = getChild(run, 'a:rPr');
+    // a:t is a String wrapper object — convert it explicitly to primitive text
+    const text = getText(run['a:t']);
     if (!text) continue;
 
-    const bold = rPr?.attrs?.['b'] === '1';
-    const italic = rPr?.attrs?.['i'] === '1';
+    const bold = getAttr(rPr, 'b') === '1';
+    const italic = getAttr(rPr, 'i') === '1';
 
     let html = escapeHtml(text);
     if (italic) html = `<em>${html}</em>`;
@@ -95,20 +130,13 @@ export async function extractPptxNotes(
 
     const relsXml = await relsFile.async('text');
     const relsTree = parseXml(relsXml);
+    const rels = getChildren(getChild(relsTree, 'Relationships'), 'Relationship');
 
-    // Relationships may be a single object or an array
-    const rels = toArray<TxmlTree>(
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      relsTree['Relationships']?.['Relationship'] as TxmlTree | TxmlTree[] | undefined,
-    );
-
-    const notesRel = rels.find((r: TxmlTree) =>
-      (r.attrs?.['Type'] as string | undefined)?.endsWith('/notesSlide'),
-    );
+    const notesRel = rels.find((relationship) => getAttr(relationship, 'Type')?.endsWith('/notesSlide') ?? false);
     if (!notesRel) { results.push(undefined); continue; }
 
     // Resolve the notes file path (Target is relative to ppt/slides/)
-    const target = (notesRel.attrs?.['Target'] as string) ?? '';
+    const target = getAttr(notesRel, 'Target') ?? '';
     const notesPath = target.startsWith('../')
       ? 'ppt/' + target.slice(3)
       : 'ppt/slides/' + target;
@@ -118,31 +146,26 @@ export async function extractPptxNotes(
 
     const notesXml = await notesFile.async('text');
     const notesTree = parseXml(notesXml);
-
-    // Navigate: p:notes → p:cSld → p:spTree → p:sp[]
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-    const spTree = notesTree['p:notes']?.['p:cSld']?.['p:spTree'] as TxmlTree | undefined;
+    const spTree = getChild(getChild(getChild(notesTree, 'p:notes'), 'p:cSld'), 'p:spTree');
     if (!spTree) { results.push(undefined); continue; }
 
-    const shapes = toArray<TxmlTree>(spTree['p:sp'] as TxmlTree | TxmlTree[] | undefined);
+    const shapes = getChildren(spTree, 'p:sp');
 
     // Find the body placeholder (p:ph type="body" idx="1") — the actual notes text.
-    let txBody: TxmlTree | undefined;
+    let txBody: TxmlNode | undefined;
     for (const sp of shapes) {
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-      const ph = sp['p:nvSpPr']?.['p:nvPr']?.['p:ph'] as TxmlTree | undefined;
-      if (ph?.attrs?.['type'] === 'body' && ph.attrs['idx'] === '1') {
-        txBody = sp['p:txBody'] as TxmlTree | undefined;
+      const ph = getChild(getChild(getChild(sp, 'p:nvSpPr'), 'p:nvPr'), 'p:ph');
+      if (getAttr(ph, 'type') === 'body' && getAttr(ph, 'idx') === '1') {
+        txBody = getChild(sp, 'p:txBody');
         break;
       }
     }
 
     if (!txBody) { results.push(undefined); continue; }
 
-    const paragraphs = toArray<TxmlTree>(txBody['a:p'] as TxmlTree | TxmlTree[] | undefined);
-    const htmlLines = paragraphs
+    const htmlLines = getChildren(txBody, 'a:p')
       .map(paragraphToHtml)
-      .filter(line => line.length > 0);
+      .filter((line) => line.length > 0);
 
     results.push(htmlLines.length > 0 ? htmlLines.join('\n') : undefined);
   }

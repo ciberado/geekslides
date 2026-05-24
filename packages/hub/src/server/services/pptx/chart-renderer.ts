@@ -95,7 +95,7 @@ function renderBarChart(series: ChartSeries[], width: number, height: number): s
   const ih = height - MARGIN.top - MARGIN.bottom;
   const { rows, names, groups } = flattenSeries(series);
   const { svg, dom } = makeSvg(width, height);
-  const g = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+  const g = svg.append('g').attr('transform', `translate(${String(MARGIN.left)},${String(MARGIN.top)})`);
 
   const color = d3.scaleOrdinal<string>(d3.schemeTableau10).domain(groups);
   const x0 = d3.scaleBand().domain(names).rangeRound([0, iw]).paddingInner(0.15);
@@ -110,7 +110,7 @@ function renderBarChart(series: ChartSeries[], width: number, height: number): s
     .selectAll('g')
     .data([...grouped])
     .join('g')
-    .attr('transform', ([name]) => `translate(${x0(name) ?? 0},0)`)
+    .attr('transform', ([name]) => `translate(${String(x0(name) ?? 0)},0)`)
     .selectAll('rect')
     .data(([, pts]) => pts)
     .join('rect')
@@ -120,7 +120,7 @@ function renderBarChart(series: ChartSeries[], width: number, height: number): s
     .attr('height', (d) => ih - y(d.value))
     .attr('fill', (d) => color(d.group));
 
-  g.append('g').attr('transform', `translate(0,${ih})`).call(d3.axisBottom(x0).tickSizeOuter(0));
+  g.append('g').attr('transform', `translate(0,${String(ih)})`).call(d3.axisBottom(x0).tickSizeOuter(0));
   g.append('g').call(d3.axisLeft(y).ticks(5));
   return getSvgString(dom);
 }
@@ -130,7 +130,7 @@ function renderLineChart(series: ChartSeries[], width: number, height: number): 
   const ih = height - MARGIN.top - MARGIN.bottom;
   const { rows, names, groups } = flattenSeries(series);
   const { svg, dom } = makeSvg(width, height);
-  const g = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+  const g = svg.append('g').attr('transform', `translate(${String(MARGIN.left)},${String(MARGIN.top)})`);
 
   const color = d3.scaleOrdinal<string>(d3.schemeTableau10).domain(groups);
   const x = d3.scalePoint().domain(names).range([0, iw]).padding(0.5);
@@ -151,7 +151,7 @@ function renderLineChart(series: ChartSeries[], width: number, height: number): 
       .attr('stroke-width', 2)
       .attr('d', line);
   }
-  g.append('g').attr('transform', `translate(0,${ih})`).call(d3.axisBottom(x).tickSizeOuter(0));
+  g.append('g').attr('transform', `translate(0,${String(ih)})`).call(d3.axisBottom(x).tickSizeOuter(0));
   g.append('g').call(d3.axisLeft(y).ticks(5));
   return getSvgString(dom);
 }
@@ -161,7 +161,7 @@ function renderAreaChart(series: ChartSeries[], width: number, height: number): 
   const ih = height - MARGIN.top - MARGIN.bottom;
   const { rows, names, groups } = flattenSeries(series);
   const { svg, dom } = makeSvg(width, height);
-  const g = svg.append('g').attr('transform', `translate(${MARGIN.left},${MARGIN.top})`);
+  const g = svg.append('g').attr('transform', `translate(${String(MARGIN.left)},${String(MARGIN.top)})`);
 
   const color = d3.scaleOrdinal<string>(d3.schemeTableau10).domain(groups);
   const x = d3.scalePoint().domain(names).range([0, iw]).padding(0.5);
@@ -184,7 +184,7 @@ function renderAreaChart(series: ChartSeries[], width: number, height: number): 
       .attr('stroke-width', 1.5)
       .attr('d', area);
   }
-  g.append('g').attr('transform', `translate(0,${ih})`).call(d3.axisBottom(x).tickSizeOuter(0));
+  g.append('g').attr('transform', `translate(0,${String(ih)})`).call(d3.axisBottom(x).tickSizeOuter(0));
   g.append('g').call(d3.axisLeft(y).ticks(5));
   return getSvgString(dom);
 }
@@ -194,7 +194,7 @@ function renderPieChart(series: ChartSeries[], width: number, height: number): s
   const { svg, dom } = makeSvg(width, height);
   const radius = Math.min(width, height) / 2 - 20;
 
-  const g = svg.append('g').attr('transform', `translate(${width / 2},${height / 2})`);
+  const g = svg.append('g').attr('transform', `translate(${String(width / 2)},${String(height / 2)})`);
   const color = d3.scaleOrdinal<string>(d3.schemeTableau10).domain(groups);
   const pie = d3.pie<{ name: string; group: string; value: number }>().value((d) => d.value);
   const arc = d3.arc<d3.PieArcDatum<{ name: string; group: string; value: number }>>()

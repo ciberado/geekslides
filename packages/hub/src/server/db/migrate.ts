@@ -1,6 +1,10 @@
 import { sql } from 'drizzle-orm';
 import type { HubDatabase } from './index.ts';
 
+function hasColumnName(value: unknown): value is { readonly name: string } {
+  return typeof value === 'object' && value !== null && 'name' in value && typeof value.name === 'string';
+}
+
 export function migrate(db: HubDatabase): void {
   db.run(sql`
     CREATE TABLE IF NOT EXISTS users (
@@ -58,8 +62,11 @@ export function migrate(db: HubDatabase): void {
 
   // Idempotent column additions — ALTER TABLE does not support IF NOT EXISTS in SQLite.
   // Check PRAGMA first so re-running migrate() on an existing DB is safe.
-  const presColumns = db.all(sql`PRAGMA table_info(presentations)`) as Array<{ name: string }>;
-  const presColNames = new Set(presColumns.map((c) => c.name));
+  const presColNames = new Set(
+    db.all(sql`PRAGMA table_info(presentations)`).flatMap((column) =>
+      hasColumnName(column) ? [column.name] : [],
+    ),
+  );
   if (!presColNames.has('github_url')) {
     db.run(sql`ALTER TABLE presentations ADD COLUMN github_url TEXT`);
   }

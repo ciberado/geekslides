@@ -14,7 +14,6 @@
  * Images are embedded as base64 data URIs by the converter.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 import processPptxFactoryUntyped from './pptx/process-pptx.ts';
 import { pptxCss } from './pptx/pptx-css.ts';
 import { renderChart, type ChartSeries } from './pptx/chart-renderer.ts';
@@ -72,7 +71,6 @@ export async function convertPptx(
     // TS can't track closure-mutated variables, so we use a container object.
     const sender: { send: ((msg: { type: string; data: unknown }) => void) | null } = { send: null };
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     processPptxFactory(
       (handler: (msg: { type: string; data: unknown }) => void) => { sender.send = handler; },
       (msg: PptxMsg) => {
@@ -91,12 +89,10 @@ export async function convertPptx(
   });
 
   // Post-process each slide: replace chart placeholders, resolve bullets
-  const processedSlides = await Promise.all(
-    slides.map((html) => postProcessSlide(html, chartEntries)),
-  );
+  const processedSlides = slides.map((html) => postProcessSlide(html, chartEntries));
 
   // Extract speaker notes from the PPTX (slides are in order slide1.xml, slide2.xml, …)
-  const slideFilenames = processedSlides.map((_, i) => `ppt/slides/slide${i + 1}.xml`);
+  const slideFilenames = processedSlides.map((_, i) => `ppt/slides/slide${String(i + 1)}.xml`);
   const notesList = await extractPptxNotes(arrayBuffer, slideFilenames);
 
   // Inject notes as <aside class="gs-notes"> inside each <section> that has them.
@@ -115,7 +111,7 @@ export async function convertPptx(
 
   // Derive aspect ratio from actual PPTX slide dimensions
   const gcd = greatestCommonDivisor(Math.round(slideSize.width), Math.round(slideSize.height));
-  const aspectRatio = `${Math.round(slideSize.width) / gcd}/${Math.round(slideSize.height) / gcd}`;
+  const aspectRatio = `${String(Math.round(slideSize.width) / gcd)}/${String(Math.round(slideSize.height) / gcd)}`;
 
   // Build files
   const slidesHtml = slidesWithNotes.join('\n');
@@ -144,7 +140,7 @@ export async function convertPptx(
 
 // ─── slide post-processing ───────────────────────────────────────────────────
 
-async function postProcessSlide(slideHtml: string, charts: ChartEntry[]): Promise<string> {
+function postProcessSlide(slideHtml: string, charts: ChartEntry[]): string {
   // Use a single jsdom pass for both chart injection and bullet resolution.
   const dom = new JSDOM(`<div id="root">${slideHtml}</div>`);
   const { document } = dom.window;
@@ -153,7 +149,7 @@ async function postProcessSlide(slideHtml: string, charts: ChartEntry[]): Promis
 
   // Chart injection: find placeholder divs and replace with rendered SVG
   for (const { data: { chartID, chartType, chartData } } of charts) {
-    const placeholder = root.querySelector(`[id='${chartID}']`) as HTMLElement | null;
+    const placeholder = root.querySelector<HTMLElement>(`[id='${chartID}']`);
     if (placeholder === null) continue;
 
     const w = parseFloat(placeholder.style.width) || 400;

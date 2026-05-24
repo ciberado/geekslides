@@ -76,8 +76,8 @@ export function resolveNumericBullets(slideHtml: string): string {
 
 function formatBullet(bulletType: string, n: number): string {
   switch (bulletType) {
-    case 'arabicPeriod':  return `${n}. `;
-    case 'arabicParenR':  return `${n}) `;
+    case 'arabicPeriod':  return `${String(n)}. `;
+    case 'arabicParenR':  return `${String(n)}) `;
     case 'alphaLcParenR': return `${alphaNumeric(n, false)}) `;
     case 'alphaLcPeriod': return `${alphaNumeric(n, false)}. `;
     case 'alphaUcParenR': return `${alphaNumeric(n, true)}) `;

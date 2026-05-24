@@ -133,7 +133,6 @@ function simplefy (children) {
 
   // Text node (e.g. <t>This is text.</t>)
   if (children.length === 1 && (typeof children[0] === 'string' || children[0] instanceof String)) {
-    // eslint-disable-next-line no-new-wrappers
     return new String(children[0])
   }
 
