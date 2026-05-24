@@ -23,6 +23,11 @@
 		reverse_proxy localhost:1234
 	}
 
+	# Short URL redirects — local yjs-server
+	handle /s/* {
+		reverse_proxy localhost:1234
+	}
+
 	# Hub — redirect bare /hub to /hub/ so the SPA base path resolves correctly,
 	# then proxy all /hub/* traffic to the hub server.
 	handle /hub {

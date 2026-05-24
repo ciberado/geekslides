@@ -18,6 +18,10 @@
 		reverse_proxy localhost:1234
 	}
 
+	handle /s/* {
+		reverse_proxy localhost:1234
+	}
+
 	handle /hub {
 		redir /hub/ 301
 	}
