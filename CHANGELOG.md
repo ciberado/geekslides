@@ -9,15 +9,33 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+<!-- Add new entries above this line -->
+
+## [2.4.0] - 2026-05-24
+
 ### Added
 
+- **Deck export** — Hub dashboard now has an **Export** button on every deck card and
+  list row; clicking it downloads a `.zip` archive of all deck files via
+  `GET /hub/api/presentations/:id/export`
+- **PPTX source preservation** — when a deck is created or updated from a `.pptx`
+  upload, the original file is stored as `source.pptx` in the git repo and is
+  included in the exported zip
+- **Apache-2.0 license** — `LICENSE` file added; all workspace `package.json` files
+  now declare `"license": "Apache-2.0"`
 - **PPTX speaker notes import** — speaker notes from `.pptx` files are now extracted
   and shown in the GeekSlides speaker view (`S` key); notes are extracted from
   `ppt/notesSlides/notesSlideN.xml`, converted to HTML (bold/italic preserved), and
   embedded as `<aside class="gs-notes">` in each slide's `<section>`; engine's
   `HtmlSlideParser` extracts them into `SlideData.notesHtml` at parse time
 
-<!-- Add new entries above this line -->
+### Fixed
+
+- **Hub Vite HMR in dev mode** — `Caddyfile.dev` now routes `/hub/api/*` to Fastify
+  and all other `/hub/*` paths to the Vite dev server, enabling hot module replacement
+  without a manual `npm run build:client`
+- **Hub dashboard card overflow** — card action buttons now wrap (`flex-wrap: wrap`)
+  so long button rows don't overflow the card boundary
 
 ## [2.3.0] - 2026-05-23
 

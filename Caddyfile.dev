@@ -1,9 +1,10 @@
 # Dev reverse proxy — single entry point for all GeekSlides services.
 # Listens on :8080 and routes to the three local dev servers:
-#   /hub/*   → Hub Fastify server  :3000
-#   /api/*   → yjs-server          :1234
-#   /ws*     → yjs-server          :1234  (WebSocket)
-#   /*       → viewer Vite SPA     :5173
+#   /hub/api/* → Hub Fastify server  :3000  (API)
+#   /hub/*     → Hub Vite dev server :3001  (SPA + HMR)
+#   /api/*     → yjs-server          :1234
+#   /ws*       → yjs-server          :1234  (WebSocket)
+#   /*         → viewer Vite SPA     :5173
 
 :8080 {
 	handle /ws* {
@@ -21,8 +22,15 @@
 		redir /hub/ 301
 	}
 
-	handle /hub/* {
+	handle /hub/api/* {
 		reverse_proxy localhost:3000
+	}
+
+	handle /hub/* {
+		reverse_proxy localhost:3001 {
+			header_up Upgrade {http.request.header.Upgrade}
+			header_up Connection {http.request.header.Connection}
+		}
 	}
 
 	handle {

@@ -78,7 +78,7 @@ export function registerPresentationRoutes(
             const filename = decodeURIComponent(part.filename || part.fieldname);
 
             if (filename.endsWith('.pptx')) {
-              // PPTX upload — convert to HTML deck
+              // PPTX upload — convert to HTML deck and keep original for export
               const { files: pptxFiles, extractedTitle } = await convertPptx(
                 data,
                 titleManuallySet ? title : undefined,
@@ -87,6 +87,7 @@ export function registerPresentationRoutes(
                 title = extractedTitle;
               }
               uploaded.push(...pptxFiles);
+              uploaded.push({ path: 'source.pptx', data });
             } else if (filename.endsWith('.zip')) {
               // Zip upload
               const extracted = extractZip(data);
@@ -215,9 +216,10 @@ export function registerPresentationRoutes(
           const filename = decodeURIComponent(part.filename || part.fieldname);
 
           if (filename.endsWith('.pptx')) {
-            // PPTX re-upload — convert to HTML deck
+            // PPTX re-upload — convert to HTML deck and keep original for export
             const { files: pptxFiles } = await convertPptx(data);
             uploaded.push(...pptxFiles);
+            uploaded.push({ path: 'source.pptx', data });
           } else if (filename.endsWith('.zip')) {
             uploaded.push(...extractZip(data));
           } else {

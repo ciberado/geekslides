@@ -58,6 +58,8 @@ export class DashboardPage extends LitElement {
     .badge-private { background: rgba(148,163,184,0.15); color: var(--gs-text-muted); }
     .card-actions {
       display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
       gap: 0.5rem;
       margin-top: 0.75rem;
     }
@@ -70,6 +72,7 @@ export class DashboardPage extends LitElement {
       font: inherit;
       font-size: 0.8125rem;
       cursor: pointer;
+      white-space: nowrap;
     }
     .card-actions button:hover { border-color: var(--gs-accent); color: var(--gs-accent); }
     .card-actions button.danger:hover { border-color: var(--gs-danger); color: var(--gs-danger); }
