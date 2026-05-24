@@ -104,6 +104,15 @@ GeekSlides protects the room with a presenter token and prints a viewer URL:
 
 Send this URL to your audience. Anyone who opens it gets a locked-down, receive-only view.
 
+### Show a QR code to the audience
+
+For in-person presentations, use `share-qr` instead — it displays a full-screen, scannable QR code on all connected screens:
+
+1. Open the terminal (`Escape`)
+2. Type `share-qr`
+
+The QR encodes a shortened URL for easy scanning. Press `Esc` or click anywhere on any screen to dismiss it. See [Share a QR Code](26-share-qr-code.md) for full details.
+
 ### What viewers see
 
 - The current slide, following the presenter in real time

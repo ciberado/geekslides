@@ -284,6 +284,68 @@ For **custom web components** embedded in slides (e.g. interactive controls, dat
 
 Examples of features (not plugins): whiteboard, live surveys, Q&A overlays, audience reactions.
 
+## Plugin Registry System
+
+### Overview
+
+Plugin registries enable dynamic plugin management without editing `config.json`. A registry is an HTTPS-accessible directory serving an `index.json` manifest listing available plugins. Registries and loaded plugins are stored as **room-level state** via Yjs, so they persist across deck changes within a room session and sync across all clients.
+
+For a step-by-step usage guide, see [How-To: Use Plugin Registries](../../how-to/25-use-plugin-registries.md).
+
+### Registry Manifest Format
+
+A registry serves `index.json`:
+
+```json
+{
+  "name": "My Plugin Registry",
+  "version": 1,
+  "plugins": [
+    { "name": "emoji", "version": "1.0.0", "description": "Emoji shortcodes", "entry": "emoji/plugin.json" },
+    { "name": "highlight", "version": "2.0.0", "description": "Code highlighting", "entry": "highlight/plugin.json" }
+  ]
+}
+```
+
+Each `entry` is a relative path to the plugin's `plugin.json` manifest (the existing remote bundle format).
+
+### Terminal Commands
+
+| Command | Description |
+|---------|-------------|
+| `plugin-registry-add <url>` | Add a registry (fetches and validates index.json) |
+| `plugin-registry-ls` | List all configured registries |
+| `plugin-registry-remove <url\|name>` | Remove a registry and its plugins |
+| `plugin-available` | List all available plugins from all registries |
+| `plugin-active` | List currently loaded room plugins |
+| `plugin-load <name>` | Load a plugin by name from registries |
+| `plugin-unload <name>` | Unload a room plugin |
+
+### Architecture
+
+```
+packages/engine/src/plugins/
+  PluginRegistry.ts       ← Registry client (fetch + cache index.json)
+  RoomPluginManager.ts    ← Room-level Yjs state (registries + active plugins)
+packages/cli/app/
+  plugin-commands.js      ← Terminal command registrations
+```
+
+**State storage (Yjs):** `doc.getMap('roomPlugins')` contains:
+- `registries`: Y.Array of `{ url, name }` objects
+- `plugins`: Y.Array of `{ name, manifestUrl, version, registryUrl }` objects
+
+**Pinned identity:** When a plugin is loaded, its resolved `manifestUrl` (absolute) is stored in Yjs rather than just a name. This ensures deterministic loading across all clients regardless of registry changes.
+
+**Deck changes:** Room plugins remain active when the deck changes. The preprocessor/processor pipeline re-runs with both deck-configured plugins AND room-loaded plugins. Room plugins are appended after deck plugins, with deduplication by resolved identity.
+
+### Implementation Details
+
+- `PluginRegistryClient` fetches manifests through `/api/plugin-proxy` to avoid CORS
+- `RoomPluginManager` observes deep changes and notifies handlers (triggers deck reprocess)
+- Non-destructive reprocess: preserves current slide/partial and Yjs feature state
+- Registry client caches manifests; use `invalidate()` to force refetch
+
 ## v1 → v2 Migration
 
 | v1 | v2 |

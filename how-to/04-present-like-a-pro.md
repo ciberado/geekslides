@@ -53,6 +53,11 @@ You can also **drag the top edge** of the terminal panel up or down to resize it
 | `sync-follow` | Follow the presenter's position |
 | `sync-disconnect` | Stop following |
 | `load <url>` | Load a remote deck by config URL |
+| `share` | Create a read-only viewer link |
+| `share-qr` | Show a QR code on all screens ([details](26-share-qr-code.md)) |
+| `plugin-registry-add <url>` | Add a plugin registry ([details](25-use-plugin-registries.md)) |
+| `plugin-load <name>` | Load a plugin from registries |
+| `plugin-unload <name>` | Unload a room plugin |
 
 Press `Esc` again to close the terminal without running a command.
 

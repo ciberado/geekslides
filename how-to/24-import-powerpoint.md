@@ -138,4 +138,4 @@ PowerPoint animations and transitions are not preserved.
 
 ---
 
-← Previous: [Configure Custom Keybindings](23-configure-custom-keybindings.md) | [Back to index](README.md)
+← Previous: [Configure Custom Keybindings](23-configure-custom-keybindings.md) | Next: [Use Plugin Registries →](25-use-plugin-registries.md)

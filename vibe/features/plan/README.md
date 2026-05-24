@@ -136,6 +136,8 @@ All decisions and specifications are in the sibling docs:
 | 17 | Implemented | Pino-based logging shipped in engine, server, and CLI with configurable namespace levels and unit coverage |
 | 18 | 🔴 Not started | Enhanced error messages and diagnostics |
 | 19 | 🔴 Not started | VS Code extension with cursor↔slide sync |
+| 20 | Implemented | Custom web components via config.scripts |
+| 21 | Implemented | Plugin registry system + share-qr command |
 
 ## Future Improvements
 

@@ -27,6 +27,8 @@ Practical, step-by-step tutorials to get you productive with GeekSlides.
 | [Embed Rich Media](22-embed-rich-media.md) | Add YouTube videos, audio players, video files, and embedded pages to slides using image-link syntax with lazy-load, layout, and sync support |
 | [Configure Custom Keybindings](23-configure-custom-keybindings.md) | Bind keys to commands, cycle multiple commands on one key, export/import configurations |
 | [Import a PowerPoint Presentation](24-import-powerpoint.md) | Upload a .pptx file through the Hub, get a fully navigable deck with speaker view, PDF export, and live sync |
+| [Use Plugin Registries](25-use-plugin-registries.md) | Add remote plugin registries, load and unload plugins dynamically at runtime without editing config.json |
+| [Share a QR Code](26-share-qr-code.md) | Display a full-screen QR code on all screens so your audience can scan and join instantly |
 
 ## Screenshots
 
