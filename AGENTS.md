@@ -80,5 +80,33 @@ npm run docker:push     # Push all Docker images to Docker Hub
 ## Documentation
 
 - `how-to/` — User-facing guides (install, create, present, deploy, export, style, plugins)
-- `vibe/features/` — Architecture decisions and feature design docs
+- `vibe/features/` — Architecture decisions and feature design docs:
+  - [architecture-v2.md](vibe/features/architecture-v2.md) — Overall system architecture
+  - [book-pdf-redesign.md](vibe/features/book-pdf-redesign.md) — Book/PDF export redesign
+  - [cli-docker-image.md](vibe/features/cli-docker-image.md) — CLI Docker image design
+  - [command-system.md](vibe/features/command-system.md) — Command registration and terminal
+  - [components.md](vibe/features/components.md) — Web Components catalog
+  - [content-proxy.md](vibe/features/content-proxy.md) — Content proxy API
+  - [css-doodle-plugin.md](vibe/features/css-doodle-plugin.md) — CSS Doodle plugin
+  - [css-layouts-theme.md](vibe/features/css-layouts-theme.md) — CSS layouts and theming
+  - [css-scaling.md](vibe/features/css-scaling.md) — Viewport scaling strategy
+  - [custom-components.md](vibe/features/custom-components.md) — Custom web component loading
+  - [decisions.md](vibe/features/decisions.md) — Architecture decision records
+  - [deployment-v2.md](vibe/features/deployment-v2.md) — Deployment architecture
+  - [feature-system.md](vibe/features/feature-system.md) — Feature activation system
+  - [hub.md](vibe/features/hub.md) — Hub multi-deck management
+  - [keybindings.md](vibe/features/keybindings.md) — Keyboard shortcuts
+  - [logging.md](vibe/features/logging.md) — Logging infrastructure
+  - [media.md](vibe/features/media.md) — Media handling (images, video)
+  - [plugin-system.md](vibe/features/plugin-system.md) — Plugin system (preprocessors + processors)
+  - [pptx-import.md](vibe/features/pptx-import.md) — PowerPoint import
+  - [print.md](vibe/features/print.md) — Print/PDF rendering
+  - [release-process.md](vibe/features/release-process.md) — Release workflow (tag + Docker)
+  - [share-qr.md](vibe/features/share-qr.md) — Share QR code overlay
+  - [speaker-notes.md](vibe/features/speaker-notes.md) — Speaker notes system
+  - [sync.md](vibe/features/sync.md) — Yjs real-time sync
+  - [testing.md](vibe/features/testing.md) — Testing strategy and conventions
+  - [toolchain.md](vibe/features/toolchain.md) — Build toolchain (Vite, esbuild, tsc)
+  - [vscode-autocomplete-nested-modifiers.md](vibe/features/vscode-autocomplete-nested-modifiers.md) — VSCode nested modifier autocomplete
+  - [vscode-extension.md](vibe/features/vscode-extension.md) — VSCode extension
 - Use the `pre-commit-checklist` skill before committing to ensure tests pass and docs stay current
