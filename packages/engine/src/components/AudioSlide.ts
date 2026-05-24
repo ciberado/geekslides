@@ -32,16 +32,24 @@ export function colorWithAlpha(color: string, alpha: number): string {
   // For hex colors, parse and apply alpha directly.
   if (color.startsWith('#')) {
     const hex = color.slice(1);
-    const r = parseInt(hex.length >= 6 ? hex.slice(0, 2) : hex[0]! + hex[0]!, 16);
-    const g = parseInt(hex.length >= 6 ? hex.slice(2, 4) : hex[1]! + hex[1]!, 16);
-    const b = parseInt(hex.length >= 6 ? hex.slice(4, 6) : hex[2]! + hex[2]!, 16);
+    const getHexPair = (index: number): string => {
+      if (hex.length >= 6) {
+        return hex.slice(index * 2, index * 2 + 2);
+      }
+      const digit = hex[index] ?? '0';
+      return `${digit}${digit}`;
+    };
+    const r = parseInt(getHexPair(0), 16);
+    const g = parseInt(getHexPair(1), 16);
+    const b = parseInt(getHexPair(2), 16);
     return `rgba(${String(r)},${String(g)},${String(b)},${String(alpha)})`;
   }
   // For rgb/rgba, inject/replace alpha.
   if (color.startsWith('rgb')) {
     const match = /rgba?\(\s*([\d.]+)\s*,\s*([\d.]+)\s*,\s*([\d.]+)/.exec(color);
     if (match) {
-      return `rgba(${match[1]!},${match[2]!},${match[3]!},${String(alpha)})`;
+      const [, r = '0', g = '0', b = '0'] = match;
+      return `rgba(${r},${g},${b},${String(alpha)})`;
     }
   }
   // Fallback: just return the color (no alpha change) — gradient still works.

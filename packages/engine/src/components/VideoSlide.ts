@@ -178,8 +178,9 @@ export class VideoSlide extends HTMLElement {
     this.#constrainRaf = requestAnimationFrame(() => {
       this.#constrainRaf = null;
       if (this.hasAttribute('cover')) return;
+      const root = this.getRootNode();
       const section = this.closest('section.content') ??
-        (this.getRootNode() as ShadowRoot).host?.querySelector?.('section.content');
+        (root instanceof ShadowRoot ? root.host.querySelector('section.content') : null);
       if (!(section instanceof HTMLElement)) return;
 
       const style = getComputedStyle(section);
@@ -190,8 +191,8 @@ export class VideoSlide extends HTMLElement {
       let siblingsHeight = 0;
       const parent = this.parentElement;
       for (const child of section.children) {
-        if (child === parent || child.contains(this)) continue;
-        siblingsHeight += (child as HTMLElement).offsetHeight ?? 0;
+        if (child === parent || child.contains(this) || !(child instanceof HTMLElement)) continue;
+        siblingsHeight += child.offsetHeight;
       }
       const available = Math.max(200, contentHeight - siblingsHeight - 60);
       const video = this.shadowRoot?.querySelector('video');
