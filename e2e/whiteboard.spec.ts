@@ -1581,4 +1581,55 @@ test.describe('Whiteboard + Overview interaction', () => {
     await peerPage.close();
     await context.close();
   });
+
+  test('wb-canvas command is registered and toggles blank canvas overlay', async ({ page }) => {
+    // wb-canvas should appear in help output
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.keyboard.type('help');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+
+    const helpContainsCanvas = await page.evaluate(() => {
+      const terminal = document.querySelector('geek-terminal') as any;
+      const output = terminal?.shadowRoot?.querySelector?.('.output');
+      return output?.textContent?.includes('wb-canvas') ?? false;
+    });
+    expect(helpContainsCanvas).toBe(true);
+
+    // Close terminal and toggle blank canvas on
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.keyboard.type('wb-canvas');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    // The canvas-mode geek-whiteboard should be visible
+    const canvasVisible = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const canvasWb = ss?.shadowRoot?.querySelector('geek-whiteboard[canvas-mode]') as any;
+      return canvasWb?.isVisible === true;
+    });
+    expect(canvasVisible).toBe(true);
+
+    // Toggle it off
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+    await page.keyboard.type('wb-canvas');
+    await page.keyboard.press('Enter');
+    await page.waitForTimeout(500);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(300);
+
+    const canvasHidden = await page.evaluate(() => {
+      const ss = document.getElementById('slideshow');
+      const canvasWb = ss?.shadowRoot?.querySelector('geek-whiteboard[canvas-mode]') as any;
+      return canvasWb?.isVisible === false;
+    });
+    expect(canvasHidden).toBe(true);
+  });
 });

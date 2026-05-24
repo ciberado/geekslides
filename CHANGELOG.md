@@ -11,6 +11,19 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.1] - 2026-05-24
+
+### Fixed
+
+- `wb-canvas` (blank whiteboard canvas) command now appears and works after
+  `plugin-load whiteboard`. `reprocessDeckForPlugins` previously ignored
+  `exports.features` from room plugins — it now activates them via
+  `FeatureManager`, tracking room-plugin-owned features in a Set so they are
+  cleanly deactivated on `plugin-unload`.
+- New decks scaffolded with `geekslides create` now include both
+  `whiteboard` and `whiteboard-canvas` in `config.features`, so the blank
+  canvas overlay is available out of the box.
+
 ## [2.5.2] - 2026-05-24
 
 ### Fixed

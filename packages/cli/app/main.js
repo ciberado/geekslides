@@ -1569,6 +1569,10 @@ try {
     terminal.addEventListener('geek:terminal:close', () => keys.closeTerminal());
 
     // --- Feature system (presenter/peer mode) ---
+    // Tracks feature IDs that were activated by room plugins (not from config.features),
+    // so they can be cleanly deactivated when the plugin set changes.
+    const roomPluginFeatureIds = new Set();
+
     const featuresContainer = document.createElement('div');
     featuresContainer.className = 'gs-features';
     slideshow.shadowRoot?.querySelector('.gs-container')?.appendChild(featuresContainer);
@@ -1625,8 +1629,15 @@ try {
         const currentPartial = slideshow.currentPartial;
         slideshow.loadSlides(slides);
         await applyProcessors(slideshow, config);
-        // Also load room plugins' processors
+        // Also load room plugins' processors and activate their features
         if (roomPluginManager) {
+          // Deactivate features from the previous room-plugin set (skip any
+          // that are also in config.features — they weren't room-owned).
+          for (const id of roomPluginFeatureIds) {
+            featureManager.unregister(id);
+          }
+          roomPluginFeatureIds.clear();
+
           const roomPlugins = roomPluginManager.listPlugins();
           for (const rp of roomPlugins) {
             try {
@@ -1644,9 +1655,21 @@ try {
                     }
                   }
                 }
+                // Activate features exported by the room plugin.
+                // Only register features not already active (e.g. from config.features)
+                // to avoid unregistering config-owned features on the next reprocess.
+                if (exports?.features) {
+                  const activeIds = new Set(featureManager.list());
+                  for (const [featureId, feature] of Object.entries(exports.features)) {
+                    if (!activeIds.has(featureId)) {
+                      featureManager.register(feature);
+                      roomPluginFeatureIds.add(featureId);
+                    }
+                  }
+                }
               }
             } catch (err) {
-              console.warn(`[room-plugins] Failed to apply processor from '${rp.name}':`, err.message);
+              console.warn(`[room-plugins] Failed to apply plugin '${rp.name}':`, err.message);
             }
           }
         }

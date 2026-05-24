@@ -806,7 +806,7 @@ export function registerCreateCommand(program: Command): void {
           title: opts.title,
           content: 'README.md',
           styles: ['css/layouts.css', `css/${themeFileName}`, 'css/local.css'],
-          features: ['whiteboard'],
+          features: ['whiteboard', 'whiteboard-canvas'],
           aspectRatio: '16/9',
           plugins: {
             // source-notes: auto-injects each slide's markdown source into the
