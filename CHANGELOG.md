@@ -11,6 +11,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.4.4] - 2026-05-24
+
+### Fixed
+
+- **Hub Docker: `Cannot find module 'jsdom'`** — jsdom v29.1.1 (hub runtime dep)
+  conflicted with the root devDep v29.0.1, so npm placed hub's copy in
+  `packages/hub/node_modules/jsdom` instead of the root `node_modules/`. The
+  Dockerfile runtime stage only copied root node_modules, leaving jsdom absent
+  from `/app/node_modules/` where the bundle expects it.
+  - `Dockerfile.hub` now merges `packages/hub/node_modules` on top of root
+    node_modules in the runtime stage.
+  - Root `package.json` devDependency for jsdom bumped from `^29.0.1` to
+    `^29.1.1` to allow npm to hoist a single copy in future installs.
+
 ## [2.4.3] - 2026-05-24
 
 ### Fixed

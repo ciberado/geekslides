@@ -45,10 +45,13 @@ COPY --from=server-builder /app/packages/hub/dist/server/index.cjs ./index.cjs
 # Client assets
 COPY --from=client-builder /app/packages/hub/dist/client ./dist/client
 
-# All runtime node_modules from the builder (includes better-sqlite3 native binary,
-# pino, pino-pretty, thread-stream and their transitive deps — all marked --external
-# in the esbuild bundle and therefore required at runtime).
+# All runtime node_modules from the builder.
+# Root node_modules first (hoisted packages: better-sqlite3, pino, fastify, …)
 COPY --from=server-builder /app/node_modules ./node_modules
+# Hub workspace node_modules second — packages that npm could not hoist to the
+# root because of version conflicts (e.g. jsdom 29.1.1 vs root devDep 29.0.1).
+# This merge ensures require('jsdom') resolves correctly from /app/index.cjs.
+COPY --from=server-builder /app/packages/hub/node_modules ./node_modules
 
 USER node
 
