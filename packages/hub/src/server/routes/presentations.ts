@@ -1,5 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import path from 'node:path';
+import AdmZip from 'adm-zip';
 import type { HubDatabase } from '../db/index.ts';
 import type { HubServerOptions } from '../config.ts';
 import {
@@ -330,6 +331,46 @@ export function registerPresentationRoutes(
         const status = message === 'Quota exceeded' ? 413 : 502;
         await reply.status(status).send({ error: message });
       }
+    },
+  );
+
+  // Export all presentation files as a zip archive
+  fastify.get(
+    '/hub/api/presentations/:id/export',
+    { preHandler: [fastify.requireApproved] },
+    async (request, reply) => {
+      const { id } = request.params as { id: string };
+      const access = checkAccess(db, id, request.userId);
+      if (!access) {
+        await reply.status(404).send({ error: 'Not found' });
+        return;
+      }
+      const pres = getPresentationById(db, id);
+      if (!pres) {
+        await reply.status(404).send({ error: 'Not found' });
+        return;
+      }
+
+      const repoPath = path.join(options.repoDir, pres.ownerId, pres.slug);
+      let files: RepoFile[];
+      try {
+        files = await checkoutFiles(repoPath);
+      } catch {
+        await reply.status(500).send({ error: 'Failed to read presentation files' });
+        return;
+      }
+
+      const zip = new AdmZip();
+      for (const file of files) {
+        zip.addFile(file.path, file.data);
+      }
+      const zipBuffer = zip.toBuffer();
+
+      const filename = `${pres.slug}.zip`;
+      await reply
+        .header('Content-Type', 'application/zip')
+        .header('Content-Disposition', `attachment; filename="${filename}"`)
+        .send(zipBuffer);
     },
   );
 

@@ -245,6 +245,31 @@ class ApiClient {
     return this.request('/admin/stats');
   }
 
+  async exportPresentation(id: string): Promise<Blob> {
+    const res = await fetch(`${this.base}/presentations/${id}/export`, {
+      credentials: 'same-origin',
+    });
+    if (res.status === 401) {
+      const refreshRes = await fetch(`${this.base}/auth/refresh`, {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      if (refreshRes.ok) {
+        const retryRes = await fetch(`${this.base}/presentations/${id}/export`, {
+          credentials: 'same-origin',
+        });
+        if (!retryRes.ok) throw new Error(`API error: ${String(retryRes.status)}`);
+        return retryRes.blob();
+      }
+      throw new Error('Unauthorized');
+    }
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({ error: res.statusText })) as { error?: string };
+      throw new Error(body.error ?? `API error: ${String(res.status)}`);
+    }
+    return res.blob();
+  }
+
   // GitHub import helpers
   checkGitHubUpdate(id: string): Promise<GitHubCheckResult> {
     return this.request(`/presentations/${id}/github-check`);

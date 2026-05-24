@@ -411,6 +411,7 @@ export class DashboardPage extends LitElement {
                   <button @click=${() => { this._replaceFiles(p); }}>Replace Files</button>
                   ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
                   <button title="Copy \`load\` command for this presentation" @click=${() => { void this._copyLoadCmd(p.id); }}>Copy load cmd</button>
+                  <button @click=${() => { void this._export(p); }}>Export</button>
                   <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
                 </div>
               </div>
@@ -591,6 +592,20 @@ export class DashboardPage extends LitElement {
     }
   }
 
+  private async _export(p: Presentation): Promise<void> {
+    try {
+      const blob = await apiClient.exportPresentation(p.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${p.slug}.zip`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      this._setNotice(err instanceof Error ? err.message : 'Export failed', 'error');
+    }
+  }
+
   private async _copyLoadCmd(id: string): Promise<void> {
     const cmd = `load /hub/api/presentations/${id}/content/config.json`;
     try {
@@ -704,6 +719,7 @@ export class DashboardPage extends LitElement {
           <button @click=${() => { this._replaceFiles(p); }}>Replace</button>
           ${p.githubUrl ? this._renderGitHubAction(p) : nothing}
           <button title="Copy \`load\` command for this presentation" @click=${() => { void this._copyLoadCmd(p.id); }}>Copy load cmd</button>
+          <button @click=${() => { void this._export(p); }}>Export</button>
           <button class="danger" @click=${() => void this._delete(p.id)}>Delete</button>
         </div>
       </div>
