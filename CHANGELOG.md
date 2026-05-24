@@ -11,6 +11,26 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.4.1] - 2026-05-24
+
+### Added
+
+- **PPTX import limitation warning** — the PPTX upload tab now shows a prominent
+  amber warning box reminding users that this feature is designed for simple,
+  AI-generated presentations and may fail or produce low-fidelity output on complex decks
+
+### Fixed
+
+- **PPTX import: JSZip 3.x `.asArrayBuffer()` removed** — pre-load all `ppt/media/*`
+  images as base64 before slide processing so inner sync helpers can look them up
+  without the removed API; fixes import of any PPTX with embedded images
+- **PPTX import: `tableStyles` null crash** — guard both `tableStyles['a:tblStyleLst']`
+  accesses when `tableStyles.xml` is absent; normalise `a:tblStyle` to array
+- **PPTX import: `thisTblStyle` undefined crash** — add null guard when no matching
+  table style is found in `tableStyles.xml`
+- **PPTX import: missing transform on images** — use optional chaining when reading
+  rotation from `a:xfrm.attrs.rot` (transform may be absent)
+
 ## [2.4.0] - 2026-05-24
 
 ### Added
