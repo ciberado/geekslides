@@ -11,6 +11,24 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.5.0] - 2026-05-24
+
+### Added
+
+- **Plugin registry system** — Dynamic plugin management via terminal commands:
+  `plugin-registry-add`, `plugin-registry-ls`, `plugin-registry-remove`,
+  `plugin-available`, `plugin-active`, `plugin-load`, `plugin-unload`.
+  Registries are HTTPS directories serving an `index.json` manifest.
+  Room-scoped plugin state is synced via Yjs across all clients.
+- **GitHub URL support for registries** — Use `github.com/user/repo/tree/branch/path`
+  URLs directly; they are automatically normalized to `raw.githubusercontent.com`.
+- **`share-qr` command** — Displays a full-screen QR code overlay on all room
+  clients with a shortened viewer link. Dismiss with Escape or click from any client.
+- **Short URL API** — `POST /api/short` creates compact 6-character URLs;
+  `GET /s/:id` redirects to the original. Used by share-qr for denser QR codes.
+- **16 new e2e tests** covering plugin registry commands, short URL API,
+  QR overlay multi-page sync, and GitHub URL normalization.
+
 ## [2.4.5] - 2026-05-24
 
 ### Fixed
