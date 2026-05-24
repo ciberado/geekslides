@@ -17,6 +17,7 @@ import { handlePluginProxy } from './PluginProxy.ts';
 import { handleDeckProxy } from './DeckProxy.ts';
 import { handleFeatureWrite } from './FeatureWriteApi.ts';
 import { handlePollRead } from './PollReadApi.ts';
+import { handleShortUrl } from './ShortUrlApi.ts';
 import { RoomStore } from './RoomStore.ts';
 import { RateLimiter } from './RateLimiter.ts';
 import { createRoomApiHandler } from './RoomApi.ts';
@@ -31,6 +32,7 @@ export { handleContentApi } from './ContentApi.ts';
 export { handlePluginProxy } from './PluginProxy.ts';
 export { handleDeckProxy } from './DeckProxy.ts';
 export { handleFeatureWrite } from './FeatureWriteApi.ts';
+export { handleShortUrl } from './ShortUrlApi.ts';
 export { RoomStore } from './RoomStore.ts';
 export { RateLimiter } from './RateLimiter.ts';
 export { createRoomApiHandler } from './RoomApi.ts';
@@ -166,6 +168,7 @@ export function createServer(options: Partial<ServerOptions> = {}): Server {
 
     void (async () => {
       const handled =
+        await handleShortUrl(req, res) ||
         await handleFeatureWrite(req, res) ||
         handlePollRead(req, res) ||
         await handlePluginProxy(req, res) ||
