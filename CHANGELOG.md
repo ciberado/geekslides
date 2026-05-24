@@ -11,6 +11,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.3] - 2026-05-24
+
+### Fixed
+
+- QR overlay (`share-qr`) now correctly appears on viewer/read-only sessions.
+  The `qr-overlay` feature was only registered in the presenter code path; it
+  is now also registered in the read-only path so all room participants see
+  the overlay when a presenter runs `share-qr`.
+
 ## [2.6.2] - 2026-05-24
 
 ### Fixed

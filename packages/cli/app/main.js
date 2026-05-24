@@ -963,6 +963,10 @@ try {
           }
         }
 
+        // QR overlay feature must be active on viewer sessions too so the
+        // overlay appears when a presenter runs share-qr.
+        featureManager.register(createQrOverlayFeature());
+
         // Emit initial navigation event for features
         let lastSlide = slideshow.currentSlide;
         slideshow.addEventListener('geek:navigate', (e) => {
