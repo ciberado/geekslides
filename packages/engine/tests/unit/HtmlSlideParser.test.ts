@@ -103,12 +103,59 @@ describe('parseHtmlSlides', () => {
       expect(parseHtmlSlides('<section>A</section>')[0]?.partialCount).toBe(0);
     });
 
-    it('leaves rawCss, backgroundImage, notesHtml, detailsHtml undefined', () => {
+    it('leaves rawCss, backgroundImage, detailsHtml undefined', () => {
       const slide = parseHtmlSlides('<section>A</section>')[0];
       expect(slide?.rawCss).toBeUndefined();
       expect(slide?.backgroundImage).toBeUndefined();
-      expect(slide?.notesHtml).toBeUndefined();
       expect(slide?.detailsHtml).toBeUndefined();
+    });
+
+    it('leaves notesHtml undefined when no aside present', () => {
+      const slide = parseHtmlSlides('<section><p>Content</p></section>')[0];
+      expect(slide?.notesHtml).toBeUndefined();
+    });
+  });
+
+  describe('speaker notes extraction', () => {
+    it('extracts notesHtml from gs-notes aside', () => {
+      const html = '<section><p>Slide</p><aside class="gs-notes"><p>Speak here</p></aside></section>';
+      const slide = parseHtmlSlides(html)[0];
+      expect(slide?.notesHtml).toBe('<p>Speak here</p>');
+    });
+
+    it('removes the aside from slide html', () => {
+      const html = '<section><p>Slide</p><aside class="gs-notes"><p>Notes</p></aside></section>';
+      const slide = parseHtmlSlides(html)[0];
+      expect(slide?.html).not.toContain('gs-notes');
+      expect(slide?.html).not.toContain('<aside');
+      expect(slide?.html).toContain('<p>Slide</p>');
+    });
+
+    it('handles notes with bold and italic formatting', () => {
+      const html = '<section>Content<aside class="gs-notes"><p>Say <strong>this</strong> and <em>that</em></p></aside></section>';
+      const slide = parseHtmlSlides(html)[0];
+      expect(slide?.notesHtml).toContain('<strong>this</strong>');
+      expect(slide?.notesHtml).toContain('<em>that</em>');
+    });
+
+    it('handles multi-paragraph notes', () => {
+      const notes = '<p>First paragraph</p>\n<p>Second paragraph</p>';
+      const html = `<section>Content<aside class="gs-notes">${notes}</aside></section>`;
+      const slide = parseHtmlSlides(html)[0];
+      expect(slide?.notesHtml).toContain('<p>First paragraph</p>');
+      expect(slide?.notesHtml).toContain('<p>Second paragraph</p>');
+    });
+
+    it('leaves notesHtml undefined on slides without aside', () => {
+      const html = `
+        <section>Slide 1<aside class="gs-notes"><p>Notes 1</p></aside></section>
+        <section>Slide 2</section>
+        <section>Slide 3<aside class="gs-notes"><p>Notes 3</p></aside></section>
+      `;
+      const slides = parseHtmlSlides(html);
+      expect(slides[0]?.notesHtml).toBe('<p>Notes 1</p>');
+      expect(slides[1]?.notesHtml).toBeUndefined();
+      expect(slides[2]?.notesHtml).toBe('<p>Notes 3</p>');
     });
   });
 

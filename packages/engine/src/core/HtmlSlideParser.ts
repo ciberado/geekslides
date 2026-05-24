@@ -54,9 +54,19 @@ export function parseHtmlSlides(
 
   while ((match = sectionRe.exec(html)) !== null) {
     const attrs = match[1] ?? '';
-    const innerHtml = match[2] ?? '';
+    let innerHtml = match[2] ?? '';
 
     const { backgroundColor, backgroundCss } = extractBackground(attrs);
+
+    // Extract speaker notes injected by the Hub PPTX converter.
+    // Format: <aside class="gs-notes">…html…</aside> at the end of the section.
+    let notesHtml: string | undefined;
+    const asideRe = /<aside class="gs-notes">([\s\S]*?)<\/aside>/;
+    const asideMatch = asideRe.exec(innerHtml);
+    if (asideMatch) {
+      notesHtml = asideMatch[1];
+      innerHtml = innerHtml.replace(asideRe, '').trim();
+    }
 
     slides.push({
       id: `${idPrefix}-${String(index + 1)}`,
@@ -66,7 +76,7 @@ export function parseHtmlSlides(
       backgroundColor,
       backgroundCss,
       rawCss: undefined,
-      notesHtml: undefined,
+      notesHtml,
       detailsHtml: undefined,
       partialCount: 0,
     } satisfies SlideData);
