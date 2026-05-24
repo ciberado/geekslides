@@ -44,6 +44,13 @@ npm run test:e2e        # Playwright e2e — always use this, not bare `npx play
 npm run dev             # Vite + yjs-server on 0.0.0.0
 npm run dev --workspace=@geekslides/hub  # Hub Fastify + Lit SPA (dev-mode login, no OAuth needed)
 npm run build           # Build all packages
+npm run build:smoke --workspace=@geekslides/hub  # Bundle smoke test: starts the built hub server and
+                        # exercises PPTX import end-to-end. Run this after any hub server build to
+                        # catch runtime failures that only appear in the bundle (e.g. dependencies
+                        # that load assets from disk via __dirname — these MUST be --external in esbuild).
+                        # Current hub esbuild externals: better-sqlite3, pino, pino-pretty,
+                        # thread-stream, jsdom.  Add any new dependency that uses readFileSync with
+                        # relative paths at runtime.
 npm run docker:build    # Build all Docker images (main, server, cli, cli:chromium)
 npm run docker:push     # Push all Docker images to Docker Hub
 ```

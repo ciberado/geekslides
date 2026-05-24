@@ -11,6 +11,27 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.4.3] - 2026-05-24
+
+### Fixed
+
+- **Hub Docker crash on PPTX import** — `jsdom` was being bundled by esbuild, causing
+  `ENOENT /browser/default-stylesheet.css` at runtime because esbuild incorrectly
+  rewrote `__dirname` inside jsdom's `computed-style.js`.  Fixed by adding
+  `--external:jsdom` to the esbuild command so jsdom is loaded from `node_modules` at
+  runtime (already present in the Docker image).
+
+### Added
+
+- **`/healthz` endpoint** on the Hub Fastify server for health checks and smoke testing.
+- **Bundle smoke test** (`packages/hub/scripts/bundle-smoke.mjs` / `npm run build:smoke
+  --workspace=@geekslides/hub`) — starts the compiled CJS bundle with dev-mode auth,
+  uploads a real PPTX, and asserts a 201 response.  Catches runtime failures that only
+  appear in the bundle (e.g. dependencies that load disk assets via `__dirname`).
+- **Pre-commit checklist step 2a** — run `build:server` + `build:smoke` for any hub
+  server changes before committing.
+- **AGENTS.md** — documents the esbuild externals rule and the `build:smoke` command.
+
 ## [2.4.2] - 2026-05-24
 
 ### Changed

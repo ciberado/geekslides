@@ -83,6 +83,11 @@ export async function createHubServer(
     });
   }
 
+  // Health check — used by Docker HEALTHCHECK and bundle smoke test
+  fastify.get('/healthz', async (_request, reply) => {
+    await reply.send({ ok: true });
+  });
+
   // Register routes
   registerAuthRoutes(fastify, db, options);
   registerPresentationRoutes(fastify, db, options);

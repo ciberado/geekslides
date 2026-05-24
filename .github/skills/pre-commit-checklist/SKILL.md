@@ -41,6 +41,17 @@ npx playwright test --config=e2e/playwright.config.ts --reporter=line
 
 The dev server must be running (`npm run dev`). Start it if needed. All tests must pass.
 
+### 2a. Run hub bundle smoke test (if hub server changed)
+
+If changes touch `packages/hub/src/server/` or hub's `package.json`, build the hub server and run the bundle smoke test to catch runtime failures that only appear in the esbuild bundle:
+
+```bash
+npm run build:server --workspace=@geekslides/hub
+npm run build:smoke --workspace=@geekslides/hub
+```
+
+This verifies that the built CJS bundle can start, accept authentication, and successfully import a PPTX file (exercising jsdom and other dependencies that load runtime assets from disk). Tests pass in dev/source mode even when the bundle is broken — the smoke test is the only way to catch these failures before deploying.
+
 ### 3. Check for new/updated unit tests
 
 If you added or changed logic in `packages/engine/src/` or `packages/server/src/`, verify that corresponding test files exist or were updated in:
