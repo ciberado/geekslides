@@ -20,10 +20,19 @@ vi.mock('../../src/server/services/pptx/bullet-numbering.ts', () => ({
   resolveNumericBullets: vi.fn((html: string) => html),
 }));
 
+// Notes extractor — return no notes by default (override per test as needed).
+vi.mock('../../src/server/services/pptx/notes-extractor.ts', () => ({
+  extractPptxNotes: vi.fn(async (_ab: unknown, filenames: string[]) =>
+    filenames.map(() => undefined),
+  ),
+}));
+
 import type { Mock } from 'vitest';
 
 const processPptxModule = await import('../../src/server/services/pptx/process-pptx.ts');
 const mockProcessPptx = processPptxModule.default as Mock;
+const notesExtractorModule = await import('../../src/server/services/pptx/notes-extractor.ts');
+const mockExtractNotes = notesExtractorModule.extractPptxNotes as Mock;
 const { convertPptx } = await import('../../src/server/services/pptx-convert.ts');
 
 // ─── test helper ─────────────────────────────────────────────────────────────
@@ -52,7 +61,14 @@ function setupMockPptx(
 // ─── tests ───────────────────────────────────────────────────────────────────
 
 describe('convertPptx', () => {
-  beforeEach(() => { mockProcessPptx.mockReset(); });
+  beforeEach(() => {
+    mockProcessPptx.mockReset();
+    mockExtractNotes.mockReset();
+    // Default: no notes
+    mockExtractNotes.mockImplementation(async (_ab: unknown, filenames: string[]) =>
+      filenames.map(() => undefined),
+    );
+  });
 
   describe('output files', () => {
     it('produces config.json, slides.html, and pptx.css', async () => {
@@ -145,6 +161,31 @@ describe('convertPptx', () => {
         },
       );
       await expect(convertPptx(Buffer.from(''))).rejects.toThrow('Corrupt file');
+    });
+  });
+
+  describe('speaker notes injection', () => {
+    it('injects gs-notes aside into section when extractor returns notes', async () => {
+      setupMockPptx(['<section>Slide 1</section>', '<section>Slide 2</section>']);
+      mockExtractNotes.mockResolvedValue(['<p>Notes for slide 1</p>', undefined]);
+      const html = (await convertPptx(Buffer.from(''))).files[1]!.data.toString('utf8');
+      expect(html).toContain('<aside class="gs-notes"><p>Notes for slide 1</p></aside>');
+      expect(html).not.toMatch(/Slide 2.*gs-notes/s);
+    });
+
+    it('leaves sections unchanged when extractor returns no notes', async () => {
+      setupMockPptx(['<section>Slide</section>']);
+      const html = (await convertPptx(Buffer.from(''))).files[1]!.data.toString('utf8');
+      expect(html).not.toContain('gs-notes');
+    });
+
+    it('calls extractor with slide filenames in order', async () => {
+      setupMockPptx(['<section>A</section>', '<section>B</section>', '<section>C</section>']);
+      await convertPptx(Buffer.from(''));
+      expect(mockExtractNotes).toHaveBeenCalledWith(
+        expect.anything(),
+        ['ppt/slides/slide1.xml', 'ppt/slides/slide2.xml', 'ppt/slides/slide3.xml'],
+      );
     });
   });
 });

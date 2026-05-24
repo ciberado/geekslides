@@ -19,6 +19,7 @@ import processPptxFactoryUntyped from './pptx/process-pptx.ts';
 import { pptxCss } from './pptx/pptx-css.ts';
 import { renderChart, type ChartSeries } from './pptx/chart-renderer.ts';
 import { resolveNumericBullets } from './pptx/bullet-numbering.ts';
+import { extractPptxNotes } from './pptx/notes-extractor.ts';
 import { JSDOM } from 'jsdom';
 
 import type { RepoFile } from './git.ts';
@@ -94,6 +95,18 @@ export async function convertPptx(
     slides.map((html) => postProcessSlide(html, chartEntries)),
   );
 
+  // Extract speaker notes from the PPTX (slides are in order slide1.xml, slide2.xml, …)
+  const slideFilenames = processedSlides.map((_, i) => `ppt/slides/slide${i + 1}.xml`);
+  const notesList = await extractPptxNotes(arrayBuffer, slideFilenames);
+
+  // Inject notes as <aside class="gs-notes"> inside each <section> that has them.
+  // HtmlSlideParser will extract this back into SlideData.notesHtml.
+  const slidesWithNotes = processedSlides.map((slideHtml, i) => {
+    const notesHtml = notesList[i];
+    if (notesHtml === undefined) return slideHtml;
+    return slideHtml.replace(/<\/section>\s*$/, `<aside class="gs-notes">${notesHtml}</aside></section>`);
+  });
+
   // Extract title from slide 1 via largest font-size heuristic
   const extractedTitle = processedSlides[0] !== undefined
     ? extractLargestText(processedSlides[0])
@@ -105,7 +118,7 @@ export async function convertPptx(
   const aspectRatio = `${Math.round(slideSize.width) / gcd}/${Math.round(slideSize.height) / gcd}`;
 
   // Build files
-  const slidesHtml = processedSlides.join('\n');
+  const slidesHtml = slidesWithNotes.join('\n');
   const fullCss = `${pptxCss}\n/* deck theme */\n${globalCSS}`;
   const configJson = JSON.stringify(
     {
