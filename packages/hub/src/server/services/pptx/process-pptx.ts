@@ -76,6 +76,17 @@ export default function processPptx (setOnMessage = () => {}, postMessage) {
       })
     }
 
+    // Pre-load all media files as base64 strings.
+    // JSZip 3.x removed the synchronous .asArrayBuffer() / .asText() helpers;
+    // we eagerly extract every ppt/media/* file here so inner sync functions
+    // can look up images without needing to await.
+    const imgMap = new Map()
+    const mediaEntries = Object.keys(zip.files).filter(f => f.startsWith('ppt/media/') && !zip.files[f].dir)
+    await Promise.all(mediaEntries.map(async (path) => {
+      const b64 = await zip.file(path).async('base64')
+      imgMap.set(path, b64)
+    }))
+
     const filesInfo = await getContentTypes(zip)
     const slideSize = await getSlideSize(zip)
     themeContent = await loadTheme(zip)
@@ -91,7 +102,7 @@ export default function processPptx (setOnMessage = () => {}, postMessage) {
     const numOfSlides = filesInfo['slides'].length
     for (let i = 0; i < numOfSlides; i++) {
       const filename = filesInfo['slides'][i]
-      const slideHtml = await processSingleSlide(zip, filename, i, slideSize)
+      const slideHtml = await processSingleSlide(zip, filename, i, slideSize, imgMap)
       postMessage({
         'type': 'slide',
         'data': slideHtml
@@ -176,7 +187,7 @@ export default function processPptx (setOnMessage = () => {}, postMessage) {
     return readXmlFile(zip, 'ppt/' + themeURI)
   }
 
-  async function processSingleSlide (zip, sldFileName, index, slideSize) {
+  async function processSingleSlide (zip, sldFileName, index, slideSize, imgMap) {
     postMessage({
       'type': 'INFO',
       'data': 'Processing slide' + (index + 1)
@@ -285,6 +296,7 @@ export default function processPptx (setOnMessage = () => {}, postMessage) {
     const nodes = slideContent['p:sld']['p:cSld']['p:spTree']
     const warpObj = {
       'zip': zip,
+      'imgMap': imgMap,
       'slideLayoutTables': slideLayoutTables,
       'slideMasterTables': slideMasterTables,
       'slideResObj': slideResObj,
@@ -1258,18 +1270,17 @@ export default function processPptx (setOnMessage = () => {}, postMessage) {
     const rid = node['p:blipFill']['a:blip']['attrs']['r:embed']
     const imgName = warpObj['slideResObj'][rid]['target']
     const imgFileExt = extractFileExtension(imgName).toLowerCase()
-    const zip = warpObj['zip']
-    const imgArrayBuffer = zip.file(imgName).asArrayBuffer()
+    const imgBase64 = warpObj['imgMap'].get(imgName) ?? ''
     let mimeType = ''
     const xfrmNode = node['p:spPr']['a:xfrm']
     // /////////////////////////////////////Amir//////////////////////////////
-    const rotate = angleToDegrees(node['p:spPr']['a:xfrm']['attrs']['rot'])
+    const rotate = angleToDegrees(xfrmNode?.['attrs']?.['rot'])
     // ////////////////////////////////////////////////////////////////////////
     mimeType = getImageMimeType(imgFileExt)
     return '<div class=\'block content\' style=\'' + getPosition(xfrmNode, undefined, undefined) + getSize(xfrmNode, undefined, undefined) +
       ' z-index: ' + order + ';' +
       'transform: rotate(' + rotate + 'deg);' +
-      '\'><img src=\'data:' + mimeType + ';base64,' + base64ArrayBuffer(imgArrayBuffer) + '\' style=\'width: 100%; height: 100%\'/></div>'
+      '\'><img src=\'data:' + mimeType + ';base64,' + imgBase64 + '\' style=\'width: 100%; height: 100%\'/></div>'
   }
 
   async function processGraphicFrameNode (node, warpObj) {
@@ -1567,10 +1578,10 @@ function processSpPrNode (node, warpObj) {
         // }else{
         // buPicId = getTextByPathList(buPic, ["a:blip", "attrs", "r:embed"]);
         const imgPath = warpObj['slideResObj'][buPicId]['target']
-        const imgArrayBuffer = warpObj['zip'].file(imgPath).asArrayBuffer()
+        const imgBase64 = warpObj['imgMap'].get(imgPath) ?? ''
         const imgExt = imgPath.split('.').pop()
         const imgMimeType = getImageMimeType(imgExt)
-        buImg = '<img src=\'data:' + imgMimeType + ';base64,' + base64ArrayBuffer(imgArrayBuffer) + '\' style=\'width: 100%; height: 100%\'/>'
+        buImg = '<img src=\'data:' + imgMimeType + ';base64,' + imgBase64 + '\' style=\'width: 100%; height: 100%\'/>'
         // console.log("imgPath: "+imgPath+"\nimgMimeType: "+imgMimeType)
       }
       if (buPicId === undefined) {
@@ -1689,10 +1700,12 @@ function processSpPrNode (node, warpObj) {
         // get tableStyleId = a:tbl => a:tblPr => a:tableStyleId
         let thisTblStyle
         const tbleStyleId = getTblPr['a:tableStyleId']
-        if (tbleStyleId !== undefined) {
+        if (tbleStyleId !== undefined && tableStyles !== null && tableStyles !== undefined) {
           // get Style from tableStyles.xml by {const tbleStyleId}
           // table style object : tableStyles
-          const tbleStylList = tableStyles['a:tblStyleLst']['a:tblStyle']
+          const rawList = tableStyles['a:tblStyleLst']['a:tblStyle']
+          // txml may return a single object when there is only one style
+          const tbleStylList = Array.isArray(rawList) ? rawList : (rawList !== undefined ? [rawList] : [])
 
           for (let k = 0; k < tbleStylList.length; k++) {
             if (tbleStylList[k]['attrs']['styleId'] === tbleStyleId) {
@@ -1704,7 +1717,7 @@ function processSpPrNode (node, warpObj) {
         if (i === 0 && firstRowAttr !== undefined) {
           let fillColor = 'fff'
           let colorOpacity = 1
-          if (thisTblStyle['a:firstRow'] !== undefined) {
+          if (thisTblStyle !== undefined && thisTblStyle['a:firstRow'] !== undefined) {
             const bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:firstRow', 'a:tcStyle', 'a:fill', 'a:solidFill'])
             if (bgFillschemeClr !== undefined) {
               fillColor = getSolidFill(bgFillschemeClr)
@@ -1744,7 +1757,7 @@ function processSpPrNode (node, warpObj) {
           let fillColor = 'fff'
           let colorOpacity = 1
           if ((i % 2) === 0) {
-            if (thisTblStyle['a:band2H'] !== undefined) {
+            if (thisTblStyle !== undefined && thisTblStyle['a:band2H'] !== undefined) {
               // console.log(thisTblStyle["a:band2H"]);
               const bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:band2H', 'a:tcStyle', 'a:fill', 'a:solidFill'])
               if (bgFillschemeClr !== undefined) {
@@ -1787,7 +1800,7 @@ function processSpPrNode (node, warpObj) {
                         }
                     } */
           } else {
-            if (thisTblStyle['a:band1H'] !== undefined) {
+            if (thisTblStyle !== undefined && thisTblStyle['a:band1H'] !== undefined) {
               const bgFillschemeClr = getTextByPathList(thisTblStyle, ['a:band1H', 'a:tcStyle', 'a:fill', 'a:solidFill'])
               if (bgFillschemeClr !== undefined) {
                 fillColor = getSolidFill(bgFillschemeClr)
@@ -1843,10 +1856,11 @@ function processSpPrNode (node, warpObj) {
               // get from Theme (tableStyles.xml) TODO
               // get tableStyleId = a:tbl => a:tblPr => a:tableStyleId
               const tbleStyleId = getTblPr['a:tableStyleId']
-              if (tbleStyleId !== undefined) {
+              if (tbleStyleId !== undefined && tableStyles !== null && tableStyles !== undefined) {
                 // get Style from tableStyles.xml by {const tbleStyleId}
                 // table style object : tableStyles
-                const tbleStylList = tableStyles['a:tblStyleLst']['a:tblStyle']
+                const rawList = tableStyles['a:tblStyleLst']['a:tblStyle']
+                const tbleStylList = Array.isArray(rawList) ? rawList : (rawList !== undefined ? [rawList] : [])
 
                 for (let k = 0; k < tbleStylList.length; k++) {
                   if (tbleStylList[k]['attrs']['styleId'] === tbleStyleId) {
@@ -3102,9 +3116,9 @@ function getTextDirection (node, type, slideMasterTextStyles) {
     if (imgExt === 'xml') {
       return undefined
     }
-    const imgArrayBuffer = warpObj['zip'].file(imgPath).asArrayBuffer()
+    const imgArrayBuffer = warpObj['imgMap'].get(imgPath) ?? ''
     const imgMimeType = getImageMimeType(imgExt)
-    img = 'data:' + imgMimeType + ';base64,' + base64ArrayBuffer(imgArrayBuffer)
+    img = 'data:' + imgMimeType + ';base64,' + imgArrayBuffer
     return img
   }
 
