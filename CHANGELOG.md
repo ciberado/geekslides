@@ -9,6 +9,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **PPTX speaker notes import** — speaker notes from `.pptx` files are now extracted
+  and shown in the GeekSlides speaker view (`S` key); notes are extracted from
+  `ppt/notesSlides/notesSlideN.xml`, converted to HTML (bold/italic preserved), and
+  embedded as `<aside class="gs-notes">` in each slide's `<section>`; engine's
+  `HtmlSlideParser` extracts them into `SlideData.notesHtml` at parse time
+
 <!-- Add new entries above this line -->
 
 ## [2.3.0] - 2026-05-23

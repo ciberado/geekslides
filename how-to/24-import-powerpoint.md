@@ -22,6 +22,7 @@ the conversion result.
 | Numeric bullet lists | ✅ | Resolved server-side (arabic, roman, alpha) |
 | Slide title | ✅ | Auto-extracted from largest text on slide 1 |
 | Slide size | ✅ | Exact pixel dimensions preserved in config |
+| Speaker notes | ✅ | Shown in speaker view (`S` key) |
 | Animations / transitions | ❌ | Not supported |
 | Embedded audio / video | ❌ | Not extracted |
 
@@ -93,7 +94,7 @@ Click **Present** on the deck card. The converted deck behaves identically to an
 GeekSlides presentation:
 
 - Arrow keys / swipe to navigate
-- `S` to open speaker view (if you have a notes layout)
+- `S` to open speaker view — if the PPTX had speaker notes, they appear here
 - `O` for the slide overview
 - `T` to open the terminal
 - PDF export via the CLI ([Export to PDF](06-export-to-pdf.md))

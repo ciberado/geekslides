@@ -28,7 +28,7 @@ custom master layouts may produce lower-fidelity output.
 - No CLI involvement — Hub is the import path
 - Stored result is a normal deck — no "pptx mode" in the engine
 - Charts rendered server-side as inline SVG (no browser-only D3 required at runtime)
-- Fidelity: text, images, background colors, shapes, and charts all preserved
+- Fidelity: text, images, background colors, shapes, charts, and speaker notes all preserved
 
 ## Non-Goals
 
@@ -67,6 +67,7 @@ All fork files live in `packages/hub/src/server/services/pptx/`:
 | `pptx-css.ts` | Cleaned CSS from `pptx_css.js` — `section {}` overrides removed |
 | `chart-renderer.ts` | D3 v7 + jsdom server-side chart rendering (bar/line/area/pie) |
 | `bullet-numbering.ts` | TypeScript port of `setNumericBullets` (arabic/alpha/roman/hebrew) |
+| `notes-extractor.ts` | **New** — reads `ppt/notesSlides/notesSlideN.xml` per slide, converts to HTML |
 
 ### Fork Patches Applied to `process-pptx.ts`
 
@@ -145,13 +146,15 @@ placeholder divs by ID and replaces them with SVG-wrapped divs preserving the po
 │  │  2. postProcessSlide() per slide:                │             │
 │  │     a. jsdom: replace chart<div>s with SVG       │             │
 │  │     b. resolveNumericBullets() on HTML           │             │
-│  │  3. Auto-extract title from slide 1 (fallback)   │             │
-│  │  4. Derive aspectRatio from slideSize            │             │
-│  │  5. Concatenate slides → slides.html             │             │
-│  │  6. pptxCss + globalCSS → pptx.css               │             │
-│  │  7. Generate config.json:                        │             │
+│  │  3. extractPptxNotes() per slide:                │             │
+│  │     → inject <aside class="gs-notes"> per slide │             │
+│  │  4. Auto-extract title from slide 1 (fallback)   │             │
+│  │  5. Derive aspectRatio from slideSize            │             │
+│  │  6. Concatenate slides → slides.html             │             │
+│  │  7. pptxCss + globalCSS → pptx.css               │             │
+│  │  8. Generate config.json:                        │             │
 │  │     { title, content, styles, aspectRatio }      │             │
-│  │  8. Return RepoFile[]                            │             │
+│  │  9. Return RepoFile[]                            │             │
 │  └─────────────────────┬────────────────────────────┘             │
 │                        │                                          │
 │                        ▼                                          │
@@ -252,6 +255,7 @@ so slides scale correctly to fill the viewport (see §Engine Viewport Sizing bel
 | Images | Inline base64 data URIs | Works in innerHTML | ✅ Direct |
 | Charts | Server-rendered inline SVG | Static SVG in innerHTML | ✅ Direct |
 | Numeric bullets | Resolved server-side (jsdom) | Static HTML text | ✅ Direct |
+| Speaker notes | Extracted from notes XMLs | `notesHtml` on `SlideData` | ✅ Via notes-extractor.ts |
 | Text selectability | HTML text nodes | Normal selection | ✅ |
 | Navigation | N/A | Engine provides keyboard/touch/URL | ✅ Free |
 | Speaker view | N/A | Works with any SlideData | ✅ Free |
@@ -280,6 +284,76 @@ setDesignDimensions(width: number, height: number): void {
   }
 }
 ```
+
+## Speaker Notes Extraction
+
+PPTX files embed per-slide notes in `ppt/notesSlides/notesSlideN.xml`. Each slide's rels file
+points to it via `Type=.../notesSlide`. The converter already reads these rels but previously
+discarded the notes path.
+
+### Notes XML Structure
+
+```xml
+<p:notes>
+  <p:cSld><p:spTree>
+    <!-- ignored: slide thumbnail placeholder -->
+    <p:sp><p:nvPr><p:ph type="sldImg"/></p:nvPr></p:sp>
+
+    <!-- THE NOTES — body placeholder with idx="1" -->
+    <p:sp>
+      <p:nvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr>
+      <p:txBody>
+        <a:p>
+          <a:r><a:rPr b="1"/><a:t>Bold text</a:t></a:r>
+          <a:r><a:rPr/><a:t> normal text</a:t></a:r>
+        </a:p>
+      </p:txBody>
+    </p:sp>
+
+    <!-- ignored: page number placeholder -->
+    <p:sp><p:nvPr><p:ph type="sldNum" idx="10"/></p:nvPr></p:sp>
+  </p:spTree></p:cSld>
+</p:notes>
+```
+
+### notes-extractor.ts
+
+`packages/hub/src/server/services/pptx/notes-extractor.ts` is a standalone utility that:
+
+1. Opens the same PPTX zip (separate JSZip instance — does not mutate the converter's state)
+2. For each slide path `ppt/slides/slideN.xml`:
+   - Reads `ppt/slides/_rels/slideN.xml.rels`
+   - Finds the relationship with `Type` ending in `/notesSlide`
+   - Reads the target notes XML
+3. Navigates the txml object tree: `p:notes → p:cSld → p:spTree → p:sp[]`
+4. Finds the `p:sp` where `p:ph type="body" idx="1"` (the body placeholder)
+5. Converts each `a:p` paragraph to `<p>` HTML:
+   - `a:rPr b="1"` → `<strong>` wrapper
+   - `a:rPr i="1"` → `<em>` wrapper
+   - Text is HTML-escaped before wrapping
+6. Returns `(string | undefined)[]` — same length as `slideFilenames`; `undefined` if no notes or empty
+
+### Injection / Extraction Flow
+
+```
+notes-extractor.ts          returns (string|undefined)[]
+        ↓
+pptx-convert.ts             injects <aside class="gs-notes">HTML</aside>
+                            inside each <section> before </section>
+        ↓
+slides.html stored          <section ...>...<aside class="gs-notes">...</aside></section>
+        ↓
+HtmlSlideParser.ts          regex-extracts aside content → SlideData.notesHtml
+                            strips aside from slide html
+        ↓
+SpeakerView (engine)        renders notesHtml — no changes needed
+```
+
+`<aside class="gs-notes">` was chosen because:
+- The aside element is semantic and appropriate for notes content
+- The `gs-notes` class name is specific enough not to conflict with PPTX HTML
+- Regex extraction is safe because PPTX content only uses absolutely-positioned divs
+- Backward-compatible: slides without aside produce `notesHtml: undefined` as before
 
 ## Background Color Resolution
 
@@ -476,6 +550,7 @@ just different `accept` and input id. The server handles the rest.
 | `packages/hub/src/server/services/pptx/pptx-css.ts` | **Fork** of pptx_css.js (cleaned) |
 | `packages/hub/src/server/services/pptx/chart-renderer.ts` | **New** — D3 v7 + jsdom charts |
 | `packages/hub/src/server/services/pptx/bullet-numbering.ts` | **New** — numeric bullet resolution |
+| `packages/hub/src/server/services/pptx/notes-extractor.ts` | **New** — speaker notes extraction from PPTX zip |
 | `packages/hub/package.json` | Replace `@jvmr/pptx-to-html` with `colz`, `d3`, `jszip` |
 | `packages/hub/src/server/routes/presentations.ts` | Detect `.pptx` in POST + PUT handlers |
 | `packages/hub/src/client/pages/dashboard-page.ts` | PPTX tab, upload handler, "Converting…" label |
@@ -514,6 +589,8 @@ just different `accept` and input id. The server handles the rest.
 | `aspectRatio` derived from `slideSize` | Correct ratio for non-standard PPTX sizes (not always 16:9) |
 | `setDesignDimensions()` on Slideshow/SpeakerView | Overrides default 1920×1080 design space with actual PPTX dimensions |
 | `slideLayoutClrOvride` refresh on every valid call | Fixes stale-cache bug: earlier `undefined` calls had poisoned the global cache |
+| Embed notes in slides.html as `<aside class="gs-notes">` | Self-contained deck; no extra file; backward-compatible; easy regex extraction |
+| notes-extractor.ts independent from process-pptx.ts | Minimal changes to the 3,500-line fork; uses same txml fork format |
 | Convert at upload time, not render time | Stored deck is self-contained; no runtime conversion dep |
 | Shadow DOM isolation | pptx inline styles can't collide with GeekSlides theme |
 | Auto-extract title, fall back to filename | Better UX than always requiring manual title entry |
