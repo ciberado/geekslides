@@ -40,6 +40,7 @@ export function createQrOverlayFeature(): Feature {
 
         overlay = document.createElement('div');
         overlay.className = 'gs-qr-overlay';
+        const canDismiss = !syncApi.readonly;
         overlay.innerHTML = `
           <style>
             .gs-qr-overlay {
@@ -51,7 +52,7 @@ export function createQrOverlayFeature(): Feature {
               flex-direction: column;
               align-items: center;
               justify-content: center;
-              cursor: pointer;
+              cursor: ${canDismiss ? 'pointer' : 'default'};
               animation: gs-qr-fade-in 0.2s ease-out;
             }
             @keyframes gs-qr-fade-in {
@@ -84,13 +85,15 @@ export function createQrOverlayFeature(): Feature {
           </style>
           <canvas></canvas>
           <div class="gs-qr-url">${escapeHtml(url)}</div>
-          <div class="gs-qr-hint">Click or press Esc to dismiss</div>
+          <div class="gs-qr-hint">${canDismiss ? 'Click or press Esc to dismiss' : 'Scan to join'}</div>
         `;
 
         const canvas = overlay.querySelector('canvas') as HTMLCanvasElement;
         renderQrCode(canvas, url);
 
-        overlay.addEventListener('click', dismiss);
+        if (canDismiss) {
+          overlay.addEventListener('click', dismiss);
+        }
         document.body.appendChild(overlay);
       }
 
@@ -102,12 +105,14 @@ export function createQrOverlayFeature(): Feature {
       }
 
       function dismiss(): void {
+        // Read-only clients cannot write to the shared doc — only presenters dismiss
+        if (syncApi.readonly) return;
         // Clear shared state to dismiss on all clients — re-read map to get current
         syncApi.getSharedMap().set('qrUrl', '');
       }
 
       function onKeydown(e: KeyboardEvent): void {
-        if (e.key === 'Escape' && overlay) {
+        if (e.key === 'Escape' && overlay && !syncApi.readonly) {
           e.preventDefault();
           e.stopPropagation();
           dismiss();

@@ -11,6 +11,16 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.2] - 2026-05-24
+
+### Fixed
+
+- QR overlay (`share-qr`) now appears on all sessions including read-only
+  viewers. Read-only clients can no longer accidentally dismiss the overlay;
+  only presenter sessions can dismiss it (Esc or click), which closes it on
+  all clients simultaneously. Hint text on viewer screens changed to
+  "Scan to join".
+
 ## [2.6.1] - 2026-05-24
 
 ### Fixed
