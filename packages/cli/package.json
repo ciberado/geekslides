@@ -1,6 +1,7 @@
 {
   "name": "@geekslides/cli",
   "version": "2.3.0",
+  "license": "Apache-2.0",
   "type": "module",
   "bin": {
     "geekslides": "bin/geekslides.cjs"
