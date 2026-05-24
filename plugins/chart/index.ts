@@ -5,10 +5,10 @@
  * No runtime engine dependencies.
  */
 
-import type { PluginAPI, PluginExports, PluginActivate } from '../sdk/types.ts';
+import type { PluginExports, PluginActivate } from '../sdk/types.ts';
 import { chartProcessor } from './chart-processor.ts';
 
-export const activate: PluginActivate = (_api: PluginAPI): PluginExports => ({
+export const activate: PluginActivate = (): PluginExports => ({
   processors: {
     'chart': chartProcessor,
   },

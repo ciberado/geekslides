@@ -6,7 +6,7 @@
  * This bundle has no runtime engine dependencies.
  */
 
-import type { PluginAPI, PluginExports, PluginActivate } from '../sdk/types.ts';
+import type { PluginExports, PluginActivate } from '../sdk/types.ts';
 import { youtubeUrlPreprocessor } from './youtube-url-plugin.ts';
 import { audioUrlPreprocessor, audioProcessor } from './audio-url-plugin.ts';
 import { videoUrlPreprocessor } from './video-url-plugin.ts';
@@ -14,7 +14,7 @@ import { iframeUrlPreprocessor, iframeOverlayProcessor } from './iframe-url-plug
 import { videoProcessor } from './video-processor.ts';
 import { mediaSyncFeature } from './media-sync-feature.ts';
 
-export const activate: PluginActivate = (_api: PluginAPI): PluginExports => ({
+export const activate: PluginActivate = (): PluginExports => ({
   preprocessors: {
     'youtube-url': youtubeUrlPreprocessor,
     'audio-url': audioUrlPreprocessor,

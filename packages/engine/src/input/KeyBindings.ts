@@ -26,13 +26,6 @@ const DIRECT_BINDINGS: Record<string, string> = {
   'End': 'go-last',
 };
 
-/** Keys that cannot be rebound by users. */
-const RESERVED_KEYS = new Set([
-  'ArrowRight', 'ArrowDown', ' ', 'PageDown',
-  'ArrowLeft', 'ArrowUp', 'PageUp',
-  'Home', 'End', 'Escape', '?',
-]);
-
 export class KeyBindings {
   #commandSystem: CommandSystem;
   #userBindings: UserKeyBindings | null = null;

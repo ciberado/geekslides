@@ -90,13 +90,6 @@ function isRemoteUrl(name) {
 }
 
 /**
- * Detect if a name is a local path.
- */
-function isLocalPath(name) {
-  return name.startsWith('./') || name.startsWith('../');
-}
-
-/**
  * Load a single bundle by name, resolving dependencies first.
  * Returns the activated PluginExports from the bundle.
  */

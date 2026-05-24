@@ -5,9 +5,7 @@
  * Uses EventBridge + feature-scoped Yjs sync (no legacy WhiteboardSync dependency).
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call */
-
-import type { PluginAPI, PluginExports, PluginActivate, Feature, FeatureContext, FeatureSyncAPI, EventBridgeInstance } from '../sdk/types.ts';
+import type { PluginExports, PluginActivate, Feature, FeatureContext, FeatureSyncAPI, EventBridgeInstance } from '../sdk/types.ts';
 
 /** Minimal interface for the <geek-whiteboard> custom element. */
 interface Whiteboard extends HTMLElement {
@@ -415,7 +413,7 @@ function createBlankCanvasFeature(): Feature {
         const { visible } = (e as CustomEvent<{ visible: boolean }>).detail;
         if (sync) sync.getSharedMap().set('visible', visible);
       };
-      const onClear = (e: Event): void => {
+      const onClear = (): void => {
         if (sync && !sync.readonly) clearAllStrokes(sync);
       };
       if (!isReadonly) {
@@ -520,7 +518,7 @@ function createBlankCanvasFeature(): Feature {
   };
 }
 
-export const activate: PluginActivate = (_api: PluginAPI): PluginExports => ({ // eslint-disable-line @typescript-eslint/no-unused-vars
+export const activate: PluginActivate = (): PluginExports => ({
   features: {
     'whiteboard': createWhiteboardFeature(),
     'whiteboard-canvas': createBlankCanvasFeature(),
