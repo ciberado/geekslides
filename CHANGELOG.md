@@ -11,6 +11,14 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.5.2] - 2026-05-24
+
+### Fixed
+
+- Short URL redirects (`/s/:id`) now work correctly in production — Caddy was
+  serving the SPA instead of proxying to the server. Added `/s/*` route to all
+  Caddyfiles (`docker/Caddyfile`, `docker/Caddyfile.internal`, `Caddyfile.dev`).
+
 ## [2.6.0] - 2026-05-24
 
 ### Added
