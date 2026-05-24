@@ -78,7 +78,7 @@ export class KeybindingNotification {
         pointer-events: none;
         opacity: 0;
         transform: translateX(20px);
-        transition: opacity ${ANIMATION_DURATION_MS}ms ease, transform ${ANIMATION_DURATION_MS}ms ease;
+        transition: opacity ${String(ANIMATION_DURATION_MS)}ms ease, transform ${String(ANIMATION_DURATION_MS)}ms ease;
       }
 
       .gs-keybinding-toast-enter {

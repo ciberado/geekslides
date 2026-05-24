@@ -148,13 +148,17 @@ export class ShortcutsPanel {
     exportBtn.type = 'button';
     exportBtn.classList.add('gs-shortcuts-btn');
     exportBtn.textContent = '⬇ Export';
-    exportBtn.addEventListener('click', () => this.#handleExport());
+    exportBtn.addEventListener('click', () => {
+      this.#handleExport();
+    });
 
     const importBtn = document.createElement('button');
     importBtn.type = 'button';
     importBtn.classList.add('gs-shortcuts-btn');
     importBtn.textContent = '⬆ Import';
-    importBtn.addEventListener('click', () => this.#handleImport());
+    importBtn.addEventListener('click', () => {
+      this.#handleImport();
+    });
 
     actions.appendChild(exportBtn);
     actions.appendChild(importBtn);

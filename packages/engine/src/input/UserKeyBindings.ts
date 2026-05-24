@@ -127,13 +127,13 @@ export class UserKeyBindings {
    */
   unbind(key: string, commandName?: string): void {
     if (!commandName) {
-      delete this.#config[key];
+      Reflect.deleteProperty(this.#config, key);
     } else {
       const existing = this.#config[key];
       if (existing) {
         const filtered = existing.filter((n) => n !== commandName);
         if (filtered.length === 0) {
-          delete this.#config[key];
+          Reflect.deleteProperty(this.#config, key);
         } else {
           this.#config[key] = filtered;
         }
@@ -197,7 +197,7 @@ export class UserKeyBindings {
       const validated: KeyBindingsConfig = {};
       for (const [key, value] of Object.entries(config)) {
         if (Array.isArray(value) && value.every((v) => typeof v === 'string')) {
-          validated[key] = value as string[];
+          validated[key] = value;
         }
       }
       if (replace) {
