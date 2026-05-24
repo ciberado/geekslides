@@ -20,18 +20,9 @@
     "test:e2e": "playwright test --config=e2e/playwright.config.ts",
     "lint": "eslint .",
     "typecheck": "tsc --build",
-    "docker:build": "npm run docker:build:main && npm run docker:build:server && npm run docker:build:cli && npm run docker:build:cli:chromium && npm run docker:build:hub",
-    "docker:build:main": "docker build -t ciberado/geekslides:latest -f docker/Dockerfile .",
-    "docker:build:server": "docker build -t ciberado/geekslides-server:latest -f docker/Dockerfile.server .",
-    "docker:build:cli": "docker build --target slim -t ciberado/geekslides-cli:latest -f docker/Dockerfile.cli .",
-    "docker:build:cli:chromium": "docker build --target chromium -t ciberado/geekslides-cli:chromium -f docker/Dockerfile.cli .",
-    "docker:build:hub": "docker build -t ciberado/geekslides-hub:latest -f docker/Dockerfile.hub .",
-    "docker:push": "npm run docker:push:main && npm run docker:push:server && npm run docker:push:cli && npm run docker:push:cli:chromium && npm run docker:push:hub",
-    "docker:push:main": "docker push ciberado/geekslides:latest",
-    "docker:push:server": "docker push ciberado/geekslides-server:latest",
-    "docker:push:cli": "docker push ciberado/geekslides-cli:latest",
-    "docker:push:cli:chromium": "docker push ciberado/geekslides-cli:chromium",
-    "docker:push:hub": "docker push ciberado/geekslides-hub:latest"
+    "docker:build": "bash scripts/docker-build-push.sh --build",
+    "docker:push": "bash scripts/docker-build-push.sh --push",
+    "docker:build-push": "bash scripts/docker-build-push.sh"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",
