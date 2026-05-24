@@ -11,6 +11,21 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.0] - 2026-05-24
+
+### Added
+
+- Configurable slide transitions: `slide` (default), `fade`, and `none`.
+- `transition` field in `config.json` to set the default transition for a deck.
+- Per-slide transition override via slide marker classes (e.g., `.transition-fade`).
+- `transition` terminal command to change the transition effect at runtime.
+
+### Fixed
+
+- Resolved 144 ESLint errors across the codebase (type safety, unused vars,
+  unnecessary assertions, unsafe access patterns).
+- Added plugin SDK types for Yjs sync API used by media-sync and poll features.
+
 ## [2.5.1] - 2026-05-24
 
 ### Added
