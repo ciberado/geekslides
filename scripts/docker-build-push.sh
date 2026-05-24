@@ -106,4 +106,8 @@ if [[ "$MODE" != "--build" ]]; then
 fi
 
 echo ""
-echo "Done.  Tagged as :${VERSION}${IS_RELEASE:+ and :latest}"
+if [[ "$IS_RELEASE" == "true" ]]; then
+  echo "Done.  Tagged as :${VERSION} and :latest"
+else
+  echo "Done.  Tagged as :${VERSION}  (:latest not updated — create a git tag to make a release)"
+fi
