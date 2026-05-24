@@ -11,6 +11,15 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.4.2] - 2026-05-24
+
+### Changed
+
+- **Docker build/push script** — replaced 10 individual `docker:*` npm scripts with
+  `scripts/docker-build-push.sh`; images are now tagged `:x.y.z` always; `:latest`
+  is only updated when HEAD sits on a git tag (a release); untagged commits get a
+  `<version>-<sha>` tag only
+
 ## [2.4.1] - 2026-05-24
 
 ### Added
