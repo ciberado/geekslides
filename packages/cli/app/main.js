@@ -37,6 +37,7 @@ import {
   initPluginLoader,
   resolvePlugin,
   resolveFeature,
+  isKnownBundle,
 } from './plugin-loader.js';
 import { registerPluginCommands } from './plugin-commands.js';
 
@@ -1641,8 +1642,28 @@ try {
           const roomPlugins = roomPluginManager.listPlugins();
           for (const rp of roomPlugins) {
             try {
-              const { importRemotePlugin } = await import('@geekslides/engine');
-              const mod = await importRemotePlugin(rp.manifestUrl);
+              // importRemotePlugin (from engine) imports a URL as raw JS, so it cannot
+              // handle plugin.json manifest files.  Use the plugin-loader instead:
+              //   • built-in bundles: import from /plugins/dist/{name}/index.js
+              //   • remote plugins:   fetch manifest → derive .js URL → import via proxy
+              let mod;
+              if (isKnownBundle(rp.name)) {
+                if (import.meta.env?.DEV) {
+                  mod = await import(/* @vite-ignore */ `/plugins/${rp.name}/index.ts`);
+                } else {
+                  mod = await import(/* @vite-ignore */ `/plugins/dist/${rp.name}/index.js`);
+                }
+              } else {
+                // Remote plugin: fetch the manifest to resolve the JS module URL,
+                // then proxy-import the module directly (same path as loadRemoteBundle).
+                const proxyManifestUrl = `/api/plugin-proxy?url=${encodeURIComponent(rp.manifestUrl)}`;
+                const manifestResp = await fetch(proxyManifestUrl);
+                if (!manifestResp.ok) throw new Error(`HTTP ${manifestResp.status}`);
+                const baseUrl = rp.manifestUrl.substring(0, rp.manifestUrl.lastIndexOf('/') + 1);
+                const moduleUrl = `${baseUrl}dist/index.js`;
+                const { importRemotePlugin } = await import('@geekslides/engine');
+                mod = await importRemotePlugin(moduleUrl);
+              }
               if (mod.activate) {
                 const exports = mod.activate(PLUGIN_API);
                 if (exports?.processors) {
