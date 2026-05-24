@@ -52,6 +52,21 @@ npm run build:smoke --workspace=@geekslides/hub
 
 This verifies that the built CJS bundle can start, accept authentication, and successfully import a PPTX file (exercising jsdom and other dependencies that load runtime assets from disk). Tests pass in dev/source mode even when the bundle is broken — the smoke test is the only way to catch these failures before deploying.
 
+### 2b. Run Docker image smoke test (if Dockerfile or docker/ changed)
+
+If changes touch any `docker/Dockerfile*`, `scripts/docker-*.sh`, `plugins/`, or any runtime asset path, build the affected Docker images and run the image smoke checks:
+
+```bash
+npm run docker:build   # builds all images
+npm run docker:smoke   # checks all images for required files
+```
+
+The image smoke test verifies:
+- `ciberado/geekslides`: `index.html` present, all 7 plugin bundles present, plugin JS is valid JS not an HTML fallback
+- `ciberado/geekslides-hub`: jsdom at `/app/node_modules/jsdom`, jsdom NOT bundled in `index.cjs`, better-sqlite3 native addon present
+
+The `docker:build-push` script runs the image smoke automatically between build and push — a failing smoke aborts the push.
+
 ### 3. Check for new/updated unit tests
 
 If you added or changed logic in `packages/engine/src/` or `packages/server/src/`, verify that corresponding test files exist or were updated in:

@@ -51,6 +51,10 @@ npm run build:smoke --workspace=@geekslides/hub  # Bundle smoke test: starts the
                         # Current hub esbuild externals: better-sqlite3, pino, pino-pretty,
                         # thread-stream, jsdom.  Add any new dependency that uses readFileSync with
                         # relative paths at runtime.
+npm run docker:smoke    # Image smoke test: verifies built Docker images contain required files
+                        # (all plugin bundles, jsdom in hub node_modules, no bundled jsdom, etc.)
+                        # Run after docker:build and before docker:push.  The docker:build-push
+                        # script runs this automatically between build and push.
 npm run docker:build    # Build all Docker images (main, server, cli, cli:chromium)
 npm run docker:push     # Push all Docker images to Docker Hub
 ```

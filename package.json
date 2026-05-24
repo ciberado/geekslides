@@ -22,7 +22,8 @@
     "typecheck": "tsc --build",
     "docker:build": "bash scripts/docker-build-push.sh --build",
     "docker:push": "bash scripts/docker-build-push.sh --push",
-    "docker:build-push": "bash scripts/docker-build-push.sh"
+    "docker:build-push": "bash scripts/docker-build-push.sh",
+    "docker:smoke": "bash scripts/docker-image-smoke.sh latest"
   },
   "devDependencies": {
     "@playwright/test": "^1.49.0",

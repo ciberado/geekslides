@@ -84,6 +84,10 @@ if [[ "$MODE" != "--push" ]]; then
   docker build --target chromium $(tags_for "$CLI_IMAGE" "-chromium") -f "${CLI_DOCKERFILE}" .
 
   echo "── Build complete ──────────────────────────────────────────────────────"
+
+  echo ""
+  echo "── Image smoke checks ─────────────────────────────────────────────────"
+  bash "$(dirname "$0")/docker-image-smoke.sh" "$VERSION"
 fi
 
 # ── push ──────────────────────────────────────────────────────────────────────
