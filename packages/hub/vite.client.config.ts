@@ -61,6 +61,7 @@ export default defineConfig({
   plugins: [viewerProxy()],
   server: {
     port: 3001,
+    allowedHosts: true,
     proxy: {
       '/hub/api': {
         target: 'http://localhost:3000',
