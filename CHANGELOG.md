@@ -11,6 +11,20 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.5.1] - 2026-05-24
+
+### Added
+
+- Default plugin registry (`github.com/ciberado/geekslides/tree/main/plugins`) is now
+  automatically registered in every room on creation.
+- `plugins/index.json` registry manifest listing all 7 built-in plugins.
+- `npm run release` / `npm run release:dry` scripts for streamlined releases.
+
+### Fixed
+
+- `plugin-available` and `plugin-load` gracefully skip unreachable registries instead
+  of failing entirely.
+
 ## [2.5.0] - 2026-05-24
 
 ### Added
