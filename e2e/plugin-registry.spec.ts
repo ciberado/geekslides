@@ -179,6 +179,25 @@ test.describe('Plugin Registry Commands', () => {
     expect(terminalContent).toContain('2 plugins');
   });
 
+  test('default registry is present on fresh room', async ({ page }) => {
+    const room = uniqueRoom('reg-default');
+    await page.goto(`/?config=${DECK}&room=${room}`);
+    await waitForSlideshow(page);
+
+    await runTerminalCommand(page, 'plugin-registry-ls');
+    await page.waitForFunction(
+      () => document.querySelector('geek-terminal')?.shadowRoot?.textContent?.includes('GeekSlides Official'),
+      { timeout: 5000 },
+    );
+
+    const content = await page.evaluate(() =>
+      document.querySelector('geek-terminal')?.shadowRoot?.textContent ?? '',
+    );
+    expect(content).toContain('Registries:');
+    expect(content).toContain('GeekSlides Official');
+    expect(content).toContain('github.com/ciberado/geekslides');
+  });
+
   test('plugin-registry-ls lists configured registries', async ({ page }) => {
     const room = uniqueRoom('reg-ls');
     await page.goto(`/?config=${DECK}&room=${room}`);
@@ -317,12 +336,16 @@ test.describe('Plugin Registry Commands', () => {
       { timeout: 5000 },
     );
 
-    // Verify empty
+    // Verify test registry is gone but default remains
     await runTerminalCommand(page, 'plugin-registry-ls');
     await page.waitForFunction(
-      () => document.querySelector('geek-terminal')?.shadowRoot?.textContent?.includes('No registries'),
+      () => document.querySelector('geek-terminal')?.shadowRoot?.textContent?.includes('GeekSlides Official'),
       { timeout: 5000 },
     );
+    const content = await page.evaluate(() =>
+      document.querySelector('geek-terminal')?.shadowRoot?.textContent ?? '',
+    );
+    expect(content).not.toContain('E2E Test Registry');
   });
 
   test('plugin-registry-add with invalid URL shows error', async ({ page }) => {

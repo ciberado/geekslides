@@ -31,7 +31,7 @@ export { BUILTIN_BUNDLES, expandBundles } from './plugins/plugin-bundles.ts';
 export type { PluginBundleDef } from './plugins/plugin-bundles.ts';
 export { PluginRegistryClient, normalizeGitHubUrl } from './plugins/PluginRegistry.ts';
 export type { RegistryManifest, RegistryPluginEntry, ResolvedRegistryPlugin } from './plugins/PluginRegistry.ts';
-export { RoomPluginManager } from './plugins/RoomPluginManager.ts';
+export { RoomPluginManager, DEFAULT_REGISTRY } from './plugins/RoomPluginManager.ts';
 export type { RoomRegistryEntry, RoomPluginEntry, RoomPluginChangeHandler } from './plugins/RoomPluginManager.ts';
 export {
   applyPreprocessorResult,

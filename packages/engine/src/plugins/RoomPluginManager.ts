@@ -16,6 +16,15 @@ import { createLogger } from '../logging.ts';
 const log = createLogger('room-plugins');
 
 /**
+ * The default plugin registry — always registered automatically.
+ * Points to the official GeekSlides plugins directory on GitHub.
+ */
+export const DEFAULT_REGISTRY: RoomRegistryEntry = {
+  url: 'https://github.com/ciberado/geekslides/tree/main/plugins',
+  name: 'GeekSlides Official',
+};
+
+/**
  * A registry entry stored in room state.
  */
 export interface RoomRegistryEntry {
@@ -48,6 +57,7 @@ export class RoomPluginManager {
     this.#doc = doc;
     this.#rootMap = doc.getMap('roomPlugins');
     this.#setupObservers();
+    this.#ensureDefaultRegistry();
   }
 
   /**
@@ -210,6 +220,24 @@ export class RoomPluginManager {
   onChange(handler: RoomPluginChangeHandler): () => void {
     this.#changeHandlers.add(handler);
     return () => { this.#changeHandlers.delete(handler); };
+  }
+
+  /**
+   * Ensures the default registry is always present.
+   * Called on construction — idempotent (won't duplicate if already there).
+   */
+  #ensureDefaultRegistry(): void {
+    const registries = this.#getRegistries();
+    for (let i = 0; i < registries.length; i++) {
+      const existing = registries.get(i) as Record<string, unknown>;
+      if (existing['url'] === DEFAULT_REGISTRY.url) {
+        return; // already present
+      }
+    }
+    this.#doc.transact(() => {
+      registries.push([{ url: DEFAULT_REGISTRY.url, name: DEFAULT_REGISTRY.name }]);
+    });
+    log.info({ url: DEFAULT_REGISTRY.url }, 'default registry seeded');
   }
 
   #setupObservers(): void {

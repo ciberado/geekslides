@@ -1,0 +1,13 @@
+{
+  "name": "GeekSlides Official",
+  "version": 1,
+  "plugins": [
+    { "name": "chart", "version": "1.0.0", "description": "Chart.js-powered data visualisation in slides", "entry": "chart/plugin.json" },
+    { "name": "core", "version": "1.0.0", "description": "Essential preprocessors: heading-based slide separators and basic iframe embeds", "entry": "core/plugin.json" },
+    { "name": "css-doodle", "version": "1.0.0", "description": "Generative CSS doodle background patterns", "entry": "css-doodle/plugin.json" },
+    { "name": "media", "version": "1.0.0", "description": "YouTube, audio, video, and generic iframe embeds with cross-client playback sync", "entry": "media/plugin.json" },
+    { "name": "mermaid", "version": "1.0.0", "description": "Mermaid diagram rendering inside slides", "entry": "mermaid/plugin.json" },
+    { "name": "poll", "version": "1.0.0", "description": "Live audience polling with real-time vote aggregation", "entry": "poll/plugin.json" },
+    { "name": "whiteboard", "version": "1.0.0", "description": "Drawing overlay for live annotation during presentations", "entry": "whiteboard/plugin.json" }
+  ]
+}

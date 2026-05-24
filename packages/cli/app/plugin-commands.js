@@ -132,14 +132,18 @@ export function registerPluginCommands({
         try {
           const lines = [];
           for (const reg of registries) {
-            const plugins = await registryClient.resolvePlugins(reg.url);
-            lines.push(`[${reg.name}]`);
-            for (const p of plugins) {
-              const active = roomPluginManager.listPlugins().some(
-                (lp) => lp.manifestUrl === p.manifestUrl,
-              );
-              const marker = active ? '●' : '○';
-              lines.push(`  ${marker} ${p.name} v${p.version} — ${p.description}`);
+            try {
+              const plugins = await registryClient.resolvePlugins(reg.url);
+              lines.push(`[${reg.name}]`);
+              for (const p of plugins) {
+                const active = roomPluginManager.listPlugins().some(
+                  (lp) => lp.manifestUrl === p.manifestUrl,
+                );
+                const marker = active ? '●' : '○';
+                lines.push(`  ${marker} ${p.name} v${p.version} — ${p.description}`);
+              }
+            } catch {
+              lines.push(`[${reg.name}] (unreachable)`);
             }
           }
           showOutput(lines.join('\n'));
@@ -192,11 +196,15 @@ export function registerPluginCommands({
           const registries = roomPluginManager.listRegistries();
           let found = null;
           for (const reg of registries) {
-            const plugins = await registryClient.resolvePlugins(reg.url);
-            const match = plugins.find((p) => p.name === name);
-            if (match) {
-              found = match;
-              break;
+            try {
+              const plugins = await registryClient.resolvePlugins(reg.url);
+              const match = plugins.find((p) => p.name === name);
+              if (match) {
+                found = match;
+                break;
+              }
+            } catch {
+              // Skip unreachable registries
             }
           }
           if (!found) {
