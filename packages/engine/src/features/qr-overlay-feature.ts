@@ -3,12 +3,13 @@
  *
  * Displays a full-screen QR code across all clients in a room when triggered
  * via the `share-qr` command. Uses Yjs shared state to synchronize display
- * across room participants. Any client can dismiss it (Esc or click).
+ * across room participants. Only presenter (non-readonly) sessions can dismiss.
  *
  * The QR code is generated using a minimal inline encoder optimized for
  * short alphanumeric URLs (the short URL API reduces density).
  */
 
+import type * as Y from 'yjs';
 import type { Feature, FeatureContext } from './types.ts';
 
 /**
@@ -21,19 +22,23 @@ export function createQrOverlayFeature(): Feature {
     label: 'QR code overlay for share links',
 
     activate(context: FeatureContext): (() => void) | undefined {
-      const { sync } = context;
-      if (!sync) return undefined;
-      const syncApi = sync; // Non-null reference for closures
+      const { sync: maybeSyncApi, syncManager } = context;
+      if (!maybeSyncApi || !syncManager) return undefined;
+      // Create non-null aliases for use in closures (TS can't narrow through closures)
+      const syncApi = maybeSyncApi;
 
       let overlay: HTMLElement | null = null;
 
-      // Use the feature's shared map (a sub-map under doc.getMap('features'))
-      // for read/write of qrUrl. We observe it for changes.
-      // Note: getSharedMap() may create the map — both clients do this, and Yjs
-      // conflict resolution picks a winner. To handle the case where our local
-      // reference becomes stale, we also set up a periodic check.
-      let currentMap = syncApi.getSharedMap();
-      let pollTimer: ReturnType<typeof setInterval> | null = null;
+      // Observe the singleton root features map with observeDeep.
+      // doc.getMap('features') always returns the same Y.Map instance — there
+      // is no conflict-resolution race that could leave us watching a stale
+      // nested map (unlike observing the feature-scoped sub-map directly).
+      const featuresRoot = syncManager.doc.getMap<unknown>('features');
+
+      function getQrUrl(): string {
+        const qrMap = featuresRoot.get('qr-overlay') as Y.Map<unknown> | undefined;
+        return (qrMap?.get('qrUrl') as string | undefined) ?? '';
+      }
 
       function showQr(url: string): void {
         if (overlay) return;
@@ -120,37 +125,23 @@ export function createQrOverlayFeature(): Feature {
       }
 
       function onStateChange(): void {
-        // Re-read from getSharedMap() to always get the winning Y.Map after conflicts
-        const map = syncApi.getSharedMap();
-        const url = (map.get('qrUrl') as string | undefined) ?? '';
+        const url = getQrUrl();
         if (url.length > 0) {
           showQr(url);
         } else {
           hideQr();
         }
-
-        // If the map instance changed (conflict resolved), re-attach observer
-        if (map !== currentMap) {
-          currentMap.unobserve(onStateChange);
-          currentMap = map;
-          currentMap.observe(onStateChange);
-        }
       }
 
-      currentMap.observe(onStateChange);
+      featuresRoot.observeDeep(onStateChange);
       document.addEventListener('keydown', onKeydown, true);
-
-      // Poll for state changes to detect Yjs conflict resolution swapping the map.
-      // This handles the race where the observer is on a dead map instance.
-      pollTimer = setInterval(onStateChange, 500);
 
       // Check if QR is already showing when feature activates
       onStateChange();
 
       return () => {
-        currentMap.unobserve(onStateChange);
+        featuresRoot.unobserveDeep(onStateChange);
         document.removeEventListener('keydown', onKeydown, true);
-        clearInterval(pollTimer);
         hideQr();
       };
     },

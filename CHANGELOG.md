@@ -11,6 +11,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.4] - 2026-05-25
+
+### Fixed
+
+- QR overlay now reliably appears on **all** connected sessions. The previous
+  implementation observed a feature-scoped `Y.Map` that each client created
+  on activation; Yjs conflict resolution kept only one winner, so clients
+  watching the losing map never saw the update. The feature now uses
+  `observeDeep` on `doc.getMap('features')` — a singleton that always refers
+  to the same Y.Map — eliminating the conflict race entirely and removing the
+  500 ms polling workaround.
+
 ## [2.6.3] - 2026-05-24
 
 ### Fixed
