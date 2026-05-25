@@ -1,6 +1,6 @@
 {
   "name": "@geekslides/hub",
-  "version": "2.6.4",
+  "version": "2.6.5",
   "license": "Apache-2.0",
   "type": "module",
   "main": "src/server/index.ts",

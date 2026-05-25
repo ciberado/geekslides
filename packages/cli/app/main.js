@@ -1030,6 +1030,11 @@ try {
               }
             }
 
+            // Re-register QR overlay (not part of config.features)
+            if (sync) {
+              featureManager.register(createQrOverlayFeature());
+            }
+
             // Restore sync position after reloading slides
             const state = sync.doc.getMap('sessionState');
             const slide = state.get('slide');
@@ -1218,6 +1223,12 @@ try {
             console.warn(`[reloadDeck:${reloadId}] Failed to load feature '${featureName}':`, err.message);
           }
         }
+
+        // Re-register QR overlay (not part of config.features)
+        if (sync) {
+          featureManager.register(createQrOverlayFeature());
+        }
+
         featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
         featureManager.emit('slide:enter', { slideIndex: 0, previousIndex: -1 });
 
@@ -1285,6 +1296,12 @@ try {
               console.warn(`[proxyReload:${proxyId}] Failed to load feature '${featureName}':`, err.message);
             }
           }
+
+          // Re-register QR overlay (not part of config.features)
+          if (sync) {
+            featureManager.register(createQrOverlayFeature());
+          }
+
           featureManager.emit('presentation:ready', { slideCount: slideshow.slideCount });
           featureManager.emit('slide:enter', { slideIndex: slideshow.currentSlide, previousIndex: -1 });
           return;
@@ -1346,6 +1363,11 @@ try {
           } catch (err) {
             console.warn(`[proxyReload:${proxyId}] Failed to load feature '${featureName}':`, err.message);
           }
+        }
+
+        // Re-register QR overlay (not part of config.features)
+        if (sync) {
+          featureManager.register(createQrOverlayFeature());
         }
 
         // Restore sync position after reloading slides (skip in default room

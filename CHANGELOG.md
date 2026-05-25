@@ -11,6 +11,17 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.5] - 2026-05-25
+
+### Fixed
+
+- QR overlay feature was lost after proxy-reload FAST PATH and full deck
+  reloads. `reloadDeckFromProxy` and `reloadDeck` call
+  `featureManager.deactivateAll()` then only re-register config.features —
+  the standalone `qr-overlay` feature (registered outside the config loop)
+  was never re-added. Now all code paths that call `deactivateAll()` also
+  re-register `createQrOverlayFeature()`.
+
 ## [2.6.4] - 2026-05-25
 
 ### Fixed
