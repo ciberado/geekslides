@@ -25,7 +25,7 @@
 - [Web Components](components.md) — Custom Elements, Shadow DOM, dual rendering for print, per-slide style scoping, mobile support
 - [Yjs Synchronization](sync.md) — CRDT sync replacing MQTT, Y.Map session state, y-websocket server
 - [Plugin System](plugin-system.md) — preprocessor/processor pipeline, built-in plugins, registration via config
-- [Command System](command-system.md) — direct keys for navigation, `t` terminal prompt for commands, touch gestures for mobile
+- [Command System](command-system.md) — direct keys for navigation, `Escape` opens terminal prompt for commands, touch gestures for mobile
 - [Speaker Notes](speaker-notes.md) — separate view architecture, `<geek-speaker-view>` component, timer, v1 vs v2 comparison
 - [CSS Slide Scaling](css-scaling.md) — `transform: scale()` technique, v1 vs v2 improvements, 5 alternatives evaluated
 - [Testing Strategy](testing.md) — Vitest unit/integration, Playwright E2E, CI pipeline

@@ -134,8 +134,8 @@ All decisions and specifications are in the sibling docs:
 | 15 | Implemented | Progress bar, shortcuts overlay, ARIA, sync indicator, overview grid |
 | 16 | Implemented | Toolbar, mermaid processor, touch zone tuning |
 | 17 | Implemented | Pino-based logging shipped in engine, server, and CLI with configurable namespace levels and unit coverage |
-| 18 | 🔴 Not started | Enhanced error messages and diagnostics |
-| 19 | 🔴 Not started | VS Code extension with cursor↔slide sync |
+| 18 | Implemented | Enhanced error messages and diagnostics — structured JSON error responses with `code`, `message`, `hint`; troubleshooting guide in how-to/17 |
+| 19 | Implemented | VS Code extension (`@geekslides/vscode`) with dev server management, deck creation, browser open, and cursor↔slide sync via Yjs |
 | 20 | Implemented | Custom web components via config.scripts |
 | 21 | Implemented | Plugin registry system + share-qr command |
 
