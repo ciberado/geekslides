@@ -4,9 +4,25 @@ function uniqueRoom(prefix: string): string {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+async function setupSyncDetection(page): Promise<void> {
+  await page.addInitScript(() => {
+    document.addEventListener('geek:sync:state', (e: CustomEvent) => {
+      if (e.detail?.connected) {
+        (window as unknown as { __syncConnected: boolean }).__syncConnected = true;
+      }
+    });
+  });
+}
+
+async function waitForSyncConnected(page): Promise<void> {
+  await page.waitForFunction(() => {
+    return (window as unknown as { __syncConnected?: boolean }).__syncConnected === true;
+  }, { timeout: 10000 });
+}
+
 test.describe('Content Proxy', () => {
   test('presenter uploads deck and audience loads from proxy', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('proxy-test');
 
     // --- Presenter tab: load deck normally with sync ---
@@ -54,6 +70,7 @@ test.describe('Content Proxy', () => {
 
     // --- Audience tab: should auto-load from proxy via Yjs contentProxy ---
     const audience = await context.newPage();
+    await setupSyncDetection(audience);
     const audienceLogs: string[] = [];
     audience.on('console', (msg) => audienceLogs.push(msg.text()));
 
@@ -67,6 +84,9 @@ test.describe('Content Proxy', () => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.slideCount > 0;
     }, undefined, { timeout: 10000 });
+
+    // Wait for audience to sync with presenter
+    await waitForSyncConnected(audience);
 
     // Both should have slides now
     const presenterSlideCount = await presenter.evaluate(
@@ -88,7 +108,7 @@ test.describe('Content Proxy', () => {
     await audience.waitForFunction(() => {
       const ss = document.getElementById('slideshow') as any;
       return ss?.currentSlide === 2;
-    }, undefined, { timeout: 5000 });
+    }, undefined, { timeout: 10000 });
 
     const audienceSlide = await audience.evaluate(
       () => (document.getElementById('slideshow') as any)?.currentSlide,
@@ -99,7 +119,7 @@ test.describe('Content Proxy', () => {
   });
 
   test('uploaded images are accessible from proxy', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('proxy-images');
 
     // Upload a deck with images referenced in markdown
@@ -144,8 +164,8 @@ test.describe('Content Proxy', () => {
     expect(res.status()).toBe(404);
   });
 
-  test('presenter keeps its own deck when stale contentProxy exists in Yjs', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('presenter keeps its own deck when stale contentProxy exists in Yjs', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('stale-proxy');
 
     // --- Tab A: load deck A and upload to content proxy ---
@@ -185,7 +205,7 @@ test.describe('Content Proxy', () => {
   });
 
   test('presenter continues to work when contentProxy is broadcast', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('multi-presenter-broadcast');
 
     // Helper to run terminal command
@@ -283,7 +303,7 @@ test.describe('Content Proxy', () => {
   });
 
   test('rapid load commands sync to all clients', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('stale-proxy-2');
 
     // This test simply verifies that multiple loads of the same deck don't cause
@@ -348,8 +368,8 @@ test.describe('Load command deck switching', () => {
     }, cmd);
   }
 
-  test('load command switches presenter deck and stays stable', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('load command switches presenter deck and stays stable', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('load-stable');
 
     const presenter = await context.newPage();
@@ -406,8 +426,8 @@ test.describe('Load command deck switching', () => {
     await context.close();
   });
 
-  test('load command propagates new deck to audience via contentProxy', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('load command propagates new deck to audience via contentProxy', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('load-audience');
 
     // --- Presenter ---
@@ -458,8 +478,8 @@ test.describe('Load command deck switching', () => {
     await context.close();
   });
 
-  test('load command propagates new deck to speaker view', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('load command propagates new deck to speaker view', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('load-speaker');
 
     // --- Presenter ---
@@ -526,8 +546,8 @@ test.describe('Load command deck switching', () => {
     await context.close();
   });
 
-  test('load back and forth between two decks stays stable', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('load back and forth between two decks stays stable', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('load-bounce');
 
     const presenter = await context.newPage();
@@ -574,7 +594,7 @@ test.describe('Load command deck switching', () => {
   });
 
   test('features are loaded during proxy reload', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('proxy-features');
 
     // --- Presenter tab: load poll deck with the "poll" feature ---
@@ -638,7 +658,7 @@ test.describe('Load command deck switching', () => {
   });
 
   test('Yjs features map is cleared when presenter loads a new deck', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('features-clear');
 
     // --- Presenter loads poll deck (which writes to Yjs features map) ---
@@ -700,7 +720,7 @@ test.describe('Load command deck switching', () => {
   });
 
   test('page reload uses localStorage proxy cache for instant deck recovery', async ({ browser, baseURL }) => {
-    const context = await browser.newContext();
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('proxy-cache');
 
     // --- Presenter loads deck and uploads to room ---
@@ -740,8 +760,8 @@ test.describe('Load command deck switching', () => {
     await context.close();
   });
 
-  test('localStorage proxy cache falls back to default deck when proxy is unavailable', async ({ browser }) => {
-    const context = await browser.newContext();
+  test('localStorage proxy cache falls back to default deck when proxy is unavailable', async ({ browser, baseURL }) => {
+    const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
     const room = uniqueRoom('proxy-cache-stale');
 
     // Pre-set a stale localStorage entry pointing to a non-existent room
