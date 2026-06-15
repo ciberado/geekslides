@@ -315,6 +315,118 @@ The GitHub Actions workflow (`.github/workflows/test.yml`) triggers on push and 
 
 **`e2e` job**: Checks out the repo, sets up Node 22, runs `npm ci`, installs Playwright's Chromium browser, runs `npm run test:e2e`. On failure, uploads the Playwright HTML report as an artifact using `actions/upload-artifact@v4`.
 
+### Content Proxy E2E
+
+Tests in `e2e/content-proxy.spec.ts`:
+
+- **Presenter uploads deck, audience loads from proxy** — presenter loads a deck with sync enabled,
+  the deck assets are uploaded to the server. An audience tab joins the same room, syncs via Yjs,
+  and follows the presenter's navigation. Verifies API endpoints return correct JSON/CSS/markdown
+  and the audience's slideshow tracks the presenter's current slide.
+- **Uploaded images accessible from proxy** — verifies that images referenced in deck markdown are
+  uploaded and retrievable via the content proxy API.
+- **Path traversal blocked via API** — confirms `..%2F` traversal attempts return 404.
+- **Missing room returns 404** — confirms requests to non-existent rooms return 404.
+- **Stale contentProxy guard** — verifies a presenter keeps its own deck when a stale `contentProxy`
+  from a previous room change exists in the Yjs map.
+- **ContentProxy broadcast** — presenter loads a deck, audience syncs via proxy, presenter switches
+  deck via the `load` terminal command. Audience receives the new deck through the updated
+  `contentProxy` field and reloads from the proxy.
+- **Rapid load commands** — rapid successive `load` commands don't cause deduplication/revert issues.
+- **Features reloaded during proxy reload** — verifies features (e.g. polls) are re-activated when
+  the audience receives a contentProxy update.
+- **Yjs features map cleared on deck switch** — confirms features from the old deck are cleaned up
+  when the presenter loads a different deck.
+- **localStorage proxy cache** — verifies a page reload uses cached proxy data for instant recovery;
+  falls back to the default deck when the proxy is unavailable.
+
+### Multi-Tab Sync Test Pattern
+
+E2E tests that involve multiple browser tabs in the same Yjs room (content-proxy,
+plugin-registry, sync, share-qr) must wait for the sync connection to establish before
+checking shared state. Use this pattern:
+
+```typescript
+// 1. Register sync detection before navigation (addInitScript)
+async function setupSyncDetection(page): Promise<void> {
+  await page.addInitScript(() => {
+    document.addEventListener('geek:sync:state', (e: CustomEvent) => {
+      if (e.detail?.connected) {
+        (window as unknown as { __syncConnected: boolean }).__syncConnected = true;
+      }
+    });
+  });
+}
+
+// 2. Wait for sync to connect
+async function waitForSyncConnected(page): Promise<void> {
+  await page.waitForFunction(() => {
+    return (window as unknown as { __syncConnected?: boolean }).__syncConnected === true;
+  }, { timeout: 10000 });
+}
+
+// 3. Apply to both presenter and audience pages
+await setupSyncDetection(presenter);
+await presenter.goto(decksUrl);
+await waitForSyncConnected(presenter);
+
+await setupSyncDetection(audience);
+await audience.goto(audienceUrl);
+await waitForSyncConnected(audience);
+```
+
+Key details:
+- `setupSyncDetection` must be called **before** `page.goto()` — `addInitScript` registers a
+  script that runs on every new document, so it only applies to navigations after registration.
+- Only call `setupSyncDetection` on the **first** `goto` after creating the page. Calling it on a
+  fresh page before its first navigation can cause a race in headless Chromium (the `goto()`
+  promise rejects with "Cannot navigate to invalid URL" despite the page loading successfully).
+  For pages that don't need sync detection, skip `setupSyncDetection` entirely.
+- When creating contexts manually via `browser.newContext()`, always pass `{ baseURL }` —
+  relative URLs like `/?config=...` won't resolve without it:
+  ```typescript
+  const context = await browser.newContext({ baseURL: baseURL ?? 'http://localhost:5173' });
+  ```
+- Tests using the `page` fixture (not `browser`) inherit `baseURL` automatically from the
+  Playwright config's `use.baseURL` setting.
+
+## Environment Setup
+
+### Ubuntu 26.04+ / Platform Override
+
+Playwright's browser download servers don't support `ubuntu26.04-x64`. When running E2E tests
+on Ubuntu 26.04 or later, set the platform override environment variable:
+
+```bash
+export PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
+npx playwright install chromium
+```
+
+This tells Playwright to download browsers built for Ubuntu 24.04, which work fine on 26.04.
+Without this override, `npx playwright install` fails with "Playwright does not support chromium
+on ubuntu26.04-x64".
+
+### Dev Server for E2E
+
+The E2E tests require **both** the Vite dev server and the backend server running concurrently.
+The `npm run dev` script handles this:
+
+```bash
+npm run dev   # Runs both concurrently: "tsx packages/server/src/index.ts" + "vite"
+```
+
+The Playwright config (`e2e/playwright.config.ts`) has `reuseExistingServer: true` by default,
+so a manually started `npm run dev` is reused across test runs. To force a fresh start:
+
+```bash
+E2E_REUSE_EXISTING_SERVER=false npm run test:e2e
+```
+
+> **Important:** Always run E2E tests via `npm run test:e2e`, not bare `npx playwright test`.
+> The npm script passes `--config=e2e/playwright.config.ts` which is required. Without it,
+> Playwright doesn't find the project configuration and all tests fail with
+> ERR_CONNECTION_REFUSED or "Cannot navigate to invalid URL".
+
 ## npm Scripts Summary
 
 | Script | Description |
@@ -323,6 +435,6 @@ The GitHub Actions workflow (`.github/workflows/test.yml`) triggers on push and 
 | `test:watch` | Watch mode (`vitest`) |
 | `test:coverage` | With coverage report (`vitest run --coverage`) |
 | `test:browser` | Integration tests in browser mode (`vitest run -c vitest.config.browser.ts`) |
-| `test:e2e` | Playwright E2E tests (`playwright test`) |
+| `test:e2e` | Playwright E2E tests (`playwright test --config=e2e/playwright.config.ts`) |
 | `test:e2e:ui` | E2E with interactive UI (`playwright test --ui`) |
 | `test:all` | Everything: unit + integration + E2E |

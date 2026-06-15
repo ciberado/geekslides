@@ -39,9 +39,21 @@ npm test                # Vitest unit + integration tests (80% coverage threshol
 npm run test:e2e        # Playwright e2e — always use this, not bare `npx playwright test`
                         # The npm script passes --config=e2e/playwright.config.ts which is
                         # required: bare `npx playwright test` won't find the config and all
-                        # tests fail with ERR_CONNECTION_REFUSED (no dev server started).
-                        # To run a single spec: npx playwright test --config e2e/playwright.config.ts e2e/layouts.spec.ts
-npm run dev             # Vite + yjs-server on 0.0.0.0
+                        # tests fail with ERR_CONNECTION_REFUSED or "Cannot navigate to
+                        # invalid URL" (no dev server started, no baseURL config loaded).
+                        # To run a single spec:
+                        #   npx playwright test --config=e2e/playwright.config.ts e2e/layouts.spec.ts
+                        #
+                        # On Ubuntu 26.04+ (devcontainer), set the platform override:
+                        #   PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
+                        #   npx playwright install chromium
+                        # Without this, browser download fails with "Playwright does not
+                        # support chromium on ubuntu26.04-x64".
+npm run dev             # Vite + backend server on 0.0.0.0 (BOTH required for e2e tests)
+                        # Runs concurrently: "tsx packages/server/src/index.ts" + "vite"
+                        # The backend server handles /api/rooms/... content proxy routes.
+                        # Starting only 'npx vite' without the backend means all content
+                        # proxy API endpoints return HTML instead of JSON.
 npm run dev --workspace=@geekslides/hub  # Hub Fastify + Lit SPA (dev-mode login, no OAuth needed)
 npm run build           # Build all packages
 npm run build:smoke --workspace=@geekslides/hub  # Bundle smoke test: starts the built hub server and
