@@ -1,270 +1,296 @@
 # GeekSlides
 
-GeekSlides is a markdown-first presentation system focused on learning sessions.
+**Markdown-first presentation software for technical talks.**
 
-The current v2 is a TypeScript rewrite with Web Components, real-time synchronization, speaker view, mobile support, and a terminal-style command workflow.
+Write your slides in plain Markdown, present live with real-time audience sync, and export to PDF — all from a single tool.
 
-## Quick Experience (Recommended)
+---
 
-If you want to learn fast, start with the "cuatro cosicas" deck (folder name: slides-cuatro-cosas-aws).
+## Why GeekSlides?
 
-1. Install and run:
+| What you get | How it helps |
+|---|---|
+| **Write in Markdown** | Your slides live as plain text in git. No binary files, no vendor lock-in. |
+| **Audience sync** | Viewers open the same URL on any device and follow the presenter automatically. |
+| **Speaker view** | See your notes, a live timer, and the next slide — in a dedicated tab. |
+| **Live PDF export** | Generate slides, speaker-notes handouts, detail sheets, and book layouts with one command. |
+| **Interactive plugins** | Mermaid diagrams, Chart.js charts, live audience polls, drawing whiteboard, CSS-doodle backgrounds. |
+| **Mobile-friendly** | Audience members can follow on their phone with swipe navigation. |
+| **Hub** | A team sharing platform to publish, search, and launch decks via a browser dashboard. |
+| **VS Code extension** | Author slides in VS Code and watch the browser follow your cursor in real time. |
+
+---
+
+## Quick Start
+
+**Requirements:** Node.js 22+, npm 10+, Git
 
 ```bash
+git clone https://github.com/ciberado/geekslides.git
+cd geekslides
 npm ci
 npm run dev
 ```
 
-2. Open the presentation:
+Open **http://localhost:5173** — you'll see the welcome deck.
 
-- http://localhost:5173/
+- Press `Escape` to open the command terminal.
+- Type `help` and press `Enter` to explore available commands.
+- Open a second tab at **http://localhost:5173/?view=speaker** for the speaker view.
 
-3. Open speaker mode in another tab:
+> Prefer Docker? See [Use the Docker CLI](how-to/10-use-the-docker-cli.md).
 
-- http://localhost:5173/?view=speaker
+---
 
-4. Try synchronized viewing with a room:
+## Creating Your First Deck
 
-- http://localhost:5173/?config=decks/slides-cuatro-cosas-aws/config.json&room=my-talk
+Scaffold a new presentation:
 
-`npm run dev` binds to `0.0.0.0`, starts Vite, and starts the sync server.
-
-## Supported Features
-
-- Markdown slide parsing with slide markers and slide attributes
-- Web Components rendering (`geek-slideshow`, `geek-slide`)
-- Partial reveals and slide navigation
-- Room-based sync (Yjs + y-websocket)
-- Speaker view in separate tab/window
-- Resizable speaker panes and notes font controls
-- Terminal command mode (press `t`)
-- Touch and mobile gestures
-- Rich processors/components: iframe, chart, video, whiteboard
-- CSS/asset loading from deck config
-- HMR live preview for markdown, deck config, and author CSS in dev workflow
-- Print rendering primitives for slide export modes
-- Automated testing with Vitest and Playwright
-
-## Live Preview
-
-When running `npm run dev`, GeekSlides now hot-reloads the active deck without a full page refresh for the common authoring loop.
-
-- Editing a deck `README.md` updates slide content in place.
-- Current slide position is preserved after markdown reloads.
-- Editing `config.json` applies non-structural changes such as title and styles without a reload.
-- Editing deck CSS files listed in `styles` hot-applies the updated author styles.
-
-Structural config changes such as plugin, sync, or content-path changes still fall back to a full reload.
-
-## How Deck Loading Works
-
-By default the app loads `/deck/config.json` from the server (the mounted `CONTENT_DIR` in Docker,
-or a local path in dev mode).
-
-You can choose a deck in two ways.
-
-### 1) URL Parameters (initial load)
-
-- `config=<path-or-url>`: choose deck config file (local path or full HTTPS URL)
-- `view=speaker`: open speaker view
-- `room=<name>`: join a sync room
-
-Examples:
-
-```
-# Local deck (dev)
-http://localhost:5173/?config=decks/slides-cuatro-cosas-aws/config.json
-
-# Remote deck (any deployment)
-https://yourserver/?config=https://example.com/my-talk/config.json
+```bash
+npx geekslides create my-talk
+cd my-talk
+npx geekslides dev --config config.json
 ```
 
-### 2) Terminal Commands (runtime switch)
+Your deck is a folder with two files:
 
-Press `t` during presentation and use commands like:
+- **`README.md`** — slides written in Markdown
+- **`config.json`** — title, styles, and optional plugins
 
-- `load decks/slides-cuatro-cosas-aws/config.json`
-- `load https://example.com/my-talk/config.json`
-- `room my-talk`
-
-This lets you switch deck and room without retyping URLs.
-
-## Controls
-
-### Direct Navigation Keys
-
-No prefix required:
-
-- ArrowRight, ArrowDown, Space, PageDown: next
-- ArrowLeft, ArrowUp, PageUp: previous
-- Home: first slide
-- End: last slide
-
-### Terminal Mode
-
-Press `t` to open the terminal.
-
-- Enter: execute command
-- Tab: autocomplete command name
-- ArrowUp/ArrowDown: command history
-- Escape: close terminal
-- `help`: list available commands
-
-### Speaker View
-
-Open `?view=speaker` in a second tab/window to get presenter controls and notes.
-
-- Notes are shown in a left pane with independent scrolling.
-- Current and next slides are stacked on the right.
-- Drag the separators to resize the notes pane or rebalance current/next preview height.
-- Use the `A-` and `A+` buttons in the notes header to decrease or increase notes font size.
-- Current-slide partials stay visible in the preview: revealed items use normal slide styling, and unrevealed items stay visible but lighter.
-
-## Terminal Commands
-
-Built-in:
-
-- `help`: show command list
-
-Navigation:
-
-- `next`
-- `prev`
-- `go-first`
-- `go-last`
-- `go <n>`
-
-Config and sync:
-
-- `load <config-url>`
-- `room <room-name>`
-- `sync-follow` (when sync is enabled)
-- `sync-disconnect` (when sync is enabled)
-
-View and tools:
-
-- `speaker`
-- `overview`
-- `fullscreen`
-- `whiteboard`
-
-## Mobile Experience
-
-- Swipe left/right: navigate
-- Tap right side: next
-- Tap left side: previous
-- Long press: open terminal
-
-## Authoring Basics
-
-Slides are written in markdown and separated with empty-link markers.
+Slides are separated by empty anchor links. Add speaker notes with `::: Notes` blocks:
 
 ```markdown
-[](#cover)
+[](#intro)
 
-# Title Slide
+# Introduction
+
+Welcome to my talk!
+
+::: Notes
+Remind the audience who you are.
+:::
 
 [](#agenda)
 
 ## Agenda
 
-- Item 1
-- Item 2
-
-::: Notes
-Speaker notes for this slide.
-:::
-
-::: Details
-Details text for book mode; hidden in normal presentation view.
-:::
+- Topic one
+- Topic two
+- Topic three
 ```
 
-### Partial Reveals
+---
 
-GeekSlides v2 supports two ways to author partials:
+## Presenting
 
-- Inline markers with `[partial]`
-- Slide-level `.mod-partial` class on the separator, which turns list items and table rows into progressive reveals
+### Navigation
 
-Example:
+| Key | Action |
+|---|---|
+| `→` / `Space` | Next slide |
+| `←` | Previous slide |
+| `Home` / `End` | First / last slide |
+| `Escape` | Open / close the command terminal |
+| `?` | Keyboard shortcuts overlay |
+
+### Command Terminal
+
+Press `Escape` to open the terminal, type a command and press `Enter`:
+
+| Command | What it does |
+|---|---|
+| `help` | Show all available commands |
+| `go <n>` | Jump to slide N |
+| `room <name>` | Join a named sync room |
+| `load <url>` | Load a different deck by URL |
+| `speaker` | Open the speaker view |
+| `overview` | Slide grid overview |
+| `fullscreen` | Toggle fullscreen |
+| `whiteboard` | Toggle drawing overlay |
+| `share-qr` | Display a QR code for your audience to scan |
+
+### Speaker View
+
+Open `?view=speaker` in a second tab for the presenter panel:
+
+- Speaker notes with independent scrolling
+- Current and next slide previews
+- Live timer
+- Resizable panes
+
+### Mobile
+
+Audience members on phones can follow along:
+
+- **Swipe left/right** — navigate slides
+- **Tap right/left edge** — next/previous
+- Auto-sync with presenter when in a room
+
+---
+
+## Real-Time Sync
+
+Everyone in the same **room** follows the presenter:
+
+```
+# Presenter opens:
+http://localhost:5173/?room=my-talk
+
+# Audience opens the same URL and follows automatically
+```
+
+Or switch rooms at any time from the terminal:
+
+```
+room my-talk
+```
+
+Share a protected link where viewers cannot control the deck:
+
+```
+share <room-name>
+```
+
+---
+
+## PDF Export
+
+Export your deck in multiple formats:
+
+```bash
+npx geekslides pdf --config config.json --format slides
+```
+
+| Format | Description |
+|---|---|
+| `slides` | One slide per page |
+| `slides-notes` | Slides with speaker notes below |
+| `slides-details` | Slides with detail blocks |
+| `book` | Compact document layout |
+| `--all` | All formats in one pass |
+
+Install the headless browser once if you haven't:
+
+```bash
+npx playwright install chromium
+```
+
+---
+
+## Plugins
+
+Enable plugins in `config.json`:
+
+```json
+{
+  "plugins": ["media", "mermaid", "chart", "whiteboard", "poll"]
+}
+```
+
+| Plugin | What it adds |
+|---|---|
+| `core` | Heading separators, iframe embeds |
+| `media` | YouTube, audio, video with playback sync |
+| `mermaid` | Flowcharts and sequence diagrams |
+| `chart` | Chart.js data visualizations |
+| `whiteboard` | Live drawing overlay |
+| `css-doodle` | Generative animated backgrounds |
+| `poll` | Real-time audience polling |
+
+See [plugins/README.md](plugins/README.md) for full details and [how-to guides](how-to/README.md) for step-by-step examples.
+
+---
+
+## Partial Reveals
+
+Reveal list items or table rows one at a time:
 
 ```markdown
 [](.mod-partial#agenda)
 
 ## Agenda
 
-- First point
+- First point  ← appears first
 - Second point
 - Third point
 ```
 
-## Development Commands
+---
+
+## Deployment
+
+Run everything with Docker — Caddy, the sync server, and the app in a single container:
 
 ```bash
-npm run dev
-npm run dev:nosync
-npm run typecheck
-npm run lint
-npm run test
-npm run test:e2e
+docker compose -f docker/docker-compose.yml up -d
 ```
 
-## CLI Deck Development
+Set `CONTENT_DIR` to the path of your deck, or use the Hub to manage multiple decks.
 
-You can also develop a deck directly through the CLI instead of using the root dev server.
+See [Deploy the Server](how-to/05-deploy-the-server.md) for the full guide.
 
-With the packaged CLI installed:
+---
+
+## The Hub
+
+The Hub is a team platform for managing and sharing presentations:
+
+- Upload decks via browser or import from GitHub
+- Share with teammates and control access
+- Launch any deck into a live room in one click
+- Full-text search across your presentation library
 
 ```bash
-npx geekslides dev --config /absolute/path/to/config.json
+npm run dev --workspace=@geekslides/hub
 ```
 
-Inside this monorepo:
+Open **http://localhost:3001/hub/** — three built-in personas let you explore without OAuth.
 
-```bash
-npx tsx packages/cli/src/index.ts dev --config /absolute/path/to/config.json
-```
+See [Use the Hub](how-to/15-use-the-hub.md) for the full guide.
 
-This works for deck directories outside the repo as well. The CLI now serves its own packaged app shell and points the browser at the chosen deck config, including HMR for markdown, config, and author CSS.
+---
 
-## CLI PDF Export
+## VS Code Extension
 
-The CLI can also render PDFs from a deck using the print renderer plus headless Chromium via Playwright.
+The `@geekslides/vscode` extension connects your editor to the browser:
 
-Inside this monorepo:
+- Start/stop the dev server from the Command Palette
+- Create new decks without leaving VS Code
+- **Cursor sync** — move your cursor in the editor and the browser jumps to the same slide
 
-```bash
-npx tsx packages/cli/src/index.ts pdf --config /absolute/path/to/config.json --format slides
-```
+See [Use the VS Code Extension](how-to/18-use-the-vscode-extension.md).
 
-With the packaged CLI installed:
+---
 
-```bash
-npx geekslides pdf --config /absolute/path/to/config.json --format slides
-```
+## Documentation
 
-The command produces the requested primary PDF and, unless the primary format is already `slides-details`, also writes a companion `-details.pdf` file. Supported primary formats are `slides`, `slides-notes`, `slides-details`, and `book`.
+### How-To Guides
 
-On a fresh machine, install the browser once:
+Step-by-step tutorials for every feature → **[how-to/README.md](how-to/README.md)**
 
-```bash
-npx playwright install chromium
-```
+| Guide | Topic |
+|---|---|
+| [01 — Install the CLI](how-to/01-install-the-cli.md) | Get up and running |
+| [02 — Create Your First Deck](how-to/02-create-your-first-deck.md) | Scaffold and author |
+| [04 — Present Like a Pro](how-to/04-present-like-a-pro.md) | Navigation, sync, speaker view |
+| [05 — Deploy the Server](how-to/05-deploy-the-server.md) | Docker and production |
+| [06 — Export to PDF](how-to/06-export-to-pdf.md) | Slides, notes, book |
+| [15 — Use the Hub](how-to/15-use-the-hub.md) | Team sharing platform |
+| [18 — VS Code Extension](how-to/18-use-the-vscode-extension.md) | Authoring in VS Code |
 
-Use `--no-cleanup` to keep the temporary screenshots and assembly HTML for debugging, `--details-layout horizontal|vertical` to control the details PDF layout, and `--all` to produce all formats in a single pass reusing the same screenshots.
+### Technical Docs
 
-## Documentation Map
+Architecture and design decisions → **[vibe/features/](vibe/features/)**
 
-- [vibe/features/architecture-v2.md](vibe/features/architecture-v2.md)
-- [vibe/features/decisions.md](vibe/features/decisions.md)
-- [vibe/features/command-system.md](vibe/features/command-system.md)
-- [vibe/features/sync.md](vibe/features/sync.md)
-- [vibe/features/plan/README.md](vibe/features/plan/README.md)
+| Doc | Topic |
+|---|---|
+| [architecture-v2.md](vibe/features/architecture-v2.md) | System overview |
+| [decisions.md](vibe/features/decisions.md) | Architectural decision record |
+| [plugin-system.md](vibe/features/plugin-system.md) | Plugin API |
+| [sync.md](vibe/features/sync.md) | Yjs real-time sync |
+| [plan/README.md](vibe/features/plan/README.md) | Implementation phases |
 
-## Legacy v1
-
-- Archived under [archived/v1/](archived/v1/)
+---
 
 ## Acknowledgements
 
