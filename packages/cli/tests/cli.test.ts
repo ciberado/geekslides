@@ -66,7 +66,8 @@ describe('cli', () => {
   });
 
   it('uses the packaged cli app as the vite root', () => {
-    expect(resolveCliAppRoot()).toBe('/workspaces/geekslides/packages/cli/app');
+    const expected = resolve(fileURLToPath(import.meta.url), '..', '..', 'app');
+    expect(resolveCliAppRoot()).toBe(expected);
   });
 
   it('maps in-repo deck configs to root-relative browser paths', () => {
