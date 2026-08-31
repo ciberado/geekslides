@@ -56,9 +56,8 @@ export interface ShareInfo {
   readonly createdAt: string;
 }
 
-class ApiClient {
+export class ApiClient {
   private readonly base = '/hub/api';
-
   private async request<T>(path: string, init?: RequestInit): Promise<T> {
     const headers = new Headers(init?.headers);
     if (init?.body && !(init.body instanceof FormData)) {
@@ -111,6 +110,25 @@ class ApiClient {
   // Presentations
   listPresentations(limit = 20, offset = 0): Promise<{ items: Presentation[] }> {
     return this.request(`/presentations?limit=${String(limit)}&offset=${String(offset)}`);
+  }
+
+  /**
+   * Fetch every presentation the user owns. The server paginates list responses
+   * (cap of 100 per request), so loop through pages until an empty page arrives.
+   * This keeps the client-side filter able to search the full set rather than
+   * only the first page.
+   */
+  async listAllPresentations(): Promise<Presentation[]> {
+    const pageSize = 100;
+    const items: Presentation[] = [];
+    let offset = 0;
+    for (;;) {
+      const page = await this.listPresentations(pageSize, offset);
+      items.push(...page.items);
+      if (page.items.length < pageSize) break;
+      offset += pageSize;
+    }
+    return items;
   }
 
   getPresentation(id: string): Promise<Presentation> {
@@ -199,6 +217,23 @@ class ApiClient {
     return this.request(`/search?q=${encodeURIComponent(q)}`);
   }
 
+  async searchAll(
+    q: string,
+  ): Promise<Array<Presentation & { ownerName: string; ownerAvatarUrl: string | null }>> {
+    const pageSize = 100;
+    const items: Array<Presentation & { ownerName: string; ownerAvatarUrl: string | null }> = [];
+    let offset = 0;
+    for (;;) {
+      const page = await this.request<{
+        items: Array<Presentation & { ownerName: string; ownerAvatarUrl: string | null }>;
+      }>(`/search?q=${encodeURIComponent(q)}&limit=${String(pageSize)}&offset=${String(offset)}`);
+      items.push(...page.items);
+      if (page.items.length < pageSize) break;
+      offset += pageSize;
+    }
+    return items;
+  }
+
   // Analytics
   getPresentationAnalytics(id: string): Promise<{ launches: number }> {
     return this.request(`/presentations/${id}/analytics`);
@@ -282,6 +317,26 @@ class ApiClient {
   // Shared with me
   listSharedWithMe(): Promise<{ items: SharedPresentation[] }> {
     return this.request('/shared-with-me');
+  }
+
+  /**
+   * Fetch every presentation shared with the user. The server paginates list
+   * responses (cap of 100 per request), so loop through pages until an empty
+   * page arrives.
+   */
+  async listAllSharedWithMe(): Promise<SharedPresentation[]> {
+    const pageSize = 100;
+    const rows: SharedPresentation[] = [];
+    let offset = 0;
+    for (;;) {
+      const page = await this.request<{ items: SharedPresentation[] }>(
+        `/shared-with-me?limit=${String(pageSize)}&offset=${String(offset)}`,
+      );
+      rows.push(...page.items);
+      if (page.items.length < pageSize) break;
+      offset += pageSize;
+    }
+    return rows;
   }
 
   acceptShare(shareId: string): Promise<void> {

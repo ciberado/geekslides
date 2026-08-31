@@ -125,7 +125,7 @@ export class SharedPage extends LitElement {
   private async _load(): Promise<void> {
     this._loading = true;
     try {
-      const { items } = await apiClient.listSharedWithMe();
+      const items = await apiClient.listAllSharedWithMe();
       this._shares = items;
     } finally {
       this._loading = false;

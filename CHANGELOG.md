@@ -11,6 +11,18 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.8.1] - 2026-08-31
+
+### Fixed
+
+- Hub pages (My Presentations, Shared with Me, and public Search) were limited
+  to the first 20 results because the list endpoints paginate by default. The
+  dashboard filter therefore only searched within those 20 presentations and
+  missed the rest. The client now fetches every page (`listAllPresentations`,
+  `listAllSharedWithMe`, `searchAll`) before rendering, so the full set is
+  shown and search covers all entries. The `ApiClient` class is now exported
+  to enable regression tests for the pagination loop.
+
 ## [2.8.0] - 2026-08-31
 
 ### Added

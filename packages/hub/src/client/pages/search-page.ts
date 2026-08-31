@@ -88,8 +88,7 @@ export class SearchPage extends LitElement {
       this._searched = false;
       return;
     }
-    const { items } = await apiClient.search(this._query);
-    this._results = items;
+    this._results = await apiClient.searchAll(this._query);
     this._searched = true;
   }
 

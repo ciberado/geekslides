@@ -309,8 +309,7 @@ export class DashboardPage extends LitElement {
   }
 
   private async _load(): Promise<void> {
-    const { items } = await apiClient.listPresentations();
-    this._presentations = items;
+    this._presentations = await apiClient.listAllPresentations();
   }
 
   private async _upload(e: Event): Promise<void> {
