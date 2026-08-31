@@ -11,6 +11,25 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.6.6] - 2026-08-31
+
+### Fixed
+
+- `npm install` at the root failed during the `prepare` script because the
+  server build never emitted `dist/index.d.ts`. The CLI's type-build imports
+  `@geekslides/server`, but the server `build` script ran only esbuild (which
+  produces `dist/index.cjs`) and never ran `tsc`, so no declaration file
+  existed. The server build now runs `tsc --build` to emit declarations.
+- `better-sqlite3` and `leveldown` native modules were installed against the
+  wrong Node ABI because npm's `allowScripts` policy blocked their `node-gyp`
+  install scripts, breaking the hub unit tests. These install scripts are now
+  approved (`allowScripts` in root `package.json`), so the modules rebuild for
+  the active Node version.
+- ESLint failed on `packages/hub/scripts/bundle-smoke.mjs` (parse + strict
+  type-checked rule errors). The file is now included in `allowDefaultProject`
+  and is covered by `disableTypeChecked`, matching the existing
+  `packages/cli/app/**/*.js` override.
+
 ## [2.6.5] - 2026-05-25
 
 ### Fixed

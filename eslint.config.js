@@ -8,6 +8,7 @@ export default tseslint.config(
         projectService: {
           allowDefaultProject: [
             'packages/hub/tests/unit/helpers.ts',
+            'packages/hub/scripts/bundle-smoke.mjs',
             'packages/vscode/esbuild.js',
             'packages/vscode/scripts/extract-css-docs.ts',
           ],
@@ -22,6 +23,15 @@ export default tseslint.config(
   },
   {
     files: ['packages/cli/app/**/*.js'],
+    ...tseslint.configs.disableTypeChecked,
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      '@typescript-eslint/explicit-module-boundary-types': 'off',
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    files: ['packages/hub/scripts/**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
     rules: {
       ...tseslint.configs.disableTypeChecked.rules,

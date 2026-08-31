@@ -1,6 +1,6 @@
 {
   "name": "@geekslides/server",
-  "version": "2.6.5",
+  "version": "2.6.6",
   "license": "Apache-2.0",
   "type": "module",
   "main": "dist/index.cjs",
@@ -12,7 +12,7 @@
     }
   },
   "scripts": {
-    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:pino --external:pino-pretty --external:thread-stream",
+    "build": "esbuild src/index.ts --bundle --platform=node --format=cjs --outfile=dist/index.cjs --external:pino --external:pino-pretty --external:thread-stream && tsc --build",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.cjs"
   },
