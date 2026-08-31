@@ -11,6 +11,40 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 <!-- Add new entries above this line -->
 
+## [2.8.0] - 2026-08-31
+
+### Added
+
+- Added a `test:all` npm script that runs the entire suite locally: unit and
+  integration tests (`npm test`) followed by the Playwright E2E tests
+  (`npm run test:e2e`).
+
+### Changed
+
+- Corrected the testing and toolchain documentation to reflect the actual
+  workflows: the single `test` CI job in `.github/workflows/ci.yml` (branches
+  on `feat/next-version`, runs coverage via `npx vitest run --coverage`), the
+  Playwright browser prereq (`npx playwright install chromium`, not fetched by
+  `npm ci`), and the fact that the 80% coverage thresholds in
+  `vitest.config.ts` are only enforced when coverage is enabled.
+- Removed references to non-existent npm scripts (`test:watch`, `test:coverage`,
+  `test:browser`, `test:e2e:ui`) from the scripts documentation.
+- Documented the local dev ports (`:5173`, `:1234`, `:3000`, `:3001`, `:8080`,
+  `:2019`) in the install guide and `scripts/start-dev.sh`.
+
+### Fixed
+
+- `npm start`'s tmux branch now frees the dev ports (1234/5173/3000/8080/2019)
+  before relaunching. `tmux kill-window` does not terminate foreground
+  processes, so a stale Caddy kept holding `:8080`; the freshly spawned Caddy
+  then failed to bind, all panes exited, and tmux closed the window. The script
+  now mirrors the non-tmux branch and frees the ports first, so re-running
+  `npm start` stays stable.
+- `npm start` supports a `GEEKSLIDES_TMUX_SESSION=<name>` override to target a
+  specific (possibly fresh) tmux session instead of always reusing the first
+  one, and no longer assumes panes are indexed from 0 (works with
+  `pane-base-index` of 0 or 1).
+
 ## [2.6.6] - 2026-08-31
 
 ### Fixed
@@ -29,6 +63,9 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   type-checked rule errors). The file is now included in `allowDefaultProject`
   and is covered by `disableTypeChecked`, matching the existing
   `packages/cli/app/**/*.js` override.
+- Added a `test:all` script that runs the full suite locally: unit +
+  integration (`npm test`) followed by the Playwright E2E tests
+  (`npm run test:e2e`).
 
 ## [2.6.5] - 2026-05-25
 

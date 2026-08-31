@@ -35,7 +35,10 @@ Key design docs: [architecture-v2.md](vibe/features/architecture-v2.md), [plugin
 npm ci                  # Install all workspace dependencies
 npm run typecheck       # tsc --build (all packages)
 npm run lint            # ESLint check
-npm test                # Vitest unit + integration tests (80% coverage threshold)
+npm test                # Vitest unit + integration tests
+                        # NOTE: coverage thresholds (80% in vitest.config.ts) are only
+                        # enforced when coverage is enabled, i.e. `npm test -- --coverage`
+                        # (or in CI via `npx vitest run --coverage`).
 npm run test:e2e        # Playwright e2e — always use this, not bare `npx playwright test`
                         # The npm script passes --config=e2e/playwright.config.ts which is
                         # required: bare `npx playwright test` won't find the config and all
@@ -44,11 +47,18 @@ npm run test:e2e        # Playwright e2e — always use this, not bare `npx play
                         # To run a single spec:
                         #   npx playwright test --config=e2e/playwright.config.ts e2e/layouts.spec.ts
                         #
+                        # The npm script auto-starts the dev server (via the webServer block
+                        # in e2e/playwright.config.ts); you do NOT run `npm run dev` first.
+                        #
+                        # Requires Chromium installed once (not done by `npm ci`):
+                        #   npx playwright install chromium
                         # On Ubuntu 26.04+ (devcontainer), set the platform override:
                         #   PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64
                         #   npx playwright install chromium
                         # Without this, browser download fails with "Playwright does not
                         # support chromium on ubuntu26.04-x64".
+npm run test:all        # Full suite: unit + integration, then e2e
+                        #   (npm run test && npm run test:e2e)
 npm run dev             # Vite + backend server on 0.0.0.0 (BOTH required for e2e tests)
                         # Runs concurrently: "tsx packages/server/src/index.ts" + "vite"
                         # The backend server handles /api/rooms/... content proxy routes.

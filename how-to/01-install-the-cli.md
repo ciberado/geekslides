@@ -63,6 +63,27 @@ Open `http://localhost:5173` in your browser. You'll see the sample deck loaded 
 
 > **No sync needed?** Use `npm run dev:nosync` to skip the WebSocket server.
 
+## Local dev ports
+
+`npm start` launches the full stack (viewer + hub + Caddy) in a tmux window named
+`dev` (or as background processes when tmux isn't available). Ports in use:
+
+| Port | Service | Why |
+|------|---------|-----|
+| **5173** | Viewer Vite dev server | Serves the deck SPA with HMR (`http://localhost:5173`) |
+| **1234** | yjs-server | Real-time sync (CRDT) + content proxy API (`ws://localhost:1234`) |
+| **3000** | Hub Fastify server | Hub API routes under `/hub/api/*` |
+| **3001** | Hub Vite dev server | Hub Lit SPA with HMR (`http://localhost:3001/hub/`) |
+| **8080** | **Caddy reverse proxy** | Single entry point — `http://localhost:8080` proxies all of the above |
+| **2019** | Caddy admin endpoint | Only used by Caddy itself |
+
+After `npm start`, the easiest way to reach everything is **http://localhost:8080**
+— Caddy routes `/ws*` and `/api/*` to the yjs-server (`:1234`), `/hub/*` to the
+Hub (`:3000`/`:3001`), and `/` to the viewer (`:5173`). See `Caddyfile.dev`.
+
+> Running just `npm run dev` starts only the viewer + yjs-server (`:5173` + `:1234`);
+> it does not start the Hub or Caddy.
+
 ## Available CLI commands
 
 Once installed, the `geekslides` command is available through `npx`:

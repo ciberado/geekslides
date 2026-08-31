@@ -56,7 +56,8 @@ The root `package.json` is a private workspace configuration with `"workspaces":
 - `npm install` — installs all workspace dependencies.
 - `npm run dev` — starts the Vite dev server on `http://localhost:5173` and the yjs-server on `ws://localhost:1234`. HMR watches `.md`, `.css`, and `.json` files.
 - `npm test` — runs all unit tests via Vitest.
-- `npm run test:e2e` — runs Playwright E2E tests.
+- `npm run test:e2e` — runs Playwright E2E tests. Requires the Chromium browser installed once via `npx playwright install chromium` (this is not done by `npm ci`).
+- `npm run test:all` — runs the whole suite: unit + integration tests, then the E2E tests.
 - `npm run typecheck` — type-checks all packages with `tsc --build`.
 - `npm run build` — creates the production bundle.
 

@@ -309,11 +309,17 @@ Exercises the Lit SPA rendered in a real Chromium browser (~8 UI tests + ~8 API-
 
 ## CI Integration
 
-The GitHub Actions workflow (`.github/workflows/test.yml`) triggers on push and pull request with two jobs:
+The GitHub Actions workflow (`.github/workflows/ci.yml`) triggers on push and pull request
+against the `feat/next-version` branch with a single `test` job running on Node 22:
 
-**`unit` job**: Checks out the repo, sets up Node 22, runs `npm ci`, then `npm run typecheck` and `npm test -- --coverage`.
-
-**`e2e` job**: Checks out the repo, sets up Node 22, runs `npm ci`, installs Playwright's Chromium browser, runs `npm run test:e2e`. On failure, uploads the Playwright HTML report as an artifact using `actions/upload-artifact@v4`.
+- Installs dependencies with `npm ci`.
+- Runs `npm run typecheck` and `npm run lint`.
+- Runs unit + integration tests with coverage via `npx vitest run --coverage`, then uploads
+  the `coverage/` report as an artifact (retained 14 days). The 80% coverage thresholds are
+  configured in `vitest.config.ts` and apply only when coverage is enabled with `--coverage`.
+- Installs Playwright browsers with `npx playwright install --with-deps chromium firefox webkit`.
+- Runs the E2E suite via `npx playwright test --config=e2e/playwright.config.ts`, uploading the
+  Playwright report on failure.
 
 ### Content Proxy E2E
 
@@ -427,14 +433,30 @@ E2E_REUSE_EXISTING_SERVER=false npm run test:e2e
 > Playwright doesn't find the project configuration and all tests fail with
 > ERR_CONNECTION_REFUSED or "Cannot navigate to invalid URL".
 
+### Playwright browser prerequisites
+
+E2E tests need the Playwright Chromium browser installed. It is **not** fetched by `npm ci`:
+
+```bash
+# install the browser once
+npx playwright install chromium
+```
+
+On Ubuntu 26.04+ (devcontainer), set the platform override or the download fails with
+"Playwright does not support chromium on ubuntu26.04-x64":
+
+```bash
+PLAYWRIGHT_HOST_PLATFORM_OVERRIDE=ubuntu24.04-x64 npx playwright install chromium
+```
+
 ## npm Scripts Summary
 
 | Script | Description |
 |--------|-------------|
-| `test` | Run all unit + integration tests (`vitest run`) |
-| `test:watch` | Watch mode (`vitest`) |
-| `test:coverage` | With coverage report (`vitest run --coverage`) |
-| `test:browser` | Integration tests in browser mode (`vitest run -c vitest.config.browser.ts`) |
+| `test` | Run all unit + integration tests (`vitest run`). Coverage is opt-in: run `npm test -- --coverage` (or CI uses `npx vitest run --coverage`) to enforce the 80% thresholds from `vitest.config.ts` |
 | `test:e2e` | Playwright E2E tests (`playwright test --config=e2e/playwright.config.ts`) |
-| `test:e2e:ui` | E2E with interactive UI (`playwright test --ui`) |
-| `test:all` | Everything: unit + integration + E2E |
+| `typecheck` | Type-check all packages (`tsc --build`) |
+| `lint` | ESLint check on all sources (`eslint .`) |
+| `test:all` | Everything: unit + integration, then E2E (`npm run test && npm run test:e2e`) |
+
+To run the full suite locally: install Chromium once, then `npm run test:all`.
