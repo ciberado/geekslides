@@ -25,6 +25,7 @@
   },
   "devDependencies": {
     "@types/ws": "^8.5.0",
-    "esbuild": "^0.25.12"
+    "esbuild": "^0.25.12",
+    "typescript": "^5.7.0"
   }
 }

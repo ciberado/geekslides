@@ -22,6 +22,12 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   `listAllSharedWithMe`, `searchAll`) before rendering, so the full set is
   shown and search covers all entries. The `ApiClient` class is now exported
   to enable regression tests for the pagination loop.
+- Docker builds of the server image failed ("tsc: not found"): the server
+  `build` script emits `dist/index.d.ts` via `tsc --build`, but the
+  workspace-scoped `npm ci --workspace=@geekslides/server --ignore-scripts`
+  used by `Dockerfile.server` and `Dockerfile.hub` did not install
+  `typescript`. Added `typescript` to the server's devDependencies so the
+  scoped install exposes `tsc` to the build stage.
 
 ## [2.8.0] - 2026-08-31
 
