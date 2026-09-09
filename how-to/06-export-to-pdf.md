@@ -69,9 +69,15 @@ Best for: turning a presentation into a readable document or study material.
 
 | Flag | Default | Description |
 |---|---|---|
-| `--config` | (required) | Path to the deck's `config.json` |
+| `--config` | `config.json` | Path to the deck's `config.json` |
 | `--format` | `slides` | Export format: `slides`, `slides-notes`, `slides-details`, `book` |
-| `--out` | `<deck-name>.pdf` | Output file path |
+| `--output` | `.tmp/<format>.pdf` | Output PDF path (used as the base name for `--all`) |
+| `--all` | — | Generate all formats in one pass: `slides`, `slides-notes`, `slides-details` (horizontal + vertical), `book` |
+| `--details-layout` | `horizontal` | Details layout for a single run: `horizontal` or `vertical` |
+| `--book-image-width` | `25` | Width of floated images in `book` format (0 disables) |
+| `--content` | from config | Markdown content file, overriding `config.json` |
+
+> **Companion output.** When you run `--format slides`, `slides-notes`, or `book`, the command also writes a second file ending in `-details.pdf` (same format as `slides-details`). If you only want the primary PDF, delete the `-details.pdf` afterward or use `--format slides-details`.
 
 ## How it works
 
