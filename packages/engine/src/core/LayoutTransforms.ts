@@ -81,6 +81,17 @@ function threeColTransform(section: HTMLElement): void {
     ) {
       card.appendChild(next);
     }
+
+    // Progressive reveal: if the card (title or body) carries a `partial`
+    // marker, promote it to the whole card so the heading and the body appear
+    // together. Without this, only the marked element would be hidden and the
+    // heading would leak the answer.
+    if (card.querySelector('[partial]') !== null) {
+      card.querySelectorAll('[partial]').forEach((el) => {
+        el.removeAttribute('partial');
+      });
+      card.setAttribute('partial', '');
+    }
   }
 }
 
